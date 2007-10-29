@@ -18,7 +18,7 @@ using Apache.NMS;
 using System;
 
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
 	public class ActiveMQTextMessage : ActiveMQMessage, ITextMessage
     {

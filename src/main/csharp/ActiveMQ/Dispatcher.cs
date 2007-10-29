@@ -19,7 +19,7 @@ using System;
 using System.Collections;
 using System.Threading;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	/// <summary>
 	/// Handles the multi-threaded dispatching between the transport and the consumers

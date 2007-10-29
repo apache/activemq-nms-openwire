@@ -16,10 +16,10 @@
  */
 using System;
 using System.Text;
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
 
-namespace Apache.ActiveMQ.Transport.Stomp
+namespace Apache.NMS.ActiveMQ.Transport.Stomp
 {
     /// <summary>
     /// Some <a href="http://stomp.codehaus.org/">STOMP</a> protocol conversion helper methods.

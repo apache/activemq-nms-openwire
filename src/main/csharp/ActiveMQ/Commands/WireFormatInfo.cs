@@ -16,10 +16,10 @@
 */
 
 using System;
-using Apache.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS;
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
     //
     //  Marshalling code for Open Wire Format for WireFormatInfo

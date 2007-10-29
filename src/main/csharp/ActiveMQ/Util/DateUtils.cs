@@ -16,7 +16,7 @@
  */
 using System;
 
-namespace Apache.ActiveMQ.Util
+namespace Apache.NMS.ActiveMQ.Util
 {
 	public class DateUtils
 	{

@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 using System;
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	public enum AckType
 	{

@@ -17,7 +17,7 @@
 using System;
 using System.Threading;
 
-namespace Apache.ActiveMQ.Util
+namespace Apache.NMS.ActiveMQ.Util
 {
     class CountDownLatch
     {

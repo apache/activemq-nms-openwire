@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ.Commands;
-using Apache.ActiveMQ.OpenWire;
-using Apache.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.Transport;
 using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace Apache.ActiveMQ.Transport.Tcp
+namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
 	
     /// <summary>

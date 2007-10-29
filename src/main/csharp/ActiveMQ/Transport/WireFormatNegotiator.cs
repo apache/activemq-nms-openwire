@@ -16,13 +16,13 @@
  */
 using System.IO;
 using System.Threading;
-using Apache.ActiveMQ.Commands;
-using Apache.ActiveMQ.OpenWire;
-using Apache.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.Transport;
 using System;
-using Apache.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.Util;
 
-namespace Apache.ActiveMQ.Transport
+namespace Apache.NMS.ActiveMQ.Transport
 {
 	
     /// <summary>

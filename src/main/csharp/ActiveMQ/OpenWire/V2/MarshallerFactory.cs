@@ -25,11 +25,11 @@ using System;
 using System.Collections;
 using System.IO;
 
-using Apache.ActiveMQ.Commands;
-using Apache.ActiveMQ.OpenWire;
-using Apache.ActiveMQ.OpenWire.V2;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.OpenWire.V2;
 
-namespace Apache.ActiveMQ.OpenWire.V2
+namespace Apache.NMS.ActiveMQ.OpenWire.V2
 {
 	/// <summary>
 	/// Used to create marshallers for a specific version of the wire protocol

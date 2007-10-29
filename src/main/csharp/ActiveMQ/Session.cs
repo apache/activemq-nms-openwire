@@ -16,10 +16,10 @@
  */
 using System;
 using System.Collections;
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	/// <summary>
 	/// Default provider of ISession

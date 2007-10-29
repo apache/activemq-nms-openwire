@@ -24,10 +24,10 @@ using System;
 using System.Collections;
 
 using Apache.NMS;
-using Apache.ActiveMQ.OpenWire;
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.Commands;
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
     /// <summary>
     ///  The ActiveMQ ConsumerInfo Command

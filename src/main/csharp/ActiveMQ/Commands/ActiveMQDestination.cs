@@ -18,7 +18,7 @@ using Apache.NMS;
 using System;
 using System.Collections.Specialized;
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
     
     /// <summary>

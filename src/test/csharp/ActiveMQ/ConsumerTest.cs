@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ;
+using Apache.NMS.ActiveMQ;
 using Apache.NMS;
 using NUnit.Framework;
 using System;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	[TestFixture]
     public class ConsumerTest : NMS.Test.ConsumerTest

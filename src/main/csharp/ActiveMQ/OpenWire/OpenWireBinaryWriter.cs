@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using System;
 using System.Collections;
 using System.IO;
 using System.Text;
 
-namespace Apache.ActiveMQ.OpenWire
+namespace Apache.NMS.ActiveMQ.OpenWire
 {
     /// <summary>
 	/// A BinaryWriter that switches the endian orientation of the write opperations so that they

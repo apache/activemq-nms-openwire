@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using System;
 using Apache.NMS;
 
@@ -28,7 +28,7 @@ using Apache.NMS;
 //         if you need to make a change, please see the Groovy scripts in the
 //         activemq-core module
 //
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
 	public abstract class ActiveMQTempDestination : ActiveMQDestination
     {

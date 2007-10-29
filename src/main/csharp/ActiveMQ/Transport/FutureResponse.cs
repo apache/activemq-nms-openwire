@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using System;
 using System.Threading;
-using Apache.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS;
 
-namespace Apache.ActiveMQ.Transport
+namespace Apache.NMS.ActiveMQ.Transport
 {
 	
 	/// <summary>

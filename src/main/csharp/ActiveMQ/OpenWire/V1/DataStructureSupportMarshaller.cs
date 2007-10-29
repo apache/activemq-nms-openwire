@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Commands;
 using System;
 using System.IO;
 
-namespace Apache.ActiveMQ.OpenWire.V1
+namespace Apache.NMS.ActiveMQ.OpenWire.V1
 {
   //
   //  Marshalling code for Open Wire Format for DataStructureSupport

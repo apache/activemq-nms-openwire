@@ -19,7 +19,7 @@ using System.Threading;
 using Apache.NMS;
 
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	internal class DispatchingThread
 	{

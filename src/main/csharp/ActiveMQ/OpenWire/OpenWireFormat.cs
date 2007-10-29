@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 using System.Reflection;
-using Apache.ActiveMQ.Commands;
-using Apache.ActiveMQ.OpenWire.V1;
-using Apache.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.OpenWire.V1;
+using Apache.NMS.ActiveMQ.Transport;
 using System;
 using System.IO;
 using Apache.NMS;
 
-namespace Apache.ActiveMQ.OpenWire
+namespace Apache.NMS.ActiveMQ.OpenWire
 {
     /// <summary>
     /// Implements the <a href="http://activemq.apache.org/openwire.html">OpenWire</a> protocol.

@@ -17,7 +17,7 @@
 using System;
 using System.IO;
 
-namespace Apache.ActiveMQ.Transport
+namespace Apache.NMS.ActiveMQ.Transport
 {
 	/// <summary>
 	/// Represents the marshalling of commands to and from an IO stream

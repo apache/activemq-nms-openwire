@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS;
 using System;
 
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
 	public class ActiveMQMapMessage : ActiveMQMessage, IMapMessage
     {

@@ -18,7 +18,7 @@ using System;
 using Apache.NMS;
 using NUnit.Framework;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
     [TestFixture]
     public class DurableTest : NMS.Test.DurableTest

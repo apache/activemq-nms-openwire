@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ.Commands;
-using Apache.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS;
 using System;
 using System.Collections;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
     /// <summary>
     /// Represents a connection with a message broker

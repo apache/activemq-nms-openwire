@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ;
-using Apache.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ;
+using Apache.NMS.ActiveMQ.Commands;
 using System.Collections;
 
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	public enum TransactionType
     {
@@ -27,7 +27,7 @@ namespace Apache.ActiveMQ
     }
 }
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	public class TransactionContext
     {

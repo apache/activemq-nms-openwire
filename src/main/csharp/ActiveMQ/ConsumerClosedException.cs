@@ -16,7 +16,7 @@
  */
 using Apache.NMS;
 
-namespace Apache.ActiveMQ
+namespace Apache.NMS.ActiveMQ
 {
 	/// <summary>
         /// Exception thrown when a consumer is used that it already closed

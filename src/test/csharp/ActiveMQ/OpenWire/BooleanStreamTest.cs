@@ -18,7 +18,7 @@ using NUnit.Framework;
 using System;
 using System.IO;
 
-namespace Apache.ActiveMQ.OpenWire {
+namespace Apache.NMS.ActiveMQ.OpenWire {
         [ TestFixture ]
         public class BooleanStreamTest
         {

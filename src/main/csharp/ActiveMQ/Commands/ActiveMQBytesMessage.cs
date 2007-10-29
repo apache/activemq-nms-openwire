@@ -17,7 +17,7 @@
 using Apache.NMS;
 
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
 	public class ActiveMQBytesMessage : ActiveMQMessage, IBytesMessage
     {

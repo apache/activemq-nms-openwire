@@ -19,7 +19,7 @@ using System;
 using System.Collections;
 using System.IO;
 
-namespace Apache.ActiveMQ.OpenWire
+namespace Apache.NMS.ActiveMQ.OpenWire
 {
     /// <summary>
     /// A default implementation of IPrimitiveMap

@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.ActiveMQ.OpenWire;
-using Apache.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS;
 using System;
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
 	public delegate void AcknowledgeHandler(ActiveMQMessage message);
 }
 
-namespace Apache.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Commands
 {
 	public class ActiveMQMessage : Message, IMessage, MarshallAware
     {
