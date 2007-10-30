@@ -45,31 +45,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\test\csharp\ActiveMQ\BadConsumeTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\BytesMessageTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\Commands\CommandTest.cs">
+    <Compile Include="src\test\csharp\BadConsumeTest.cs" />
+    <Compile Include="src\test\csharp\BytesMessageTest.cs" />
+    <Compile Include="src\test\csharp\Commands\CommandTest.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\test\csharp\ActiveMQ\CommonAssemblyInfo.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\ConsumerTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\DurableTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\MapMessageTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\NMSPropertyTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\OpenWire\BooleanStreamTest.cs">
+    <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
+    <Compile Include="src\test\csharp\ConsumerTest.cs" />
+    <Compile Include="src\test\csharp\DurableTest.cs" />
+    <Compile Include="src\test\csharp\MapMessageTest.cs" />
+    <Compile Include="src\test\csharp\NMSPropertyTest.cs" />
+    <Compile Include="src\test\csharp\OpenWire\BooleanStreamTest.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\test\csharp\ActiveMQ\OpenWire\EndianTest.cs">
+    <Compile Include="src\test\csharp\OpenWire\EndianTest.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\test\csharp\ActiveMQ\OpenWire\PrimitiveMapTest.cs">
+    <Compile Include="src\test\csharp\OpenWire\PrimitiveMapTest.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\test\csharp\ActiveMQ\TemporaryQueueTest.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\TestMain.cs">
+    <Compile Include="src\test\csharp\TemporaryQueueTest.cs" />
+    <Compile Include="src\test\csharp\TestMain.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\test\csharp\ActiveMQ\TextMessage.cs" />
-    <Compile Include="src\test\csharp\ActiveMQ\TransactionTest.cs" />
+    <Compile Include="src\test\csharp\TextMessage.cs" />
+    <Compile Include="src\test\csharp\TransactionTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="vs2005-activemq.csproj">
@@ -78,7 +78,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="src\test\csharp\ActiveMQ\OpenWire\V1\" />
+    <Folder Include="src\test\csharp\OpenWire\V1\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
