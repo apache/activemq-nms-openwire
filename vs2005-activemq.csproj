@@ -28,10 +28,6 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Apache.NMS, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(USERPROFILE)\.nant\repository\org.apache.activemq\Apache.NMS\1.0-SNAPSHOT\net-2.0\debug\Apache.NMS.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -707,6 +703,12 @@
     <Compile Include="src\main\csharp\Util\URISupport.cs">
       <SubType>Code</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="vendor\Apache.NMS\vs2005-nms.csproj">
+      <Project>{300C1716-0674-4D01-8F5D-151E59A504FE}</Project>
+      <Name>vs2005-nms</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
