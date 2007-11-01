@@ -24,6 +24,8 @@
            value="${project::get-base-directory()}"/>
   <property name="project.name"
            value="Apache.NMS.ActiveMQ"/>
+ <property name="project.group"
+           value="org.apache.activemq"/>
   <property name="project.version"
            value="1.0" unless="${property::exists('project.version')}"/>
   <property name="project.short_description"
@@ -31,20 +33,34 @@
   <property name="project.description"
            value="Apache NMS for ActiveMQ Class Library (.Net Messaging Library Implementation): An implementation of the NMS API for ActiveMQ"/>
   
+  <!-- Repository organized as: organization/module/version/plaform/artifact, platform might be something like 'all' or 'net-2.0/release' -->
+  <property name="nunit.dll" value="org.nunit/nunit/2.2.8/all/nunit.framework.dll"/>    
+  <property name="Apache.NMS.dll" value="${project.group}/Apache.NMS/1.0-SNAPSHOT/${current.build.framework}/${current.build.config}/Apache.NMS.dll" dynamic="true"/>    
+  <property name="Apache.NMS.Test.dll" value="${project.group}/Apache.NMS/1.0-SNAPSHOT/${current.build.framework}/${current.build.config}/Apache.NMS.Test.dll" dynamic="true"/>    
+
   <target name="dependency-init" description="Initializes build dependencies">
+  
+    <!-- The following does a poor man's maven style dependency install to the local repo -->
+    <property name="repo.task.artifact" value="${nunit.dll}"/>    
+    <call target="repo-download"/>
+    <property name="repo.task.artifact" value="${Apache.NMS.dll}"/>    
+    <call target="repo-download"/>
+    <property name="repo.task.artifact" value="${Apache.NMS.Test.dll}"/>    
+    <call target="repo-download"/>
+  
   	<assemblyfileset failonempty="true" id="dependencies">
       <include name="mscorlib.dll" asis="true"/>
       <include name="System.dll" asis="true"/>
-      <include name="${lib.dir}/Apache.NMS.dll"/>
+      <include name="${nant.local.repo}/${Apache.NMS.dll}"/>
   	</assemblyfileset>
   	
   	<assemblyfileset failonempty="true" id="test.dependencies">
       <include name="mscorlib.dll" asis="true"/>
       <include name="System.dll" asis="true"/>
-      <include name="${lib.dir}/Apache.NMS.dll"/>
-      <include name="${lib.dir}/Apache.NMS.Test.dll"/>
+      <include name="${nant.local.repo}/${Apache.NMS.dll}"/>
+      <include name="${nant.local.repo}/${Apache.NMS.Test.dll}"/>
       <include name="${build.bin.dir}/${project.name}.dll"/>
-      <include name="${lib.dir}/all/nunit/nunit.framework.dll"/>
+      <include name="${nant.local.repo}/${nunit.dll}"/>
   	</assemblyfileset>  
   </target>
 
