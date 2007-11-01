@@ -28,9 +28,9 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Apache.NMS, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Apache.NMS, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Apache.NMS.dll</HintPath>
+      <HintPath>$(USERPROFILE)\.nant\repository\org.apache.activemq\Apache.NMS\1.0-SNAPSHOT\net-2.0\debug\Apache.NMS.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
