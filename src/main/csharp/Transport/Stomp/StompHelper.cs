@@ -54,7 +54,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 				text = text.Substring("/temp-queue/".Length);
 				type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_QUEUE;
 			}
-			return ActiveMQDestination.CreateDestination(type, text);
+            else if (text.StartsWith("/remote-temp-topic/"))
+            {
+                type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_TOPIC;
+            }
+            else if (text.StartsWith("/remote-temp-queue/"))
+            {
+                type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_QUEUE;
+            }
+            return ActiveMQDestination.CreateDestination(type, text);
 		}
 
 		public static string ToStomp(ActiveMQDestination destination)
@@ -71,10 +79,24 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 						return "/topic/" + destination.PhysicalName;
 					
 					case DestinationType.TemporaryTopic:
-						return "/temp-topic/" + destination.PhysicalName;
+                        if (destination.PhysicalName.StartsWith("/remote-temp-topic/"))
+                        {
+                            return destination.PhysicalName;
+                        }
+                        else 
+                        {
+                            return "/temp-topic/" + destination.PhysicalName;
+                        }
 					
 					case DestinationType.TemporaryQueue:
-						return "/temp-queue/" + destination.PhysicalName;
+                        if (destination.PhysicalName.StartsWith("/remote-temp-queue/"))
+                        {
+                            return destination.PhysicalName;
+                        }
+                        else 
+                        {
+                            return "/temp-queue/" + destination.PhysicalName;
+                        }
 					
 					default:
 						return "/queue/" + destination.PhysicalName;
