@@ -255,6 +255,7 @@
     </Compile>
     <Compile Include="src\main\csharp\ConsumerClosedException.cs">
       <SubType>Code</SubType>
+      <CustomToolNamespace>T</CustomToolNamespace>
     </Compile>
     <Compile Include="src\main\csharp\DestinationFilter.cs">
       <SubType>Code</SubType>
@@ -709,6 +710,15 @@
       <Project>{300C1716-0674-4D01-8F5D-151E59A504FE}</Project>
       <Name>vs2005-nms</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="LICENSE.txt" />
+    <EmbeddedResource Include="NOTICE.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Apache.NMS.NMSFactory.activemq" />
+    <EmbeddedResource Include="Apache.NMS.NMSFactory.tcp" />
+    <EmbeddedResource Include="Apache.NMS.NMSFactory.stomp" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>

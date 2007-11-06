@@ -46,6 +46,7 @@
     <Compile Include="src\test\csharp\ConsumerTest.cs" />
     <Compile Include="src\test\csharp\DurableTest.cs" />
     <Compile Include="src\test\csharp\MapMessageTest.cs" />
+    <Compile Include="src\test\csharp\NMSConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\NMSPropertyTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\BooleanStreamTest.cs">
       <SubType>Code</SubType>

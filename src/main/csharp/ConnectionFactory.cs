@@ -85,7 +85,15 @@ namespace Apache.NMS.ActiveMQ
 			ConnectionInfo info = CreateConnectionInfo(userName, password);
 
 			ITransportFactory tcpTransportFactory = new TcpTransportFactory();
-			ITransport transport = tcpTransportFactory.CreateTransport(brokerUri);
+
+            Uri uri = brokerUri;
+            // Do we need to strip off the activemq prefix??
+            if ("activemq".Equals(brokerUri.Scheme))
+            {
+                uri = new Uri(brokerUri.AbsolutePath);
+            }
+
+			ITransport transport = tcpTransportFactory.CreateTransport(uri);
 
 			IConnection connection = new Connection(transport, info);
 			connection.ClientId = info.ClientId;
