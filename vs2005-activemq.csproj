@@ -716,9 +716,9 @@
     <EmbeddedResource Include="NOTICE.txt" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Apache.NMS.NMSFactory.activemq" />
-    <EmbeddedResource Include="Apache.NMS.NMSFactory.tcp" />
-    <EmbeddedResource Include="Apache.NMS.NMSFactory.stomp" />
+    <EmbeddedResource Include="Apache.NMS.NMSConnectionFactory.activemq" />
+    <EmbeddedResource Include="Apache.NMS.NMSConnectionFactory.tcp" />
+    <EmbeddedResource Include="Apache.NMS.NMSConnectionFactory.stomp" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
