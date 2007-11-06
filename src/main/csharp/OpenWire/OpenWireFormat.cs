@@ -69,7 +69,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			set {
 
                 Assembly dll = Assembly.GetExecutingAssembly();
-                Type type = dll.GetType("ActiveMQ.OpenWire.V"+value+".MarshallerFactory", false);
+                Type type = dll.GetType("Apache.NMS.ActiveMQ.OpenWire.V"+value+".MarshallerFactory", false);
                 IMarshallerFactory factory = (IMarshallerFactory) Activator.CreateInstance(type);			    
                 factory.configure(this);			    
 			    version = value; 			
