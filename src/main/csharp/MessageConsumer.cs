@@ -94,19 +94,19 @@ namespace Apache.NMS.ActiveMQ
 		public IMessage Receive()
 		{
 			CheckClosed();
-			return AutoClientAcknowledge(dispatcher.Dequeue());
+            return SetupAcknowledge(dispatcher.Dequeue());
 		}
 
 		public IMessage Receive(System.TimeSpan timeout)
 		{
 			CheckClosed();
-			return AutoClientAcknowledge(dispatcher.Dequeue(timeout));
+            return SetupAcknowledge(dispatcher.Dequeue(timeout));
 		}
 
 		public IMessage ReceiveNoWait()
 		{
 			CheckClosed();
-			return AutoClientAcknowledge(dispatcher.DequeueNoWait());
+            return SetupAcknowledge(dispatcher.DequeueNoWait());
 		}
 
 		public void Dispose()
@@ -190,7 +190,7 @@ namespace Apache.NMS.ActiveMQ
 					break;
 				}
 
-				message = AutoClientAcknowledge(message);
+                message = SetupAcknowledge(message);
 				// invoke listener. Exceptions caught by the dispatcher thread
 				listener(message);
 			}
@@ -207,33 +207,42 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		protected IMessage AutoClientAcknowledge(IMessage message)
+		protected IMessage SetupAcknowledge(IMessage message)
 		{
-			if(AcknowledgementMode.AutoAcknowledge != acknowledgementMode)
-			{
-				if(message is ActiveMQMessage)
-				{
-					ActiveMQMessage activeMessage = (ActiveMQMessage) message;
+            if (message == null)
+                return null;
 
-					// lets register the handler for client acknowledgment
-					activeMessage.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
-				}
+            if (acknowledgementMode == AcknowledgementMode.ClientAcknowledge)
+            {
+                if (message is ActiveMQMessage)
+                {
+                    ActiveMQMessage activeMessage = (ActiveMQMessage)message;
+                    activeMessage.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
+                }
+            }
+            else
+            {
+                if (message is ActiveMQMessage)
+                {
+                    ActiveMQMessage activeMessage = (ActiveMQMessage)message;
+                    activeMessage.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
 
-				message.Acknowledge();
-			}
+                    MessageAck ack = CreateMessageAck(activeMessage);
+                    Tracer.Debug("Sending Ack: " + ack);
+                    session.Connection.OneWay(ack);
+                }
+            }
 			return message;
 		}
 
-		protected void DoClientAcknowledge(ActiveMQMessage message)
+        protected void DoNothingAcknowledge(ActiveMQMessage message)
+        {
+        }
+        protected void DoClientAcknowledge(ActiveMQMessage message)
 		{
-			if(AcknowledgementMode.AutoClientAcknowledge == acknowledgementMode
-				|| AcknowledgementMode.DupsOkAcknowledge == acknowledgementMode
-				|| AcknowledgementMode.ClientAcknowledge == acknowledgementMode)
-			{
-				MessageAck ack = CreateMessageAck(message);
-				Tracer.Debug("Sending Ack: " + ack);
-				session.Connection.OneWay(ack);
-			}
+			MessageAck ack = CreateMessageAck(message);
+			Tracer.Debug("Sending Ack: " + ack);
+			session.Connection.OneWay(ack);
 		}
 
 		protected virtual MessageAck CreateMessageAck(Message message)

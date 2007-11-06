@@ -125,11 +125,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
         public void Close()
         {
-			lock (initLock)
+			if (closed.CompareAndSet(false, true))
 			{
-				if (closed.CompareAndSet(false, true))
-				{
-					try
+                lock (initLock)
+                {
+                        try
 					{
 						socket.Shutdown(SocketShutdown.Both);
 					}
