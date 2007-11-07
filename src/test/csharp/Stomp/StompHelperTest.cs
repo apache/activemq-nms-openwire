@@ -56,16 +56,15 @@ namespace Apache.Stomp
 			mid.ProducerSequenceId = 6;
 			
 			string text = StompHelper.ToStomp(mid);
-			Assert.AreEqual("cheese:2:3:5:6", text, "MessageId as stomp");
+			Assert.AreEqual("cheese:2:3:6", text, "MessageId as stomp");
 			
 			MessageId mid2 = StompHelper.ToMessageId("abc:5:6:7:8");
-			Assert.AreEqual(7, mid2.BrokerSequenceId, "extracting mid2.BrokerSequenceId");
 			Assert.AreEqual(8, mid2.ProducerSequenceId, "extracting mid2.ProducerSequenceId");
 
 			ProducerId another = mid2.ProducerId;
-			Assert.AreEqual("abc", another.ConnectionId, "extracting producerId.ConnectionId");
-			Assert.AreEqual(5, another.SessionId, "extracting producerId.SessionId");
-			Assert.AreEqual(6, another.Value, "extracting producerId.Value");
+            Assert.AreEqual(7, another.Value, "extracting another.Value");
+            Assert.AreEqual(6, another.SessionId, "extracting another.SessionId");
+			Assert.AreEqual("abc:5", another.ConnectionId, "extracting another.ConnectionId");
 		}
 
 		// TODO destination stuff

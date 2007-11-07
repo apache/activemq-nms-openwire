@@ -149,17 +149,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			StringBuilder producerBuilder = new StringBuilder();
 
 			producerBuilder.Append(id.ConnectionId);
-			if(0 != id.SessionId)
-			{
-				producerBuilder.Append(":");
-				producerBuilder.Append(id.SessionId);
-			}
-
-			if(0 != id.Value)
-			{
-				producerBuilder.Append(":");
-				producerBuilder.Append(id.Value);
-			}
+            producerBuilder.Append(":");
+            producerBuilder.Append(id.SessionId);
+            producerBuilder.Append(":");
+			producerBuilder.Append(id.Value);
 
 			return producerBuilder.ToString();
 		}
@@ -176,19 +169,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 				try
 				{
 					answer.Value = Int32.Parse(text.Substring(idx + 1));
-					text = text.Substring(0, idx);
-					idx = text.LastIndexOf(':');
-					if (idx >= 0) {
-						try
-						{
-							answer.SessionId = Int32.Parse(text.Substring(idx + 1));
-							text = text.Substring(0, idx);
-						}
-						catch(Exception ex)
-						{
-							Tracer.Debug(ex.Message);
-						}
-					}
+                    text = text.Substring(0, idx);
+                    idx = text.LastIndexOf(':');
+                    if (idx >= 0)
+                    {
+                        answer.SessionId = Int32.Parse(text.Substring(idx + 1));
+                        text = text.Substring(0, idx);
+                    }
 				}
 				catch(Exception ex)
 				{
@@ -204,17 +191,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			StringBuilder messageBuilder = new StringBuilder();
 
 			messageBuilder.Append(ToStomp(id.ProducerId));
-			if(0 != id.BrokerSequenceId)
-			{
-				messageBuilder.Append(":");
-				messageBuilder.Append(id.BrokerSequenceId);
-			}
-
-			if(0 != id.ProducerSequenceId)
-			{
-				messageBuilder.Append(":");
-				messageBuilder.Append(id.ProducerSequenceId);
-			}
+			messageBuilder.Append(":");
+			messageBuilder.Append(id.ProducerSequenceId);
 			
 			return messageBuilder.ToString();
 		}
@@ -232,18 +210,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 				{
 					answer.ProducerSequenceId = Int32.Parse(text.Substring(idx + 1));
 					text = text.Substring(0, idx);
-					idx = text.LastIndexOf(':');
-					if (idx >= 0) {
-						try
-						{
-							answer.BrokerSequenceId = Int32.Parse(text.Substring(idx + 1));
-							text = text.Substring(0, idx);
-						}
-						catch(Exception ex)
-						{
-							Tracer.Debug(ex.Message);
-						}
-					}
 				}
 				catch(Exception ex)
 				{

@@ -323,7 +323,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
                 ss.WriteHeader("no-local", command.NoLocal);
 
 			if ( AcknowledgementMode.ClientAcknowledge == command.AcknowledgementMode
-				|| AcknowledgementMode.AutoClientAcknowledge == command.AcknowledgementMode )
+				|| AcknowledgementMode.AutoClientAcknowledge == command.AcknowledgementMode
+                || AcknowledgementMode.Transactional == command.AcknowledgementMode 
+                )
 				ss.WriteHeader("ack", "client");
 
 			// ActiveMQ extensions to STOMP
@@ -459,7 +461,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			ss.WriteCommand(command, "ACK");
 			
 			// TODO handle bulk ACKs?
-            ss.WriteHeader("message-id", StompHelper.ToStomp(command.FirstMessageId));
+            ss.WriteHeader("message-id", StompHelper.ToStomp(command.LastMessageId));
 			if( command.TransactionId!=null )
                 ss.WriteHeader("transaction", StompHelper.ToStomp(command.TransactionId));
 
