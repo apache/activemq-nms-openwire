@@ -82,25 +82,21 @@ namespace Apache.NMS.ActiveMQ
 
     	public IConnection CreateConnection(string userName, string password)
         {
-			ConnectionInfo info = CreateConnectionInfo(userName, password);
-
-			ITransportFactory tcpTransportFactory = new TcpTransportFactory();
-
             Uri uri = brokerUri;
             // Do we need to strip off the activemq prefix??
-            if ("activemq".Equals(brokerUri.Scheme))
+            if("activemq".Equals(brokerUri.Scheme))
             {
-                uri = new Uri(brokerUri.AbsolutePath);
+                uri = new Uri(brokerUri.AbsolutePath + brokerUri.Query);
             }
 
+			ConnectionInfo info = CreateConnectionInfo(userName, password);
+			ITransportFactory tcpTransportFactory = new TcpTransportFactory();
 			ITransport transport = tcpTransportFactory.CreateTransport(uri);
+			Connection connection = new Connection(uri, transport, info);
 
-			IConnection connection = new Connection(transport, info);
-			connection.ClientId = info.ClientId;
-
-			// Set properties on connection using parameters prefixed with "jms."
+			// Set properties on connection using parameters prefixed with "connection."
 			System.Collections.Specialized.StringDictionary map = URISupport.ParseQuery(brokerUri.Query);
-			URISupport.SetProperties(connection, map, "jms.");
+			URISupport.SetProperties(connection, map, "connection.");
 
 			return connection;
         }

@@ -28,17 +28,34 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
 	public class TcpTransportFactory : ITransportFactory
 	{
-		private bool useLogging = false;
-
 		public TcpTransportFactory()
 		{
 		}
 
+		#region Properties
+
+		private bool useLogging = false;
 		public bool UseLogging
 		{
 			get { return useLogging; }
 			set { useLogging = value; }
 		}
+
+		private string wireFormat = "OpenWire";
+		public string WireFormat
+		{
+			get { return wireFormat; }
+			set { wireFormat = value; }
+		}
+
+		private int requestTimeout = -1;
+		public int RequestTimeout
+		{
+			get { return requestTimeout; }
+			set { requestTimeout = value; }
+		}
+
+		#endregion
 
 		#region ITransportFactory Members
 
@@ -68,7 +85,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			}
 
 			transport = new MutexTransport(transport);
-			transport = new ResponseCorrelator(transport);
+			transport = new ResponseCorrelator(transport, requestTimeout);
 
 			return transport;
 		}
@@ -79,7 +96,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			// Looping through the AddressList allows different type of connections to be tried
 			// (IPv4, IPv6 and whatever else may be available).
+#if MONO
+			// The following GetHostByName() API has been obsoleted in .NET 2.0.  It has been
+			// superceded by GetHostEntry().  At some point, it will probably be removed
+			// from the Mono class library, and this #if statement can be removed.
+
+			IPHostEntry hostEntry = Dns.GetHostByName(host);
+#else
 			IPHostEntry hostEntry = Dns.GetHostEntry(host);
+#endif
+
 			foreach(IPAddress address in hostEntry.AddressList)
 			{
 				Socket socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -95,19 +121,24 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		protected IWireFormat CreateWireFormat(Uri location, StringDictionary map)
 		{
 			object properties = null;
-			IWireFormat wireFormat = null;
+			IWireFormat wireFormatItf = null;
 
 			// Detect STOMP etc
 			if(String.Compare(location.Scheme, "stomp", true) == 0)
 			{
-				wireFormat = new StompWireFormat();
-				properties = wireFormat;
+				this.wireFormat = "STOMP";
+			}
+
+			if(String.Compare(this.wireFormat, "stomp", true) == 0)
+			{
+				wireFormatItf = new StompWireFormat();
+				properties = wireFormatItf;
 			}
 			else
 			{
 				OpenWireFormat openwireFormat = new OpenWireFormat();
 
-				wireFormat = openwireFormat;
+				wireFormatItf = openwireFormat;
 				properties = openwireFormat.PreferedWireFormatInfo;
 			}
 
@@ -117,7 +148,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				URISupport.SetProperties(properties, map, "wireFormat.");
 			}
 
-			return wireFormat;
+			return wireFormatItf;
 		}
 	}
 }

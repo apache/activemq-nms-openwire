@@ -14,9 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Reflection;
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.OpenWire.V1;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS;
 using System;
@@ -89,8 +87,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 					Response response = new Response();
 					response.CorrelationId = command.CommandId;
 					SendCommand(response);
+					Tracer.Debug("#### Autorespond to command: " + o.GetType());
 				}
-				Tracer.Debug("#### Ignored command: " + o.GetType());
 			}
 			else
 			{
@@ -182,15 +180,22 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 
 		protected virtual Object CreateCommand(string command, IDictionary headers, byte[] content)
 		{
-			if (command == "RECEIPT" || command == "CONNECTED")
+			if(command == "RECEIPT" || command == "CONNECTED")
 			{
 				string text = RemoveHeader(headers, "receipt-id");
-				if (text != null)
+				if(text != null)
 				{
     				Response answer = new Response();
+					if(text.StartsWith("ignore:"))
+					{
+						text = text.Substring("ignore:".Length);
+					}
+
 					answer.CorrelationId = Int32.Parse(text);
 				    return answer;
-				} else if( command == "CONNECTED") {
+				}
+				else if(command == "CONNECTED")
+				{
                     text = RemoveHeader(headers, "response-id");
                     if (text != null)
                     {
@@ -200,20 +205,31 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
                     }
 				}
 			}
-			else if (command == "ERROR")
+			else if(command == "ERROR")
 			{
-				ExceptionResponse answer = new ExceptionResponse();
 				string text = RemoveHeader(headers, "receipt-id");
-				if (text != null)
+
+				if(text != null && text.StartsWith("ignore:"))
 				{
-					answer.CorrelationId = Int32.Parse(text);
+					Response answer = new Response();
+					answer.CorrelationId = Int32.Parse(text.Substring("ignore:".Length));
+					return answer;
 				}
-				
-				BrokerError error = new BrokerError();
-				error.Message = RemoveHeader(headers, "message");
-				error.ExceptionClass = RemoveHeader(headers, "exceptionClass"); // TODO is this the right header?
-				answer.Exception = error;
-				return answer;
+				else
+				{
+					ExceptionResponse answer = new ExceptionResponse();
+					if(text != null)
+					{
+						answer.CorrelationId = Int32.Parse(text);
+					}
+
+					BrokerError error = new BrokerError();
+					error.Message = RemoveHeader(headers, "message");
+					error.ExceptionClass = RemoveHeader(headers, "exceptionClass");
+					// TODO is this the right header?
+					answer.Exception = error;
+					return answer;
+				}
 			}
 			else if (command == "MESSAGE")
 			{
@@ -236,11 +252,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 				message = new ActiveMQTextMessage(encoding.GetString(content, 0, content.Length));
 			}
 
-			if (message is ActiveMQTextMessage)
-			{
-				ActiveMQTextMessage textMessage = message as ActiveMQTextMessage;
-			}
-			
 			// TODO now lets set the various headers
 			
 			message.Type = RemoveHeader(headers, "type");
@@ -309,6 +320,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 		protected virtual void WriteShutdownInfo(ShutdownInfo command, StompFrameStream ss)
 		{
 			ss.WriteCommand(command, "DISCONNECT");
+			System.Diagnostics.Debug.Assert(!command.ResponseRequired);
 			ss.Flush();
 		}
 
@@ -321,12 +333,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
             ss.WriteHeader("selector", command.Selector);
             if ( command.NoLocal )
                 ss.WriteHeader("no-local", command.NoLocal);
-
-			if ( AcknowledgementMode.ClientAcknowledge == command.AcknowledgementMode
-				|| AcknowledgementMode.AutoClientAcknowledge == command.AcknowledgementMode
-                || AcknowledgementMode.Transactional == command.AcknowledgementMode 
-                )
-				ss.WriteHeader("ack", "client");
+			ss.WriteHeader("ack", "client");
 
 			// ActiveMQ extensions to STOMP
 			ss.WriteHeader("activemq.dispatchAsync", command.DispatchAsync);
@@ -346,19 +353,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 		protected virtual void WriteRemoveInfo(RemoveInfo command, StompFrameStream ss)
 		{
 			object id = command.ObjectId;
+
 			if (id is ConsumerId)
 			{
 				ConsumerId consumerId = id as ConsumerId;
 				ss.WriteCommand(command, "UNSUBSCRIBE");
-				ss.WriteHeader("id", StompHelper.ToStomp(consumerId));				
+				ss.WriteHeader("id", StompHelper.ToStomp(consumerId));
 				ss.Flush();
                 consumers.Remove(consumerId);
             }
-		    // When a session is removed, it needs to remove it's consumers too.
-            if (id is SessionId)
+            else if (id is SessionId)
             {
-                
-                // Find all the consumer that were part of the session.
+				// When a session is removed, it needs to remove it's consumers too.
+				// Find all the consumer that were part of the session.
                 SessionId sessionId = (SessionId) id;
                 ArrayList matches = new ArrayList();
                 foreach (DictionaryEntry entry in consumers)
@@ -370,6 +377,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
                     }
                 }
 
+            	bool unsubscribedConsumer = false;
+
                 // Un-subscribe them.
                 foreach (ConsumerId consumerId in matches)
                 {
@@ -377,8 +386,34 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
                     ss.WriteHeader("id", StompHelper.ToStomp(consumerId));
                     ss.Flush();
                     consumers.Remove(consumerId);
+                	unsubscribedConsumer = true;
                 }
+
+				if(!unsubscribedConsumer && command.ResponseRequired)
+				{
+					ss.WriteCommand(command, "UNSUBSCRIBE", true);
+					ss.WriteHeader("id", sessionId);
+					ss.Flush();
+				}
             }
+			else if(id is ProducerId)
+			{
+				if(command.ResponseRequired)
+				{
+					ss.WriteCommand(command, "UNSUBSCRIBE", true);
+					ss.WriteHeader("id", id);
+					ss.Flush();
+				}
+			}
+			else if(id is ConnectionId)
+			{
+				if(command.ResponseRequired)
+				{
+					ss.WriteCommand(command, "UNSUBSCRIBE", true);
+					ss.WriteHeader("id", id);
+					ss.Flush();
+				}
+			}
 		}
 		
 		
@@ -458,12 +493,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 		
 		protected virtual void WriteMessageAck(MessageAck command, StompFrameStream ss)
 		{
-			ss.WriteCommand(command, "ACK");
+			ss.WriteCommand(command, "ACK", true);
 			
 			// TODO handle bulk ACKs?
-            ss.WriteHeader("message-id", StompHelper.ToStomp(command.LastMessageId));
-			if( command.TransactionId!=null )
+			ss.WriteHeader("message-id", StompHelper.ToStomp(command.LastMessageId));
+			if(command.TransactionId != null)
+			{
                 ss.WriteHeader("transaction", StompHelper.ToStomp(command.TransactionId));
+			}
 
 			ss.Flush();
 		}

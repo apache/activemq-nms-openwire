@@ -63,20 +63,33 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 				WriteHeader("content-length", contentLength);
 			}
 		}
-		
+
 		public void WriteCommand(Command command, String name)
+		{
+			WriteCommand(command, name, false);
+		}
+
+		public void WriteCommand(Command command, String name, bool ignoreErrors)
 		{
 			builder.Append(name);
 			builder.Append(NEWLINE);
-			if (command.ResponseRequired)
+			if(command.ResponseRequired)
 			{
-				WriteHeader("receipt", command.CommandId);
+				if(ignoreErrors)
+				{
+					WriteHeader("receipt", "ignore:" + command.CommandId);
+				}
+				else
+				{
+					WriteHeader("receipt", command.CommandId);
+				}
 			}
 		}
 		
 		public void WriteHeader(String name, Object value)
 		{
-			if (value != null) {
+			if (value != null)
+			{
 				builder.Append(name);
 				builder.Append(SEPARATOR);
 				builder.Append(value);
@@ -86,7 +99,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 		
 		public void WriteHeader(String name, bool value)
 		{
-			if (value) {
+			if (value)
+			{
 				builder.Append(name);
 				builder.Append(SEPARATOR);
 				builder.Append("true");

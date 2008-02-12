@@ -19,7 +19,7 @@ using NUnit.Framework;
 using System;
 using System.IO;
 
-namespace Apache.NMS.ActiveMQ.OpenWire
+namespace Apache.NMS.ActiveMQ.Test.OpenWire
 {
     [TestFixture]
     public class EndianTest

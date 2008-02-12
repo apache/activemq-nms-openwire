@@ -19,6 +19,8 @@
     <OutputPath>build\net-2.0\debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>false</DebugSymbols>
@@ -34,6 +36,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="activemq-dotnet.snk" />
+    <Content Include="nmsprovider-activemq.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="nmsprovider-stomp.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="nmsprovider-tcp.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\main\csharp\BrokerException.cs">
@@ -699,6 +710,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\main\csharp\Util\AtomicBoolean.cs" />
+    <Compile Include="src\main\csharp\Util\Convert.cs" />
     <Compile Include="src\main\csharp\Util\CountDownLatch.cs" />
     <Compile Include="src\main\csharp\Util\DateUtils.cs" />
     <Compile Include="src\main\csharp\Util\URISupport.cs">
@@ -712,13 +724,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="LICENSE.txt" />
-    <EmbeddedResource Include="NOTICE.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Apache.NMS.NMSConnectionFactory.activemq" />
-    <EmbeddedResource Include="Apache.NMS.NMSConnectionFactory.tcp" />
-    <EmbeddedResource Include="Apache.NMS.NMSConnectionFactory.stomp" />
+    <Content Include="LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NOTICE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>

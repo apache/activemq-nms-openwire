@@ -18,7 +18,7 @@ using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
 using System;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Test
 {
     public class TestMain
     {

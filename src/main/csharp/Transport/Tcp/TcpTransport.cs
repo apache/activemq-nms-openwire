@@ -30,19 +30,21 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
     /// </summary>
     public class TcpTransport : ITransport
     {
-		private readonly object initLock = "initLock";
-        private readonly Socket socket;
-    	private IWireFormat wireformat;
+		private readonly object initLock = new object();
+		private readonly Socket socket;
+		private IWireFormat wireformat;
         private BinaryReader socketReader;
-		private readonly object socketReaderLock = "socketReaderLock";
+		private readonly object socketReaderLock = new object();
         private BinaryWriter socketWriter;
-		private readonly object socketWriterLock = "socketWriterLock";
+		private readonly object socketWriterLock = new object();
 		private Thread readThread;
         private bool started;
         private Util.AtomicBoolean closed = new Util.AtomicBoolean(false);
         
         private CommandHandler commandHandler;
         private ExceptionHandler exceptionHandler;
+		private const int MAX_THREAD_WAIT = 30000;
+
         
         public TcpTransport(Socket socket, IWireFormat wireformat)
         {
@@ -72,7 +74,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             		}
 
             		started = true;
-	                
+
 					// As reported in AMQ-988 it appears that NetworkStream is not thread safe
 					// so lets use an instance for each of the 2 streams
 					socketWriter = new OpenWireBinaryWriter(new NetworkStream(socket));
@@ -125,11 +127,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
         public void Close()
         {
-			if (closed.CompareAndSet(false, true))
+			if(closed.CompareAndSet(false, true))
 			{
-                lock (initLock)
+                lock(initLock)
                 {
-                        try
+					try
 					{
 						socket.Shutdown(SocketShutdown.Both);
 					}
@@ -137,7 +139,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					{
 					}
 
-					lock (socketWriterLock)
+					lock(socketWriterLock)
 					{
 						if(null != socketWriter)
 						{
@@ -146,7 +148,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 						}
 					}
 
-					lock (socketReaderLock)
+					lock(socketReaderLock)
 					{
 						if(null != socketReader)
 						{
@@ -157,20 +159,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 					socket.Close();
 
-					if(null != readThread
-						&& Thread.CurrentThread != readThread
-#if !NETCF
-						&& readThread.IsAlive
-#endif
-						)
+					if(null != readThread)
 					{
-						readThread.Abort();
-						readThread.Join();
+						if(Thread.CurrentThread != readThread
+#if !NETCF
+							&& readThread.IsAlive
+#endif
+							)
+						{
+							if(!readThread.Join(MAX_THREAD_WAIT))
+							{
+								readThread.Abort();
+							}
+						}
+
 						readThread = null;
 					}
-				}
 
-				started = false;
+					started = false;
+				}
 			}
         }
 
@@ -195,32 +202,35 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             // An exception in the command handler may not be fatal to the transport, so
             // these are simply reported to the exceptionHandler.
             //
-            while (!closed.Value)
+            while(!closed.Value)
             {
                 Command command = null;
-                try
+
+				try
                 {
                     command = (Command) Wireformat.Unmarshal(socketReader);
                 }
                 catch(Exception ex)
                 {
-                    if (!closed.Value)
-                    {
+                    command = null;
+					if(!closed.Value)
+					{
 						// Close the socket as there's little that can be done with this transport now.
 						Close();
 						this.exceptionHandler(this, ex);
-                        break;
-                    }
+					}
+
+                	break;
                 }
 
                 try
                 {
-					if (command != null)
+					if(command != null)
 					{
 						this.commandHandler(this, command);
 					}
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     this.exceptionHandler(this, e);
                 }

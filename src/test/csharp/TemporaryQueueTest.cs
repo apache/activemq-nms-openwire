@@ -14,19 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ;
-using Apache.NMS;
 using NUnit.Framework;
-using System;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Test
 {
-    [ TestFixture ]
-    public class TemporaryQueueTest : NMS.Test.TemporaryQueueTest
-    {
-        protected override IConnectionFactory CreateConnectionFactory()
-        {
-            return new ConnectionFactory();
-        }
-    }
+	[TestFixture]
+	public class TemporaryQueueTest_OpenWire : Apache.NMS.Test.TemporaryQueueTest
+	{
+		protected override IConnectionFactory CreateConnectionFactory()
+		{
+			return TestUtils.CreateOpenWireConnectionFactory();
+		}
+	}
+
+	[TestFixture]
+	public class TemporaryQueueTest_Stomp : Apache.NMS.Test.TemporaryQueueTest
+	{
+		protected override IConnectionFactory CreateConnectionFactory()
+		{
+			return TestUtils.CreateOpenWireConnectionFactory();
+		}
+	}
 }

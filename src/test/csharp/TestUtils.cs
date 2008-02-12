@@ -14,37 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-	[TestFixture]
-	public class MapMessageTest_OpenWire : Apache.NMS.Test.MapMessageTest
+	class TestUtils
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
+		public static Apache.NMS.IConnectionFactory CreateOpenWireConnectionFactory()
 		{
-			return TestUtils.CreateOpenWireConnectionFactory();
-		}
-	}
-
-	[TestFixture]
-	public class MapMessageTest_Stomp : Apache.NMS.Test.MapMessageTest
-	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateStompConnectionFactory();
+			return new Apache.NMS.ActiveMQ.ConnectionFactory("activemq:tcp://localhost:61616");
 		}
 
-		public override void SendAndSyncReceive()
+		public static Apache.NMS.IConnectionFactory CreateStompConnectionFactory()
 		{
-			// TODO disable test
-		}
-
-		protected override void AssertValidMessage(IMessage message)
-		{
-			System.Console.WriteLine("Received MapMessage: " + message);
-
-			Assert.IsTrue(message is IMapMessage, "Did not receive a MapMessage!");
+			return new Apache.NMS.ActiveMQ.ConnectionFactory("activemq:stomp://localhost:61613");
 		}
 	}
 }

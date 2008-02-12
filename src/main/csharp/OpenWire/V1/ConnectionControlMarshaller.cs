@@ -86,13 +86,11 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V1
     public override void TightMarshal2(OpenWireFormat wireFormat, Object o, BinaryWriter dataOut, BooleanStream bs) {
         base.TightMarshal2(wireFormat, o, dataOut, bs);
 
-        ConnectionControl info = (ConnectionControl)o;
         bs.ReadBoolean();
         bs.ReadBoolean();
         bs.ReadBoolean();
         bs.ReadBoolean();
         bs.ReadBoolean();
-
     }
 
     // 

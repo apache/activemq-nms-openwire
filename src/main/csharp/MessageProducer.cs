@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS;
 using System;
 
@@ -26,7 +25,8 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageProducer : IMessageProducer
 	{
-		private readonly Session session;
+		private Session session;
+		private bool closed = false;
 		private readonly ProducerInfo info;
 		private long messageCounter = 0;
 
@@ -69,7 +69,7 @@ namespace Apache.NMS.ActiveMQ
 
 			try
 			{
-				session.Connection.DisposeOf(info.ProducerId);
+				Close();
 			}
 			catch
 			{
@@ -77,6 +77,36 @@ namespace Apache.NMS.ActiveMQ
 			}
 
 			disposed = true;
+		}
+
+		public void Close()
+		{
+			lock(this)
+			{
+				if(closed)
+				{
+					return;
+				}
+			}
+
+			session.DisposeOf(info.ProducerId);
+			session = null;
+
+			lock(this)
+			{
+				closed = true;
+			}
+		}
+
+		protected void CheckClosed()
+		{
+			lock(this)
+			{
+				if(closed)
+				{
+					throw new ConnectionClosedException();
+				}
+			}
 		}
 
 		public void Send(IMessage message)
@@ -101,7 +131,8 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void Send(IDestination destination, IMessage message, bool persistent, byte priority, TimeSpan timeToLive, bool specifiedTimeToLive)
 		{
-			ActiveMQMessage activeMessage = (ActiveMQMessage)message;
+			CheckClosed();
+			ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
 			if (!disableMessageID)
 			{
@@ -171,36 +202,43 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessage CreateMessage()
 		{
+			CheckClosed();
 			return session.CreateMessage();
 		}
 
 		public ITextMessage CreateTextMessage()
 		{
+			CheckClosed();
 			return session.CreateTextMessage();
 		}
 
 		public ITextMessage CreateTextMessage(string text)
 		{
+			CheckClosed();
 			return session.CreateTextMessage(text);
 		}
 
 		public IMapMessage CreateMapMessage()
 		{
+			CheckClosed();
 			return session.CreateMapMessage();
 		}
 
 		public IObjectMessage CreateObjectMessage(object body)
 		{
+			CheckClosed();
 			return session.CreateObjectMessage(body);
 		}
 
 		public IBytesMessage CreateBytesMessage()
 		{
+			CheckClosed();
 			return session.CreateBytesMessage();
 		}
 
 		public IBytesMessage CreateBytesMessage(byte[] body)
 		{
+			CheckClosed();
 			return session.CreateBytesMessage(body);
 		}
 	}

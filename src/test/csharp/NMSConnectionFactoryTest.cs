@@ -14,13 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
 using Apache.NMS;
 using NUnit.Framework;
-using System.Reflection;
-using System.IO;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
     public class NMSConnectionFactoryTest 
@@ -33,10 +30,11 @@ namespace Apache.NMS.ActiveMQ
             Assert.IsNotNull(factory.ConnectionFactory);
             Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
         }
-        [Test]
+
+		[Test]
         public void TestStompURI()
         {
-            NMSConnectionFactory factory = new NMSConnectionFactory("stomp://localhost:61616");
+            NMSConnectionFactory factory = new NMSConnectionFactory("stomp://localhost:61613");
             Assert.IsNotNull(factory);
             Assert.IsNotNull(factory.ConnectionFactory);
             Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
@@ -50,9 +48,5 @@ namespace Apache.NMS.ActiveMQ
             Assert.IsNotNull(factory.ConnectionFactory);
             Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
         }
-
     }
-
-
 }
-

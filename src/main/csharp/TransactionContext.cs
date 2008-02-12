@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ
     {
         private TransactionId transactionId;
         private Session session;
-        private ArrayList synchronizations = new ArrayList();
+        private ArrayList synchronizations = ArrayList.Synchronized(new ArrayList());
         
         public TransactionContext(Session session)
 		{

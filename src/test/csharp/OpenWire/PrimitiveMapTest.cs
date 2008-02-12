@@ -20,7 +20,7 @@ using System.Collections;
 using System.IO;
 using Apache.NMS.ActiveMQ.OpenWire;
 
-namespace Apache.NMS.ActiveMQ.OpenWire
+namespace Apache.NMS.ActiveMQ.Test.OpenWire
 {
     [TestFixture]
     public class PrimitiveMapTest

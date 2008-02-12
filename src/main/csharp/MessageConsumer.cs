@@ -39,16 +39,21 @@ namespace Apache.NMS.ActiveMQ
 		private readonly ConsumerInfo info;
 		private int maximumRedeliveryCount = 10;
 		private int redeliveryTimeout = 500;
-		private readonly Session session;
+		private Session session;
+		private Session ackSession;
 		protected bool disposed = false;
 
 		// Constructor internal to prevent clients from creating an instance.
 		internal MessageConsumer(Session session, ConsumerInfo info,
-		                         AcknowledgementMode acknowledgementMode)
+								 AcknowledgementMode acknowledgementMode)
 		{
 			this.session = session;
 			this.info = info;
 			this.acknowledgementMode = acknowledgementMode;
+			if(AcknowledgementMode.AutoAcknowledge == acknowledgementMode)
+			{
+				this.ackSession = (Session) session.Connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			}
 		}
 
 		~MessageConsumer()
@@ -94,19 +99,19 @@ namespace Apache.NMS.ActiveMQ
 		public IMessage Receive()
 		{
 			CheckClosed();
-            return SetupAcknowledge(dispatcher.Dequeue());
+			return SetupAcknowledge(dispatcher.Dequeue());
 		}
 
 		public IMessage Receive(System.TimeSpan timeout)
 		{
 			CheckClosed();
-            return SetupAcknowledge(dispatcher.Dequeue(timeout));
+			return SetupAcknowledge(dispatcher.Dequeue(timeout));
 		}
 
 		public IMessage ReceiveNoWait()
 		{
 			CheckClosed();
-            return SetupAcknowledge(dispatcher.DequeueNoWait());
+			return SetupAcknowledge(dispatcher.DequeueNoWait());
 		}
 
 		public void Dispose()
@@ -129,7 +134,6 @@ namespace Apache.NMS.ActiveMQ
 
 			try
 			{
-				session.Connection.DisposeOf(info.ConsumerId);
 				Close();
 			}
 			catch
@@ -152,9 +156,17 @@ namespace Apache.NMS.ActiveMQ
 
 			// wake up any pending dequeue() call on the dispatcher
 			dispatcher.Close();
+			session.DisposeOf(info.ConsumerId);
+			session = null;
 
 			lock(this)
 			{
+				if(ackSession != null)
+				{
+					ackSession.Close();
+					ackSession = null;
+				}
+
 				closed = true;
 			}
 		}
@@ -174,6 +186,17 @@ namespace Apache.NMS.ActiveMQ
 		/// <param name="message">An ActiveMQMessage</param>
 		public void Dispatch(ActiveMQMessage message)
 		{
+			lock(this)
+			{
+				if(ackSession != null)
+				{
+					message.Acknowledger += DoNothingAcknowledge;
+					MessageAck ack = CreateMessageAck(message);
+					Tracer.Debug("Sending AutoAck: " + ack);
+					ackSession.Connection.OneWay(ack);
+				}
+			}
+
 			dispatcher.Enqueue(message);
 		}
 
@@ -190,7 +213,7 @@ namespace Apache.NMS.ActiveMQ
 					break;
 				}
 
-                message = SetupAcknowledge(message);
+				message = SetupAcknowledge(message);
 				// invoke listener. Exceptions caught by the dispatcher thread
 				listener(message);
 			}
@@ -209,36 +232,34 @@ namespace Apache.NMS.ActiveMQ
 
 		protected IMessage SetupAcknowledge(IMessage message)
 		{
-            if (message == null)
-                return null;
+			if(null == message)
+			{
+				return null;
+			}
 
-            if (acknowledgementMode == AcknowledgementMode.ClientAcknowledge)
-            {
-                if (message is ActiveMQMessage)
-                {
-                    ActiveMQMessage activeMessage = (ActiveMQMessage)message;
-                    activeMessage.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
-                }
-            }
-            else
-            {
-                if (message is ActiveMQMessage)
-                {
-                    ActiveMQMessage activeMessage = (ActiveMQMessage)message;
-                    activeMessage.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
+			if(message is ActiveMQMessage)
+			{
+				ActiveMQMessage activeMessage = (ActiveMQMessage)message;
 
-                    MessageAck ack = CreateMessageAck(activeMessage);
-                    Tracer.Debug("Sending Ack: " + ack);
-                    session.Connection.OneWay(ack);
-                }
-            }
+				if(AcknowledgementMode.ClientAcknowledge == acknowledgementMode)
+				{
+					activeMessage.Acknowledger += DoClientAcknowledge;
+				}
+				else if(AcknowledgementMode.AutoAcknowledge != acknowledgementMode)
+				{
+					activeMessage.Acknowledger += DoNothingAcknowledge;
+					DoClientAcknowledge(activeMessage);
+				}
+			}
+
 			return message;
 		}
 
-        protected void DoNothingAcknowledge(ActiveMQMessage message)
-        {
-        }
-        protected void DoClientAcknowledge(ActiveMQMessage message)
+		protected void DoNothingAcknowledge(ActiveMQMessage message)
+		{
+		}
+
+		protected void DoClientAcknowledge(ActiveMQMessage message)
 		{
 			MessageAck ack = CreateMessageAck(message);
 			Tracer.Debug("Sending Ack: " + ack);

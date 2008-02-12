@@ -14,37 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using NUnit.Framework;
+using System;
 
-namespace Apache.NMS.ActiveMQ.Test
+namespace Apache.NMS.ActiveMQ.Util
 {
-	[TestFixture]
-	public class MapMessageTest_OpenWire : Apache.NMS.Test.MapMessageTest
+	class NMSConvert
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
+		public static AcknowledgementMode ToAcknowledgementMode(string ackText)
 		{
-			return TestUtils.CreateOpenWireConnectionFactory();
-		}
-	}
-
-	[TestFixture]
-	public class MapMessageTest_Stomp : Apache.NMS.Test.MapMessageTest
-	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateStompConnectionFactory();
-		}
-
-		public override void SendAndSyncReceive()
-		{
-			// TODO disable test
-		}
-
-		protected override void AssertValidMessage(IMessage message)
-		{
-			System.Console.WriteLine("Received MapMessage: " + message);
-
-			Assert.IsTrue(message is IMapMessage, "Did not receive a MapMessage!");
+			if(String.Compare(ackText, "AutoAcknowledge", true) == 0)
+			{
+				return AcknowledgementMode.AutoAcknowledge;
+			}
+			else if(String.Compare(ackText, "ClientAcknowledge", true) == 0)
+			{
+				return AcknowledgementMode.ClientAcknowledge;
+			}
+			else if(String.Compare(ackText, "DupsOkAcknowledge", true) == 0)
+			{
+				return AcknowledgementMode.DupsOkAcknowledge;
+			}
+			else if(String.Compare(ackText, "Transactional", true) == 0)
+			{
+				return AcknowledgementMode.Transactional;
+			}
+			else
+			{
+				return AcknowledgementMode.AutoAcknowledge;
+			}
 		}
 	}
 }

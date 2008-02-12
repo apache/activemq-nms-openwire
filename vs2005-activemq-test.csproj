@@ -57,10 +57,12 @@
     <Compile Include="src\test\csharp\OpenWire\PrimitiveMapTest.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\test\csharp\StompHelperTest.cs" />
     <Compile Include="src\test\csharp\TemporaryQueueTest.cs" />
     <Compile Include="src\test\csharp\TestMain.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\test\csharp\TestUtils.cs" />
     <Compile Include="src\test\csharp\TextMessage.cs" />
     <Compile Include="src\test\csharp\TransactionTest.cs" />
   </ItemGroup>

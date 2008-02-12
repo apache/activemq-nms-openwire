@@ -19,7 +19,7 @@ using NUnit.Framework;
 using System.Collections;
 
 
-namespace Apache.NMS.ActiveMQ.Commands
+namespace Apache.NMS.ActiveMQ.Test.Commands
 {
 	[TestFixture]
     public class CommandTest

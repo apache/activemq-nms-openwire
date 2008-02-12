@@ -14,23 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//using Apache.NMS.ActiveMQ;
-using Apache.NMS.ActiveMQ;
-using Apache.NMS;
-using NUnit.Framework;
-using System;
 
-namespace Apache.NMS.ActiveMQ
+using NUnit.Framework;
+
+namespace Apache.NMS.ActiveMQ.Test
 {
-    [ TestFixture ]
-    public class NMSPropertyTest : NMS.Test.NMSPropertyTest
+    [TestFixture]
+    public class NMSPropertyTest_OpenWire : Apache.NMS.Test.NMSPropertyTest
     {
         protected override IConnectionFactory CreateConnectionFactory()
         {
-            return new ConnectionFactory();
-        }
+			return TestUtils.CreateOpenWireConnectionFactory();
+		}
     }
+
+	[TestFixture]
+	public class NMSPropertyTest_Stomp : Apache.NMS.Test.NMSPropertyTest
+	{
+		protected override IConnectionFactory CreateConnectionFactory()
+		{
+			return TestUtils.CreateStompConnectionFactory();
+		}
+
+		protected override void AssertNonStringProperties(IMessage message)
+		{
+			// lets disable typesafe property testing as right now Stomp does not support them
+		}
+
+		protected override void AssertReplyToValid(IMessage message)
+		{
+			Assert.IsNotNull(message.NMSReplyTo, "NMSReplyTo");
+			Assert.IsTrue(message.NMSReplyTo is ITemporaryQueue, "The reply to destination is not a TemporaryTopic!: " + message.NMSReplyTo);
+		}
+	}
 }
-
-
-

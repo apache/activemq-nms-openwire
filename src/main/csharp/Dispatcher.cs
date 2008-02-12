@@ -94,8 +94,11 @@ namespace Apache.NMS.ActiveMQ
         {
             lock (semaphore)
             {
-                queue.Enqueue(message);
-                messageReceivedEventHandle.Set();
+				if(!m_bClosed)
+				{
+					queue.Enqueue(message);
+					messageReceivedEventHandle.Set();
+				}
             }
         }
         

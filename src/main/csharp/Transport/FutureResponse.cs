@@ -30,6 +30,11 @@ namespace Apache.NMS.ActiveMQ.Transport
     {
 	    
         private static int maxWait = -1;
+        public int Timeout
+        {
+        	get { return maxWait; }
+        	set { maxWait = value; }
+        }
 
         private readonly CountDownLatch latch = new CountDownLatch(1);
         private Response response;
