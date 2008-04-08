@@ -138,11 +138,14 @@ namespace Apache.NMS.ActiveMQ
             answer.ConnectionId = connectionId;
             answer.UserName = userName;
             answer.Password = password;
-            answer.ClientId = clientId;
-            if (clientId == null)
+            if(clientId == null)
             {
                 answer.ClientId = CreateNewGuid();
             }
+			else
+			{
+				answer.ClientId = clientId;
+			}
             return answer;
         }
         

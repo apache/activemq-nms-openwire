@@ -152,21 +152,25 @@ namespace Apache.NMS.ActiveMQ
 				{
 					return;
 				}
-			}
 
-			// wake up any pending dequeue() call on the dispatcher
-			dispatcher.Close();
-			session.DisposeOf(info.ConsumerId);
-			session = null;
-
-			lock(this)
-			{
-				if(ackSession != null)
+				try
 				{
-					ackSession.Close();
-					ackSession = null;
+					// wake up any pending dequeue() call on the dispatcher
+					dispatcher.Close();
+					session.DisposeOf(info.ConsumerId);
+
+					if(ackSession != null)
+					{
+						ackSession.Close();
+					}
+				}
+				catch(Exception ex)
+				{
+					Tracer.ErrorFormat("Error during consumer close: {0}", ex);
 				}
 
+				session = null;
+				ackSession = null;
 				closed = true;
 			}
 		}

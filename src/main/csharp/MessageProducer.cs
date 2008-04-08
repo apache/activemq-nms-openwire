@@ -87,13 +87,17 @@ namespace Apache.NMS.ActiveMQ
 				{
 					return;
 				}
-			}
 
-			session.DisposeOf(info.ProducerId);
-			session = null;
+				try
+				{
+					session.DisposeOf(info.ProducerId);
+				}
+				catch(Exception ex)
+				{
+					Tracer.ErrorFormat("Error during producer close: {0}", ex);
+				}
 
-			lock(this)
-			{
+				session = null;
 				closed = true;
 			}
 		}

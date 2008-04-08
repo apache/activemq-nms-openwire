@@ -44,6 +44,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly TransactionContext transactionContext;
 		internal bool startedAsyncDelivery = false;
 		private bool disposed = false;
+        private bool closed = false;
 
 		public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
 		{
@@ -174,6 +175,41 @@ namespace Apache.NMS.ActiveMQ
 			}
 
 			disposed = true;
+		}
+
+		public void Close()
+		{
+			lock(this)
+			{
+				if(closed)
+				{
+					return;
+				}
+
+				try
+				{
+					connection.RemoveSession(this);
+					StopAsyncDelivery();
+					foreach(MessageConsumer consumer in GetConsumers())
+					{
+						consumer.Close();
+					}
+					consumers.Clear();
+
+					foreach(MessageProducer producer in GetProducers())
+					{
+						producer.Close();
+					}
+					producers.Clear();
+				}
+				catch(Exception ex)
+				{
+					Tracer.ErrorFormat("Error during session close: {0}", ex);
+				}
+
+				connection = null;
+				closed = true;
+			}
 		}
 
 		public IMessageProducer CreateProducer()
@@ -386,24 +422,6 @@ namespace Apache.NMS.ActiveMQ
 		public bool Transacted
 		{
 			get { return acknowledgementMode == AcknowledgementMode.Transactional; }
-		}
-
-		public void Close()
-		{
-			connection.RemoveSession(this);
-			StopAsyncDelivery();
-			foreach(MessageConsumer consumer in GetConsumers())
-			{
-				consumer.Close();
-			}
-			consumers.Clear();
-
-			foreach(MessageProducer producer in GetProducers())
-			{
-				producer.Close();
-			}
-			producers.Clear();
-			connection = null;
 		}
 
 		#endregion
