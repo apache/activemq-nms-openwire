@@ -34,7 +34,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private readonly Socket socket;
 		private IWireFormat wireformat;
         private BinaryReader socketReader;
-		private readonly object socketReaderLock = new object();
         private BinaryWriter socketWriter;
 		private readonly object socketWriterLock = new object();
 		private Thread readThread;
@@ -93,6 +92,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			{
 				try
 				{
+					if(closed.Value)
+					{
+						throw new Exception("Error writing to broker.  Transport connection is closed.");
+					}
+
 					Wireformat.Marshal(command, socketWriter);
 					socketWriter.Flush();
 				}
@@ -139,25 +143,46 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					{
 					}
 
-					lock(socketWriterLock)
+					try
 					{
-						if(null != socketWriter)
+						lock(socketWriterLock)
 						{
-            				socketWriter.Close();
-							socketWriter = null;
+							if(null != socketWriter)
+							{
+            					socketWriter.Close();
+							}
 						}
 					}
+					catch
+					{
+					}
+					finally
+					{
+						socketWriter = null;
+					}
 
-					lock(socketReaderLock)
+					try
 					{
 						if(null != socketReader)
 						{
 							socketReader.Close();
-							socketReader = null;
 						}
 					}
+					catch
+					{
+					}
+					finally
+					{
+						socketReader = null;
+					}
 
-					socket.Close();
+					try
+					{
+						socket.Close();
+					}
+					catch
+					{
+					}
 
 					if(null != readThread)
 					{

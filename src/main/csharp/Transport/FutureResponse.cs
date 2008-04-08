@@ -22,57 +22,74 @@ using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	
+
 	/// <summary>
 	/// Handles asynchronous responses
 	/// </summary>
-	public class FutureResponse 
-    {
-	    
-        private static int maxWait = -1;
-        public int Timeout
-        {
-        	get { return maxWait; }
-        	set { maxWait = value; }
-        }
+	public class FutureResponse
+	{
 
-        private readonly CountDownLatch latch = new CountDownLatch(1);
-        private Response response;
-        
-        public WaitHandle AsyncWaitHandle
-        {
-            get { return latch.AsyncWaitHandle; }
-        }        
-        
-        public Response Response
-        {
-            // Blocks the caller until a value has been set
-            get {
-                while (response == null)
-                {
-                    try
+		private static int maxWait = -1;
+		public int Timeout
+		{
+			get { return maxWait; }
+			set { maxWait = value; }
+		}
+
+		private readonly CountDownLatch latch = new CountDownLatch(1);
+		private Response response;
+
+		public WaitHandle AsyncWaitHandle
+		{
+			get { return latch.AsyncWaitHandle; }
+		}
+
+		public Response Response
+		{
+			// Blocks the caller until a value has been set
+			get
+			{
+				bool waitForResponse = false;
+
+				lock(latch)
+				{
+					if(null == response)
 					{
-                        latch.await(maxWait);
-                    }
-                    catch (Exception e)
+						waitForResponse = true;
+					}
+				}
+
+				if(waitForResponse)
+				{
+					try
 					{
-                        Tracer.Error("Caught while waiting on monitor: " + e);
-                    }
-                }
-                lock (latch)
-                {
-                    return response;
-                }
-            }
-            
-            set {
-                lock (latch)
-                {
-                    response = value;
-                }
-                latch.countDown();
-            }
-        }
-    }
+						if(!latch.await(maxWait))
+						{
+							// TODO: Throw timeout exception?
+						}
+					}
+					catch (Exception e)
+					{
+						Tracer.Error("Caught while waiting on monitor: " + e);
+					}
+				}
+
+				lock(latch)
+				{
+					return response;
+				}
+			}
+
+			set
+			{
+				lock(latch)
+				{
+					response = value;
+				}
+
+				latch.countDown();
+			}
+		}
+	}
 }
 
