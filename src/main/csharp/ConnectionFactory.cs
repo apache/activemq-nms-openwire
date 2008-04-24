@@ -55,7 +55,7 @@ namespace Apache.NMS.ActiveMQ
         }
 
 		public ConnectionFactory(string brokerUri)
-			: this(brokerUri, CreateNewGuid())
+			: this(brokerUri, null)
 		{
 		}
 
@@ -65,7 +65,7 @@ namespace Apache.NMS.ActiveMQ
 		}
 
 		public ConnectionFactory(Uri brokerUri)
-			: this(brokerUri, CreateNewGuid())
+			: this(brokerUri, null)
 		{
 		}
 
