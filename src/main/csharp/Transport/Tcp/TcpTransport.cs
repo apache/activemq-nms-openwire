@@ -80,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					socketReader = new OpenWireBinaryReader(new NetworkStream(socket));
 	                
 					// now lets create the background read thread
-					readThread = new Thread(ReadLoop);
+					readThread = new Thread(new ThreadStart(ReadLoop));
 					readThread.Start();
 				}
 			}

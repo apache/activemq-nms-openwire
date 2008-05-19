@@ -53,8 +53,8 @@ namespace Apache.NMS.ActiveMQ
 			this.acknowledgementMode = acknowledgementMode;
 			this.asyncSend = connection.AsyncSend;
 			transactionContext = new TransactionContext(this);
-			dispatchingThread = new DispatchingThread(DispatchAsyncMessages);
-			dispatchingThread.ExceptionListener += dispatchingThread_ExceptionListener;
+			dispatchingThread = new DispatchingThread(new DispatchingThread.DispatchFunction(DispatchAsyncMessages));
+			dispatchingThread.ExceptionListener += new DispatchingThread.ExceptionHandler(dispatchingThread_ExceptionListener);
 		}
 
 		~Session()

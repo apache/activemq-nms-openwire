@@ -194,7 +194,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(ackSession != null)
 				{
-					message.Acknowledger += DoNothingAcknowledge;
+					message.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
 					MessageAck ack = CreateMessageAck(message);
 					Tracer.Debug("Sending AutoAck: " + ack);
 					ackSession.Connection.OneWay(ack);
@@ -247,11 +247,11 @@ namespace Apache.NMS.ActiveMQ
 
 				if(AcknowledgementMode.ClientAcknowledge == acknowledgementMode)
 				{
-					activeMessage.Acknowledger += DoClientAcknowledge;
+					activeMessage.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
 				}
 				else if(AcknowledgementMode.AutoAcknowledge != acknowledgementMode)
 				{
-					activeMessage.Acknowledger += DoNothingAcknowledge;
+					activeMessage.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
 					DoClientAcknowledge(activeMessage);
 				}
 			}

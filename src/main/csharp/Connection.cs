@@ -50,8 +50,8 @@ namespace Apache.NMS.ActiveMQ
 			this.brokerUri = connectionUri;
 			this.info = info;
 			this.transport = transport;
-			this.transport.Command = OnCommand;
-			this.transport.Exception = OnException;
+			this.transport.Command = new CommandHandler(OnCommand);
+			this.transport.Exception = new ExceptionHandler(OnException);
 			this.transport.Start();
 		}
 
