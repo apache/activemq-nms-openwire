@@ -85,6 +85,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				}
 			}
         }
+
+		/// <summary>
+		/// Property IsStarted
+		/// </summary>
+		public bool IsStarted
+		{
+			get
+			{
+				lock(initLock)
+				{
+					return started;
+				}
+			}
+		}
         
         public void Oneway(Command command)
         {

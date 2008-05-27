@@ -63,11 +63,6 @@ namespace Apache.NMS.ActiveMQ
 		public event ExceptionListener ExceptionListener;
 
 
-		public bool IsStarted
-		{
-			get { return started.Value; }
-		}
-
 		#region Properties
 
 		/// <summary>
@@ -105,6 +100,15 @@ namespace Apache.NMS.ActiveMQ
 					session.StartAsyncDelivery(null);
 				}
 			}
+		}
+
+		/// <summary>
+		/// This property determines if the asynchronous message delivery of incoming
+		/// messages has been started for this connection.
+		/// </summary>
+		public bool IsStarted
+		{
+			get { return started.Value; }
 		}
 
 		/// <summary>

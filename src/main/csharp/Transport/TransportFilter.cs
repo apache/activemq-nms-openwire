@@ -85,7 +85,18 @@ namespace Apache.NMS.ActiveMQ.Transport
 				throw new InvalidOperationException ("exception cannot be null when Start is called.");
 			this.next.Start();
 		}
-		
+
+		/// <summary>
+		/// Property IsStarted
+		/// </summary>
+		public bool IsStarted
+		{
+			get
+			{
+				return this.next.IsStarted;
+			}
+		}
+
 		/// <summary>
 		/// Method Dispose
 		/// </summary>
