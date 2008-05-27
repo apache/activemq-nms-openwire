@@ -258,7 +258,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			message.Destination = StompHelper.ToDestination(RemoveHeader(headers, "destination"));
 			message.ReplyTo = StompHelper.ToDestination(RemoveHeader(headers, "reply-to"));
 			message.TargetConsumerId = StompHelper.ToConsumerId(RemoveHeader(headers, "subscription"));
-			message.CorrelationId = ToString(headers["correlation-id"]);
+			message.CorrelationId = RemoveHeader(headers, "correlation-id");
 			message.MessageId = StompHelper.ToMessageId(RemoveHeader(headers, "message-id"));
 			message.Persistent = StompHelper.ToBool(RemoveHeader(headers, "persistent"), true);
 			
@@ -270,10 +270,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 
 			header = RemoveHeader(headers, "expires");
 			if (header != null) message.Expiration = Int64.Parse(header);
-			
-			header = RemoveHeader(headers, "timestamp");
-			if (header != null) message.Timestamp = Int64.Parse(header);
-
 			
 			// now lets add the generic headers
 			foreach (string key in headers.Keys)
