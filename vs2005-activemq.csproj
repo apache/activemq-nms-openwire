@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>build\net-2.0\debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET,NET_2_0</DefineConstants>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DocumentationFile>
     </DocumentationFile>
@@ -26,7 +26,7 @@
     <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>build\net-2.0\release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;NET,NET_2_0</DefineConstants>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -707,13 +707,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\main\csharp\Transport\WireFormatNegotiator.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="src\main\csharp\Util\AtomicBoolean.cs" />
-    <Compile Include="src\main\csharp\Util\Convert.cs" />
-    <Compile Include="src\main\csharp\Util\CountDownLatch.cs" />
-    <Compile Include="src\main\csharp\Util\DateUtils.cs" />
-    <Compile Include="src\main\csharp\Util\URISupport.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

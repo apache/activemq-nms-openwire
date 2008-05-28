@@ -21,8 +21,8 @@ using System.Net.Sockets;
 using System.Collections.Specialized;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.Transport.Stomp;
-using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {

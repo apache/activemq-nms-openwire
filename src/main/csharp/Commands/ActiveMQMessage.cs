@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS;
+using Apache.NMS.Util;
 using System;
 
 namespace Apache.NMS.ActiveMQ.Commands
