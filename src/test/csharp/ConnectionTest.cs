@@ -1,4 +1,4 @@
-?/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,34 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System;
-using Apache.NMS;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]
-    public class ConnectionTest
-    {
-        /// <summary>
-        /// Verify that it is possible to create multiple connections to the broker.
-        /// There was a bug in the connection factory which set the clientId member which made
-        /// it impossible to create an additional connection.
-        /// </summary>
-        [Test]
-        public void TwoConnections()
-        {
-            Apache.NMS.IConnectionFactory connectionFactory = new Apache.NMS.ActiveMQ.ConnectionFactory(new Uri("tcp://localhost:61616"));
-            Apache.NMS.IConnection connection1 = connectionFactory.CreateConnection();
-            connection1.Start();
-            Apache.NMS.IConnection connection2 = connectionFactory.CreateConnection();
-            connection2.Start();
+	[TestFixture]
+	public class ConnectionTest_OpenWire : Apache.NMS.Test.ConnectionTest
+	{
+		protected override IConnectionFactory CreateConnectionFactory()
+		{
+			return TestUtils.CreateOpenWireConnectionFactory();
+		}
+	}
 
-            connection1.Stop();
-            connection1.Dispose();
-            connection2.Stop();
-            connection2.Dispose();
-            // with the bug present we'll get an exception in connection2.start()
-        }
-    }
+	[TestFixture]
+	public class ConnectionTest_Stomp : Apache.NMS.Test.ConnectionTest
+	{
+		protected override IConnectionFactory CreateConnectionFactory()
+		{
+			return TestUtils.CreateStompConnectionFactory();
+		}
+	}
 }

@@ -81,8 +81,5 @@
       <Name>vs2005-activemq</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="src\test\csharp\OpenWire\V1\" />
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
