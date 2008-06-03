@@ -23,6 +23,7 @@ using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.Transport.Stomp;
 using Apache.NMS;
 using Apache.NMS.Util;
+using System.Threading;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
@@ -48,11 +49,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { wireFormat = value; }
 		}
 
-		private int requestTimeout = -1;
+		private TimeSpan requestTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
 		public int RequestTimeout
 		{
-			get { return requestTimeout; }
-			set { requestTimeout = value; }
+			get { return (int) requestTimeout.TotalMilliseconds; }
+			set { requestTimeout = TimeSpan.FromMilliseconds(value); }
 		}
 
 		#endregion
@@ -85,7 +86,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			}
 
 			transport = new MutexTransport(transport);
-			transport = new ResponseCorrelator(transport, requestTimeout);
+			transport = new ResponseCorrelator(transport);
+			transport.RequestTimeout = this.requestTimeout;
 
 			return transport;
 		}

@@ -36,6 +36,7 @@ namespace Apache.NMS.ActiveMQ
 		private WireFormatInfo brokerWireFormatInfo; // from broker
 		private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
 		private bool asyncSend = false;
+		private bool asyncClose = true;
 		private bool connected = false;
 		private bool closed = false;
 		private bool closing = false;
@@ -62,7 +63,6 @@ namespace Apache.NMS.ActiveMQ
 
 		public event ExceptionListener ExceptionListener;
 
-
 		#region Properties
 
 		/// <summary>
@@ -72,6 +72,18 @@ namespace Apache.NMS.ActiveMQ
 		{
 			get { return asyncSend; }
 			set { asyncSend = value; }
+		}
+
+		/// <summary>
+		/// This property indicates whether or not async close is enabled.
+		/// When the connection is closed, it will either send a synchronous
+		/// DisposeOf command to the broker and wait for confirmation (if true),
+		/// or it will send the DisposeOf command asynchronously.
+		/// </summary>
+		public bool AsyncClose
+		{
+			get { return asyncClose; }
+			set { asyncClose = value; }
 		}
 
 		/// <summary>
@@ -280,10 +292,17 @@ namespace Apache.NMS.ActiveMQ
 		/// <summary>
 		/// Performs a synchronous request-response with the broker
 		/// </summary>
+		/// 
+
 		public Response SyncRequest(Command command)
 		{
+			return SyncRequest(command, transport.RequestTimeout);
+		}
+
+		public Response SyncRequest(Command command, TimeSpan requestTimeout)
+		{
 			CheckConnected();
-			Response response = transport.Request(command);
+			Response response = transport.Request(command, requestTimeout);
 			if(response is ExceptionResponse)
 			{
 				ExceptionResponse exceptionResponse = (ExceptionResponse) response;
@@ -303,10 +322,24 @@ namespace Apache.NMS.ActiveMQ
 		{
 			RemoveInfo command = new RemoveInfo();
 			command.ObjectId = objectId;
-			// Ensure that the object is disposed to avoid potential race-conditions
-			// of trying to re-create the same object in the broker faster than
-			// the broker can dispose of the object.
-			SyncRequest(command);
+			if(asyncClose)
+			{
+				OneWay(command);
+			}
+			else
+			{
+				// Ensure that the object is disposed to avoid potential race-conditions
+				// of trying to re-create the same object in the broker faster than
+				// the broker can dispose of the object.  Allow up to 5 seconds to process.
+				try
+				{
+					SyncRequest(command, TimeSpan.FromSeconds(5));
+				}
+				catch // (BrokerException)
+				{
+					// Ignore exceptions while shutting down.
+				}
+			}
 		}
 
 		/// <summary>

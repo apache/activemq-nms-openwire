@@ -24,84 +24,101 @@ using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	
-    /// <summary>
-    /// A Transport which gaurds access to the next transport using a mutex.
-    /// </summary>
-    public class ResponseCorrelator : TransportFilter
-    {
+	/// <summary>
+	/// A Transport that correlates asynchronous send/receive messages into single request/response.
+	/// </summary>
+	public class ResponseCorrelator : TransportFilter
+	{
 		private readonly IDictionary requestMap = Hashtable.Synchronized(new Hashtable());
 		private readonly Object mutex = new Object();
-        private short nextCommandId;
-        private int requestTimeout = -1;
+		private short nextCommandId;
 
-        public ResponseCorrelator(ITransport next, int requestTimeout) : base(next)
+		public ResponseCorrelator(ITransport next) : base(next)
 		{
-			this.requestTimeout = requestTimeout;
-        }
+		}
 
-        short GetNextCommandId()
+		protected override void OnException(ITransport sender, Exception command)
 		{
-            lock(mutex)
+			base.OnException(sender, command);
+
+			foreach(DictionaryEntry entry in requestMap)
 			{
-                return ++nextCommandId;
-            }
-        }
+				FutureResponse value = (FutureResponse) entry.Value;
+				ExceptionResponse response = new ExceptionResponse();
+				BrokerError error = new BrokerError();
 
-        public override void Oneway(Command command)
-        {
+				error.Message = command.Message;
+				response.Exception = error;
+				value.Response = response;
+			}
+
+			requestMap.Clear();
+		}
+
+		short GetNextCommandId()
+		{
+			lock(mutex)
+			{
+				return ++nextCommandId;
+			}
+		}
+
+		public override void Oneway(Command command)
+		{
 			int commandId = GetNextCommandId();
 
-            command.CommandId = commandId;
-            command.ResponseRequired = false;
-            next.Oneway(command);
-        }
-
-        public override FutureResponse AsyncRequest(Command command)
-        {
-			int commandId = GetNextCommandId();
-
-        	command.CommandId = commandId;
-            command.ResponseRequired = true;
-            FutureResponse future = new FutureResponse();
-            requestMap[commandId] = future;
+			command.CommandId = commandId;
+			command.ResponseRequired = false;
 			next.Oneway(command);
-            return future;
+		}
 
-        }
+		public override FutureResponse AsyncRequest(Command command)
+		{
+			int commandId = GetNextCommandId();
 
-        public override Response Request(Command command)
-        {
-            FutureResponse future = AsyncRequest(command);
-            future.Timeout = requestTimeout;
-            Response response = future.Response;
-            if (response != null && response is ExceptionResponse)
-            {
-                ExceptionResponse er = (ExceptionResponse) response;
-                BrokerError brokerError = er.Exception;
+			command.CommandId = commandId;
+			command.ResponseRequired = true;
+			FutureResponse future = new FutureResponse();
+			requestMap[commandId] = future;
+			next.Oneway(command);
+			return future;
+
+		}
+
+		public override Response Request(Command command, TimeSpan timeout)
+		{
+			FutureResponse future = AsyncRequest(command);
+			future.ResponseTimeout = timeout;
+			Response response = future.Response;
+
+			if(response != null && response is ExceptionResponse)
+			{
+				ExceptionResponse er = (ExceptionResponse) response;
+				BrokerError brokerError = er.Exception;
+
 				if (brokerError == null)
 				{
-	                throw new BrokerException();
+					throw new BrokerException();
 				}
 				else
 				{
-	                throw new BrokerException(brokerError);
+					throw new BrokerException(brokerError);
 				}
-            }
-            return response;
-        }
+			}
 
-        protected override void OnCommand(ITransport sender, Command command)
-        {
-            if(command is Response)
+			return response;
+		}
+
+		protected override void OnCommand(ITransport sender, Command command)
+		{
+			if(command is Response)
 			{
-                Response response = (Response) command;
+				Response response = (Response) command;
 				int correlationId = response.CorrelationId;
-
 				FutureResponse future = (FutureResponse) requestMap[correlationId];
-                
+				
 				if(future != null)
-                {
+				{
 					requestMap.Remove(correlationId);
 					future.Response = response;
 
@@ -117,17 +134,18 @@ namespace Apache.NMS.ActiveMQ.Transport
 				{
 					Tracer.Error("Unknown response ID: " + response.CommandId + " for response: " + response);
 				}
-            }
-            else if(command is ShutdownInfo)
-            {
-                // lets shutdown
-                this.commandHandler(sender, command);
-            }
+			}
+			else if(command is ShutdownInfo)
+			{
+				// lets shutdown
+				this.commandHandler(sender, command);
+			}
 			else
 			{
-                this.commandHandler(sender, command);
-            }
-        }
-    }
+				this.commandHandler(sender, command);
+			}
+		}
+	}
 }
+
 

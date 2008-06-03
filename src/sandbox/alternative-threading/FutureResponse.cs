@@ -28,7 +28,7 @@ namespace ActiveMQ.Transport
 	public class FutureResponse 
     {
 	    
-        private static int maxWait = -1;
+        private static TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
 
         private readonly CountDownLatch latch = new CountDownLatch(1);
         private Response response;

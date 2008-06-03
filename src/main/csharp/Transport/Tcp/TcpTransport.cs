@@ -39,6 +39,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private Thread readThread;
         private bool started;
         private Util.AtomicBoolean closed = new Util.AtomicBoolean(false);
+		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
         
         private CommandHandler commandHandler;
         private ExceptionHandler exceptionHandler;
@@ -137,13 +138,27 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         {
             throw new NotImplementedException("Use a ResponseCorrelator if you want to issue AsyncRequest calls");
         }
-        
-        public Response Request(Command command)
+
+		/// <summary>
+		/// Property RequestTimeout
+		/// </summary>
+		public TimeSpan RequestTimeout
+		{
+			get { return this.maxWait; }
+			set { this.maxWait = value; }
+		}
+
+		public Response Request(Command command)
         {
             throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
         }
 
-        public void Close()
+		public Response Request(Command command, TimeSpan timeout)
+		{
+			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
+		}
+		
+		public void Close()
         {
 			if(closed.CompareAndSet(false, true))
 			{

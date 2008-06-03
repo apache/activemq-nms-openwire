@@ -31,15 +31,24 @@ namespace Apache.NMS.ActiveMQ.Transport
         void Oneway(Command command);
         
         FutureResponse AsyncRequest(Command command);
-        
+
+		TimeSpan RequestTimeout
+		{
+			get;
+			set;
+		}
+
         Response Request(Command command);
+		Response Request(Command command, TimeSpan timeout);
         
-        CommandHandler Command {
+        CommandHandler Command
+		{
             get;
             set;
         }
 		
-        ExceptionHandler Exception {
+        ExceptionHandler Exception
+		{
             get;
             set;
         }

@@ -20,7 +20,6 @@ using System;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	
 	/// <summary>
 	/// Used to implement a filter on the transport layer.
 	/// </summary>
@@ -30,20 +29,22 @@ namespace Apache.NMS.ActiveMQ.Transport
 		protected CommandHandler commandHandler;
 		protected ExceptionHandler exceptionHandler;
 		
-		public TransportFilter(ITransport next) {
+		public TransportFilter(ITransport next)
+		{
 			this.next = next;
 			this.next.Command = new CommandHandler(OnCommand);
 			this.next.Exception = new ExceptionHandler(OnException);
 		}
 		
-		protected virtual void OnCommand(ITransport sender, Command command) {
+		protected virtual void OnCommand(ITransport sender, Command command)
+		{
 			this.commandHandler(sender, command);
 		}
 		
-		protected virtual void OnException(ITransport sender, Exception command) {
+		protected virtual void OnException(ITransport sender, Exception command)
+		{
 			this.exceptionHandler(sender, command);
 		}
-		
 		
 		/// <summary>
 		/// Method Oneway
@@ -63,7 +64,16 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			return this.next.AsyncRequest(command);
 		}
-		
+
+		/// <summary>
+		/// Property RequestTimeout
+		/// </summary>
+		public TimeSpan RequestTimeout
+		{
+			get { return this.next.RequestTimeout; }
+			set { this.next.RequestTimeout = value; }
+		}
+
 		/// <summary>
 		/// Method Request
 		/// </summary>
@@ -71,18 +81,35 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// <param name="command">A  Command</param>
 		public virtual Response Request(Command command)
 		{
-			return this.next.Request(command);
+			return Request(command, RequestTimeout);
 		}
-		
+
+		/// <summary>
+		/// Method Request with time out for Response.
+		/// </summary>
+		/// <returns>A Response</returns>
+		/// <param name="command">A  Command</param>
+		/// <param name="timeout">Timeout in milliseconds</param>
+		public virtual Response Request(Command command, TimeSpan timeout)
+		{
+			return this.next.Request(command, timeout);
+		}
+
 		/// <summary>
 		/// Method Start
 		/// </summary>
 		public virtual void Start()
 		{
-			if( commandHandler == null )
+			if(commandHandler == null)
+			{
 				throw new InvalidOperationException ("command cannot be null when Start is called.");
-			if( exceptionHandler == null )
+			}
+
+			if(exceptionHandler == null)
+			{
 				throw new InvalidOperationException ("exception cannot be null when Start is called.");
+			}
+
 			this.next.Start();
 		}
 
@@ -91,10 +118,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// </summary>
 		public bool IsStarted
 		{
-			get
-			{
-				return this.next.IsStarted;
-			}
+			get { return this.next.IsStarted; }
 		}
 
 		/// <summary>
@@ -105,12 +129,14 @@ namespace Apache.NMS.ActiveMQ.Transport
 			this.next.Dispose();
 		}
 		
-		public CommandHandler Command {
+		public CommandHandler Command
+		{
             get { return commandHandler; }
             set { this.commandHandler = value; }
         }
 		
-        public  ExceptionHandler Exception {
+        public  ExceptionHandler Exception
+		{
             get { return exceptionHandler; }
             set { this.exceptionHandler = value; }
         }

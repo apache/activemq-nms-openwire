@@ -20,22 +20,20 @@ using System;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	
     /// <summary>
-    /// A Transport which gaurds access to the next transport using a mutex.
+    /// A Transport which guards access to the next transport using a mutex.
     /// </summary>
     public class MutexTransport : TransportFilter
     {
-
         private readonly object transmissionLock = new object();
 
-        public MutexTransport(ITransport next) : base(next) {
+        public MutexTransport(ITransport next) : base(next)
+		{
         }
-
         
         public override void Oneway(Command command)
         {
-            lock (transmissionLock)
+            lock(transmissionLock)
             {
                 this.next.Oneway(command);
             }
@@ -43,28 +41,26 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         public override FutureResponse AsyncRequest(Command command)
         {
-            lock (transmissionLock)
+            lock(transmissionLock)
             {
                 return base.AsyncRequest(command);
             }
         }
 
-        public override Response Request(Command command)
-        {
-            lock (transmissionLock)
-            {
-                return base.Request(command);
-            }
-        }
+		public override Response Request(Command command, TimeSpan timeout)
+		{
+			lock(transmissionLock)
+			{
+				return base.Request(command, timeout);
+			}
+		}
 
-        public override void Dispose()
+		public override void Dispose()
         {
-            lock (transmissionLock)
+            lock(transmissionLock)
             {
                 base.Dispose();
             }
         }
-
     }
 }
-

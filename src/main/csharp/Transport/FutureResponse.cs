@@ -22,15 +22,13 @@ using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-
 	/// <summary>
 	/// Handles asynchronous responses
 	/// </summary>
 	public class FutureResponse
 	{
-
-		private static int maxWait = -1;
-		public int Timeout
+		private static TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
+		public TimeSpan ResponseTimeout
 		{
 			get { return maxWait; }
 			set { maxWait = value; }

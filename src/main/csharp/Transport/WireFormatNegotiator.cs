@@ -31,7 +31,7 @@ namespace Apache.NMS.ActiveMQ.Transport
     public class WireFormatNegotiator : TransportFilter
     {
         private OpenWireFormat wireFormat;
-        private int negotiateTimeout=15000;
+        private TimeSpan negotiateTimeout = TimeSpan.FromSeconds(15);
     
         private AtomicBoolean firstStart=new AtomicBoolean(true);
         private CountDownLatch readyCountDownLatch = new CountDownLatch(1);
@@ -43,7 +43,8 @@ namespace Apache.NMS.ActiveMQ.Transport
             this.wireFormat = wireFormat;
         }
         
-        public override void Start() {
+        public override void Start()
+        {
             base.Start();
             if (firstStart.CompareAndSet(true, false))
             {
@@ -58,7 +59,8 @@ namespace Apache.NMS.ActiveMQ.Transport
             }
         }
         
-        public override void Dispose() {
+        public override void Dispose()
+        {
         	base.Dispose();
             readyCountDownLatch.countDown();
         }
@@ -66,7 +68,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         public override void Oneway(Command command)
         {
             if (!readyCountDownLatch.await(negotiateTimeout))
-                throw new IOException("Wire format negociation timeout: peer did not send his wire format.");
+                throw new IOException("Wire format negotiation timeout: peer did not send his wire format.");
             next.Oneway(command);
         }
 
