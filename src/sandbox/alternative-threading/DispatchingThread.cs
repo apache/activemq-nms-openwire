@@ -66,6 +66,7 @@ namespace ActiveMQ
 				{
 					m_bStopFlag = false;
 					m_thread = new Thread(new ThreadStart(MyThreadFunc));
+					m_thread.IsBackground = true;
 					//m_event.Set();
 					m_event.PulseAll();
 					Tracer.Info("Starting dispatcher thread for session");

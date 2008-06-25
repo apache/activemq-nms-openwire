@@ -25,67 +25,68 @@ using System.Threading;
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
 	
-    /// <summary>
-    /// An implementation of ITransport that uses sockets to communicate with the broker
-    /// </summary>
-    public class TcpTransport : ITransport
-    {
+	/// <summary>
+	/// An implementation of ITransport that uses sockets to communicate with the broker
+	/// </summary>
+	public class TcpTransport : ITransport
+	{
 		private readonly object initLock = new object();
 		private readonly Socket socket;
 		private IWireFormat wireformat;
-        private BinaryReader socketReader;
-        private BinaryWriter socketWriter;
+		private BinaryReader socketReader;
+		private BinaryWriter socketWriter;
 		private readonly object socketWriterLock = new object();
 		private Thread readThread;
-        private bool started;
-        private Util.AtomicBoolean closed = new Util.AtomicBoolean(false);
+		private bool started;
+		private Util.AtomicBoolean closed = new Util.AtomicBoolean(false);
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
-        
-        private CommandHandler commandHandler;
-        private ExceptionHandler exceptionHandler;
+		
+		private CommandHandler commandHandler;
+		private ExceptionHandler exceptionHandler;
 		private const int MAX_THREAD_WAIT = 30000;
 
-        
-        public TcpTransport(Socket socket, IWireFormat wireformat)
-        {
-            this.socket = socket;
+		
+		public TcpTransport(Socket socket, IWireFormat wireformat)
+		{
+			this.socket = socket;
 			this.wireformat = wireformat;
-        }
-        
-        /// <summary>
-        /// Method Start
-        /// </summary>
-        public void Start()
-        {
+		}
+		
+		/// <summary>
+		/// Method Start
+		/// </summary>
+		public void Start()
+		{
 			lock (initLock)
 			{
 				if (!started)
 				{
 					if (null == commandHandler)
 					{
-                		throw new InvalidOperationException(
-                				"command cannot be null when Start is called.");
+						throw new InvalidOperationException(
+								"command cannot be null when Start is called.");
 					}
 
 					if (null == exceptionHandler)
-            		{
-            			throw new InvalidOperationException(
-            					"exception cannot be null when Start is called.");
-            		}
+					{
+						throw new InvalidOperationException(
+								"exception cannot be null when Start is called.");
+					}
 
-            		started = true;
+					started = true;
 
 					// As reported in AMQ-988 it appears that NetworkStream is not thread safe
 					// so lets use an instance for each of the 2 streams
 					socketWriter = new OpenWireBinaryWriter(new NetworkStream(socket));
 					socketReader = new OpenWireBinaryReader(new NetworkStream(socket));
-	                
+					
 					// now lets create the background read thread
 					readThread = new Thread(new ThreadStart(ReadLoop));
+					readThread.IsBackground = true;
 					readThread.Start();
 				}
 			}
-        }
+		}
 
 		/// <summary>
 		/// Property IsStarted
@@ -100,9 +101,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				}
 			}
 		}
-        
-        public void Oneway(Command command)
-        {
+		
+		public void Oneway(Command command)
+		{
 			lock (socketWriterLock)
 			{
 				try
@@ -132,12 +133,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					}
 				}
 			}
-        }
-        
-        public FutureResponse AsyncRequest(Command command)
-        {
-            throw new NotImplementedException("Use a ResponseCorrelator if you want to issue AsyncRequest calls");
-        }
+		}
+		
+		public FutureResponse AsyncRequest(Command command)
+		{
+			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue AsyncRequest calls");
+		}
 
 		/// <summary>
 		/// Property RequestTimeout
@@ -149,9 +150,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		}
 
 		public Response Request(Command command)
-        {
-            throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
-        }
+		{
+			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
+		}
 
 		public Response Request(Command command, TimeSpan timeout)
 		{
@@ -159,11 +160,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		}
 		
 		public void Close()
-        {
+		{
 			if(closed.CompareAndSet(false, true))
 			{
-                lock(initLock)
-                {
+				lock(initLock)
+				{
 					try
 					{
 						socket.Shutdown(SocketShutdown.Both);
@@ -178,7 +179,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 						{
 							if(null != socketWriter)
 							{
-            					socketWriter.Close();
+								socketWriter.Close();
 							}
 						}
 					}
@@ -233,40 +234,40 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					started = false;
 				}
 			}
-        }
+		}
 
-        public void Dispose()
-        {
-            Close();
-        }
-        
-        public void ReadLoop()
-        {
-            // This is the thread function for the reader thread. This runs continuously
-            // performing a blokcing read on the socket and dispatching all commands
-            // received.
-            //
-            // Exception Handling
-            // ------------------
-            // If an Exception occurs during the reading/marshalling, then the connection
-            // is effectively broken because position cannot be re-established to the next
-            // message.  This is reported to the app via the exceptionHandler and the socket
-            // is closed to prevent further communication attempts.
-            //
-            // An exception in the command handler may not be fatal to the transport, so
-            // these are simply reported to the exceptionHandler.
-            //
-            while(!closed.Value)
-            {
-                Command command = null;
+		public void Dispose()
+		{
+			Close();
+		}
+		
+		public void ReadLoop()
+		{
+			// This is the thread function for the reader thread. This runs continuously
+			// performing a blokcing read on the socket and dispatching all commands
+			// received.
+			//
+			// Exception Handling
+			// ------------------
+			// If an Exception occurs during the reading/marshalling, then the connection
+			// is effectively broken because position cannot be re-established to the next
+			// message.  This is reported to the app via the exceptionHandler and the socket
+			// is closed to prevent further communication attempts.
+			//
+			// An exception in the command handler may not be fatal to the transport, so
+			// these are simply reported to the exceptionHandler.
+			//
+			while(!closed.Value)
+			{
+				Command command = null;
 
 				try
-                {
-                    command = (Command) Wireformat.Unmarshal(socketReader);
-                }
-                catch(Exception ex)
-                {
-                    command = null;
+				{
+					command = (Command) Wireformat.Unmarshal(socketReader);
+				}
+				catch(Exception ex)
+				{
+					command = null;
 					if(!closed.Value)
 					{
 						// Close the socket as there's little that can be done with this transport now.
@@ -274,43 +275,43 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 						this.exceptionHandler(this, ex);
 					}
 
-                	break;
-                }
+					break;
+				}
 
-                try
-                {
+				try
+				{
 					if(command != null)
 					{
 						this.commandHandler(this, command);
 					}
-                }
-                catch(Exception e)
-                {
-                    this.exceptionHandler(this, e);
-                }
-            }
-        }
-                
-        // Implementation methods
-                
-        public CommandHandler Command
+				}
+				catch(Exception e)
+				{
+					this.exceptionHandler(this, e);
+				}
+			}
+		}
+				
+		// Implementation methods
+				
+		public CommandHandler Command
 		{
-            get { return commandHandler; }
-            set { this.commandHandler = value; }
-        }
+			get { return commandHandler; }
+			set { this.commandHandler = value; }
+		}
 
-        public  ExceptionHandler Exception
+		public  ExceptionHandler Exception
 		{
-            get { return exceptionHandler; }
-            set { this.exceptionHandler = value; }
-        }
+			get { return exceptionHandler; }
+			set { this.exceptionHandler = value; }
+		}
 
-        public IWireFormat Wireformat
-        {
-            get { return wireformat; }
-            set { wireformat = value; }
-        }
-    }
+		public IWireFormat Wireformat
+		{
+			get { return wireformat; }
+			set { wireformat = value; }
+		}
+	}
 }
 
 

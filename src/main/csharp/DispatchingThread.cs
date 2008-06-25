@@ -63,6 +63,7 @@ namespace Apache.NMS.ActiveMQ
 				{
 					m_bStopFlag = false;
 					m_thread = new Thread(new ThreadStart(MyThreadFunc));
+					m_thread.IsBackground = true;
 					m_event.Set();
 					Tracer.Info("Starting dispatcher thread for session");
 					m_thread.Start();
