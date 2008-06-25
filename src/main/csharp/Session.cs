@@ -188,8 +188,8 @@ namespace Apache.NMS.ActiveMQ
 
 				try
 				{
-					connection.RemoveSession(this);
 					StopAsyncDelivery();
+					connection.RemoveSession(this);
 					foreach(MessageConsumer consumer in GetConsumers())
 					{
 						consumer.Close();

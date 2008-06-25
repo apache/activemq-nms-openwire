@@ -160,6 +160,11 @@ namespace Apache.NMS.ActiveMQ
 			System.Collections.Specialized.StringDictionary map = URISupport.ParseQuery(this.brokerUri.Query);
 			URISupport.SetProperties(session, map, "session.");
 
+			if(IsStarted)
+			{
+				session.StartAsyncDelivery(null);
+			}
+
 			sessions.Add(session);
 			return session;
 		}
