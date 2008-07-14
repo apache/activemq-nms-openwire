@@ -1,8 +1,8 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.50727</ProductVersion>
+    <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{B166EC33-6048-4231-BCCA-6C5AE55139A3}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -17,6 +17,12 @@
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FormFactorID>
     </FormFactorID>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <NativePlatformName>Pocket PC 2003</NativePlatformName>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -713,17 +719,11 @@
     <Compile Include="src\main\csharp\Transport\WireFormatNegotiator.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\main\csharp\Util\AtomicBoolean.cs" />
-    <Compile Include="src\main\csharp\Util\CountDownLatch.cs" />
-    <Compile Include="src\main\csharp\Util\DateUtils.cs" />
-    <Compile Include="src\main\csharp\Util\URISupport.cs">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="vs2005-nms-cf20.csproj">
+    <ProjectReference Include="vendor\Apache.NMS\vs2008-nms-cf20.csproj">
       <Project>{9C67B162-803E-4765-8A1C-041871E6928C}</Project>
-      <Name>vs2005-nms-cf20</Name>
+      <Name>vs2008-nms-cf20</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Condition="'$(TargetFrameworkVersion)' == 'v1.0'" Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.v1.targets" />
@@ -742,4 +742,5 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Import Condition="'$(TargetFrameworkVersion)' == 'v3.5'" Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
 </Project>

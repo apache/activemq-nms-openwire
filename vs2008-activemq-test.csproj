@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -11,6 +11,11 @@
     <WarningLevel>4</WarningLevel>
     <StartupObject>
     </StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -67,15 +72,15 @@
     <Compile Include="src\test\csharp\TransactionTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="vendor\Apache.NMS\vs2005-nms-test.csproj">
+    <ProjectReference Include="vendor\Apache.NMS\vs2008-nms-test.csproj">
       <Project>{2F3ABCF5-EE87-43B1-9DE7-0548FD6A4E52}</Project>
       <Name>vs2005-nms-test</Name>
     </ProjectReference>
-    <ProjectReference Include="vendor\Apache.NMS\vs2005-nms.csproj">
+    <ProjectReference Include="vendor\Apache.NMS\vs2008-nms.csproj">
       <Project>{300C1716-0674-4D01-8F5D-151E59A504FE}</Project>
       <Name>vs2005-nms</Name>
     </ProjectReference>
-    <ProjectReference Include="vs2005-activemq.csproj">
+    <ProjectReference Include="vs2008-activemq.csproj">
       <Project>{08321F42-4B3D-4815-B592-95962BAC3B9F}</Project>
       <Name>vs2005-activemq</Name>
     </ProjectReference>

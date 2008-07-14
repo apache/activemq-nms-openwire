@@ -133,7 +133,7 @@ namespace Apache.NMS.ActiveMQ
 
             while (!bClosed && rc == null)
             {
-                if( !messageReceivedEventHandle.WaitOne(timeout, false))
+                if( !messageReceivedEventHandle.WaitOne((int) timeout.TotalMilliseconds, false))
                 {
                     break;
                 }
