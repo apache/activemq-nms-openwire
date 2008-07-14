@@ -43,11 +43,12 @@
     </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugSymbols>false</DebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>build\net-2.0\release\</OutputPath>
     <DefineConstants>TRACE;NET,NET_2_0</DefineConstants>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
