@@ -16,6 +16,8 @@
     <OldToolsVersion>2.0</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>activemq-dotnet.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -85,6 +87,9 @@
       <Project>{08321F42-4B3D-4815-B592-95962BAC3B9F}</Project>
       <Name>vs2005-activemq</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="activemq-dotnet.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
