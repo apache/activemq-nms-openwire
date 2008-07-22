@@ -161,14 +161,14 @@ namespace Apache.NMS.ActiveMQ
 				activeMessage.TransactionId = session.TransactionContext.TransactionId;
 			}
 
-			if (specifiedTimeToLive)
-			{
-				activeMessage.NMSTimeToLive = timeToLive;
-			}
-
 			if (!disableMessageTimestamp)
 			{
 				activeMessage.NMSTimestamp = DateTime.UtcNow;
+			}
+
+			if(specifiedTimeToLive)
+			{
+				activeMessage.NMSTimeToLive = timeToLive;
 			}
 
 			session.DoSend(activeMessage);

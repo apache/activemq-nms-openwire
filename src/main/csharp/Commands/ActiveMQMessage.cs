@@ -36,8 +36,6 @@ namespace Apache.NMS.ActiveMQ.Commands
         
         public event AcknowledgeHandler Acknowledger;
 
-		protected DateTime expirationBaseTime;
-        
         public static ActiveMQMessage Transform(IMessage message)
         {
             return (ActiveMQMessage) message;
@@ -54,7 +52,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         
         public void Acknowledge()
         {
-            if (Acknowledger == null)
+            if(null == Acknowledger)
 			{
                 throw new NMSException("No Acknowledger has been associated with this message: " + this);
 			}
@@ -62,18 +60,19 @@ namespace Apache.NMS.ActiveMQ.Commands
 			{
                 Acknowledger(this);
             }
-        }
-        
-        
-        // Properties
-        
-        public IPrimitiveMap Properties
+		}
+
+		#region Properties
+
+		public IPrimitiveMap Properties
         {
-            get {
-                if (properties == null)
+            get
+			{
+                if(null == properties)
                 {
                     properties = PrimitiveMap.Unmarshal(MarshalledProperties);
                 }
+
                 return properties;
             }
         }
@@ -89,12 +88,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public string NMSCorrelationID
         {
-            get {
-                return CorrelationId;
-            }
-            set {
-                CorrelationId = value;
-            }
+            get { return CorrelationId; }
+            set { CorrelationId = value; }
         }
         
         /// <summary>
@@ -102,41 +97,41 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public IDestination NMSDestination
         {
-            get {
-                return Destination;
-            }
+            get { return Destination; }
         }
-        
-        /// <summary>
+
+		private long expirationBaseTime = 0;
+		/// <summary>
         /// The time in milliseconds that this message should expire in
         /// </summary>
 		public TimeSpan NMSTimeToLive
 		{
-			get {
-				if(0 != Expiration)
+			get
+			{
+				return TimeSpan.FromMilliseconds(Expiration - expirationBaseTime);
+			}
+
+			set
+			{
+				if(0 != value.TotalMilliseconds)
 				{
-					DateTime expirationTime = DateUtils.ToDateTime(Expiration);
-					return expirationTime - expirationBaseTime;
+					expirationBaseTime = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
+					Expiration = expirationBaseTime + (long) Math.Abs(value.TotalMilliseconds);
 				}
 				else
 				{
-					return TimeSpan.FromMilliseconds(0);
+					expirationBaseTime = 0;
+					Expiration = 0;
 				}
-			}
-			set {
-				expirationBaseTime = DateTime.UtcNow;
-				Expiration = DateUtils.ToJavaTime(expirationBaseTime + value);
 			}
 		}
 
-        /// <summary>
+		/// <summary>
         /// The message ID which is set by the provider
         /// </summary>
         public string NMSMessageId
         {
-            get {
-                return BaseDataStreamMarshaller.ToString(MessageId);
-            }
+            get { return BaseDataStreamMarshaller.ToString(MessageId); }
         }
         
         /// <summary>
@@ -144,12 +139,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public bool NMSPersistent
         {
-            get {
-                return Persistent;
-            }
-            set {
-                Persistent = value;
-            }
+            get { return Persistent; }
+            set { Persistent = value; }
         }
         
         /// <summary>
@@ -157,12 +148,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public byte NMSPriority
         {
-            get {
-                return Priority;
-            }
-            set {
-                Priority = value;
-            }
+            get { return Priority; }
+            set { Priority = value; }
         }
         
         /// <summary>
@@ -170,37 +157,25 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public bool NMSRedelivered
         {
-            get {
-                return RedeliveryCounter > 0;
-            }
+            get { return (RedeliveryCounter > 0); }
         }
-        
         
         /// <summary>
         /// The destination that the consumer of this message should send replies to
         /// </summary>
         public IDestination NMSReplyTo
         {
-            get {
-                return ReplyTo;
-            }
-            set {
-                ReplyTo = ActiveMQDestination.Transform(value);
-            }
+            get { return ReplyTo; }
+            set { ReplyTo = ActiveMQDestination.Transform(value); }
         }
-        
         
         /// <summary>
         /// The timestamp the broker added to the message
         /// </summary>
         public DateTime NMSTimestamp
         {
-            get {
-                return DateUtils.ToDateTime(Timestamp);
-            }
-            set {
-                Timestamp = DateUtils.ToJavaTime(value);
-            }
+            get { return DateUtils.ToDateTime(Timestamp); }
+            set { Timestamp = DateUtils.ToJavaTimeUtc(value); }
         }
         
         /// <summary>
@@ -208,51 +183,37 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public string NMSType
         {
-            get {
-                return Type;
-            }
-            set {
-                Type = value;
-            }
-        }
-        
-        
-        // NMS Extension headers
-        
-        /// <summary>
+            get { return Type; }
+            set { Type = value; }
+		}
+
+		#endregion
+
+		#region NMS Extension headers
+
+		/// <summary>
         /// Returns the number of times this message has been redelivered to other consumers without being acknowledged successfully.
         /// </summary>
         public int NMSXDeliveryCount
         {
-            get {
-                return RedeliveryCounter + 1;
-            }
+            get { return RedeliveryCounter + 1; }
         }
-        
         
         /// <summary>
         /// The Message Group ID used to group messages together to the same consumer for the same group ID value
         /// </summary>
         public string NMSXGroupID
         {
-            get {
-                return GroupID;
-            }
-            set {
-                GroupID = value;
-            }
+            get { return GroupID; }
+            set { GroupID = value; }
         }
         /// <summary>
         /// The Message Group Sequence counter to indicate the position in a group
         /// </summary>
         public int NMSXGroupSeq
         {
-            get {
-                return GroupSequence;
-            }
-            set {
-                GroupSequence = value;
-            }
+            get { return GroupSequence; }
+            set { GroupSequence = value; }
         }
         
         /// <summary>
@@ -260,21 +221,26 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         public string NMSXProducerTXID
         {
-            get {
+            get
+			{
                 TransactionId txnId = OriginalTransactionId;
-                if (txnId == null)
+                if(null == txnId)
                 {
                     txnId = TransactionId;
                 }
-                if (txnId != null)
+
+                if(null != txnId)
                 {
                     return BaseDataStreamMarshaller.ToString(txnId);
                 }
+
                 return null;
             }
-        }
-        
-        public object GetObjectProperty(string name)
+		}
+
+		#endregion
+
+		public object GetObjectProperty(string name)
         {
             return propertyHelper.GetObjectProperty(this, name);
         }
@@ -298,8 +264,6 @@ namespace Apache.NMS.ActiveMQ.Commands
                 MarshalledProperties = properties.Marshal();
             }
         }
-        
-        
     }
 }
 
