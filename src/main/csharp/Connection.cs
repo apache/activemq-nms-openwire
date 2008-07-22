@@ -146,14 +146,22 @@ namespace Apache.NMS.ActiveMQ
 		{
 			return CreateSession(acknowledgementMode);
 		}
-		
+
 		/// <summary>
 		/// Creates a new session to work on this connection
 		/// </summary>
 		public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode)
 		{
+			return CreateSession(sessionAcknowledgementMode, transport.RequestTimeout);
+		}
+
+		/// <summary>
+		/// Creates a new session to work on this connection
+		/// </summary>
+		public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode, TimeSpan requestTimeout)
+		{
 			SessionInfo info = CreateSessionInfo(sessionAcknowledgementMode);
-			SyncRequest(info);
+			SyncRequest(info, requestTimeout);
 			Session session = new Session(this, info, sessionAcknowledgementMode);
 
 			// Set properties on session using parameters prefixed with "session."

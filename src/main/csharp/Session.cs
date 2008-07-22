@@ -214,10 +214,15 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageProducer CreateProducer()
 		{
-			return CreateProducer(null);
+			return CreateProducer(null, Connection.ITransport.RequestTimeout);
 		}
 
 		public IMessageProducer CreateProducer(IDestination destination)
+		{
+			return CreateProducer(destination, Connection.ITransport.RequestTimeout);
+		}
+
+		public IMessageProducer CreateProducer(IDestination destination, TimeSpan requestTimeout)
 		{
 			ProducerInfo command = CreateProducerInfo(destination);
 			ProducerId producerId = command.ProducerId;
@@ -226,7 +231,7 @@ namespace Apache.NMS.ActiveMQ
 			try
 			{
 				producer = new MessageProducer(this, command);
-				connection.SyncRequest(command);
+				connection.SyncRequest(command, requestTimeout);
 				producers[producerId] = producer;
 			}
 			catch(Exception)
@@ -244,15 +249,30 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageConsumer CreateConsumer(IDestination destination)
 		{
-			return CreateConsumer(destination, null);
+			return CreateConsumer(destination, null, false, Connection.ITransport.RequestTimeout);
+		}
+
+		public IMessageConsumer CreateConsumer(IDestination destination, TimeSpan requestTimeout)
+		{
+			return CreateConsumer(destination, null, false, requestTimeout);
 		}
 
 		public IMessageConsumer CreateConsumer(IDestination destination, string selector)
 		{
-			return CreateConsumer(destination, selector, false);
+			return CreateConsumer(destination, selector, false, Connection.ITransport.RequestTimeout);
+		}
+
+		public IMessageConsumer CreateConsumer(IDestination destination, string selector, TimeSpan requestTimeout)
+		{
+			return CreateConsumer(destination, selector, false, requestTimeout);
 		}
 
 		public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal)
+		{
+			return CreateConsumer(destination, selector, noLocal, Connection.ITransport.RequestTimeout);
+		}
+
+		public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal, TimeSpan requestTimeout)
 		{
 			ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			command.NoLocal = noLocal;
@@ -266,7 +286,7 @@ namespace Apache.NMS.ActiveMQ
 				consumer = new MessageConsumer(this, command, acknowledgementMode);
 				// lets register the consumer first in case we start dispatching messages immediately
 				consumers[consumerId] = consumer;
-				connection.SyncRequest(command);
+				connection.SyncRequest(command, requestTimeout);
 				return consumer;
 			}
 			catch(Exception)
@@ -280,11 +300,12 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		public IMessageConsumer CreateDurableConsumer(
-				ITopic destination,
-				string name,
-				string selector,
-				bool noLocal)
+		public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal)
+		{
+			return CreateDurableConsumer(destination, name, selector, noLocal, Connection.ITransport.RequestTimeout);
+		}
+
+		public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal, TimeSpan requestTimeout)
 		{
 			ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			ConsumerId consumerId = command.ConsumerId;
@@ -297,7 +318,7 @@ namespace Apache.NMS.ActiveMQ
 				consumer = new MessageConsumer(this, command, acknowledgementMode);
 				// lets register the consumer first in case we start dispatching messages immediately
 				consumers[consumerId] = consumer;
-				connection.SyncRequest(command);
+				connection.SyncRequest(command, requestTimeout);
 			}
 			catch(Exception)
 			{
