@@ -624,7 +624,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			if(startedAsyncDelivery)
 			{
-				dispatchingThread.Stop();
+				dispatchingThread.Stop(5000);
 				startedAsyncDelivery = false;
 			}
 		}

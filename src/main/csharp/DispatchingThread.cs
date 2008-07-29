@@ -93,7 +93,11 @@ namespace Apache.NMS.ActiveMQ
 			}
 			if(localThread!=null)
 			{
-				localThread.Join(timeoutMilliseconds);
+				if(!localThread.Join(timeoutMilliseconds))
+				{
+					Tracer.Info("!! Timeout waiting for Dispatcher localThread to stop");
+					localThread.Abort();
+				}
 			}
 			Tracer.Info("Dispatcher thread joined");
 		}
