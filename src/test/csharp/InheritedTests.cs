@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,20 +19,42 @@ using NUnit.Framework;
 namespace Apache.NMS.ActiveMQ.Test
 {
 	[TestFixture]
-	public class ConnectionTest_OpenWire : Apache.NMS.Test.ConnectionTest
+	public class BadConsumeTest : Apache.NMS.Test.BadConsumeTest
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateOpenWireConnectionFactory();
-		}
 	}
 
 	[TestFixture]
-	public class ConnectionTest_Stomp : Apache.NMS.Test.ConnectionTest
+	public class BytesMessageTest : Apache.NMS.Test.BytesMessageTest
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateStompConnectionFactory();
-		}
+	}
+
+	[TestFixture]
+	public class ConnectionTest : Apache.NMS.Test.ConnectionTest
+	{
+	}
+
+	[TestFixture]
+	public class ConsumerTest : Apache.NMS.Test.ConsumerTest
+	{
+	}
+
+	[TestFixture]
+	public class DurableTest : Apache.NMS.Test.DurableTest
+	{
+	}
+
+	[TestFixture]
+	public class TemporaryQueueTest : Apache.NMS.Test.TemporaryQueueTest
+	{
+	}
+
+	[TestFixture]
+	public class TextMessage : Apache.NMS.Test.TextMessage
+	{
+	}
+
+	[TestFixture]
+	public class TransactionTest : Apache.NMS.Test.TransactionTest
+	{
 	}
 }

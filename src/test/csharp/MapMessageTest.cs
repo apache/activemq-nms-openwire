@@ -21,20 +21,11 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class MapMessageTest_OpenWire : Apache.NMS.Test.MapMessageTest
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateOpenWireConnectionFactory();
-		}
 	}
 
 	[TestFixture]
 	public class MapMessageTest_Stomp : Apache.NMS.Test.MapMessageTest
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateStompConnectionFactory();
-		}
-
 		public override void SendAndSyncReceive()
 		{
 			// TODO disable test
@@ -42,9 +33,8 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		protected override void AssertValidMessage(IMessage message)
 		{
-			System.Console.WriteLine("Received MapMessage: " + message);
-
 			Assert.IsTrue(message is IMapMessage, "Did not receive a MapMessage!");
+			System.Console.WriteLine("Received MapMessage: " + message);
 		}
 	}
 }

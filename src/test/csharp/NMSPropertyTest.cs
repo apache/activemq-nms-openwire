@@ -22,20 +22,11 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class NMSPropertyTest_OpenWire : Apache.NMS.Test.NMSPropertyTest
     {
-        protected override IConnectionFactory CreateConnectionFactory()
-        {
-			return TestUtils.CreateOpenWireConnectionFactory();
-		}
     }
 
 	[TestFixture]
 	public class NMSPropertyTest_Stomp : Apache.NMS.Test.NMSPropertyTest
 	{
-		protected override IConnectionFactory CreateConnectionFactory()
-		{
-			return TestUtils.CreateStompConnectionFactory();
-		}
-
 		protected override void AssertNonStringProperties(IMessage message)
 		{
 			// lets disable typesafe property testing as right now Stomp does not support them

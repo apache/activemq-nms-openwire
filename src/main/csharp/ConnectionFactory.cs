@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ
     /// </summary>
     public class ConnectionFactory : IConnectionFactory
     {
-		public const string DEFAULT_BROKER_URL = "tcp://localhost:61616";
+		public const string DEFAULT_BROKER_URL = "activemq:tcp://localhost:61616";
 		public const string ENV_BROKER_URL = "ACTIVEMQ_BROKER_URL";
 		
         private Uri brokerUri;

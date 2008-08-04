@@ -36,23 +36,17 @@
     <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework, Version=2.2.0.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(USERPROFILE)\.nant\repository\org.nunit\nunit\2.2.8\all\nunit.framework.dll</HintPath>
-    </Reference>
+    <Reference Include="nunit.framework, Version=2.4.7.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\test\csharp\BadConsumeTest.cs" />
-    <Compile Include="src\test\csharp\BytesMessageTest.cs" />
     <Compile Include="src\test\csharp\Commands\CommandTest.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
-    <Compile Include="src\test\csharp\ConnectionTest.cs" />
-    <Compile Include="src\test\csharp\ConsumerTest.cs" />
-    <Compile Include="src\test\csharp\DurableTest.cs" />
+    <Compile Include="src\test\csharp\InheritedTests.cs" />
     <Compile Include="src\test\csharp\MapMessageTest.cs" />
     <Compile Include="src\test\csharp\NMSConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\NMSPropertyTest.cs" />
@@ -66,13 +60,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\test\csharp\StompHelperTest.cs" />
-    <Compile Include="src\test\csharp\TemporaryQueueTest.cs" />
     <Compile Include="src\test\csharp\TestMain.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\test\csharp\TestUtils.cs" />
-    <Compile Include="src\test\csharp\TextMessage.cs" />
-    <Compile Include="src\test\csharp\TransactionTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="vendor\Apache.NMS\vs2008-nms-test.csproj">
@@ -90,6 +80,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="activemq-dotnet.snk" />
+    <Content Include="nmsprovider-test.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
