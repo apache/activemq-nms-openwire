@@ -47,9 +47,7 @@
     </Compile>
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
     <Compile Include="src\test\csharp\InheritedTests.cs" />
-    <Compile Include="src\test\csharp\MapMessageTest.cs" />
     <Compile Include="src\test\csharp\NMSConnectionFactoryTest.cs" />
-    <Compile Include="src\test\csharp\NMSPropertyTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\BooleanStreamTest.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -60,9 +58,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\test\csharp\StompHelperTest.cs" />
-    <Compile Include="src\test\csharp\TestMain.cs">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="vendor\Apache.NMS\vs2008-nms-test.csproj">

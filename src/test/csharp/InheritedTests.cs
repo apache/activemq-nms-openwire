@@ -44,6 +44,21 @@ namespace Apache.NMS.ActiveMQ.Test
 	}
 
 	[TestFixture]
+	public class MapMessageTest : Apache.NMS.Test.MapMessageTest
+	{
+	}
+
+	[TestFixture]
+	public class MessageTest : Apache.NMS.Test.MessageTest
+	{
+	}
+
+	[TestFixture]
+	public class NMSPropertyTest : Apache.NMS.Test.NMSPropertyTest
+	{
+	}
+
+	[TestFixture]
 	public class TemporaryQueueTest : Apache.NMS.Test.TemporaryQueueTest
 	{
 	}

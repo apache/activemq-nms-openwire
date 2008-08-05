@@ -26,35 +26,26 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class Session : ISession
 	{
-		private readonly AcknowledgementMode acknowledgementMode;
-		private bool asyncSend;
-		private Connection connection;
 		private long consumerCounter;
 		private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
 		private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
-		private bool dispatchAsync;
 		private readonly DispatchingThread dispatchingThread;
-		private bool exclusive;
 		private readonly SessionInfo info;
-		private int maximumPendingMessageLimit;
-		private int prefetchSize = 1000;
-		private byte priority;
 		private long producerCounter;
-		private bool retroactive;
-		private readonly TransactionContext transactionContext;
 		internal bool startedAsyncDelivery = false;
 		private bool disposed = false;
         private bool closed = false;
 
 		public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
 		{
-			this.connection = connection;
+			this.Connection = connection;
 			this.info = info;
-			this.acknowledgementMode = acknowledgementMode;
-			this.asyncSend = connection.AsyncSend;
-			transactionContext = new TransactionContext(this);
-			dispatchingThread = new DispatchingThread(new DispatchingThread.DispatchFunction(DispatchAsyncMessages));
-			dispatchingThread.ExceptionListener += new DispatchingThread.ExceptionHandler(dispatchingThread_ExceptionListener);
+			this.AcknowledgementMode = acknowledgementMode;
+			this.AsyncSend = connection.AsyncSend;
+			this.PrefetchSize = 1000;
+			this.TransactionContext = new TransactionContext(this);
+			this.dispatchingThread = new DispatchingThread(new DispatchingThread.DispatchFunction(DispatchAsyncMessages));
+			this.dispatchingThread.ExceptionListener += new DispatchingThread.ExceptionHandler(dispatchingThread_ExceptionListener);
 		}
 
 		~Session()
@@ -66,11 +57,7 @@ namespace Apache.NMS.ActiveMQ
 		/// Sets the prefetch size, the maximum number of messages a broker will dispatch to consumers
 		/// until acknowledgements are received.
 		/// </summary>
-		public int PrefetchSize
-		{
-			get { return prefetchSize; }
-			set { this.prefetchSize = value; }
-		}
+		public int PrefetchSize { get; set; }
 
 		/// <summary>
 		/// Sets the maximum number of messages to keep around per consumer
@@ -78,72 +65,41 @@ namespace Apache.NMS.ActiveMQ
 		/// will start to be evicted for slow consumers.
 		/// Must be > 0 to enable this feature
 		/// </summary>
-		public int MaximumPendingMessageLimit
-		{
-			get { return maximumPendingMessageLimit; }
-			set { this.maximumPendingMessageLimit = value; }
-		}
+		public int MaximumPendingMessageLimit { get; set; }
 
 		/// <summary>
 		/// Enables or disables whether asynchronous dispatch should be used by the broker
 		/// </summary>
-		public bool DispatchAsync
-		{
-			get { return dispatchAsync; }
-			set { this.dispatchAsync = value; }
-		}
+		public bool DispatchAsync { get; set; }
 
 		/// <summary>
 		/// Enables or disables exclusive consumers when using queues. An exclusive consumer means
 		/// only one instance of a consumer is allowed to process messages on a queue to preserve order
 		/// </summary>
-		public bool Exclusive
-		{
-			get { return exclusive; }
-			set { this.exclusive = value; }
-		}
+		public bool Exclusive { get; set; }
 
 		/// <summary>
 		/// Enables or disables retroactive mode for consumers; i.e. do they go back in time or not?
 		/// </summary>
-		public bool Retroactive
-		{
-			get { return retroactive; }
-			set { this.retroactive = value; }
-		}
+		public bool Retroactive { get; set; }
 
 		/// <summary>
 		/// Sets the default consumer priority for consumers
 		/// </summary>
-		public byte Priority
-		{
-			get { return priority; }
-			set { this.priority = value; }
-		}
+		public byte Priority { get; set; }
 
 		/// <summary>
 		/// This property indicates whether or not async send is enabled.
 		/// </summary>
-		public bool AsyncSend
-		{
-			get { return asyncSend; }
-			set { asyncSend = value; }
-		}
-
-		public Connection Connection
-		{
-			get { return connection; }
-		}
+		public bool AsyncSend { get; set; }
+		public Connection Connection { get; private set; }
 
 		public SessionId SessionId
 		{
 			get { return info.SessionId; }
 		}
 
-		public TransactionContext TransactionContext
-		{
-			get { return transactionContext; }
-		}
+		public TransactionContext TransactionContext { get; private set; }
 
 		#region ISession Members
 
@@ -189,7 +145,7 @@ namespace Apache.NMS.ActiveMQ
 				try
 				{
 					StopAsyncDelivery();
-					connection.RemoveSession(this);
+					Connection.RemoveSession(this);
 					foreach(MessageConsumer consumer in GetConsumers())
 					{
 						consumer.Close();
@@ -207,7 +163,7 @@ namespace Apache.NMS.ActiveMQ
 					Tracer.ErrorFormat("Error during session close: {0}", ex);
 				}
 
-				connection = null;
+				Connection = null;
 				closed = true;
 			}
 		}
@@ -231,7 +187,7 @@ namespace Apache.NMS.ActiveMQ
 			try
 			{
 				producer = new MessageProducer(this, command);
-				connection.SyncRequest(command, requestTimeout);
+				Connection.SyncRequest(command, requestTimeout);
 				producers[producerId] = producer;
 			}
 			catch(Exception)
@@ -276,17 +232,17 @@ namespace Apache.NMS.ActiveMQ
 		{
 			ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			command.NoLocal = noLocal;
-			command.AcknowledgementMode = acknowledgementMode;
+			command.AcknowledgementMode = this.AcknowledgementMode;
 
 			ConsumerId consumerId = command.ConsumerId;
 			MessageConsumer consumer = null;
 
 			try
 			{
-				consumer = new MessageConsumer(this, command, acknowledgementMode);
+				consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
 				// lets register the consumer first in case we start dispatching messages immediately
 				consumers[consumerId] = consumer;
-				connection.SyncRequest(command, requestTimeout);
+				Connection.SyncRequest(command, requestTimeout);
 				return consumer;
 			}
 			catch(Exception)
@@ -315,10 +271,10 @@ namespace Apache.NMS.ActiveMQ
 
 			try
 			{
-				consumer = new MessageConsumer(this, command, acknowledgementMode);
+				consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
 				// lets register the consumer first in case we start dispatching messages immediately
 				consumers[consumerId] = consumer;
-				connection.SyncRequest(command, requestTimeout);
+				Connection.SyncRequest(command, requestTimeout);
 			}
 			catch(Exception)
 			{
@@ -333,6 +289,13 @@ namespace Apache.NMS.ActiveMQ
 			return consumer;
 		}
 
+		public void DeleteDurableConsumer(string name)
+		{
+			ConsumerInfo command = CreateConsumerInfo(null, String.Empty);
+			command.SubscriptionName = name;
+			Connection.SyncRequest(command, Connection.ITransport.RequestTimeout);
+		}
+
 		public IQueue GetQueue(string name)
 		{
 			return new ActiveMQQueue(name);
@@ -345,14 +308,14 @@ namespace Apache.NMS.ActiveMQ
 
 		public ITemporaryQueue CreateTemporaryQueue()
 		{
-			ActiveMQTempQueue answer = new ActiveMQTempQueue(connection.CreateTemporaryDestinationName());
+			ActiveMQTempQueue answer = new ActiveMQTempQueue(Connection.CreateTemporaryDestinationName());
 			CreateTemporaryDestination(answer);
 			return answer;
 		}
 
 		public ITemporaryTopic CreateTemporaryTopic()
 		{
-			ActiveMQTempTopic answer = new ActiveMQTempTopic(connection.CreateTemporaryDestinationName());
+			ActiveMQTempTopic answer = new ActiveMQTempTopic(Connection.CreateTemporaryDestinationName());
 			CreateTemporaryDestination(answer);
 			return answer;
 		}
@@ -410,9 +373,9 @@ namespace Apache.NMS.ActiveMQ
 			{
 				throw new InvalidOperationException(
 						"You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
-						+ acknowledgementMode);
+						+ this.AcknowledgementMode);
 			}
-			transactionContext.Commit();
+			this.TransactionContext.Commit();
 		}
 
 		public void Rollback()
@@ -421,9 +384,9 @@ namespace Apache.NMS.ActiveMQ
 			{
 				throw new InvalidOperationException(
 						"You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
-						+ acknowledgementMode);
+						+ this.AcknowledgementMode);
 			}
-			transactionContext.Rollback();
+			this.TransactionContext.Rollback();
 
 			// lets ensure all the consumers redeliver any rolled back messages
 			foreach(MessageConsumer consumer in GetConsumers())
@@ -435,52 +398,49 @@ namespace Apache.NMS.ActiveMQ
 
 		// Properties
 
-		public AcknowledgementMode AcknowledgementMode
-		{
-			get { return acknowledgementMode; }
-		}
+		public AcknowledgementMode AcknowledgementMode { get; private set; }
 
 		public bool Transacted
 		{
-			get { return acknowledgementMode == AcknowledgementMode.Transactional; }
+			get { return this.AcknowledgementMode == AcknowledgementMode.Transactional; }
 		}
 
 		#endregion
 
 		private void dispatchingThread_ExceptionListener(Exception exception)
 		{
-			connection.OnSessionException(this, exception);
+			Connection.OnSessionException(this, exception);
 		}
 
 		protected void CreateTemporaryDestination(ActiveMQDestination tempDestination)
 		{
 			DestinationInfo command = new DestinationInfo();
-			command.ConnectionId = connection.ConnectionId;
+			command.ConnectionId = Connection.ConnectionId;
 			command.OperationType = 0; // 0 is add
 			command.Destination = tempDestination;
 
-			connection.SyncRequest(command);
+			Connection.SyncRequest(command);
 		}
 
 		protected void DestroyTemporaryDestination(ActiveMQDestination tempDestination)
 		{
 			DestinationInfo command = new DestinationInfo();
-			command.ConnectionId = connection.ConnectionId;
+			command.ConnectionId = Connection.ConnectionId;
 			command.OperationType = 1; // 1 is remove
 			command.Destination = tempDestination;
 
-			connection.SyncRequest(command);
+			Connection.SyncRequest(command);
 		}
 
 		public void DoSend(ActiveMQMessage message)
 		{
 			if(AsyncSend)
 			{
-				connection.OneWay(message);
+				Connection.OneWay(message);
 			}
 			else
 			{
-				connection.SyncRequest(message);
+				Connection.SyncRequest(message);
 			}
 		}
 
@@ -491,19 +451,19 @@ namespace Apache.NMS.ActiveMQ
 		{
 			if(Transacted)
 			{
-				transactionContext.Begin();
+				this.TransactionContext.Begin();
 			}
 		}
 
 		public void DisposeOf(ConsumerId objectId)
 		{
-			connection.DisposeOf(objectId);
+			Connection.DisposeOf(objectId);
 			consumers.Remove(objectId);
 		}
 
 		public void DisposeOf(ProducerId objectId)
 		{
-			connection.DisposeOf(objectId);
+			Connection.DisposeOf(objectId);
 			producers.Remove(objectId);
 		}
 
@@ -572,11 +532,11 @@ namespace Apache.NMS.ActiveMQ
 			answer.ConsumerId = id;
 			answer.Destination = ActiveMQDestination.Transform(destination);
 			answer.Selector = selector;
-			answer.PrefetchSize = prefetchSize;
-			answer.Priority = priority;
-			answer.Exclusive = exclusive;
-			answer.DispatchAsync = dispatchAsync;
-			answer.Retroactive = retroactive;
+			answer.PrefetchSize = this.PrefetchSize;
+			answer.Priority = this.Priority;
+			answer.Exclusive = this.Exclusive;
+			answer.DispatchAsync = this.DispatchAsync;
+			answer.Retroactive = this.Retroactive;
 
 			// If the destination contained a URI query, then use it to set public properties
 			// on the ConsumerInfo
