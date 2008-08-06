@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS;
+
 using System;
+using System.Threading;
+using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -32,6 +33,8 @@ namespace Apache.NMS.ActiveMQ
 
 		private bool msgPersistent = NMSConstants.defaultPersistence;
 		private TimeSpan msgTimeToLive;
+		private TimeSpan requestTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
+		private bool specifiedRequestTimeout = false;
 		private readonly bool defaultSpecifiedTimeToLive = false;
 		private byte msgPriority = NMSConstants.defaultPriority;
 		private bool disableMessageID = false;
@@ -138,7 +141,7 @@ namespace Apache.NMS.ActiveMQ
 			CheckClosed();
 			ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
-			if (!disableMessageID)
+			if(!disableMessageID)
 			{
 				MessageId id = new MessageId();
 				id.ProducerId = info.ProducerId;
@@ -155,13 +158,13 @@ namespace Apache.NMS.ActiveMQ
 			activeMessage.NMSPersistent = persistent;
 			activeMessage.NMSPriority = priority;
 
-			if (session.Transacted)
+			if(session.Transacted)
 			{
 				session.DoStartTransaction();
 				activeMessage.TransactionId = session.TransactionContext.TransactionId;
 			}
 
-			if (!disableMessageTimestamp)
+			if(!disableMessageTimestamp)
 			{
 				activeMessage.NMSTimestamp = DateTime.UtcNow;
 			}
@@ -171,7 +174,18 @@ namespace Apache.NMS.ActiveMQ
 				activeMessage.NMSTimeToLive = timeToLive;
 			}
 
-			session.DoSend(activeMessage);
+			TimeSpan timeout;
+
+			if(specifiedRequestTimeout)
+			{
+				timeout = this.requestTimeout;
+			}
+			else
+			{
+				timeout = session.Connection.ITransport.RequestTimeout;
+			}
+
+			session.DoSend(activeMessage, timeout);
 		}
 
 		public bool Persistent
@@ -184,6 +198,12 @@ namespace Apache.NMS.ActiveMQ
 		{
 			get { return msgTimeToLive; }
 			set { this.msgTimeToLive = value; }
+		}
+
+		public TimeSpan RequestTimeout
+		{
+			get { return requestTimeout; }
+			set { this.requestTimeout = value; specifiedRequestTimeout = true; }
 		}
 
 		public byte Priority

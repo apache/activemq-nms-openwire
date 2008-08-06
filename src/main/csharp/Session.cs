@@ -440,7 +440,7 @@ namespace Apache.NMS.ActiveMQ
 			Connection.SyncRequest(command);
 		}
 
-		public void DoSend(ActiveMQMessage message)
+		public void DoSend(ActiveMQMessage message, TimeSpan requestTimeout)
 		{
 			if(AsyncSend)
 			{
@@ -448,7 +448,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 			else
 			{
-				Connection.SyncRequest(message);
+				Connection.SyncRequest(message, requestTimeout);
 			}
 		}
 
