@@ -291,9 +291,17 @@ namespace Apache.NMS.ActiveMQ
 
 		public void DeleteDurableConsumer(string name)
 		{
-			ConsumerInfo command = CreateConsumerInfo(null, String.Empty);
-			command.SubscriptionName = name;
-			Connection.SyncRequest(command, Connection.ITransport.RequestTimeout);
+			DeleteDurableConsumer(name, Connection.ITransport.RequestTimeout);
+		}
+
+		public void DeleteDurableConsumer(string name, TimeSpan requestTimeout)
+		{
+			RemoveSubscriptionInfo command = new RemoveSubscriptionInfo();
+			command.ConnectionId = Connection.ConnectionId;
+			command.ClientId = Connection.ClientId;
+			command.SubcriptionName = name;
+
+			Connection.SyncRequest(command, requestTimeout);
 		}
 
 		public IQueue GetQueue(string name)

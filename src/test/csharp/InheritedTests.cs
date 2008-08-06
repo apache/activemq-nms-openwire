@@ -19,6 +19,11 @@ using NUnit.Framework;
 namespace Apache.NMS.ActiveMQ.Test
 {
 	[TestFixture]
+	public class AsyncConsumeTest : Apache.NMS.Test.AsyncConsumeTest
+	{
+	}
+
+	[TestFixture]
 	public class BadConsumeTest : Apache.NMS.Test.BadConsumeTest
 	{
 	}
