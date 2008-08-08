@@ -57,7 +57,7 @@ namespace Apache.NMS.ActiveMQ
 		/// Sets the prefetch size, the maximum number of messages a broker will dispatch to consumers
 		/// until acknowledgements are received.
 		/// </summary>
-		public int PrefetchSize { get; set; }
+		public int PrefetchSize;
 
 		/// <summary>
 		/// Sets the maximum number of messages to keep around per consumer
@@ -65,41 +65,52 @@ namespace Apache.NMS.ActiveMQ
 		/// will start to be evicted for slow consumers.
 		/// Must be > 0 to enable this feature
 		/// </summary>
-		public int MaximumPendingMessageLimit { get; set; }
+		public int MaximumPendingMessageLimit;
 
 		/// <summary>
 		/// Enables or disables whether asynchronous dispatch should be used by the broker
 		/// </summary>
-		public bool DispatchAsync { get; set; }
+		public bool DispatchAsync;
 
 		/// <summary>
 		/// Enables or disables exclusive consumers when using queues. An exclusive consumer means
 		/// only one instance of a consumer is allowed to process messages on a queue to preserve order
 		/// </summary>
-		public bool Exclusive { get; set; }
+		public bool Exclusive;
 
 		/// <summary>
 		/// Enables or disables retroactive mode for consumers; i.e. do they go back in time or not?
 		/// </summary>
-		public bool Retroactive { get; set; }
+		public bool Retroactive;
 
 		/// <summary>
 		/// Sets the default consumer priority for consumers
 		/// </summary>
-		public byte Priority { get; set; }
+		public byte Priority;
 
 		/// <summary>
 		/// This property indicates whether or not async send is enabled.
 		/// </summary>
-		public bool AsyncSend { get; set; }
-		public Connection Connection { get; private set; }
+		public bool AsyncSend;
+
+		private Connection connection;
+		public Connection Connection
+		{
+			get { return this.connection; }
+			private set { this.connection = value; }
+		}
 
 		public SessionId SessionId
 		{
 			get { return info.SessionId; }
 		}
 
-		public TransactionContext TransactionContext { get; private set; }
+		private TransactionContext transactionContext;
+		public TransactionContext TransactionContext
+		{
+			get { return this.transactionContext; }
+			private set { this.transactionContext = value; }
+		}
 
 		#region ISession Members
 
@@ -406,7 +417,12 @@ namespace Apache.NMS.ActiveMQ
 
 		// Properties
 
-		public AcknowledgementMode AcknowledgementMode { get; private set; }
+		private AcknowledgementMode acknowledgementMode;
+		public AcknowledgementMode AcknowledgementMode
+		{
+			get { return this.acknowledgementMode; }
+			private set { this.acknowledgementMode = value; }
+		}
 
 		public bool Transacted
 		{
