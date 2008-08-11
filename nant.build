@@ -87,21 +87,16 @@
       <include name="${Apache.NMS.Test.dll}"/>
       <include name="${Apache.NMS.Test.pdb}"/>
       <include name="${Apache.NMS.Test.xml}"/>
+      <include name="${nunit.dll}"/>
     </fileset>
 
     <fileset id="install.filenames">
       <include name="${project.name}.dll"/>
-      <include name="${project.name}.xml"/>
-      <include name="${project.name}.Test.dll"/>
-      <include name="${project.name}.Test.xml"/>
       <include name="nmsprovider-*.config"/>
     </fileset>
 
     <fileset id="deploy.filenames">
       <include name="${project.name}.dll"/>
-      <include name="${project.name}.xml"/>
-      <include name="${project.name}.Test.dll"/>
-      <include name="${project.name}.Test.xml"/>
       <include name="nmsprovider-*.config"/>
     </fileset>
   </target>
