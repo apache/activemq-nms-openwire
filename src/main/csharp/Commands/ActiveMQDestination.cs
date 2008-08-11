@@ -107,7 +107,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				return IsTopic;
+				return GetDestinationType() == ACTIVEMQ_TOPIC;
 			}
 		}
 		
@@ -115,7 +115,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				return IsQueue;
+				return GetDestinationType() == ACTIVEMQ_QUEUE;
 			}
 		}
 		
