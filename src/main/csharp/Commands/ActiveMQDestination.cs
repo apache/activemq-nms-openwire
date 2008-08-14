@@ -107,7 +107,9 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				return GetDestinationType() == ACTIVEMQ_TOPIC;
+				int destinationType = GetDestinationType();
+				return ACTIVEMQ_TOPIC == destinationType
+					|| ACTIVEMQ_TEMPORARY_TOPIC == destinationType;
 			}
 		}
 		
@@ -115,7 +117,9 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				return GetDestinationType() == ACTIVEMQ_QUEUE;
+				int destinationType = GetDestinationType();
+				return ACTIVEMQ_QUEUE == destinationType
+					|| ACTIVEMQ_TEMPORARY_QUEUE == destinationType;
 			}
 		}
 		
@@ -123,8 +127,9 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				return GetDestinationType() == ACTIVEMQ_TEMPORARY_QUEUE
-					|| GetDestinationType() == ACTIVEMQ_TEMPORARY_TOPIC;
+				int destinationType = GetDestinationType();
+				return ACTIVEMQ_TEMPORARY_QUEUE == destinationType
+					|| ACTIVEMQ_TEMPORARY_TOPIC == destinationType;
 			}
 		}
 
