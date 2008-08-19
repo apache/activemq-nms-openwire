@@ -32,9 +32,8 @@ namespace Apache.NMS.ActiveMQ
 		private long messageCounter = 0;
 
 		private bool msgPersistent = NMSConstants.defaultPersistence;
-		private TimeSpan msgTimeToLive;
-		private TimeSpan requestTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
-		private bool specifiedRequestTimeout = false;
+		private TimeSpan requestTimeout;
+		private TimeSpan msgTimeToLive = NMSConstants.defaultTimeToLive;
 		private readonly bool defaultSpecifiedTimeToLive = false;
 		private byte msgPriority = NMSConstants.defaultPriority;
 		private bool disableMessageID = false;
@@ -45,6 +44,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			this.session = session;
 			this.info = info;
+			this.RequestTimeout = session.RequestTimeout;
 		}
 
 		~MessageProducer()
@@ -174,18 +174,7 @@ namespace Apache.NMS.ActiveMQ
 				activeMessage.NMSTimeToLive = timeToLive;
 			}
 
-			TimeSpan timeout;
-
-			if(specifiedRequestTimeout)
-			{
-				timeout = this.requestTimeout;
-			}
-			else
-			{
-				timeout = session.Connection.ITransport.RequestTimeout;
-			}
-
-			session.DoSend(activeMessage, timeout);
+			session.DoSend(activeMessage, this.RequestTimeout);
 		}
 
 		public bool Persistent
@@ -203,7 +192,7 @@ namespace Apache.NMS.ActiveMQ
 		public TimeSpan RequestTimeout
 		{
 			get { return requestTimeout; }
-			set { this.requestTimeout = value; specifiedRequestTimeout = true; }
+			set { this.requestTimeout = value; }
 		}
 
 		public byte Priority

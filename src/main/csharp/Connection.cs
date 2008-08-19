@@ -32,6 +32,7 @@ namespace Apache.NMS.ActiveMQ
 		private ITransport transport;
 		private readonly ConnectionInfo info;
 		private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
+		private TimeSpan requestTimeout;
 		private BrokerInfo brokerInfo; // from broker
 		private WireFormatInfo brokerWireFormatInfo; // from broker
 		private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
@@ -50,6 +51,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			this.brokerUri = connectionUri;
 			this.info = info;
+			this.requestTimeout = transport.RequestTimeout;
 			this.transport = transport;
 			this.transport.Command = new CommandHandler(OnCommand);
 			this.transport.Exception = new ExceptionHandler(OnException);
@@ -152,16 +154,8 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode)
 		{
-			return CreateSession(sessionAcknowledgementMode, transport.RequestTimeout);
-		}
-
-		/// <summary>
-		/// Creates a new session to work on this connection
-		/// </summary>
-		public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode, TimeSpan requestTimeout)
-		{
 			SessionInfo info = CreateSessionInfo(sessionAcknowledgementMode);
-			SyncRequest(info, requestTimeout);
+			SyncRequest(info, this.RequestTimeout);
 			Session session = new Session(this, info, sessionAcknowledgementMode);
 
 			// Set properties on session using parameters prefixed with "session."
@@ -266,6 +260,12 @@ namespace Apache.NMS.ActiveMQ
 			set { this.transport = value; }
 		}
 
+		public TimeSpan RequestTimeout
+		{
+			get { return this.requestTimeout; }
+			set { this.requestTimeout = value; }
+		}
+
 		public AcknowledgementMode AcknowledgementMode
 		{
 			get { return acknowledgementMode; }
@@ -309,7 +309,7 @@ namespace Apache.NMS.ActiveMQ
 
 		public Response SyncRequest(Command command)
 		{
-			return SyncRequest(command, transport.RequestTimeout);
+			return SyncRequest(command, this.RequestTimeout);
 		}
 
 		public Response SyncRequest(Command command, TimeSpan requestTimeout)

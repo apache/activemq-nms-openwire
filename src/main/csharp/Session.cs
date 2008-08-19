@@ -42,6 +42,7 @@ namespace Apache.NMS.ActiveMQ
 			this.info = info;
 			this.AcknowledgementMode = acknowledgementMode;
 			this.AsyncSend = connection.AsyncSend;
+			this.RequestTimeout = connection.RequestTimeout;
 			this.PrefetchSize = 1000;
 			this.TransactionContext = new TransactionContext(this);
 			this.dispatchingThread = new DispatchingThread(new DispatchingThread.DispatchFunction(DispatchAsyncMessages));
@@ -181,15 +182,10 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageProducer CreateProducer()
 		{
-			return CreateProducer(null, Connection.ITransport.RequestTimeout);
+			return CreateProducer(null);
 		}
 
 		public IMessageProducer CreateProducer(IDestination destination)
-		{
-			return CreateProducer(destination, Connection.ITransport.RequestTimeout);
-		}
-
-		public IMessageProducer CreateProducer(IDestination destination, TimeSpan requestTimeout)
 		{
 			ProducerInfo command = CreateProducerInfo(destination);
 			ProducerId producerId = command.ProducerId;
@@ -198,8 +194,8 @@ namespace Apache.NMS.ActiveMQ
 			try
 			{
 				producer = new MessageProducer(this, command);
-				Connection.SyncRequest(command, requestTimeout);
 				producers[producerId] = producer;
+				this.DoSend(command);
 			}
 			catch(Exception)
 			{
@@ -216,30 +212,15 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageConsumer CreateConsumer(IDestination destination)
 		{
-			return CreateConsumer(destination, null, false, Connection.ITransport.RequestTimeout);
-		}
-
-		public IMessageConsumer CreateConsumer(IDestination destination, TimeSpan requestTimeout)
-		{
-			return CreateConsumer(destination, null, false, requestTimeout);
+			return CreateConsumer(destination, null, false);
 		}
 
 		public IMessageConsumer CreateConsumer(IDestination destination, string selector)
 		{
-			return CreateConsumer(destination, selector, false, Connection.ITransport.RequestTimeout);
-		}
-
-		public IMessageConsumer CreateConsumer(IDestination destination, string selector, TimeSpan requestTimeout)
-		{
-			return CreateConsumer(destination, selector, false, requestTimeout);
+			return CreateConsumer(destination, selector, false);
 		}
 
 		public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal)
-		{
-			return CreateConsumer(destination, selector, noLocal, Connection.ITransport.RequestTimeout);
-		}
-
-		public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal, TimeSpan requestTimeout)
 		{
 			ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			command.NoLocal = noLocal;
@@ -253,7 +234,7 @@ namespace Apache.NMS.ActiveMQ
 				consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
 				// lets register the consumer first in case we start dispatching messages immediately
 				consumers[consumerId] = consumer;
-				Connection.SyncRequest(command, requestTimeout);
+				this.DoSend(command);
 				return consumer;
 			}
 			catch(Exception)
@@ -269,11 +250,6 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal)
 		{
-			return CreateDurableConsumer(destination, name, selector, noLocal, Connection.ITransport.RequestTimeout);
-		}
-
-		public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal, TimeSpan requestTimeout)
-		{
 			ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			ConsumerId consumerId = command.ConsumerId;
 			command.SubscriptionName = name;
@@ -285,7 +261,7 @@ namespace Apache.NMS.ActiveMQ
 				consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
 				// lets register the consumer first in case we start dispatching messages immediately
 				consumers[consumerId] = consumer;
-				Connection.SyncRequest(command, requestTimeout);
+				this.DoSend(command);
 			}
 			catch(Exception)
 			{
@@ -302,17 +278,12 @@ namespace Apache.NMS.ActiveMQ
 
 		public void DeleteDurableConsumer(string name)
 		{
-			DeleteDurableConsumer(name, Connection.ITransport.RequestTimeout);
-		}
-
-		public void DeleteDurableConsumer(string name, TimeSpan requestTimeout)
-		{
 			RemoveSubscriptionInfo command = new RemoveSubscriptionInfo();
 			command.ConnectionId = Connection.ConnectionId;
 			command.ClientId = Connection.ClientId;
 			command.SubcriptionName = name;
 
-			Connection.SyncRequest(command, requestTimeout);
+			this.DoSend(command);
 		}
 
 		public IQueue GetQueue(string name)
@@ -417,16 +388,23 @@ namespace Apache.NMS.ActiveMQ
 
 		// Properties
 
-		private AcknowledgementMode acknowledgementMode;
-		public AcknowledgementMode AcknowledgementMode
+		private TimeSpan requestTimeout;
+		public TimeSpan RequestTimeout
 		{
-			get { return this.acknowledgementMode; }
-			private set { this.acknowledgementMode = value; }
+			get { return this.requestTimeout; }
+			set { this.requestTimeout = value; }
 		}
 
 		public bool Transacted
 		{
 			get { return this.AcknowledgementMode == AcknowledgementMode.Transactional; }
+		}
+
+		private AcknowledgementMode acknowledgementMode;
+		public AcknowledgementMode AcknowledgementMode
+		{
+			get { return this.acknowledgementMode; }
+			private set { this.acknowledgementMode = value; }
 		}
 
 		#endregion
@@ -443,7 +421,7 @@ namespace Apache.NMS.ActiveMQ
 			command.OperationType = 0; // 0 is add
 			command.Destination = tempDestination;
 
-			Connection.SyncRequest(command);
+			this.DoSend(command);
 		}
 
 		protected void DestroyTemporaryDestination(ActiveMQDestination tempDestination)
@@ -453,10 +431,15 @@ namespace Apache.NMS.ActiveMQ
 			command.OperationType = 1; // 1 is remove
 			command.Destination = tempDestination;
 
-			Connection.SyncRequest(command);
+			this.DoSend(command);
 		}
 
-		public void DoSend(ActiveMQMessage message, TimeSpan requestTimeout)
+		public void DoSend(Command message)
+		{
+			this.DoSend(message, this.RequestTimeout);
+		}
+
+		public void DoSend(Command message, TimeSpan requestTimeout)
 		{
 			if(AsyncSend)
 			{

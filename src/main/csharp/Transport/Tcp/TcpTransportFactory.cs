@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { wireFormat = value; }
 		}
 
-		private TimeSpan requestTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
+		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
 		public int RequestTimeout
 		{
 			get { return (int) requestTimeout.TotalMilliseconds; }
