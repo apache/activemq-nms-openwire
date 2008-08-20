@@ -30,6 +30,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
 		private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
 		private readonly DispatchingThread dispatchingThread;
+		private DispatchingThread.ExceptionHandler dispatchingThread_ExceptionHandler;
 		private readonly SessionInfo info;
 		private long producerCounter;
 		internal bool startedAsyncDelivery = false;
@@ -46,7 +47,7 @@ namespace Apache.NMS.ActiveMQ
 			this.PrefetchSize = 1000;
 			this.TransactionContext = new TransactionContext(this);
 			this.dispatchingThread = new DispatchingThread(new DispatchingThread.DispatchFunction(DispatchAsyncMessages));
-			this.dispatchingThread.ExceptionListener += new DispatchingThread.ExceptionHandler(dispatchingThread_ExceptionListener);
+			this.dispatchingThread_ExceptionHandler = new DispatchingThread.ExceptionHandler(dispatchingThread_ExceptionListener);
 		}
 
 		~Session()
@@ -411,7 +412,16 @@ namespace Apache.NMS.ActiveMQ
 
 		private void dispatchingThread_ExceptionListener(Exception exception)
 		{
-			Connection.OnSessionException(this, exception);
+			if(null != Connection)
+			{
+				try
+				{
+					Connection.OnSessionException(this, exception);
+				}
+				catch
+				{
+				}
+			}
 		}
 
 		protected void CreateTemporaryDestination(ActiveMQDestination tempDestination)
@@ -591,6 +601,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			if(startedAsyncDelivery)
 			{
+				this.dispatchingThread.ExceptionListener -= this.dispatchingThread_ExceptionHandler;
 				dispatchingThread.Stop(5000);
 				startedAsyncDelivery = false;
 			}
@@ -603,8 +614,12 @@ namespace Apache.NMS.ActiveMQ
 				dispatcher.SetAsyncDelivery(dispatchingThread.EventHandle);
 			}
 
-			dispatchingThread.Start();
-			startedAsyncDelivery = true;
+			if(!startedAsyncDelivery)
+			{
+				this.dispatchingThread.ExceptionListener += this.dispatchingThread_ExceptionHandler;
+				dispatchingThread.Start();
+				startedAsyncDelivery = true;
+			}
 		}
 	}
 }
