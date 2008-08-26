@@ -39,13 +39,13 @@ namespace Apache.NMS.ActiveMQ
 
 		public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
 		{
-			this.Connection = connection;
+			this.connection = connection;
 			this.info = info;
-			this.AcknowledgementMode = acknowledgementMode;
+			this.acknowledgementMode = acknowledgementMode;
 			this.AsyncSend = connection.AsyncSend;
-			this.RequestTimeout = connection.RequestTimeout;
+			this.requestTimeout = connection.RequestTimeout;
 			this.PrefetchSize = 1000;
-			this.TransactionContext = new TransactionContext(this);
+			this.transactionContext = new TransactionContext(this);
 			this.dispatchingThread = new DispatchingThread(new DispatchingThread.DispatchFunction(DispatchAsyncMessages));
 			this.dispatchingThread_ExceptionHandler = new DispatchingThread.ExceptionHandler(dispatchingThread_ExceptionListener);
 		}
@@ -99,7 +99,6 @@ namespace Apache.NMS.ActiveMQ
 		public Connection Connection
 		{
 			get { return this.connection; }
-			private set { this.connection = value; }
 		}
 
 		public SessionId SessionId
@@ -111,7 +110,6 @@ namespace Apache.NMS.ActiveMQ
 		public TransactionContext TransactionContext
 		{
 			get { return this.transactionContext; }
-			private set { this.transactionContext = value; }
 		}
 
 		#region ISession Members
@@ -124,7 +122,7 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void Dispose(bool disposing)
 		{
-			if(disposed)
+			if(this.disposed)
 			{
 				return;
 			}
@@ -143,14 +141,14 @@ namespace Apache.NMS.ActiveMQ
 				// Ignore network errors.
 			}
 
-			disposed = true;
+			this.disposed = true;
 		}
 
 		public void Close()
 		{
 			lock(this)
 			{
-				if(closed)
+				if(this.closed)
 				{
 					return;
 				}
@@ -176,8 +174,8 @@ namespace Apache.NMS.ActiveMQ
 					Tracer.ErrorFormat("Error during session close: {0}", ex);
 				}
 
-				Connection = null;
-				closed = true;
+				this.connection = null;
+				this.closed = true;
 			}
 		}
 
@@ -405,7 +403,6 @@ namespace Apache.NMS.ActiveMQ
 		public AcknowledgementMode AcknowledgementMode
 		{
 			get { return this.acknowledgementMode; }
-			private set { this.acknowledgementMode = value; }
 		}
 
 		#endregion
