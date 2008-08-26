@@ -34,7 +34,7 @@
            value="Apache NMS for ActiveMQ Class Library (.Net Messaging Library Implementation): An implementation of the NMS API for ActiveMQ"/>
 
   <!-- Repository organized as: organization/module/version/plaform/artifact, platform might be something like 'all' or 'net-2.0/release' -->
-  <property name="nunit.dll" value="${basedir}/vendor/Apache.NMS/lib/nunit.framework.dll"/>
+  <property name="nunit.dll" value="${basedir}/vendor/Apache.NMS/lib/${current.build.framework}/nunit.framework.dll" dynamic="true"/>
   <property name="Apache.NMS.dll" value="${basedir}/vendor/Apache.NMS/build/${current.build.framework}/${current.build.config}/Apache.NMS.dll" dynamic="true"/>
   <property name="Apache.NMS.pdb" value="${basedir}/vendor/Apache.NMS/build/${current.build.framework}/${current.build.config}/Apache.NMS.pdb" dynamic="true"/>
   <property name="Apache.NMS.xml" value="${basedir}/vendor/Apache.NMS/build/${current.build.framework}/${current.build.config}/Apache.NMS.xml" dynamic="true"/>
