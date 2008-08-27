@@ -42,7 +42,6 @@ namespace Apache.NMS.ActiveMQ.Commands
         int version;
         byte[] marshalledProperties;
         
-        protected static MessagePropertyHelper propertyHelper = new MessagePropertyHelper();
         private PrimitiveMap properties;
         
         public override string ToString() {
