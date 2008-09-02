@@ -43,9 +43,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
-		private const int MAX_THREAD_WAIT = 30000;
+		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
 
-		
+
 		public TcpTransport(Socket socket, IWireFormat wireformat)
 		{
 			this.socket = socket;
@@ -79,7 +79,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					// so lets use an instance for each of the 2 streams
 					socketWriter = new OpenWireBinaryWriter(new NetworkStream(socket));
 					socketReader = new OpenWireBinaryReader(new NetworkStream(socket));
-					
+
 					// now lets create the background read thread
 					readThread = new Thread(new ThreadStart(ReadLoop));
 					readThread.IsBackground = true;
@@ -114,7 +114,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					}
 
 					Wireformat.Marshal(command, socketWriter);
-					socketWriter.Flush();
+					//jdg socketWriter.Flush();
 				}
 				catch(Exception ex)
 				{
@@ -147,6 +147,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			get { return this.maxWait; }
 			set { this.maxWait = value; }
+		}
+
+		public bool TcpNoDelayEnabled
+		{
+#if !NETCF
+			get { return this.socket.NoDelay; }
+			set { this.socket.NoDelay = value; }
+#else
+			get { return false; }
+			set { }
+#endif
 		}
 
 		public Response Request(Command command)
@@ -222,7 +233,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 #endif
 							)
 						{
-							if(!readThread.Join(MAX_THREAD_WAIT))
+							TimeSpan waitTime;
+
+							if(maxWait < MAX_THREAD_WAIT)
+							{
+								waitTime = maxWait;
+							}
+							else
+							{
+								waitTime = MAX_THREAD_WAIT;
+							}
+
+							if(!readThread.Join((int) waitTime.TotalMilliseconds))
 							{
 								readThread.Abort();
 							}

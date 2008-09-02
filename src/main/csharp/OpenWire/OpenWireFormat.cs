@@ -21,6 +21,7 @@ using Apache.NMS.ActiveMQ.Transport;
 using System;
 using System.IO;
 using Apache.NMS;
+using Apache.NMS.ActiveMQ.Transport.Tcp;
 
 namespace Apache.NMS.ActiveMQ.OpenWire
 {
@@ -34,9 +35,10 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         private const byte NULL_TYPE = 0;
 		
 		private int version;
-		private bool stackTraceEnabled=false;
-		private bool tightEncodingEnabled=false;
-		private bool sizePrefixDisabled=false;
+		private bool stackTraceEnabled = false;
+		private bool tightEncodingEnabled = false;
+		private bool sizePrefixDisabled = false;
+		private bool tcpNoDelayEnabled = false;
         private int minimumVersion=1;
 
         private WireFormatInfo preferedWireFormatInfo = new WireFormatInfo();
@@ -46,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         {
             PreferedWireFormatInfo.StackTraceEnabled = false;
             PreferedWireFormatInfo.TightEncodingEnabled = false;
-            PreferedWireFormatInfo.TcpNoDelayEnabled = false;
+            PreferedWireFormatInfo.TcpNoDelayEnabled = true;
             PreferedWireFormatInfo.CacheEnabled = false;
             PreferedWireFormatInfo.SizePrefixDisabled = false;
             PreferedWireFormatInfo.Version = 2;
@@ -55,18 +57,17 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             Version = 1;
         }
 
-        public ITransport Transport {
+        public ITransport Transport
+		{
 			get { return transport; }
 			set { transport = value; }
 		}
 				
-        public bool StackTraceEnabled {
-            get { return stackTraceEnabled; }
-			set { stackTraceEnabled = value; }
-        }
-        public int Version {
+        public int Version
+		{
             get { return version; }
-			set {
+			set
+			{
 
                 Assembly dll = Assembly.GetExecutingAssembly();
                 Type type = dll.GetType("Apache.NMS.ActiveMQ.OpenWire.V"+value+".MarshallerFactory", false);
@@ -75,14 +76,30 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			    version = value; 			
 			}
         }
-        public bool SizePrefixDisabled {
+
+		public bool StackTraceEnabled
+		{
+			get { return stackTraceEnabled; }
+			set { stackTraceEnabled = value; }
+		}
+
+		public bool SizePrefixDisabled
+		{
             get { return sizePrefixDisabled; }
 			set { sizePrefixDisabled = value; }
         }
-        public bool TightEncodingEnabled {
+
+        public bool TightEncodingEnabled 
+		{
             get { return tightEncodingEnabled; }
 			set { tightEncodingEnabled = value; }
         }
+
+		public bool TcpNoDelayEnabled
+		{
+			get { return tcpNoDelayEnabled; }
+			set { tcpNoDelayEnabled = value; }
+		}
 
         public WireFormatInfo PreferedWireFormatInfo
         {
@@ -161,13 +178,14 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         public Object Unmarshal(BinaryReader dis)
         {
             // lets ignore the size of the packet
-			if( !sizePrefixDisabled ) {
+			if(!sizePrefixDisabled)
+			{
 				dis.ReadInt32();
 			}
             
             // first byte is the type of the packet
             byte dataType = dis.ReadByte();
-            if (dataType != NULL_TYPE)
+            if(dataType != NULL_TYPE)
             {
                 BaseDataStreamMarshaller dsm = dataMarshallers[dataType & 0xFF];
                 if (dsm == null)
@@ -175,12 +193,15 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 Tracer.Debug("Parsing type: " + dataType + " with: " + dsm);
                 Object data = dsm.CreateObject();
 				
-				if(tightEncodingEnabled) {
+				if(tightEncodingEnabled)
+				{
 					BooleanStream bs = new BooleanStream();
 					bs.Unmarshal(dis);
 					dsm.TightUnmarshal(this, data, dis, bs);
 					return data;
-				} else {
+				}
+				else
+				{
 					dsm.LooseUnmarshal(this, data, dis);
 					return data;
 				}
@@ -194,10 +215,12 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         public int TightMarshalNestedObject1(DataStructure o, BooleanStream bs)
         {
             bs.WriteBoolean(o != null);
-            if (o == null)
-                return 0;
+			if(o == null)
+			{
+				return 0;
+			}
             
-            if (o.IsMarshallAware())
+            if(o.IsMarshallAware())
             {
                 MarshallAware ma = (MarshallAware) o;
                 byte[] sequence = ma.GetMarshalledForm(this);
@@ -209,25 +232,31 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             }
             
             byte type = o.GetDataStructureType();
-            if (type == 0) {
+            if (type == 0)
+			{
                 throw new IOException("No valid data structure type for: " + o + " of type: " + o.GetType());
             }
+
             BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[type & 0xFF];
-            if (dsm == null)
-                throw new IOException("Unknown data type: " + type);
+			if(dsm == null)
+			{
+				throw new IOException("Unknown data type: " + type);
+			}
             Tracer.Debug("Marshalling type: " + type + " with structure: " + o);
             return 1 + dsm.TightMarshal1(this, o, bs);
         }
         
         public void TightMarshalNestedObject2(DataStructure o, BinaryWriter ds, BooleanStream bs)
         {
-            if (!bs.ReadBoolean())
-                return ;
+			if(!bs.ReadBoolean())
+			{
+				return;
+			}
             
             byte type = o.GetDataStructureType();
             ds.Write(type);
             
-            if (o.IsMarshallAware() && bs.ReadBoolean())
+            if(o.IsMarshallAware() && bs.ReadBoolean())
             {
                 MarshallAware ma = (MarshallAware) o;
                 byte[] sequence = ma.GetMarshalledForm(this);
@@ -237,24 +266,27 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             {
                 
                 BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[type & 0xFF];
-                if (dsm == null)
-                    throw new IOException("Unknown data type: " + type);
+				if(dsm == null)
+				{
+					throw new IOException("Unknown data type: " + type);
+				}
                 dsm.TightMarshal2(this, o, ds, bs);
             }
         }
         
         public DataStructure TightUnmarshalNestedObject(BinaryReader dis, BooleanStream bs)
         {
-            if (bs.ReadBoolean())
+            if(bs.ReadBoolean())
             {
-                
                 byte dataType = dis.ReadByte();
                 BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[dataType & 0xFF];
-                if (dsm == null)
-                    throw new IOException("Unknown data type: " + dataType);
+				if(dsm == null)
+				{
+					throw new IOException("Unknown data type: " + dataType);
+				}
                 DataStructure data = dsm.CreateObject();
                 
-                if (data.IsMarshallAware() && bs.ReadBoolean())
+                if(data.IsMarshallAware() && bs.ReadBoolean())
                 {
                     dis.ReadInt32();
                     dis.ReadByte();
@@ -285,25 +317,29 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         public void LooseMarshalNestedObject(DataStructure o, BinaryWriter dataOut)
         {
 			dataOut.Write(o!=null);
-			if( o!=null ) {
+			if(o != null)
+			{
 				byte type = o.GetDataStructureType();
 				dataOut.Write(type);
                 BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[type & 0xFF];
-				if( dsm == null )
-					throw new IOException("Unknown data type: "+type);
+				if(dsm == null)
+				{
+					throw new IOException("Unknown data type: " + type);
+				}
 				dsm.LooseMarshal(this, o, dataOut);
 			}
         }
         
         public DataStructure LooseUnmarshalNestedObject(BinaryReader dis)
         {
-            if (dis.ReadBoolean())
+            if(dis.ReadBoolean())
             {
-                
                 byte dataType = dis.ReadByte();
                 BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[dataType & 0xFF];
-                if (dsm == null)
-                    throw new IOException("Unknown data type: " + dataType);
+				if(dsm == null)
+				{
+					throw new IOException("Unknown data type: " + dataType);
+				}
                 DataStructure data = dsm.CreateObject();
 				dsm.LooseUnmarshal(this, data, dis);
                 return data;
@@ -316,18 +352,25 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 
         public void renegotiateWireFormat(WireFormatInfo info)
         {
-            if (info.Version < minimumVersion)
+            if(info.Version < minimumVersion)
             {
-                throw new IOException("Remote wire format (" + info.Version +") is lower the minimum version required (" + minimumVersion + ")");
+                throw new IOException("Remote wire format (" + info.Version +") is lower than the minimum version required (" + minimumVersion + ")");
             }
 
             this.Version = Math.Min( PreferedWireFormatInfo.Version, info.Version);
             this.stackTraceEnabled = info.StackTraceEnabled && PreferedWireFormatInfo.StackTraceEnabled;
-//            this.tcpNoDelayEnabled = info.TcpNoDelayEnabled && PreferedWireFormatInfo.TcpNoDelayEnabled;
-//            this.cacheEnabled = info.CacheEnabled && PreferedWireFormatInfo.CacheEnabled;
-            this.tightEncodingEnabled = info.TightEncodingEnabled && PreferedWireFormatInfo.TightEncodingEnabled;
+			this.tcpNoDelayEnabled = info.TcpNoDelayEnabled && PreferedWireFormatInfo.TcpNoDelayEnabled;
+			this.tightEncodingEnabled = info.TightEncodingEnabled && PreferedWireFormatInfo.TightEncodingEnabled;
             this.sizePrefixDisabled = info.SizePrefixDisabled && PreferedWireFormatInfo.SizePrefixDisabled;
-            
-        }
+
+			TcpTransport tcpTransport = this.transport as TcpTransport;
+			if(null != tcpTransport)
+			{
+				tcpTransport.TcpNoDelayEnabled = this.tcpNoDelayEnabled;
+			}
+
+			// The following options is not used client-side.
+			// this.cacheEnabled = info.CacheEnabled && PreferedWireFormatInfo.CacheEnabled;
+		}
     }
 }

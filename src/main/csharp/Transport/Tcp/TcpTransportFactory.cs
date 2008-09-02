@@ -42,6 +42,49 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { useLogging = value; }
 		}
 
+		/// <summary>
+		/// Size in bytes of the receive buffer.
+		/// </summary>
+		private int receiveBufferSize = 8192;
+		public int ReceiveBufferSize
+		{
+			get { return receiveBufferSize; }
+			set { receiveBufferSize = value; }
+		}
+
+		/// <summary>
+		/// Size in bytes of send buffer.
+		/// </summary>
+		private int sendBufferSize = 8192;
+		public int SendBufferSize
+		{
+			get { return sendBufferSize; }
+			set { sendBufferSize = value; }
+		}
+
+		/// <summary>
+		/// The time-out value, in milliseconds. The default value is 0, which indicates
+		/// an infinite time-out period. Specifying -1 also indicates an infinite time-out period.
+		/// </summary>
+		private int receiveTimeout = 0;
+		public int ReceiveTimeout
+		{
+			get { return receiveTimeout; }
+			set { receiveTimeout = value; }
+		}
+
+		/// <summary>
+		/// The time-out value, in milliseconds. If you set the property with a value between 1 and 499,
+		/// the value will be changed to 500. The default value is 0, which indicates an infinite
+		/// time-out period. Specifying -1 also indicates an infinite time-out period.
+		/// </summary>
+		private int sendTimeout = 0;
+		public int SendTimeout
+		{
+			get { return sendTimeout; }
+			set { sendTimeout = value; }
+		}
+
 		private string wireFormat = "OpenWire";
 		public string WireFormat
 		{
@@ -70,6 +113,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 			Tracer.Debug("Opening socket to: " + location.Host + " on port: " + location.Port);
 			Socket socket = Connect(location.Host, location.Port);
+
+#if !NETCF
+			socket.ReceiveBufferSize = ReceiveBufferSize;
+			socket.SendBufferSize = SendBufferSize;
+			socket.ReceiveTimeout = ReceiveTimeout;
+			socket.SendTimeout = SendTimeout;
+#endif
+
 			IWireFormat wireformat = CreateWireFormat(location, map);
 			ITransport transport = new TcpTransport(socket, wireformat);
 

@@ -34,7 +34,6 @@ namespace Apache.NMS.ActiveMQ
 		private bool msgPersistent = NMSConstants.defaultPersistence;
 		private TimeSpan requestTimeout;
 		private TimeSpan msgTimeToLive = NMSConstants.defaultTimeToLive;
-		private readonly bool defaultSpecifiedTimeToLive = false;
 		private byte msgPriority = NMSConstants.defaultPriority;
 		private bool disableMessageID = false;
 		private bool disableMessageTimestamp = false;
@@ -118,17 +117,17 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Send(IMessage message)
 		{
-			Send(info.Destination, message);
+			Send(info.Destination, message, this.msgPersistent, this.msgPriority, this.msgTimeToLive, false);
 		}
 
 		public void Send(IDestination destination, IMessage message)
 		{
-			Send(destination, message, Persistent, Priority, TimeToLive, defaultSpecifiedTimeToLive);
+			Send(destination, message, this.msgPersistent, this.msgPriority, this.msgTimeToLive, false);
 		}
 
 		public void Send(IMessage message, bool persistent, byte priority, TimeSpan timeToLive)
 		{
-			Send(info.Destination, message, persistent, priority, timeToLive);
+			Send(info.Destination, message, persistent, priority, timeToLive, true);
 		}
 
 		public void Send(IDestination destination, IMessage message, bool persistent, byte priority, TimeSpan timeToLive)
