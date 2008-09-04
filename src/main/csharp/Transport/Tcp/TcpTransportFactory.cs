@@ -149,7 +149,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			// Looping through the AddressList allows different type of connections to be tried
 			// (IPv4, IPv6 and whatever else may be available).
-#if MONO || NET_1_1 || NET_1_0
+#if NET_1_1 || NET_1_0
 			// The following GetHostByName() API has been obsoleted in .NET 2.0.  It has been
 			// superceded by GetHostEntry().  At some point, it will probably be removed
 			// from the Mono class library, and this #if statement can be modified.
