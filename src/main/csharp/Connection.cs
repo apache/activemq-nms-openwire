@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ
 		private long sessionCounter = 0;
 		private long temporaryDestinationCounter = 0;
 		private long localTransactionCounter;
-		private readonly AtomicBoolean started = new AtomicBoolean(true);
+		private readonly AtomicBoolean started = new AtomicBoolean(false);
 		private bool disposed = false;
 		
 		public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
