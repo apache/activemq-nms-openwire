@@ -16,8 +16,10 @@
  */
 using System;
 using System.Collections;
+using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -27,15 +29,20 @@ namespace Apache.NMS.ActiveMQ
 	public class Session : ISession
 	{
 		private long consumerCounter;
-		private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
-		private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
+		private readonly IDictionary consumers = new Hashtable();
+		private readonly IDictionary producers = new Hashtable();
 		private readonly DispatchingThread dispatchingThread;
+		/// <summary>
+		/// Private object used for synchronization, instead of public "this"
+		/// </summary>
+		private readonly object myLock = new object();
 		private DispatchingThread.ExceptionHandler dispatchingThread_ExceptionHandler;
 		private readonly SessionInfo info;
 		private long producerCounter;
-		internal bool startedAsyncDelivery = false;
 		private bool disposed = false;
-        private bool closed = false;
+		private volatile bool closed = false;
+
+		private const int kMAX_STOP_ASYNC_MS = 30000;
 
 		public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
 		{
@@ -146,9 +153,37 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Close()
 		{
-			lock(this)
+			if(closed)
 			{
-				if(this.closed)
+				return;
+			}
+
+			//
+			// Do a first-run close of consumer and producers after
+			// brief synchronization
+			//
+			IList consumersCopy;
+			IList producersCopy;
+
+			lock(myLock)
+			{
+				consumersCopy = new ArrayList(consumers.Values);
+				producersCopy = new ArrayList(producers.Values);
+			}
+
+			foreach(MessageConsumer consumer in consumersCopy)
+			{
+				consumer.Close();
+			}
+
+			foreach(MessageProducer producer in producersCopy)
+			{
+				producer.Close();
+			}
+
+			lock(myLock)
+			{
+				if(closed)
 				{
 					return;
 				}
@@ -156,26 +191,30 @@ namespace Apache.NMS.ActiveMQ
 				try
 				{
 					StopAsyncDelivery();
-					Connection.RemoveSession(this);
-					foreach(MessageConsumer consumer in GetConsumers())
+					// Copy again for safe enumeration
+					foreach(MessageConsumer consumer in new ArrayList(consumers.Values))
 					{
 						consumer.Close();
 					}
 					consumers.Clear();
 
-					foreach(MessageProducer producer in GetProducers())
+					// Copy again for safe enumeration
+					foreach(MessageProducer producer in new ArrayList(producers.Values))
 					{
 						producer.Close();
 					}
 					producers.Clear();
+					Connection.RemoveSession(this);
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					Tracer.ErrorFormat("Error during session close: {0}", ex);
 				}
-
-				this.connection = null;
-				this.closed = true;
+				finally
+				{
+					this.connection = null;
+					this.closed = true;
+				}
 			}
 		}
 
@@ -188,19 +227,24 @@ namespace Apache.NMS.ActiveMQ
 		{
 			ProducerInfo command = CreateProducerInfo(destination);
 			ProducerId producerId = command.ProducerId;
-			MessageProducer producer = null;
+			MessageProducer producer = new MessageProducer(this, command);
+			lock(myLock)
+			{
+				producers[producerId] = producer;
+			}
 
 			try
 			{
-				producer = new MessageProducer(this, command);
-				producers[producerId] = producer;
 				this.DoSend(command);
 			}
 			catch(Exception)
 			{
-				if(producer != null)
+				//
+				// DoSend failed.  No need to call MessageProducer.Close
+				//
+				lock(myLock)
 				{
-					producer.Close();
+					producers.Remove(producerId);
 				}
 
 				throw;
@@ -228,23 +272,31 @@ namespace Apache.NMS.ActiveMQ
 			ConsumerId consumerId = command.ConsumerId;
 			MessageConsumer consumer = null;
 
+			consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
+			// let's register the consumer first in case we start dispatching messages immediately
+			lock(myLock)
+			{
+				consumers[consumerId] = consumer;
+			}
+
 			try
 			{
-				consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
-				// lets register the consumer first in case we start dispatching messages immediately
-				consumers[consumerId] = consumer;
 				this.DoSend(command);
-				return consumer;
 			}
 			catch(Exception)
 			{
-				if(consumer != null)
+				//
+				// DoSend failed.  No need to call MessageProducer.Close
+				//
+				lock(myLock)
 				{
-					consumer.Close();
+					consumers.Remove(consumerId);
 				}
 
 				throw;
 			}
+
+			return consumer;
 		}
 
 		public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal)
@@ -255,18 +307,25 @@ namespace Apache.NMS.ActiveMQ
 			command.NoLocal = noLocal;
 			MessageConsumer consumer = null;
 
+			consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
+			// let's register the consumer first in case we start dispatching messages immediately
+			lock(myLock)
+			{
+				consumers[consumerId] = consumer;
+			}
+
 			try
 			{
-				consumer = new MessageConsumer(this, command, this.AcknowledgementMode);
-				// lets register the consumer first in case we start dispatching messages immediately
-				consumers[consumerId] = consumer;
 				this.DoSend(command);
 			}
 			catch(Exception)
 			{
-				if(consumer != null)
+				//
+				// DoSend failed; no need to call MessageConsumer.Close
+				//
+				lock(myLock)
 				{
-					consumer.Close();
+					consumers.Remove(consumerId);
 				}
 
 				throw;
@@ -277,11 +336,15 @@ namespace Apache.NMS.ActiveMQ
 
 		public void DeleteDurableConsumer(string name)
 		{
+			IConnection conn = this.Connection;
 			RemoveSubscriptionInfo command = new RemoveSubscriptionInfo();
-			command.ConnectionId = Connection.ConnectionId;
-			command.ClientId = Connection.ClientId;
-			command.SubcriptionName = name;
+			if(null != conn)
+			{
+				command.ConnectionId = Connection.ConnectionId;
+				command.ClientId = Connection.ClientId;
+			}
 
+			command.SubcriptionName = name;
 			this.DoSend(command);
 		}
 
@@ -378,9 +441,12 @@ namespace Apache.NMS.ActiveMQ
 			this.TransactionContext.Rollback();
 
 			// lets ensure all the consumers redeliver any rolled back messages
-			foreach(MessageConsumer consumer in GetConsumers())
+			lock(myLock)
 			{
-				consumer.RedeliverRolledBackMessages();
+				foreach(MessageConsumer consumer in consumers.Values)
+				{
+					consumer.RedeliverRolledBackMessages();
+				}
 			}
 		}
 
@@ -472,19 +538,29 @@ namespace Apache.NMS.ActiveMQ
 		public void DisposeOf(ConsumerId objectId)
 		{
 			Connection.DisposeOf(objectId);
-			consumers.Remove(objectId);
+			lock(myLock)
+			{
+				consumers.Remove(objectId);
+			}
 		}
 
 		public void DisposeOf(ProducerId objectId)
 		{
 			Connection.DisposeOf(objectId);
-			producers.Remove(objectId);
+			lock(myLock)
+			{
+				producers.Remove(objectId);
+			}
 		}
 
 		public bool DispatchMessage(ConsumerId consumerId, Message message)
 		{
 			bool dispatched = false;
-			MessageConsumer consumer = (MessageConsumer) consumers[consumerId];
+			MessageConsumer consumer;
+			lock(myLock)
+			{
+				consumer = (MessageConsumer) consumers[consumerId];
+			}
 
 			if(consumer != null)
 			{
@@ -503,9 +579,12 @@ namespace Apache.NMS.ActiveMQ
 		{
 			// lets iterate through each consumer created by this session
 			// ensuring that they have all pending messages dispatched
-			foreach(MessageConsumer consumer in GetConsumers())
+			lock(myLock)
 			{
-				consumer.DispatchAsyncMessages();
+				foreach(MessageConsumer consumer in consumers.Values)
+				{
+					consumer.DispatchAsyncMessages();
+				}
 			}
 		}
 
@@ -515,7 +594,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		protected ICollection GetConsumers()
 		{
-			lock(consumers.SyncRoot)
+			lock(myLock)
 			{
 				return new ArrayList(consumers.Values);
 			}
@@ -527,7 +606,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		protected ICollection GetProducers()
 		{
-			lock(producers.SyncRoot)
+			lock(myLock)
 			{
 				return new ArrayList(producers.Values);
 			}
@@ -539,10 +618,7 @@ namespace Apache.NMS.ActiveMQ
 			ConsumerId id = new ConsumerId();
 			id.ConnectionId = info.SessionId.ConnectionId;
 			id.SessionId = info.SessionId.Value;
-			lock(this)
-			{
-				id.Value = ++consumerCounter;
-			}
+			id.Value = Interlocked.Increment(ref consumerCounter);
 			answer.ConsumerId = id;
 			answer.Destination = ActiveMQDestination.Transform(destination);
 			answer.Selector = selector;
@@ -557,7 +633,7 @@ namespace Apache.NMS.ActiveMQ
 			ActiveMQDestination amqDestination = destination as ActiveMQDestination;
 			if(amqDestination != null && amqDestination.Options != null)
 			{
-				Util.URISupport.SetProperties(answer, amqDestination.Options, "consumer.");
+				URISupport.SetProperties(answer, amqDestination.Options, "consumer.");
 			}
 
 			return answer;
@@ -569,10 +645,7 @@ namespace Apache.NMS.ActiveMQ
 			ProducerId id = new ProducerId();
 			id.ConnectionId = info.SessionId.ConnectionId;
 			id.SessionId = info.SessionId.Value;
-			lock(this)
-			{
-				id.Value = ++producerCounter;
-			}
+			id.Value = Interlocked.Increment(ref producerCounter);
 			answer.ProducerId = id;
 			answer.Destination = ActiveMQDestination.Transform(destination);
 
@@ -581,7 +654,7 @@ namespace Apache.NMS.ActiveMQ
 			ActiveMQDestination amqDestination = destination as ActiveMQDestination;
 			if(amqDestination != null && amqDestination.Options != null)
 			{
-				Util.URISupport.SetProperties(answer, amqDestination.Options, "producer.");
+				URISupport.SetProperties(answer, amqDestination.Options, "producer.");
 			}
 
 			return answer;
@@ -596,11 +669,10 @@ namespace Apache.NMS.ActiveMQ
 
 		internal void StopAsyncDelivery()
 		{
-			if(startedAsyncDelivery)
+			if(dispatchingThread.IsStarted)
 			{
 				this.dispatchingThread.ExceptionListener -= this.dispatchingThread_ExceptionHandler;
-				dispatchingThread.Stop(5000);
-				startedAsyncDelivery = false;
+				dispatchingThread.Stop(kMAX_STOP_ASYNC_MS);
 			}
 		}
 
@@ -611,11 +683,10 @@ namespace Apache.NMS.ActiveMQ
 				dispatcher.SetAsyncDelivery(dispatchingThread.EventHandle);
 			}
 
-			if(!startedAsyncDelivery)
+			if(!dispatchingThread.IsStarted)
 			{
 				this.dispatchingThread.ExceptionListener += this.dispatchingThread_ExceptionHandler;
 				dispatchingThread.Start();
-				startedAsyncDelivery = true;
 			}
 		}
 	}

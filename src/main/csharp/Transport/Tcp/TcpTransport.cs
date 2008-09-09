@@ -17,6 +17,7 @@
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.Util;
 using System;
 using System.IO;
 using System.Net.Sockets;
@@ -24,23 +25,23 @@ using System.Threading;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
-	
+
 	/// <summary>
 	/// An implementation of ITransport that uses sockets to communicate with the broker
 	/// </summary>
 	public class TcpTransport : ITransport
 	{
-		private readonly object initLock = new object();
+		private readonly object myLock = new object();
 		private readonly Socket socket;
 		private IWireFormat wireformat;
 		private BinaryReader socketReader;
 		private BinaryWriter socketWriter;
-		private readonly object socketWriterLock = new object();
 		private Thread readThread;
 		private bool started;
-		private Util.AtomicBoolean closed = new Util.AtomicBoolean(false);
+		private volatile bool closed;
+		private volatile bool seenShutdown;
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
-		
+
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
 		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
@@ -51,13 +52,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			this.socket = socket;
 			this.wireformat = wireformat;
 		}
-		
+
+		~TcpTransport()
+		{
+			Dispose(false);
+		}
+
 		/// <summary>
 		/// Method Start
 		/// </summary>
 		public void Start()
 		{
-			lock (initLock)
+			lock(myLock)
 			{
 				if (!started)
 				{
@@ -95,22 +101,27 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			get
 			{
-				lock(initLock)
+				lock(myLock)
 				{
 					return started;
 				}
 			}
 		}
-		
+
 		public void Oneway(Command command)
 		{
-			lock (socketWriterLock)
+			lock(myLock)
 			{
 				try
 				{
-					if(closed.Value)
+					if(closed)
 					{
-						throw new Exception("Error writing to broker.  Transport connection is closed.");
+						throw new InvalidOperationException("Error writing to broker.  Transport connection is closed.");
+					}
+
+					if(command is ShutdownInfo)
+					{
+						seenShutdown = true;
 					}
 
 					Wireformat.Marshal(command, socketWriter);
@@ -134,7 +145,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				}
 			}
 		}
-		
+
 		public FutureResponse AsyncRequest(Command command)
 		{
 			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue AsyncRequest calls");
@@ -169,13 +180,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
 		}
-		
+
 		public void Close()
 		{
-			if(closed.CompareAndSet(false, true))
+			if(!closed)
 			{
-				lock(initLock)
+				lock(myLock)
 				{
+					if(closed)
+					{
+						return;
+					}
+
+					closed = true;
+
 					try
 					{
 						socket.Shutdown(SocketShutdown.Both);
@@ -186,12 +204,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 					try
 					{
-						lock(socketWriterLock)
+						if(null != socketWriter)
 						{
-							if(null != socketWriter)
-							{
-								socketWriter.Close();
-							}
+							socketWriter.Close();
 						}
 					}
 					catch
@@ -260,9 +275,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public void Dispose()
 		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected void Dispose(bool disposing)
+		{
 			Close();
 		}
-		
+
 		public void ReadLoop()
 		{
 			// This is the thread function for the reader thread. This runs continuously
@@ -279,7 +300,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			// An exception in the command handler may not be fatal to the transport, so
 			// these are simply reported to the exceptionHandler.
 			//
-			while(!closed.Value)
+			while(!closed)
 			{
 				Command command = null;
 
@@ -290,7 +311,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				catch(Exception ex)
 				{
 					command = null;
-					if(!closed.Value)
+					if(!closed && !seenShutdown)
 					{
 						// Close the socket as there's little that can be done with this transport now.
 						Close();
@@ -313,9 +334,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				}
 			}
 		}
-				
+
 		// Implementation methods
-				
+
 		public CommandHandler Command
 		{
 			get { return commandHandler; }

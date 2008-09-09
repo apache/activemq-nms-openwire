@@ -144,11 +144,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				MessageId id = new MessageId();
 				id.ProducerId = info.ProducerId;
-				lock (this)
-				{
-					id.ProducerSequenceId = ++messageCounter;
-				}
-
+				id.ProducerSequenceId = Interlocked.Increment(ref messageCounter);
 				activeMessage.MessageId = id;
 			}
 

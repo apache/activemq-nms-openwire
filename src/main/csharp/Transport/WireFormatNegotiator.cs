@@ -24,85 +24,84 @@ using System;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	
-    /// <summary>
-    /// A Transport which negotiates the wire format
-    /// </summary>
-    public class WireFormatNegotiator : TransportFilter
-    {
-        private OpenWireFormat wireFormat;
-        private TimeSpan negotiateTimeout = TimeSpan.FromSeconds(15);
-    
-        private AtomicBoolean firstStart=new AtomicBoolean(true);
-        private CountDownLatch readyCountDownLatch = new CountDownLatch(1);
-        private CountDownLatch wireInfoSentDownLatch = new CountDownLatch(1);
+	/// <summary>
+	/// A Transport which negotiates the wire format
+	/// </summary>
+	public class WireFormatNegotiator : TransportFilter
+	{
+		private OpenWireFormat wireFormat;
+		private TimeSpan negotiateTimeout = TimeSpan.FromSeconds(15);
 
-        public WireFormatNegotiator(ITransport next, OpenWireFormat wireFormat)
-            : base(next)
-        {
-            this.wireFormat = wireFormat;
-        }
-        
-        public override void Start()
-        {
-            base.Start();
-            if (firstStart.CompareAndSet(true, false))
-            {
-                try
-                {
-                    next.Oneway(wireFormat.PreferedWireFormatInfo);
-                }
-                finally
-                {
-                    wireInfoSentDownLatch.countDown();
-                }
-            }
-        }
-        
-        public override void Dispose()
-        {
-        	base.Dispose();
-            readyCountDownLatch.countDown();
-        }
+		private AtomicBoolean firstStart=new AtomicBoolean(true);
+		private CountDownLatch readyCountDownLatch = new CountDownLatch(1);
+		private CountDownLatch wireInfoSentDownLatch = new CountDownLatch(1);
 
-        public override void Oneway(Command command)
-        {
-            if (!readyCountDownLatch.await(negotiateTimeout))
-                throw new IOException("Wire format negotiation timeout: peer did not send his wire format.");
-            next.Oneway(command);
-        }
+		public WireFormatNegotiator(ITransport next, OpenWireFormat wireFormat)
+			: base(next)
+		{
+			this.wireFormat = wireFormat;
+		}
 
-        protected override void OnCommand(ITransport sender, Command command)
-        {
-            if ( command.GetDataStructureType() == WireFormatInfo.ID_WireFormatInfo )
-            {
-                WireFormatInfo info = (WireFormatInfo)command;
-                try
-                {
-                    if (!info.Valid)
-                    {
-                        throw new IOException("Remote wire format magic is invalid");
-                    }
-                    wireInfoSentDownLatch.await(negotiateTimeout);
-                    wireFormat.renegotiateWireFormat(info);
-                }
-                catch (Exception e)
-                {
-                    OnException(this, e);
-                } 
-                finally
-                {
-                    readyCountDownLatch.countDown();
-                }
-            }
-            this.commandHandler(sender, command);
-        }
+		public override void Start()
+		{
+			base.Start();
+			if (firstStart.CompareAndSet(true, false))
+			{
+				try
+				{
+					next.Oneway(wireFormat.PreferedWireFormatInfo);
+				}
+				finally
+				{
+					wireInfoSentDownLatch.countDown();
+				}
+			}
+		}
 
-        protected override void OnException(ITransport sender, Exception command)
-        {
-            readyCountDownLatch.countDown();
-            this.exceptionHandler(sender, command);
-        }
-    }
+		protected override void Dispose(bool disposing)
+		{
+			base.Dispose(disposing);
+			readyCountDownLatch.countDown();
+		}
+
+		public override void Oneway(Command command)
+		{
+			if (!readyCountDownLatch.await(negotiateTimeout))
+				throw new IOException("Wire format negotiation timeout: peer did not send his wire format.");
+			next.Oneway(command);
+		}
+
+		protected override void OnCommand(ITransport sender, Command command)
+		{
+			if ( command.GetDataStructureType() == WireFormatInfo.ID_WireFormatInfo )
+			{
+				WireFormatInfo info = (WireFormatInfo)command;
+				try
+				{
+					if (!info.Valid)
+					{
+						throw new IOException("Remote wire format magic is invalid");
+					}
+					wireInfoSentDownLatch.await(negotiateTimeout);
+					wireFormat.renegotiateWireFormat(info);
+				}
+				catch (Exception e)
+				{
+					OnException(this, e);
+				}
+				finally
+				{
+					readyCountDownLatch.countDown();
+				}
+			}
+			this.commandHandler(sender, command);
+		}
+
+		protected override void OnException(ITransport sender, Exception command)
+		{
+			readyCountDownLatch.countDown();
+			this.exceptionHandler(sender, command);
+		}
+	}
 }
 

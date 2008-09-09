@@ -24,28 +24,33 @@ namespace Apache.NMS.ActiveMQ.Transport
 	/// Used to implement a filter on the transport layer.
 	/// </summary>
 	public class TransportFilter : ITransport
-    {
+	{
 		protected readonly ITransport next;
 		protected CommandHandler commandHandler;
 		protected ExceptionHandler exceptionHandler;
-		
+
 		public TransportFilter(ITransport next)
 		{
 			this.next = next;
 			this.next.Command = new CommandHandler(OnCommand);
 			this.next.Exception = new ExceptionHandler(OnException);
 		}
-		
+
+		~TransportFilter()
+		{
+			Dispose(false);
+		}
+
 		protected virtual void OnCommand(ITransport sender, Command command)
 		{
 			this.commandHandler(sender, command);
 		}
-		
+
 		protected virtual void OnException(ITransport sender, Exception command)
 		{
 			this.exceptionHandler(sender, command);
 		}
-		
+
 		/// <summary>
 		/// Method Oneway
 		/// </summary>
@@ -54,7 +59,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			this.next.Oneway(command);
 		}
-		
+
 		/// <summary>
 		/// Method AsyncRequest
 		/// </summary>
@@ -124,23 +129,32 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// <summary>
 		/// Method Dispose
 		/// </summary>
-		public virtual void Dispose()
+		public void Dispose()
 		{
-			this.next.Dispose();
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
-		
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if(disposing)
+			{
+				this.next.Dispose();
+			}
+		}
+
 		public CommandHandler Command
 		{
-            get { return commandHandler; }
-            set { this.commandHandler = value; }
-        }
-		
-        public  ExceptionHandler Exception
+			get { return commandHandler; }
+			set { this.commandHandler = value; }
+		}
+
+		public  ExceptionHandler Exception
 		{
-            get { return exceptionHandler; }
-            set { this.exceptionHandler = value; }
-        }
-		
-    }
+			get { return exceptionHandler; }
+			set { this.exceptionHandler = value; }
+		}
+
+	}
 }
 

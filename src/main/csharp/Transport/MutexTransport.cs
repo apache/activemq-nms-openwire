@@ -20,32 +20,32 @@ using System;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-    /// <summary>
-    /// A Transport which guards access to the next transport using a mutex.
-    /// </summary>
-    public class MutexTransport : TransportFilter
-    {
-        private readonly object transmissionLock = new object();
+	/// <summary>
+	/// A Transport which guards access to the next transport using a mutex.
+	/// </summary>
+	public class MutexTransport : TransportFilter
+	{
+		private readonly object transmissionLock = new object();
 
-        public MutexTransport(ITransport next) : base(next)
+		public MutexTransport(ITransport next) : base(next)
 		{
-        }
-        
-        public override void Oneway(Command command)
-        {
-            lock(transmissionLock)
-            {
-                this.next.Oneway(command);
-            }
-        }
+		}
 
-        public override FutureResponse AsyncRequest(Command command)
-        {
-            lock(transmissionLock)
-            {
-                return base.AsyncRequest(command);
-            }
-        }
+		public override void Oneway(Command command)
+		{
+			lock(transmissionLock)
+			{
+				this.next.Oneway(command);
+			}
+		}
+
+		public override FutureResponse AsyncRequest(Command command)
+		{
+			lock(transmissionLock)
+			{
+				return base.AsyncRequest(command);
+			}
+		}
 
 		public override Response Request(Command command, TimeSpan timeout)
 		{
@@ -54,13 +54,5 @@ namespace Apache.NMS.ActiveMQ.Transport
 				return base.Request(command, timeout);
 			}
 		}
-
-		public override void Dispose()
-        {
-            lock(transmissionLock)
-            {
-                base.Dispose();
-            }
-        }
-    }
+	}
 }

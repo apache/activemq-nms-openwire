@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ
 		public delegate void ExceptionHandler(Exception exception);
 
 		private readonly AutoResetEvent m_event = new AutoResetEvent(false);
-		private bool m_bStopFlag = false;
+		private readonly ManualResetEvent m_stopEvent = new ManualResetEvent(false);
 		private Thread m_thread = null;
 		private readonly DispatchFunction m_dispatchFunc;
 		private event ExceptionHandler m_exceptionListener;
@@ -37,7 +37,18 @@ namespace Apache.NMS.ActiveMQ
 			m_dispatchFunc = dispatchFunc;
 		}
 
-               // TODO can't use EventWaitHandle on MONO 1.0
+		public bool IsStarted
+		{
+			get
+			{
+				lock(this)
+				{
+					return (null != m_thread);
+				}
+			}
+		}
+
+			   // TODO can't use EventWaitHandle on MONO 1.0
 		public AutoResetEvent EventHandle
 		{
 			get { return m_event; }
@@ -49,7 +60,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				m_exceptionListener += value;
 			}
-			remove 
+			remove
 			{
 				m_exceptionListener -= value;
 			}
@@ -61,10 +72,9 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if (m_thread == null)
 				{
-					m_bStopFlag = false;
+					m_stopEvent.Reset();
 					m_thread = new Thread(new ThreadStart(MyThreadFunc));
 					m_thread.IsBackground = true;
-					m_event.Set();
 					Tracer.Info("Starting dispatcher thread for session");
 					m_thread.Start();
 				}
@@ -76,20 +86,16 @@ namespace Apache.NMS.ActiveMQ
 			Stop(System.Threading.Timeout.Infinite);
 		}
 
-		
+
 		internal void Stop(int timeoutMilliseconds)
 		{
 			Tracer.Info("Stopping dispatcher thread for session");
-			Thread localThread = null;
+			Thread localThread;
 			lock (this)
 			{
 				localThread = m_thread;
 				m_thread = null;
-				if (!m_bStopFlag)
-				{
-					m_bStopFlag = true;
-					m_event.Set();
-				}
+				m_stopEvent.Set();
 			}
 			if(localThread!=null)
 			{
@@ -101,30 +107,54 @@ namespace Apache.NMS.ActiveMQ
 			}
 			Tracer.Info("Dispatcher thread joined");
 		}
-		
+
 		private void MyThreadFunc()
 		{
 			Tracer.Info("Dispatcher thread started");
-			while (true) // loop forever (well, at least until we've been asked to stop)
-			{
-				lock (this)
-				{
-					if (m_bStopFlag)
-						break;
-				}
 
-				try
+			//
+			// Put m_stopEvent first so it is preferred if both are signaled
+			//
+			WaitHandle[] signals = new WaitHandle[] {
+				m_stopEvent,
+				m_event
+			};
+			const int kStopEventOffset = 0;
+
+			try
+			{
+				while (true) // loop forever (well, at least until we've been asked to stop)
 				{
-					m_dispatchFunc();
+					try
+					{
+						m_dispatchFunc();
+					}
+					catch(ThreadAbortException)
+					{
+						// Throw for handling down below
+						throw;
+					}
+					catch(Exception ex)
+					{
+						if(m_exceptionListener != null)
+						{
+							m_exceptionListener(ex);
+						}
+					}
+
+					int sigOffset = WaitHandle.WaitAny(signals);
+					if(kStopEventOffset == sigOffset)
+					{
+						break;
+					}
+					// otherwise, continue the loop
 				}
-				catch (Exception ex)
-				{
-					if (m_exceptionListener != null)
-						m_exceptionListener(ex);
-				}
-				m_event.WaitOne();
+				Tracer.Info("Dispatcher thread stopped");
 			}
-			Tracer.Info("Dispatcher thread stopped");
+			catch(ThreadAbortException)
+			{
+				Tracer.Info("Dispatcher thread aborted");
+			}
 		}
 	}
 }
