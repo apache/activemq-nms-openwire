@@ -111,7 +111,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				foreach(Session session in sessions)
 				{
-					session.StartAsyncDelivery(null);
+					session.StartAsyncDelivery();
 				}
 			}
 		}
@@ -164,7 +164,7 @@ namespace Apache.NMS.ActiveMQ
 
 			if(IsStarted)
 			{
-				session.StartAsyncDelivery(null);
+				session.StartAsyncDelivery();
 			}
 
 			sessions.Add(session);
