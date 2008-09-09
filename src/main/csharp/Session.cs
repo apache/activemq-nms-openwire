@@ -676,18 +676,18 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		internal void StartAsyncDelivery(Dispatcher dispatcher)
+		internal void StartAsyncDelivery()
 		{
-			if(dispatcher != null)
-			{
-				dispatcher.SetAsyncDelivery(dispatchingThread.EventHandle);
-			}
-
 			if(!dispatchingThread.IsStarted)
 			{
 				this.dispatchingThread.ExceptionListener += this.dispatchingThread_ExceptionHandler;
 				dispatchingThread.Start();
 			}
+		}
+
+		internal void RegisterConsumerDispatcher(Dispatcher dispatcher)
+		{
+			dispatcher.SetAsyncDelivery(this.dispatchingThread.EventHandle);
 		}
 	}
 }

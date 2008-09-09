@@ -90,7 +90,7 @@ namespace Apache.NMS.ActiveMQ
 			add
 			{
 				listener += value;
-				session.StartAsyncDelivery(dispatcher);
+				session.RegisterConsumerDispatcher(dispatcher);
 			}
 			remove { listener -= value; }
 		}
