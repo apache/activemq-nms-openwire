@@ -460,6 +460,10 @@ namespace Apache.NMS.ActiveMQ
 			{
 				DispatchMessage((MessageDispatch) command);
 			}
+			else if(command is KeepAliveInfo)
+			{
+				OnKeepAliveCommand(commandTransport, (KeepAliveInfo) command);
+			}
 			else if(command is WireFormatInfo)
 			{
 				this.brokerWireFormatInfo = (WireFormatInfo) command;
@@ -504,6 +508,23 @@ namespace Apache.NMS.ActiveMQ
 			if(!dispatched)
 			{
 				Tracer.Error("No such consumer active: " + dispatch.ConsumerId);
+			}
+		}
+
+		protected void OnKeepAliveCommand(ITransport commandTransport, KeepAliveInfo info)
+		{
+			Tracer.Info("Keep alive message received.");
+			if(info.ResponseRequired)
+			{
+				try
+				{
+					info.ResponseRequired = false;
+					OneWay(info);
+				}
+				catch(Exception ex)
+				{
+					OnException(commandTransport, ex);
+				}
 			}
 		}
 

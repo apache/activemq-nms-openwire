@@ -35,6 +35,7 @@
 
   <!-- Repository organized as: organization/module/version/plaform/artifact, platform might be something like 'all' or 'net-2.0/release' -->
   <property name="nunit.dll" value="${basedir}/vendor/Apache.NMS/lib/${current.build.framework}/nunit.framework.dll" dynamic="true"/>
+  <property name="nunit.extensions.dll" value="${basedir}/vendor/Apache.NMS/lib/${current.build.framework}/nunit.framework.extensions.dll" dynamic="true"/>
   <property name="Apache.NMS.dll" value="${basedir}/vendor/Apache.NMS/build/${current.build.framework}/${current.build.config}/Apache.NMS.dll" dynamic="true"/>
   <property name="Apache.NMS.pdb" value="${basedir}/vendor/Apache.NMS/build/${current.build.framework}/${current.build.config}/Apache.NMS.pdb" dynamic="true"/>
   <property name="Apache.NMS.xml" value="${basedir}/vendor/Apache.NMS/build/${current.build.framework}/${current.build.config}/Apache.NMS.xml" dynamic="true"/>
@@ -75,6 +76,7 @@
       <include name="${Apache.NMS.Test.dll}"/>
       <include name="${build.bin.dir}/${project.name}.dll"/>
       <include name="${nunit.dll}"/>
+      <include name="${nunit.extensions.dll}"/>
     </assemblyfileset>
 
     <fileset id="content.filenames">
@@ -88,6 +90,7 @@
       <include name="${Apache.NMS.Test.pdb}"/>
       <include name="${Apache.NMS.Test.xml}"/>
       <include name="${nunit.dll}"/>
+      <include name="${nunit.extensions.dll}"/>
     </fileset>
 
     <fileset id="install.filenames">

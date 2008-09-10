@@ -17,7 +17,8 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>activemq-dotnet.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
     <SccProjectName>Svn</SccProjectName>
     <SccLocalPath>Svn</SccLocalPath>
     <SccAuxPath>Svn</SccAuxPath>
@@ -41,6 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="nunit.framework, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
+    <Reference Include="nunit.framework.extensions, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -58,6 +60,7 @@
     <Compile Include="src\test\csharp\OpenWire\EndianTest.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\test\csharp\OpenWire\MaxInactivityDurationTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\PrimitiveMapTest.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -78,7 +81,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="activemq-dotnet.snk" />
     <Content Include="nmsprovider-test.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
