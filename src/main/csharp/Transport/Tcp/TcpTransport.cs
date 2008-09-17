@@ -127,8 +127,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				}
 				catch(Exception ex)
 				{
-					Monitor.Exit(myLock);
-					if (command.ResponseRequired)
+					if(command.ResponseRequired)
 					{
 						// Make sure that something higher up doesn't get blocked.
 						// Respond with an exception.
