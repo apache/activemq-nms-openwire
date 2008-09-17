@@ -36,19 +36,20 @@ namespace Apache.NMS.ActiveMQ
 		private TimeSpan requestTimeout;
 		private BrokerInfo brokerInfo; // from broker
 		private WireFormatInfo brokerWireFormatInfo; // from broker
-		private readonly IList sessions = new ArrayList();
+		private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
 		/// <summary>
 		/// Private object used for synchronization, instead of public "this"
 		/// </summary>
 		private readonly object myLock = new object();
 		private bool asyncSend = false;
 		private bool asyncClose = true;
-		private volatile bool closed;
-		private volatile bool triedConnect;
+		private bool connected = false;
+		private bool closed = false;
+		private bool closing = false;
 		private long sessionCounter = 0;
 		private long temporaryDestinationCounter = 0;
 		private long localTransactionCounter;
-		private bool started = false;
+		private readonly AtomicBoolean started = new AtomicBoolean(false);
 		private bool disposed = false;
 
 		public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
@@ -111,11 +112,10 @@ namespace Apache.NMS.ActiveMQ
 		public void Start()
 		{
 			CheckConnected();
-			lock(myLock)
+			if(started.CompareAndSet(false, true))
 			{
-				if(!started)
+				lock(sessions.SyncRoot)
 				{
-					started = true;
 					foreach(Session session in sessions)
 					{
 						session.StartAsyncDelivery();
@@ -130,7 +130,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public bool IsStarted
 		{
-			get { return started; }
+			get { return started.Value; }
 		}
 
 		/// <summary>
@@ -140,11 +140,10 @@ namespace Apache.NMS.ActiveMQ
 		public void Stop()
 		{
 			CheckConnected();
-			lock(myLock)
+			if(started.CompareAndSet(true, false))
 			{
-				if(started)
+				lock(sessions.SyncRoot)
 				{
-					started = false;
 					foreach(Session session in sessions)
 					{
 						session.StopAsyncDelivery();
@@ -174,22 +173,20 @@ namespace Apache.NMS.ActiveMQ
 			System.Collections.Specialized.StringDictionary map = URISupport.ParseQuery(this.brokerUri.Query);
 			URISupport.SetProperties(session, map, "session.");
 
-			lock(myLock)
+			if(IsStarted)
 			{
-				if(IsStarted)
-				{
-					session.StartAsyncDelivery();
-				}
-
-				sessions.Add(session);
+				session.StartAsyncDelivery();
 			}
+
+			sessions.Add(session);
 			return session;
 		}
 
 		public void RemoveSession(Session session)
 		{
 			DisposeOf(session.SessionId);
-			lock(myLock)
+
+			if(!this.closing)
 			{
 				sessions.Remove(session);
 			}
@@ -197,41 +194,22 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Close()
 		{
-			if(closed)
-			{
-				return;
-			}
-
-			//
-			// Do a first-run close of sessions after brief synchronization
-			//
-			IList sessionsCopy;
 			lock(myLock)
 			{
-				sessionsCopy = new ArrayList(sessions);
-			}
-
-			foreach(Session session in sessionsCopy)
-			{
-				session.Close();
-			}
-
-			lock(myLock)
-			{
-				if(closed)
+				if(this.closed)
 				{
 					return;
 				}
 
 				try
 				{
-					//
-					// Copy again for safe enumeration.  Always assume
-					// that closing a session modifies the sessions list.
-					//
-					foreach(Session session in new ArrayList(sessions))
+					this.closing = true;
+					lock(sessions.SyncRoot)
 					{
-						session.Close();
+						foreach(Session session in sessions)
+						{
+							session.Close();
+						}
 					}
 					sessions.Clear();
 
@@ -245,8 +223,9 @@ namespace Apache.NMS.ActiveMQ
 				}
 				finally
 				{
-					closed = true;
-					transport = null;
+					this.transport = null;
+					this.closed = true;
+					this.closing = false;
 				}
 			}
 		}
@@ -314,7 +293,7 @@ namespace Apache.NMS.ActiveMQ
 			get { return info.ClientId; }
 			set
 			{
-				if(triedConnect)
+				if(connected)
 				{
 					throw new NMSException("You cannot change the ClientId once the Connection is connected");
 				}
@@ -397,9 +376,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public String CreateTemporaryDestinationName()
 		{
-			return info.ConnectionId.Value
-				+ ":"
-				+ Interlocked.Increment(ref temporaryDestinationCounter);
+			return info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter);
 		}
 
 		/// <summary>
@@ -420,30 +397,14 @@ namespace Apache.NMS.ActiveMQ
 				throw new ConnectionClosedException();
 			}
 
-			if(triedConnect)
+			if(!connected)
 			{
-				return;
-			}
-
-			lock(myLock)
-			{
-				if(closed)
-				{
-					throw new ConnectionClosedException();
-				}
-
-				if(triedConnect)
-				{
-					return;
-				}
-
-				// Set this in advance, to short-circuit SyncRequest's call to this method
-				triedConnect = true;
-
+				connected = true;
 				// now lets send the connection and see if we get an ack/nak
 				if(null == SyncRequest(info))
 				{
 					closed = true;
+					connected = false;
 					throw new ConnectionClosedException();
 				}
 			}
@@ -475,12 +436,9 @@ namespace Apache.NMS.ActiveMQ
 			else if(command is ShutdownInfo)
 			{
 				//ShutdownInfo info = (ShutdownInfo)command;
-				lock(myLock)
+				if(!closing && !closed)
 				{
-					if(!closed)
-					{
-						OnException(commandTransport, new NMSException("Broker closed this connection."));
-					}
+					OnException(commandTransport, new NMSException("Broker closed this connection."));
 				}
 			}
 			else
@@ -493,7 +451,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			bool dispatched = false;
 
-			lock(myLock)
+			lock(sessions.SyncRoot)
 			{
 				foreach(Session session in sessions)
 				{
@@ -569,6 +527,5 @@ namespace Apache.NMS.ActiveMQ
 			answer.SessionId = sessionId;
 			return answer;
 		}
-
 	}
 }

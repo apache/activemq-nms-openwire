@@ -25,7 +25,6 @@ using System.Threading;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
-
 	/// <summary>
 	/// An implementation of ITransport that uses sockets to communicate with the broker
 	/// </summary>
@@ -38,14 +37,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private BinaryWriter socketWriter;
 		private Thread readThread;
 		private bool started;
-		private volatile bool closed;
+		private AtomicBoolean closed = new AtomicBoolean(false);
 		private volatile bool seenShutdown;
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
 
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
 		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
-
 
 		public TcpTransport(Socket socket, IWireFormat wireformat)
 		{
@@ -114,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			{
 				try
 				{
-					if(closed)
+					if(closed.Value)
 					{
 						throw new InvalidOperationException("Error writing to broker.  Transport connection is closed.");
 					}
@@ -129,6 +127,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				}
 				catch(Exception ex)
 				{
+					Monitor.Exit(myLock);
 					if (command.ResponseRequired)
 					{
 						// Make sure that something higher up doesn't get blocked.
@@ -183,17 +182,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public void Close()
 		{
-			if(!closed)
+			if(closed.CompareAndSet(false, true))
 			{
 				lock(myLock)
 				{
-					if(closed)
-					{
-						return;
-					}
-
-					closed = true;
-
 					try
 					{
 						socket.Shutdown(SocketShutdown.Both);
@@ -300,7 +292,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			// An exception in the command handler may not be fatal to the transport, so
 			// these are simply reported to the exceptionHandler.
 			//
-			while(!closed)
+			while(!closed.Value)
 			{
 				Command command = null;
 
@@ -311,11 +303,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				catch(Exception ex)
 				{
 					command = null;
-					if(!closed && !seenShutdown)
+					if(!closed.Value)
 					{
 						// Close the socket as there's little that can be done with this transport now.
 						Close();
-						this.exceptionHandler(this, ex);
+						if(!seenShutdown)
+						{
+							this.exceptionHandler(this, ex);
+						}
 					}
 
 					break;
