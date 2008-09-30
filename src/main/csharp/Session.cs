@@ -407,7 +407,7 @@ namespace Apache.NMS.ActiveMQ
 
 		// Properties
 
-		private TimeSpan requestTimeout;
+		private TimeSpan requestTimeout = Apache.NMS.NMSConstants.defaultRequestTimeout;
 		public TimeSpan RequestTimeout
 		{
 			get { return this.requestTimeout; }
