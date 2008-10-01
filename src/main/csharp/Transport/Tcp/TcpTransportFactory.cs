@@ -114,7 +114,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			Tracer.Debug("Opening socket to: " + location.Host + " on port: " + location.Port);
 			Socket socket = Connect(location.Host, location.Port);
 
-#if !NETCF
+#if !NETCF && !NET_1_1
 			socket.ReceiveBufferSize = ReceiveBufferSize;
 			socket.SendBufferSize = SendBufferSize;
 			socket.ReceiveTimeout = ReceiveTimeout;

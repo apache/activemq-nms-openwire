@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ
 		private long messageCounter = 0;
 
 		private bool msgPersistent = NMSConstants.defaultPersistence;
-		private TimeSpan requestTimeout;
+		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
 		private TimeSpan msgTimeToLive = NMSConstants.defaultTimeToLive;
 		private byte msgPriority = NMSConstants.defaultPriority;
 		private bool disableMessageID = false;
