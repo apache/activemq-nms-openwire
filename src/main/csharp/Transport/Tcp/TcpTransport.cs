@@ -151,7 +151,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public bool TcpNoDelayEnabled
 		{
-#if !NETCF
+#if !NETCF && !NET_1_1
 			get { return this.socket.NoDelay; }
 			set { this.socket.NoDelay = value; }
 #else
