@@ -105,6 +105,6 @@
   </target>
 
   <!-- Load the common target definitions  -->
-  <include buildfile="${basedir}/nant-common.xml"/>
+  <include buildfile="${basedir}/vendor/Apache.NMS/nant-common.xml"/>
 
 </project>
