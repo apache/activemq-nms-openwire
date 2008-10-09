@@ -9,7 +9,7 @@
     <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
     <WarningLevel>4</WarningLevel>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>
     </AssemblyOriginatorKeyFile>
     <FileUpgradeFlags>
