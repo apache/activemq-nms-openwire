@@ -41,6 +41,14 @@
     <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Apache.NMS, Version=1.0.0.0, Culture=neutral, PublicKeyToken=2a329723af30bc8d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>vendor\Apache.NMS\net-3.5\Apache.NMS.dll</HintPath>
+    </Reference>
+    <Reference Include="Apache.NMS.Test, Version=1.0.0.0, Culture=neutral, PublicKeyToken=2a329723af30bc8d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>vendor\Apache.NMS\net-3.5\Apache.NMS.Test.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -65,23 +73,15 @@
     <Compile Include="src\test\csharp\StompHelperTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="vendor\Apache.NMS\vs2008-nms-test.csproj">
-      <Project>{2F3ABCF5-EE87-43B1-9DE7-0548FD6A4E52}</Project>
-      <Name>vs2005-nms-test</Name>
-    </ProjectReference>
-    <ProjectReference Include="vendor\Apache.NMS\vs2008-nms.csproj">
-      <Project>{300C1716-0674-4D01-8F5D-151E59A504FE}</Project>
-      <Name>vs2005-nms</Name>
-    </ProjectReference>
-    <ProjectReference Include="vs2008-activemq.csproj">
-      <Project>{08321F42-4B3D-4815-B592-95962BAC3B9F}</Project>
-      <Name>vs2005-activemq</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="nmsprovider-test.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="vs2008-activemq.csproj">
+      <Project>{08321F42-4B3D-4815-B592-95962BAC3B9F}</Project>
+      <Name>vs2008-activemq</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
 </Project>
