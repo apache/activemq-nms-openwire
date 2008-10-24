@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using System;
+
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	
+
 	/// <summary>
 	/// An OpenWire command
 	/// </summary>
-	public interface DataStructure
+	public interface DataStructure : ICloneable
 	{
-		
 		byte GetDataStructureType();
 		bool IsMarshallAware();
 	}

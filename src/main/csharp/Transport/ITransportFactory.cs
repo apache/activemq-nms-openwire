@@ -20,7 +20,8 @@ using System;
 namespace Apache.NMS.ActiveMQ.Transport
 {
 	public interface ITransportFactory
-    {
+	{
 		ITransport CreateTransport(Uri location);
+		ITransport CompositeConnect(Uri location);
 	}
 }

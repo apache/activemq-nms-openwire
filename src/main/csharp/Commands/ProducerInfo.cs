@@ -20,66 +20,69 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ProducerInfo Command
-    /// </summary>
-    public class ProducerInfo : BaseCommand
-    {
-        public const byte ID_ProducerInfo = 6;
-    			
-        ProducerId producerId;
-        ActiveMQDestination destination;
-        BrokerId[] brokerPath;
-        bool dispatchAsync;
+	/// <summary>
+	///  The ActiveMQ ProducerInfo Command
+	/// </summary>
+	public class ProducerInfo : BaseCommand
+	{
+		public const byte ID_ProducerInfo = 6;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ProducerId=" + ProducerId
-                + " Destination=" + Destination
-                + " BrokerPath=" + BrokerPath
-                + " DispatchAsync=" + DispatchAsync
-                + " ]";
+		ProducerId producerId;
+		ActiveMQDestination destination;
+		BrokerId[] brokerPath;
+		bool dispatchAsync;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ProducerId=" + ProducerId
+				+ " Destination=" + Destination
+				+ " BrokerPath=" + BrokerPath
+				+ " DispatchAsync=" + DispatchAsync
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ProducerInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ProducerInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ProducerId ProducerId
-        {
-            get { return producerId; }
-            set { this.producerId = value; }            
-        }
+		public ProducerId ProducerId
+		{
+			get { return producerId; }
+			set { this.producerId = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public BrokerId[] BrokerPath
-        {
-            get { return brokerPath; }
-            set { this.brokerPath = value; }            
-        }
+		public BrokerId[] BrokerPath
+		{
+			get { return brokerPath; }
+			set { this.brokerPath = value; }
+		}
 
-        public bool DispatchAsync
-        {
-            get { return dispatchAsync; }
-            set { this.dispatchAsync = value; }            
-        }
+		public bool DispatchAsync
+		{
+			get { return dispatchAsync; }
+			set { this.dispatchAsync = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processAddProducer(this);
+		}
+	}
 }

@@ -20,58 +20,61 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ RemoveSubscriptionInfo Command
-    /// </summary>
-    public class RemoveSubscriptionInfo : BaseCommand
-    {
-        public const byte ID_RemoveSubscriptionInfo = 9;
+	/// <summary>
+	///  The ActiveMQ RemoveSubscriptionInfo Command
+	/// </summary>
+	public class RemoveSubscriptionInfo : BaseCommand
+	{
+		public const byte ID_RemoveSubscriptionInfo = 9;
 
-        ConnectionId connectionId;
-        string subcriptionName;
-        string clientId;
+		ConnectionId connectionId;
+		string subcriptionName;
+		string clientId;
 
-        public override string ToString() {
-            return GetType().Name + "["
-                + " ConnectionId=" + ConnectionId
-                + " SubcriptionName=" + SubcriptionName
-                + " ClientId=" + ClientId
-                + " ]";
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConnectionId=" + ConnectionId
+				+ " SubcriptionName=" + SubcriptionName
+				+ " ClientId=" + ClientId
+				+ " ]";
 
-        }
+		}
 
-        public override byte GetDataStructureType() {
-            return ID_RemoveSubscriptionInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_RemoveSubscriptionInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConnectionId ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }
-        }
+		public ConnectionId ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-        public string SubcriptionName
-        {
-            get { return subcriptionName; }
-            set { this.subcriptionName = value; }
-        }
+		public string SubcriptionName
+		{
+			get { return subcriptionName; }
+			set { this.subcriptionName = value; }
+		}
 
-        public string ClientId
-        {
-            get { return clientId; }
-            set { this.clientId = value; }
-        }
+		public string ClientId
+		{
+			get { return clientId; }
+			set { this.clientId = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processRemoveSubscription(this);
+		}
+	}
 }

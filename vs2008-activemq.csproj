@@ -237,6 +237,7 @@
     <Compile Include="src\main\csharp\Commands\PartialCommand.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Commands\ProducerAck.cs" />
     <Compile Include="src\main\csharp\Commands\ProducerId.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -303,6 +304,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\main\csharp\DispatchingThread.cs" />
+    <Compile Include="src\main\csharp\IOException.cs" />
     <Compile Include="src\main\csharp\ISynchronization.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -700,12 +702,32 @@
     <Compile Include="src\main\csharp\Session.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\State\CommandVisitorAdapter.cs" />
+    <Compile Include="src\main\csharp\State\ConnectionState.cs" />
+    <Compile Include="src\main\csharp\State\ConnectionStateTracker.cs" />
+    <Compile Include="src\main\csharp\State\ConsumerState.cs" />
+    <Compile Include="src\main\csharp\State\ICommandVisitor.cs" />
+    <Compile Include="src\main\csharp\State\ProducerState.cs" />
+    <Compile Include="src\main\csharp\State\SessionState.cs" />
+    <Compile Include="src\main\csharp\State\SynchronizedObjects.cs" />
+    <Compile Include="src\main\csharp\State\ThreadSimulator.cs" />
+    <Compile Include="src\main\csharp\State\Tracked.cs" />
+    <Compile Include="src\main\csharp\State\TransactionState.cs" />
+    <Compile Include="src\main\csharp\Threads\DefaultThreadPools.cs" />
+    <Compile Include="src\main\csharp\Threads\PooledTaskRunner.cs" />
+    <Compile Include="src\main\csharp\Threads\Task.cs" />
+    <Compile Include="src\main\csharp\Threads\TaskRunner.cs" />
+    <Compile Include="src\main\csharp\Threads\TaskRunnerFactory.cs" />
     <Compile Include="src\main\csharp\TransactionContext.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Transport\Failover\BackupTransport.cs" />
+    <Compile Include="src\main\csharp\Transport\Failover\FailoverTransport.cs" />
+    <Compile Include="src\main\csharp\Transport\Failover\FailoverTransportFactory.cs" />
     <Compile Include="src\main\csharp\Transport\FutureResponse.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Transport\ICompositeTransport.cs" />
     <Compile Include="src\main\csharp\Transport\ITransport.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -731,6 +753,7 @@
     <Compile Include="src\main\csharp\Transport\Tcp\TcpTransportFactory.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Transport\TransportFactory.cs" />
     <Compile Include="src\main\csharp\Transport\TransportFilter.cs">
       <SubType>Code</SubType>
     </Compile>

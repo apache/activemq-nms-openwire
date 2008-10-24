@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.Transport;
+
 using System;
+using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -28,6 +28,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		protected readonly ITransport next;
 		protected CommandHandler commandHandler;
 		protected ExceptionHandler exceptionHandler;
+		private bool disposed = false;
 
 		public TransportFilter(ITransport next)
 		{
@@ -107,12 +108,12 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			if(commandHandler == null)
 			{
-				throw new InvalidOperationException ("command cannot be null when Start is called.");
+				throw new InvalidOperationException("command cannot be null when Start is called.");
 			}
 
 			if(exceptionHandler == null)
 			{
-				throw new InvalidOperationException ("exception cannot be null when Start is called.");
+				throw new InvalidOperationException("exception cannot be null when Start is called.");
 			}
 
 			this.next.Start();
@@ -141,6 +142,15 @@ namespace Apache.NMS.ActiveMQ.Transport
 			{
 				this.next.Dispose();
 			}
+			disposed = true;
+		}
+
+		public bool IsDisposed
+		{
+			get
+			{
+				return disposed;
+			}
 		}
 
 		public CommandHandler Command
@@ -149,12 +159,15 @@ namespace Apache.NMS.ActiveMQ.Transport
 			set { this.commandHandler = value; }
 		}
 
-		public  ExceptionHandler Exception
+		public ExceptionHandler Exception
 		{
 			get { return exceptionHandler; }
 			set { this.exceptionHandler = value; }
 		}
 
+		public virtual void Stop()
+		{
+		}
 	}
 }
 

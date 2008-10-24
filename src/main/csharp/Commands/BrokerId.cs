@@ -21,61 +21,79 @@
 //
 
 using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ BrokerId Command
-    /// </summary>
-    public class BrokerId : BaseDataStructure, DataStructure
-    {
-        public const byte ID_BrokerId = 124;
-    			
-        string value;
+	/// <summary>
+	///  The ActiveMQ BrokerId Command
+	/// </summary>
+	public class BrokerId : BaseDataStructure, DataStructure
+	{
+		public const byte ID_BrokerId = 124;
 
-		public override int GetHashCode() {
-            int answer = 0;
-            answer = (answer * 37) + HashCode(Value);
-            return answer;
+		string value;
+
+		public override int GetHashCode()
+		{
+			int answer = 0;
+			answer = (answer * 37) + HashCode(Value);
+			return answer;
 
 		}
 
-		public override bool Equals(object that) {
-	    	if (that is BrokerId) {
-	    	    return Equals((BrokerId) that);
+		public override bool Equals(object that)
+		{
+			if(that is BrokerId)
+			{
+				return Equals((BrokerId) that);
 			}
 			return false;
-    	}
+		}
 
-		public virtual bool Equals(BrokerId that) {
-            if (! Equals(this.Value, that.Value)) return false;
-            return true;
+		public virtual bool Equals(BrokerId that)
+		{
+			if(!Equals(this.Value, that.Value))
+				return false;
+			return true;
 
 		}
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Value=" + Value
-                + " ]";
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Value=" + Value
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_BrokerId;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_BrokerId;
+		}
 
 
-        // Properties
+		// Properties
 
-        public string Value
-        {
-            get { return value; }
-            set { this.value = value; }            
-        }
+		public string Value
+		{
+			get { return value; }
+			set { this.value = value; }
+		}
 
-    }
+		public override Object Clone()
+		{
+			// Since we are a derived class use the base's Clone()
+			// to perform the shallow copy. Since it is shallow it
+			// will include our derived class. Since we are derived,
+			// this method is an override.
+			BrokerId o = (BrokerId) base.Clone();
+
+			// Now do the deep work required
+			// If any new variables are added then this routine will
+			// likely need updating
+
+			return o;
+		}
+	}
 }

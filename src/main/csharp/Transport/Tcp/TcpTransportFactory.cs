@@ -16,14 +16,12 @@
  */
 
 using System;
+using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Specialized;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.Transport.Stomp;
-using Apache.NMS;
 using Apache.NMS.Util;
-using System.Threading;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
@@ -103,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		#region ITransportFactory Members
 
-		public ITransport CreateTransport(Uri location)
+		public ITransport CompositeConnect(Uri location)
 		{
 			// Extract query parameters from broker Uri
 			StringDictionary map = URISupport.ParseQuery(location.Query);
@@ -135,6 +133,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			{
 				transport = new WireFormatNegotiator(transport, (OpenWireFormat) wireformat);
 			}
+
+			transport.RequestTimeout = this.requestTimeout;
+
+			return transport;
+		}
+
+		public ITransport CreateTransport(Uri location)
+		{
+			ITransport transport = CompositeConnect(location);
 
 			transport = new MutexTransport(transport);
 			transport = new ResponseCorrelator(transport);

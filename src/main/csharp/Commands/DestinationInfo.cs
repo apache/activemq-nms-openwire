@@ -20,74 +20,104 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ DestinationInfo Command
-    /// </summary>
-    public class DestinationInfo : BaseCommand
-    {
-        public const byte ID_DestinationInfo = 8;
-    			
-        ConnectionId connectionId;
-        ActiveMQDestination destination;
-        byte operationType;
-        long timeout;
-        BrokerId[] brokerPath;
+	/// <summary>
+	///  The ActiveMQ DestinationInfo Command
+	/// </summary>
+	public class DestinationInfo : BaseCommand
+	{
+		public const byte ID_DestinationInfo = 8;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConnectionId=" + ConnectionId
-                + " Destination=" + Destination
-                + " OperationType=" + OperationType
-                + " Timeout=" + Timeout
-                + " BrokerPath=" + BrokerPath
-                + " ]";
+		public const byte ADD_OPERATION_TYPE = 0;
+		public const byte REMOVE_OPERATION_TYPE = 1;
+
+		ConnectionId connectionId;
+		ActiveMQDestination destination;
+		byte operationType;
+		long timeout;
+		BrokerId[] brokerPath;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConnectionId=" + ConnectionId
+				+ " Destination=" + Destination
+				+ " OperationType=" + OperationType
+				+ " Timeout=" + Timeout
+				+ " BrokerPath=" + BrokerPath
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_DestinationInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_DestinationInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConnectionId ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public ConnectionId ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public byte OperationType
-        {
-            get { return operationType; }
-            set { this.operationType = value; }            
-        }
+		public byte OperationType
+		{
+			get { return operationType; }
+			set { this.operationType = value; }
+		}
 
-        public long Timeout
-        {
-            get { return timeout; }
-            set { this.timeout = value; }            
-        }
+		public long Timeout
+		{
+			get { return timeout; }
+			set { this.timeout = value; }
+		}
 
-        public BrokerId[] BrokerPath
-        {
-            get { return brokerPath; }
-            set { this.brokerPath = value; }            
-        }
+		public BrokerId[] BrokerPath
+		{
+			get { return brokerPath; }
+			set { this.brokerPath = value; }
+		}
 
-    }
+		public bool IsAddOperation
+		{
+			get
+			{
+				return OperationType == ADD_OPERATION_TYPE;
+			}
+		}
+
+		public bool IsRemoveOperation
+		{
+			get
+			{
+				return OperationType == REMOVE_OPERATION_TYPE;
+			}
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			if(IsAddOperation)
+			{
+				return visitor.processAddDestination(this);
+			}
+			else if(IsRemoveOperation)
+			{
+				return visitor.processRemoveDestination(this);
+			}
+			throw new IOException("Unknown operation type: " + OperationType);
+		}
+	}
 }

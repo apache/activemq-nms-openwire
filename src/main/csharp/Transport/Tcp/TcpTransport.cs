@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Transport;
-using Apache.NMS.Util;
+
 using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
@@ -37,6 +37,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private BinaryWriter socketWriter;
 		private Thread readThread;
 		private bool started;
+		private bool disposed = false;
 		private AtomicBoolean closed = new AtomicBoolean(false);
 		private volatile bool seenShutdown;
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
@@ -63,15 +64,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			lock(myLock)
 			{
-				if (!started)
+				if(!started)
 				{
-					if (null == commandHandler)
+					if(null == commandHandler)
 					{
 						throw new InvalidOperationException(
 								"command cannot be null when Start is called.");
 					}
 
-					if (null == exceptionHandler)
+					if(null == exceptionHandler)
 					{
 						throw new InvalidOperationException(
 								"exception cannot be null when Start is called.");
@@ -179,6 +180,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
 		}
 
+		public void Stop()
+		{
+			Close();
+		}
+
 		public void Close()
 		{
 			if(closed.CompareAndSet(false, true))
@@ -235,9 +241,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					{
 						if(Thread.CurrentThread != readThread
 #if !NETCF
-							&& readThread.IsAlive
+ && readThread.IsAlive
 #endif
-							)
+)
 						{
 							TimeSpan waitTime;
 
@@ -273,6 +279,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		protected void Dispose(bool disposing)
 		{
 			Close();
+			disposed = true;
+		}
+
+		public bool IsDisposed
+		{
+			get
+			{
+				return disposed;
+			}
 		}
 
 		public void ReadLoop()
@@ -337,7 +352,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { this.commandHandler = value; }
 		}
 
-		public  ExceptionHandler Exception
+		public ExceptionHandler Exception
 		{
 			get { return exceptionHandler; }
 			set { this.exceptionHandler = value; }

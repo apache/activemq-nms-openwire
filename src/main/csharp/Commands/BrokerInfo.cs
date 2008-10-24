@@ -20,114 +20,125 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ BrokerInfo Command
-    /// </summary>
-    public class BrokerInfo : BaseCommand
-    {
-        public const byte ID_BrokerInfo = 2;
-    			
-        BrokerId brokerId;
-        string brokerURL;
-        BrokerInfo[] peerBrokerInfos;
-        string brokerName;
-        bool slaveBroker;
-        bool masterBroker;
-        bool faultTolerantConfiguration;
-        bool duplexConnection;
-        bool networkConnection;
-        long connectionId;
+	/// <summary>
+	///  The ActiveMQ BrokerInfo Command
+	/// </summary>
+	public class BrokerInfo : BaseCommand
+	{
+		public const byte ID_BrokerInfo = 2;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " BrokerId=" + BrokerId
-                + " BrokerURL=" + BrokerURL
-                + " PeerBrokerInfos=" + PeerBrokerInfos
-                + " BrokerName=" + BrokerName
-                + " SlaveBroker=" + SlaveBroker
-                + " MasterBroker=" + MasterBroker
-                + " FaultTolerantConfiguration=" + FaultTolerantConfiguration
-                + " DuplexConnection=" + DuplexConnection
-                + " NetworkConnection=" + NetworkConnection
-                + " ConnectionId=" + ConnectionId
-                + " ]";
+		BrokerId brokerId;
+		string brokerURL;
+		BrokerInfo[] peerBrokerInfos;
+		string brokerName;
+		bool slaveBroker;
+		bool masterBroker;
+		bool faultTolerantConfiguration;
+		bool duplexConnection;
+		bool networkConnection;
+		long connectionId;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " BrokerId=" + BrokerId
+				+ " BrokerURL=" + BrokerURL
+				+ " PeerBrokerInfos=" + PeerBrokerInfos
+				+ " BrokerName=" + BrokerName
+				+ " SlaveBroker=" + SlaveBroker
+				+ " MasterBroker=" + MasterBroker
+				+ " FaultTolerantConfiguration=" + FaultTolerantConfiguration
+				+ " DuplexConnection=" + DuplexConnection
+				+ " NetworkConnection=" + NetworkConnection
+				+ " ConnectionId=" + ConnectionId
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_BrokerInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_BrokerInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public BrokerId BrokerId
-        {
-            get { return brokerId; }
-            set { this.brokerId = value; }            
-        }
+		public BrokerId BrokerId
+		{
+			get { return brokerId; }
+			set { this.brokerId = value; }
+		}
 
-        public string BrokerURL
-        {
-            get { return brokerURL; }
-            set { this.brokerURL = value; }            
-        }
+		public string BrokerURL
+		{
+			get { return brokerURL; }
+			set { this.brokerURL = value; }
+		}
 
-        public BrokerInfo[] PeerBrokerInfos
-        {
-            get { return peerBrokerInfos; }
-            set { this.peerBrokerInfos = value; }            
-        }
+		public BrokerInfo[] PeerBrokerInfos
+		{
+			get { return peerBrokerInfos; }
+			set { this.peerBrokerInfos = value; }
+		}
 
-        public string BrokerName
-        {
-            get { return brokerName; }
-            set { this.brokerName = value; }            
-        }
+		public string BrokerName
+		{
+			get { return brokerName; }
+			set { this.brokerName = value; }
+		}
 
-        public bool SlaveBroker
-        {
-            get { return slaveBroker; }
-            set { this.slaveBroker = value; }            
-        }
+		public bool SlaveBroker
+		{
+			get { return slaveBroker; }
+			set { this.slaveBroker = value; }
+		}
 
-        public bool MasterBroker
-        {
-            get { return masterBroker; }
-            set { this.masterBroker = value; }            
-        }
+		public bool MasterBroker
+		{
+			get { return masterBroker; }
+			set { this.masterBroker = value; }
+		}
 
-        public bool FaultTolerantConfiguration
-        {
-            get { return faultTolerantConfiguration; }
-            set { this.faultTolerantConfiguration = value; }            
-        }
+		public bool FaultTolerantConfiguration
+		{
+			get { return faultTolerantConfiguration; }
+			set { this.faultTolerantConfiguration = value; }
+		}
 
-        public bool DuplexConnection
-        {
-            get { return duplexConnection; }
-            set { this.duplexConnection = value; }            
-        }
+		public bool DuplexConnection
+		{
+			get { return duplexConnection; }
+			set { this.duplexConnection = value; }
+		}
 
-        public bool NetworkConnection
-        {
-            get { return networkConnection; }
-            set { this.networkConnection = value; }            
-        }
+		public bool NetworkConnection
+		{
+			get { return networkConnection; }
+			set { this.networkConnection = value; }
+		}
 
-        public long ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public long ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-    }
+		public override bool IsBrokerInfo
+		{
+			get
+			{
+				return true;
+			}
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processBrokerInfo(this);
+		}
+	}
 }

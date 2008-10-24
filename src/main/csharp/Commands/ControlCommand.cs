@@ -20,42 +20,45 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ControlCommand Command
-    /// </summary>
-    public class ControlCommand : BaseCommand
-    {
-        public const byte ID_ControlCommand = 14;
-    			
-        string command;
+	/// <summary>
+	///  The ActiveMQ ControlCommand Command
+	/// </summary>
+	public class ControlCommand : BaseCommand
+	{
+		public const byte ID_ControlCommand = 14;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Command=" + Command
-                + " ]";
+		string command;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Command=" + Command
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ControlCommand;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ControlCommand;
+		}
 
 
-        // Properties
+		// Properties
 
-        public string Command
-        {
-            get { return command; }
-            set { this.command = value; }            
-        }
+		public string Command
+		{
+			get { return command; }
+			set { this.command = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processControlCommand(this);
+		}
+	}
 }

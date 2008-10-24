@@ -21,33 +21,36 @@
 //
 
 using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ LastPartialCommand Command
-    /// </summary>
-    public class LastPartialCommand : PartialCommand
-    {
-        public const byte ID_LastPartialCommand = 61;
-    			
+	/// <summary>
+	///  The ActiveMQ LastPartialCommand Command
+	/// </summary>
+	public class LastPartialCommand : PartialCommand
+	{
+		public const byte ID_LastPartialCommand = 61;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ]";
+
+		public override string ToString()
+		{
+			return GetType().Name + "[" + " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_LastPartialCommand;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_LastPartialCommand;
+		}
 
+		public override Response visit(ICommandVisitor visitor)
+		{
+			throw new ApplicationException("The transport layer should filter out LastPartialCommand instances but received: " + this);
+		}
 
-        // Properties
+		// Properties
 
-    }
+	}
 }

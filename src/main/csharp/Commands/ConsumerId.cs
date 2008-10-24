@@ -20,82 +20,97 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
-
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
-
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConsumerId Command
-    /// </summary>
-    public class ConsumerId : BaseDataStructure, DataStructure
-    {
-        public const byte ID_ConsumerId = 122;
-    			
-        string connectionId;
-        long sessionId;
-        long value;
+	/// <summary>
+	///  The ActiveMQ ConsumerId Command
+	/// </summary>
+	public class ConsumerId : BaseDataStructure, DataStructure
+	{
+		public const byte ID_ConsumerId = 122;
 
-		public override int GetHashCode() {
-            int answer = 0;
-            answer = (answer * 37) + HashCode(ConnectionId);
-            answer = (answer * 37) + HashCode(SessionId);
-            answer = (answer * 37) + HashCode(Value);
-            return answer;
+		string connectionId;
+		long sessionId;
+		long value;
+		private SessionId _parentId;
+
+		public override int GetHashCode()
+		{
+			int answer = 0;
+			answer = (answer * 37) + HashCode(ConnectionId);
+			answer = (answer * 37) + HashCode(SessionId);
+			answer = (answer * 37) + HashCode(Value);
+			return answer;
 
 		}
 
-		public override bool Equals(object that) {
-	    	if (that is ConsumerId) {
-	    	    return Equals((ConsumerId) that);
+		public override bool Equals(object that)
+		{
+			if(that is ConsumerId)
+			{
+				return Equals((ConsumerId) that);
 			}
 			return false;
-    	}
+		}
 
-		public virtual bool Equals(ConsumerId that) {
-            if (! Equals(this.ConnectionId, that.ConnectionId)) return false;
-            if (! Equals(this.SessionId, that.SessionId)) return false;
-            if (! Equals(this.Value, that.Value)) return false;
-            return true;
+		public virtual bool Equals(ConsumerId that)
+		{
+			if(!Equals(this.ConnectionId, that.ConnectionId))
+				return false;
+			if(!Equals(this.SessionId, that.SessionId))
+				return false;
+			if(!Equals(this.Value, that.Value))
+				return false;
+			return true;
 
 		}
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConnectionId=" + ConnectionId
-                + " SessionId=" + SessionId
-                + " Value=" + Value
-                + " ]";
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConnectionId=" + ConnectionId
+				+ " SessionId=" + SessionId
+				+ " Value=" + Value
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConsumerId;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConsumerId;
+		}
 
 
-        // Properties
+		// Properties
 
-        public string ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public string ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-        public long SessionId
-        {
-            get { return sessionId; }
-            set { this.sessionId = value; }            
-        }
+		public long SessionId
+		{
+			get { return sessionId; }
+			set { this.sessionId = value; }
+		}
 
-        public long Value
-        {
-            get { return value; }
-            set { this.value = value; }            
-        }
+		public long Value
+		{
+			get { return value; }
+			set { this.value = value; }
+		}
 
-    }
+		public SessionId ParentId
+		{
+			get
+			{
+				if(_parentId == null)
+				{
+					_parentId = new SessionId(this);
+				}
+				return _parentId;
+			}
+		}
+	}
 }

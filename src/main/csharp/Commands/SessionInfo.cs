@@ -20,42 +20,55 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ SessionInfo Command
-    /// </summary>
-    public class SessionInfo : BaseCommand
-    {
-        public const byte ID_SessionInfo = 4;
-    			
-        SessionId sessionId;
+	/// <summary>
+	///  The ActiveMQ SessionInfo Command
+	/// </summary>
+	public class SessionInfo : BaseCommand
+	{
+		public const byte ID_SessionInfo = 4;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " SessionId=" + SessionId
-                + " ]";
+		SessionId sessionId;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " SessionId=" + SessionId
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_SessionInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_SessionInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public SessionId SessionId
-        {
-            get { return sessionId; }
-            set { this.sessionId = value; }            
-        }
+		public SessionId SessionId
+		{
+			get { return sessionId; }
+			set { this.sessionId = value; }
+		}
 
-    }
+		public SessionInfo(ConnectionInfo connectionInfo, long sessionId)
+		{
+			this.sessionId = new SessionId(connectionInfo.ConnectionId, sessionId);
+		}
+
+		public SessionInfo()
+			: base()
+		{
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processAddSession(this);
+		}
+	}
 }

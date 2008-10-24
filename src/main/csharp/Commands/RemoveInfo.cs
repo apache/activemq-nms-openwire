@@ -20,42 +20,57 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ RemoveInfo Command
-    /// </summary>
-    public class RemoveInfo : BaseCommand
-    {
-        public const byte ID_RemoveInfo = 12;
-    			
-        DataStructure objectId;
+	/// <summary>
+	///  The ActiveMQ RemoveInfo Command
+	/// </summary>
+	public class RemoveInfo : BaseCommand
+	{
+		public const byte ID_RemoveInfo = 12;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ObjectId=" + ObjectId
-                + " ]";
+		DataStructure objectId;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ObjectId=" + ObjectId
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_RemoveInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_RemoveInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public DataStructure ObjectId
-        {
-            get { return objectId; }
-            set { this.objectId = value; }            
-        }
+		public DataStructure ObjectId
+		{
+			get { return objectId; }
+			set { this.objectId = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			switch(objectId.GetDataStructureType())
+			{
+				case ConnectionId.ID_ConnectionId:
+					return visitor.processRemoveConnection((ConnectionId) objectId);
+				case SessionId.ID_SessionId:
+					return visitor.processRemoveSession((SessionId) objectId);
+				case ConsumerId.ID_ConsumerId:
+					return visitor.processRemoveConsumer((ConsumerId) objectId);
+				case ProducerId.ID_ProducerId:
+					return visitor.processRemoveProducer((ProducerId) objectId);
+				default:
+					throw new IOException("Unknown remove command type: " + objectId.GetDataStructureType());
+			}
+		}
+	}
 }

@@ -20,58 +20,62 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ MessagePull Command
-    /// </summary>
-    public class MessagePull : BaseCommand
-    {
-        public const byte ID_MessagePull = 20;
-    			
-        ConsumerId consumerId;
-        ActiveMQDestination destination;
-        long timeout;
+	/// <summary>
+	///  The ActiveMQ MessagePull Command
+	/// </summary>
+	public class MessagePull : BaseCommand
+	{
+		public const byte ID_MessagePull = 20;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConsumerId=" + ConsumerId
-                + " Destination=" + Destination
-                + " Timeout=" + Timeout
-                + " ]";
+		ConsumerId consumerId;
+		ActiveMQDestination destination;
+		long timeout;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConsumerId=" + ConsumerId
+				+ " Destination=" + Destination
+				+ " Timeout=" + Timeout
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_MessagePull;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_MessagePull;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConsumerId ConsumerId
-        {
-            get { return consumerId; }
-            set { this.consumerId = value; }            
-        }
+		public ConsumerId ConsumerId
+		{
+			get { return consumerId; }
+			set { this.consumerId = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public long Timeout
-        {
-            get { return timeout; }
-            set { this.timeout = value; }            
-        }
+		public long Timeout
+		{
+			get { return timeout; }
+			set { this.timeout = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processMessagePull(this);
+		}
+
+	}
 }

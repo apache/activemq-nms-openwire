@@ -21,241 +21,328 @@
 //
 
 using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ Message Command
-    /// </summary>
-    public class Message : BaseCommand, MarshallAware, MessageReference
-    {
-        public const byte ID_Message = 0;
-    			
-        ProducerId producerId;
-        ActiveMQDestination destination;
-        TransactionId transactionId;
-        ActiveMQDestination originalDestination;
-        MessageId messageId;
-        TransactionId originalTransactionId;
-        string groupID;
-        int groupSequence;
-        string correlationId;
-        bool persistent;
-        long expiration;
-        byte priority;
-        ActiveMQDestination replyTo;
-        long timestamp;
-        string type;
-        byte[] content;
-        byte[] marshalledProperties;
-        DataStructure dataStructure;
-        ConsumerId targetConsumerId;
-        bool compressed;
-        int redeliveryCounter;
-        BrokerId[] brokerPath;
-        long arrival;
-        string userID;
-        bool recievedByDFBridge;
-        bool droppable;
+	/// <summary>
+	///  The ActiveMQ Message Command
+	/// </summary>
+	public class Message : BaseCommand, MarshallAware, MessageReference, ICloneable
+	{
+		public const byte ID_Message = 0;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ProducerId=" + ProducerId
-                + " Destination=" + Destination
-                + " TransactionId=" + TransactionId
-                + " OriginalDestination=" + OriginalDestination
-                + " MessageId=" + MessageId
-                + " OriginalTransactionId=" + OriginalTransactionId
-                + " GroupID=" + GroupID
-                + " GroupSequence=" + GroupSequence
-                + " CorrelationId=" + CorrelationId
-                + " Persistent=" + Persistent
-                + " Expiration=" + Expiration
-                + " Priority=" + Priority
-                + " ReplyTo=" + ReplyTo
-                + " Timestamp=" + Timestamp
-                + " Type=" + Type
-                + " Content=" + Content
-                + " MarshalledProperties=" + MarshalledProperties
-                + " DataStructure=" + DataStructure
-                + " TargetConsumerId=" + TargetConsumerId
-                + " Compressed=" + Compressed
-                + " RedeliveryCounter=" + RedeliveryCounter
-                + " BrokerPath=" + BrokerPath
-                + " Arrival=" + Arrival
-                + " UserID=" + UserID
-                + " RecievedByDFBridge=" + RecievedByDFBridge
-                + " Droppable=" + Droppable
-                + " ]";
+		ProducerId producerId;
+		ActiveMQDestination destination;
+		TransactionId transactionId;
+		ActiveMQDestination originalDestination;
+		MessageId messageId;
+		TransactionId originalTransactionId;
+		string groupID;
+		int groupSequence;
+		string correlationId;
+		bool persistent;
+		long expiration;
+		byte priority;
+		ActiveMQDestination replyTo;
+		long timestamp;
+		string type;
+		byte[] content;
+		byte[] marshalledProperties;
+		DataStructure dataStructure;
+		ConsumerId targetConsumerId;
+		bool compressed;
+		int redeliveryCounter;
+		BrokerId[] brokerPath;
+		long arrival;
+		string userID;
+		bool receivedByDFBridge;
+		bool droppable;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ProducerId=" + ProducerId
+				+ " Destination=" + Destination
+				+ " TransactionId=" + TransactionId
+				+ " OriginalDestination=" + OriginalDestination
+				+ " MessageId=" + MessageId
+				+ " OriginalTransactionId=" + OriginalTransactionId
+				+ " GroupID=" + GroupID
+				+ " GroupSequence=" + GroupSequence
+				+ " CorrelationId=" + CorrelationId
+				+ " Persistent=" + Persistent
+				+ " Expiration=" + Expiration
+				+ " Priority=" + Priority
+				+ " ReplyTo=" + ReplyTo
+				+ " Timestamp=" + Timestamp
+				+ " Type=" + Type
+				+ " Content=" + Content
+				+ " MarshalledProperties=" + MarshalledProperties
+				+ " DataStructure=" + DataStructure
+				+ " TargetConsumerId=" + TargetConsumerId
+				+ " Compressed=" + Compressed
+				+ " RedeliveryCounter=" + RedeliveryCounter
+				+ " BrokerPath=" + BrokerPath
+				+ " Arrival=" + Arrival
+				+ " UserID=" + UserID
+				+ " RecievedByDFBridge=" + RecievedByDFBridge
+				+ " Droppable=" + Droppable
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_Message;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_Message;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ProducerId ProducerId
-        {
-            get { return producerId; }
-            set { this.producerId = value; }            
-        }
+		public ProducerId ProducerId
+		{
+			get { return producerId; }
+			set { this.producerId = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public TransactionId TransactionId
-        {
-            get { return transactionId; }
-            set { this.transactionId = value; }            
-        }
+		public TransactionId TransactionId
+		{
+			get { return transactionId; }
+			set { this.transactionId = value; }
+		}
 
-        public ActiveMQDestination OriginalDestination
-        {
-            get { return originalDestination; }
-            set { this.originalDestination = value; }            
-        }
+		public ActiveMQDestination OriginalDestination
+		{
+			get { return originalDestination; }
+			set { this.originalDestination = value; }
+		}
 
-        public MessageId MessageId
-        {
-            get { return messageId; }
-            set { this.messageId = value; }            
-        }
+		public MessageId MessageId
+		{
+			get { return messageId; }
+			set { this.messageId = value; }
+		}
 
-        public TransactionId OriginalTransactionId
-        {
-            get { return originalTransactionId; }
-            set { this.originalTransactionId = value; }            
-        }
+		public TransactionId OriginalTransactionId
+		{
+			get { return originalTransactionId; }
+			set { this.originalTransactionId = value; }
+		}
 
-        public string GroupID
-        {
-            get { return groupID; }
-            set { this.groupID = value; }            
-        }
+		public string GroupID
+		{
+			get { return groupID; }
+			set { this.groupID = value; }
+		}
 
-        public int GroupSequence
-        {
-            get { return groupSequence; }
-            set { this.groupSequence = value; }            
-        }
+		public int GroupSequence
+		{
+			get { return groupSequence; }
+			set { this.groupSequence = value; }
+		}
 
-        public string CorrelationId
-        {
-            get { return correlationId; }
-            set { this.correlationId = value; }            
-        }
+		public string CorrelationId
+		{
+			get { return correlationId; }
+			set { this.correlationId = value; }
+		}
 
-        public bool Persistent
-        {
-            get { return persistent; }
-            set { this.persistent = value; }            
-        }
+		public bool Persistent
+		{
+			get { return persistent; }
+			set { this.persistent = value; }
+		}
 
-        public long Expiration
-        {
-            get { return expiration; }
-            set { this.expiration = value; }            
-        }
+		public long Expiration
+		{
+			get { return expiration; }
+			set { this.expiration = value; }
+		}
 
-        public byte Priority
-        {
-            get { return priority; }
-            set { this.priority = value; }            
-        }
+		public byte Priority
+		{
+			get { return priority; }
+			set { this.priority = value; }
+		}
 
-        public ActiveMQDestination ReplyTo
-        {
-            get { return replyTo; }
-            set { this.replyTo = value; }            
-        }
+		public ActiveMQDestination ReplyTo
+		{
+			get { return replyTo; }
+			set { this.replyTo = value; }
+		}
 
-        public long Timestamp
-        {
-            get { return timestamp; }
-            set { this.timestamp = value; }            
-        }
+		public long Timestamp
+		{
+			get { return timestamp; }
+			set { this.timestamp = value; }
+		}
 
-        public string Type
-        {
-            get { return type; }
-            set { this.type = value; }            
-        }
+		public string Type
+		{
+			get { return type; }
+			set { this.type = value; }
+		}
 
-        public byte[] Content
-        {
-            get { return content; }
-            set { this.content = value; }            
-        }
+		public byte[] Content
+		{
+			get { return content; }
+			set { this.content = value; }
+		}
 
-        public byte[] MarshalledProperties
-        {
-            get { return marshalledProperties; }
-            set { this.marshalledProperties = value; }            
-        }
+		public byte[] MarshalledProperties
+		{
+			get { return marshalledProperties; }
+			set { this.marshalledProperties = value; }
+		}
 
-        public DataStructure DataStructure
-        {
-            get { return dataStructure; }
-            set { this.dataStructure = value; }            
-        }
+		public DataStructure DataStructure
+		{
+			get { return dataStructure; }
+			set { this.dataStructure = value; }
+		}
 
-        public ConsumerId TargetConsumerId
-        {
-            get { return targetConsumerId; }
-            set { this.targetConsumerId = value; }            
-        }
+		public ConsumerId TargetConsumerId
+		{
+			get { return targetConsumerId; }
+			set { this.targetConsumerId = value; }
+		}
 
-        public bool Compressed
-        {
-            get { return compressed; }
-            set { this.compressed = value; }            
-        }
+		public bool Compressed
+		{
+			get { return compressed; }
+			set { this.compressed = value; }
+		}
 
-        public int RedeliveryCounter
-        {
-            get { return redeliveryCounter; }
-            set { this.redeliveryCounter = value; }            
-        }
+		public int RedeliveryCounter
+		{
+			get { return redeliveryCounter; }
+			set { this.redeliveryCounter = value; }
+		}
 
-        public BrokerId[] BrokerPath
-        {
-            get { return brokerPath; }
-            set { this.brokerPath = value; }            
-        }
+		public BrokerId[] BrokerPath
+		{
+			get { return brokerPath; }
+			set { this.brokerPath = value; }
+		}
 
-        public long Arrival
-        {
-            get { return arrival; }
-            set { this.arrival = value; }            
-        }
+		public long Arrival
+		{
+			get { return arrival; }
+			set { this.arrival = value; }
+		}
 
-        public string UserID
-        {
-            get { return userID; }
-            set { this.userID = value; }            
-        }
+		public string UserID
+		{
+			get { return userID; }
+			set { this.userID = value; }
+		}
 
-        public bool RecievedByDFBridge
-        {
-            get { return recievedByDFBridge; }
-            set { this.recievedByDFBridge = value; }            
-        }
+		public bool RecievedByDFBridge
+		{
+			get { return receivedByDFBridge; }
+			set { this.receivedByDFBridge = value; }
+		}
 
-        public bool Droppable
-        {
-            get { return droppable; }
-            set { this.droppable = value; }            
-        }
+		public bool Droppable
+		{
+			get { return droppable; }
+			set { this.droppable = value; }
+		}
 
-    }
+		public override bool IsMessage
+		{
+			get
+			{
+				return true;
+			}
+		}
+
+		public override Object Clone()
+		{
+			// Since we are a derived class use the base's Clone()
+			// to perform the shallow copy. Since it is shallow it
+			// will include our derived class. Since we are derived,
+			// this method is an override.
+			Message o = (Message) base.Clone();
+
+			// Now do the deep work required
+			// If any new variables are added then this routine will
+			// likely need updating
+			if(o.producerId != null)
+			{
+				o.producerId = (ProducerId) o.producerId.Clone();
+			}
+
+			if(o.destination != null)
+			{
+				o.destination = (ActiveMQDestination) o.destination.Clone();
+			}
+
+			if(o.transactionId != null)
+			{
+				o.transactionId = (TransactionId) o.transactionId.Clone();
+			}
+
+			if(o.originalDestination != null)
+			{
+				o.originalDestination = (ActiveMQDestination) o.originalDestination.Clone();
+			}
+
+			if(o.messageId != null)
+			{
+				o.messageId = (MessageId) o.messageId.Clone();
+			}
+
+			if(o.originalTransactionId != null)
+			{
+				o.originalTransactionId = (TransactionId) o.originalTransactionId.Clone();
+			}
+
+			if(o.replyTo != null)
+			{
+				o.replyTo = (ActiveMQDestination) o.replyTo.Clone();
+			}
+
+			if(o.content != null)
+			{
+				o.content = (byte[]) o.content.Clone();
+			}
+
+			if(o.marshalledProperties != null)
+			{
+				o.marshalledProperties = (byte[]) o.marshalledProperties.Clone();
+			}
+
+			if(o.dataStructure != null)
+			{
+				o.dataStructure = (DataStructure) o.dataStructure.Clone();
+			}
+
+			if(o.targetConsumerId != null)
+			{
+				o.targetConsumerId = (ConsumerId) o.targetConsumerId.Clone();
+			}
+
+			if(o.brokerPath != null)
+			{
+				o.brokerPath = (BrokerId[]) o.brokerPath.Clone();
+				for(int i = 0; i < o.brokerPath.Length; i++)
+				{
+					if(o.brokerPath[i] != null)
+					{
+						o.brokerPath[i] = (BrokerId) (o.brokerPath[i].Clone());
+					}
+				}
+			}
+
+			return o;
+		}
+	}
 }

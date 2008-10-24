@@ -20,72 +20,113 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ SessionId Command
-    /// </summary>
-    public class SessionId : BaseDataStructure, DataStructure
-    {
-        public const byte ID_SessionId = 121;
-    			
-        string connectionId;
-        long value;
+	/// <summary>
+	///  The ActiveMQ SessionId Command
+	/// </summary>
+	public class SessionId : BaseDataStructure, DataStructure
+	{
+		public const byte ID_SessionId = 121;
 
-		public override int GetHashCode() {
-            int answer = 0;
-            answer = (answer * 37) + HashCode(ConnectionId);
-            answer = (answer * 37) + HashCode(Value);
-            return answer;
+		string connectionId;
+		long value;
+		ConnectionId parentId;
 
+		public override int GetHashCode()
+		{
+			int answer = 0;
+			answer = (answer * 37) + HashCode(ConnectionId);
+			answer = (answer * 37) + HashCode(Value);
+			return answer;
 		}
 
-		public override bool Equals(object that) {
-	    	if (that is SessionId) {
-	    	    return Equals((SessionId) that);
+		public override bool Equals(object that)
+		{
+			if(that is SessionId)
+			{
+				return Equals((SessionId) that);
 			}
 			return false;
-    	}
-
-		public virtual bool Equals(SessionId that) {
-            if (! Equals(this.ConnectionId, that.ConnectionId)) return false;
-            if (! Equals(this.Value, that.Value)) return false;
-            return true;
-
 		}
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConnectionId=" + ConnectionId
-                + " Value=" + Value
-                + " ]";
-
+		public virtual bool Equals(SessionId that)
+		{
+			if(!Equals(this.ConnectionId, that.ConnectionId))
+				return false;
+			if(!Equals(this.Value, that.Value))
+				return false;
+			return true;
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_SessionId;
-        }
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConnectionId=" + ConnectionId
+				+ " Value=" + Value
+				+ " ]";
+		}
 
+		public override byte GetDataStructureType()
+		{
+			return ID_SessionId;
+		}
 
-        // Properties
+		// Properties
 
-        public string ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public string ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-        public long Value
-        {
-            get { return value; }
-            set { this.value = value; }            
-        }
+		public long Value
+		{
+			get { return value; }
+			set { this.value = value; }
+		}
 
-    }
+		public ConnectionId ParentId
+		{
+			get
+			{
+				if(parentId == null)
+				{
+					parentId = new ConnectionId(this);
+				}
+				return parentId;
+			}
+		}
+
+		public SessionId()
+			: base()
+		{
+		}
+
+		public SessionId(ConnectionId connectionId, long sessionId)
+		{
+			this.connectionId = connectionId.Value;
+			this.value = sessionId;
+		}
+
+		public SessionId(SessionId id)
+		{
+			this.connectionId = id.ConnectionId;
+			this.value = id.Value;
+		}
+
+		public SessionId(ProducerId id)
+		{
+			this.connectionId = id.ConnectionId;
+			this.value = id.Value;
+		}
+
+		public SessionId(ConsumerId id)
+		{
+			this.connectionId = id.ConnectionId;
+			this.value = id.SessionId;
+		}
+	}
 }

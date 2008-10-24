@@ -14,32 +14,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
+
+using System;
+
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    
-    /// <summary>
-    /// An OpenWire command
-    /// </summary>
-    public interface Command : DataStructure
-    {
-        int CommandId
-        {
-            get;
-            set;
-        }
-        
-        bool ResponseRequired
-        {
-            get;
-            set;
-        }
-		
-		bool IsResponse {
+
+	/// <summary>
+	/// An OpenWire command
+	/// </summary>
+	public interface Command : DataStructure, ICloneable
+	{
+		int CommandId
+		{
+			get;
+			set;
+		}
+
+		bool ResponseRequired
+		{
+			get;
+			set;
+		}
+
+		bool IsResponse
+		{
 			get;
 		}
-		
-    }
+
+		bool IsBrokerInfo
+		{
+			get;
+		}
+
+		bool IsMessage
+		{
+			get;
+		}
+
+		bool IsShutdownInfo
+		{
+			get;
+		}
+
+		Response visit(ICommandVisitor visitor);
+	}
 }
 

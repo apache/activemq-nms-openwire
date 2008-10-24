@@ -14,53 +14,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS;
 using System;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	
+
 	/// <summary>
 	/// Summary description for ActiveMQTopic.
 	/// </summary>
 	public class ActiveMQTopic : ActiveMQDestination, ITopic
-    {
-        public const byte ID_ActiveMQTopic = 101;
-        
-        public ActiveMQTopic() : base()
-        {
-        }
-        public ActiveMQTopic(String name) : base(name)
-        {
-        }
-		
+	{
+		public const byte ID_ActiveMQTopic = 101;
+
+		public ActiveMQTopic()
+			: base()
+		{
+		}
+		public ActiveMQTopic(String name)
+			: base(name)
+		{
+		}
+
 		override public DestinationType DestinationType
 		{
-			get {
+			get
+			{
 				return DestinationType.Topic;
 			}
 		}
-		
-        
-        public String TopicName
-        {
-            get { return PhysicalName; }
-        }
-        
-        public override byte GetDataStructureType()
-        {
-            return ID_ActiveMQTopic;
-        }
-        
-        public override int GetDestinationType()
-        {
-            return ACTIVEMQ_TOPIC;
-        }
-        
-        public override ActiveMQDestination CreateDestination(String name)
-        {
-            return new ActiveMQTopic(name);
-        }
-    }
+
+
+		public String TopicName
+		{
+			get { return PhysicalName; }
+		}
+
+		public override byte GetDataStructureType()
+		{
+			return ID_ActiveMQTopic;
+		}
+
+		public override int GetDestinationType()
+		{
+			return ACTIVEMQ_TOPIC;
+		}
+
+		public override ActiveMQDestination CreateDestination(String name)
+		{
+			return new ActiveMQTopic(name);
+		}
+
+		public override Object Clone()
+		{
+			// Since we are a derived class use the base's Clone()
+			// to perform the shallow copy. Since it is shallow it
+			// will include our derived class. Since we are derived,
+			// this method is an override.
+			ActiveMQTopic o = (ActiveMQTopic) base.Clone();
+
+			// Now do the deep work required
+			// If any new variables are added then this routine will
+			// likely need updating
+
+			return o;
+		}
+	}
 }
 

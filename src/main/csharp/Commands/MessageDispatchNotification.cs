@@ -20,66 +20,70 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ MessageDispatchNotification Command
-    /// </summary>
-    public class MessageDispatchNotification : BaseCommand
-    {
-        public const byte ID_MessageDispatchNotification = 90;
-    			
-        ConsumerId consumerId;
-        ActiveMQDestination destination;
-        long deliverySequenceId;
-        MessageId messageId;
+	/// <summary>
+	///  The ActiveMQ MessageDispatchNotification Command
+	/// </summary>
+	public class MessageDispatchNotification : BaseCommand
+	{
+		public const byte ID_MessageDispatchNotification = 90;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConsumerId=" + ConsumerId
-                + " Destination=" + Destination
-                + " DeliverySequenceId=" + DeliverySequenceId
-                + " MessageId=" + MessageId
-                + " ]";
+		ConsumerId consumerId;
+		ActiveMQDestination destination;
+		long deliverySequenceId;
+		MessageId messageId;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConsumerId=" + ConsumerId
+				+ " Destination=" + Destination
+				+ " DeliverySequenceId=" + DeliverySequenceId
+				+ " MessageId=" + MessageId
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_MessageDispatchNotification;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_MessageDispatchNotification;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConsumerId ConsumerId
-        {
-            get { return consumerId; }
-            set { this.consumerId = value; }            
-        }
+		public ConsumerId ConsumerId
+		{
+			get { return consumerId; }
+			set { this.consumerId = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public long DeliverySequenceId
-        {
-            get { return deliverySequenceId; }
-            set { this.deliverySequenceId = value; }            
-        }
+		public long DeliverySequenceId
+		{
+			get { return deliverySequenceId; }
+			set { this.deliverySequenceId = value; }
+		}
 
-        public MessageId MessageId
-        {
-            get { return messageId; }
-            set { this.messageId = value; }            
-        }
+		public MessageId MessageId
+		{
+			get { return messageId; }
+			set { this.messageId = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processMessageDispatchNotification(this);
+		}
+
+	}
 }

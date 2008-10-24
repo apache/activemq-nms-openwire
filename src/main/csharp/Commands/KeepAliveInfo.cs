@@ -20,34 +20,38 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ KeepAliveInfo Command
-    /// </summary>
-    public class KeepAliveInfo : BaseCommand
-    {
-        public const byte ID_KeepAliveInfo = 10;
-    			
+	/// <summary>
+	///  The ActiveMQ KeepAliveInfo Command
+	/// </summary>
+	public class KeepAliveInfo : BaseCommand
+	{
+		public const byte ID_KeepAliveInfo = 10;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ]";
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_KeepAliveInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_KeepAliveInfo;
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processKeepAlive(this);
+		}
 
 
-        // Properties
+		// Properties
 
-    }
+	}
 }

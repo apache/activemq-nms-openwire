@@ -20,90 +20,93 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ MessageAck Command
-    /// </summary>
-    public class MessageAck : BaseCommand
-    {
-        public const byte ID_MessageAck = 22;
-    			
-        ActiveMQDestination destination;
-        TransactionId transactionId;
-        ConsumerId consumerId;
-        byte ackType;
-        MessageId firstMessageId;
-        MessageId lastMessageId;
-        int messageCount;
+	/// <summary>
+	///  The ActiveMQ MessageAck Command
+	/// </summary>
+	public class MessageAck : BaseCommand
+	{
+		public const byte ID_MessageAck = 22;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Destination=" + Destination
-                + " TransactionId=" + TransactionId
-                + " ConsumerId=" + ConsumerId
-                + " AckType=" + AckType
-                + " FirstMessageId=" + FirstMessageId
-                + " LastMessageId=" + LastMessageId
-                + " MessageCount=" + MessageCount
-                + " ]";
+		ActiveMQDestination destination;
+		TransactionId transactionId;
+		ConsumerId consumerId;
+		byte ackType;
+		MessageId firstMessageId;
+		MessageId lastMessageId;
+		int messageCount;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Destination=" + Destination
+				+ " TransactionId=" + TransactionId
+				+ " ConsumerId=" + ConsumerId
+				+ " AckType=" + AckType
+				+ " FirstMessageId=" + FirstMessageId
+				+ " LastMessageId=" + LastMessageId
+				+ " MessageCount=" + MessageCount
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_MessageAck;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_MessageAck;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public TransactionId TransactionId
-        {
-            get { return transactionId; }
-            set { this.transactionId = value; }            
-        }
+		public TransactionId TransactionId
+		{
+			get { return transactionId; }
+			set { this.transactionId = value; }
+		}
 
-        public ConsumerId ConsumerId
-        {
-            get { return consumerId; }
-            set { this.consumerId = value; }            
-        }
+		public ConsumerId ConsumerId
+		{
+			get { return consumerId; }
+			set { this.consumerId = value; }
+		}
 
-        public byte AckType
-        {
-            get { return ackType; }
-            set { this.ackType = value; }            
-        }
+		public byte AckType
+		{
+			get { return ackType; }
+			set { this.ackType = value; }
+		}
 
-        public MessageId FirstMessageId
-        {
-            get { return firstMessageId; }
-            set { this.firstMessageId = value; }            
-        }
+		public MessageId FirstMessageId
+		{
+			get { return firstMessageId; }
+			set { this.firstMessageId = value; }
+		}
 
-        public MessageId LastMessageId
-        {
-            get { return lastMessageId; }
-            set { this.lastMessageId = value; }            
-        }
+		public MessageId LastMessageId
+		{
+			get { return lastMessageId; }
+			set { this.lastMessageId = value; }
+		}
 
-        public int MessageCount
-        {
-            get { return messageCount; }
-            set { this.messageCount = value; }            
-        }
+		public int MessageCount
+		{
+			get { return messageCount; }
+			set { this.messageCount = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processMessageAck(this);
+		}
+	}
 }

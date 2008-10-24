@@ -20,58 +20,88 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ TransactionInfo Command
-    /// </summary>
-    public class TransactionInfo : BaseCommand
-    {
-        public const byte ID_TransactionInfo = 7;
-    			
-        ConnectionId connectionId;
-        TransactionId transactionId;
-        byte type;
+	/// <summary>
+	///  The ActiveMQ TransactionInfo Command
+	/// </summary>
+	public class TransactionInfo : BaseCommand
+	{
+		public const byte ID_TransactionInfo = 7;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConnectionId=" + ConnectionId
-                + " TransactionId=" + TransactionId
-                + " Type=" + Type
-                + " ]";
+		ConnectionId connectionId;
+		TransactionId transactionId;
+		byte type;
 
+		public const byte BEGIN = 0;
+		public const byte PREPARE = 1;
+		public const byte COMMIT_ONE_PHASE = 2;
+		public const byte COMMIT_TWO_PHASE = 3;
+		public const byte ROLLBACK = 4;
+		public const byte RECOVER = 5;
+		public const byte FORGET = 6;
+		public const byte END = 7;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConnectionId=" + ConnectionId
+				+ " TransactionId=" + TransactionId
+				+ " Type=" + Type
+				+ " ]";
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_TransactionInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_TransactionInfo;
+		}
 
+		// Properties
 
-        // Properties
+		public ConnectionId ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-        public ConnectionId ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public TransactionId TransactionId
+		{
+			get { return transactionId; }
+			set { this.transactionId = value; }
+		}
 
-        public TransactionId TransactionId
-        {
-            get { return transactionId; }
-            set { this.transactionId = value; }            
-        }
+		public byte Type
+		{
+			get { return type; }
+			set { this.type = value; }
+		}
 
-        public byte Type
-        {
-            get { return type; }
-            set { this.type = value; }            
-        }
-
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			switch(type)
+			{
+				case TransactionInfo.BEGIN:
+					return visitor.processBeginTransaction(this);
+				case TransactionInfo.END:
+					return visitor.processEndTransaction(this);
+				case TransactionInfo.PREPARE:
+					return visitor.processPrepareTransaction(this);
+				case TransactionInfo.COMMIT_ONE_PHASE:
+					return visitor.processCommitTransactionOnePhase(this);
+				case TransactionInfo.COMMIT_TWO_PHASE:
+					return visitor.processCommitTransactionTwoPhase(this);
+				case TransactionInfo.ROLLBACK:
+					return visitor.processRollbackTransaction(this);
+				case TransactionInfo.RECOVER:
+					return visitor.processRecoverTransactions(this);
+				case TransactionInfo.FORGET:
+					return visitor.processForgetTransaction(this);
+				default:
+					throw new IOException("Transaction info type unknown: " + type);
+			}
+		}
+	}
 }

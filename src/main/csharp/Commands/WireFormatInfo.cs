@@ -15,9 +15,8 @@
 * limitations under the License.
 */
 
-using System;
 using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -29,14 +28,14 @@ namespace Apache.NMS.ActiveMQ.Commands
 	{
 		public const byte ID_WireFormatInfo = 1;
 		static private byte[] MAGIC = new byte[] {
-			'A'&0xFF,
-			'c'&0xFF,
-			't'&0xFF,
-			'i'&0xFF,
-			'v'&0xFF,
-			'e'&0xFF,
-			'M'&0xFF,
-			'Q'&0xFF };
+						'A'&0xFF,
+						'c'&0xFF,
+						't'&0xFF,
+						'i'&0xFF,
+						'v'&0xFF,
+						'e'&0xFF,
+						'M'&0xFF,
+						'Q'&0xFF };
 
 		byte[] magic = MAGIC;
 		int version;
@@ -44,16 +43,18 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 		private PrimitiveMap properties;
 
-		public override string ToString() {
+		public override string ToString()
+		{
 			return GetType().Name + "["
-				+ " Magic=" + Magic
-				+ " Version=" + Version
-				+ " MarshalledProperties=" + Properties.ToString()
-				+ " ]";
+					+ " Magic=" + Magic
+					+ " Version=" + Version
+					+ " MarshalledProperties=" + Properties.ToString()
+					+ " ]";
 
 		}
 
-		public override byte GetDataStructureType() {
+		public override byte GetDataStructureType()
+		{
 			return ID_WireFormatInfo;
 		}
 
@@ -79,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 					return false;
 				}
 
-				for(int i = 0; i < magic.Length; i++ )
+				for(int i = 0; i < magic.Length; i++)
 				{
 					if(magic[i] != MAGIC[i])
 					{
@@ -147,8 +148,8 @@ namespace Apache.NMS.ActiveMQ.Commands
 			{
 				object prop = Properties["MaxInactivityDuration"];
 				return (null != prop
-							? (long) prop
-							: 0);
+										? (long) prop
+										: 0);
 			}
 			set { Properties["MaxInactivityDuration"] = value; }
 		}
@@ -158,8 +159,8 @@ namespace Apache.NMS.ActiveMQ.Commands
 			{
 				object prop = Properties["MaxInactivityDurationInitialDelay"];
 				return (null != prop
-							? (long) prop
-							: 0);
+										? (long) prop
+										: 0);
 			}
 			set { Properties["MaxInactivityDurationInitialDelay"] = value; }
 		}
@@ -169,8 +170,8 @@ namespace Apache.NMS.ActiveMQ.Commands
 			{
 				object prop = Properties["CacheSize"];
 				return (null != prop
-							? (int) prop
-							: 0);
+										? (int) prop
+										: 0);
 			}
 			set { Properties.SetInt("CacheSize", value); }
 		}
@@ -189,6 +190,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			{
 				MarshalledProperties = properties.Marshal();
 			}
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processWireFormat(this);
 		}
 	}
 }

@@ -20,66 +20,69 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ MessageDispatch Command
-    /// </summary>
-    public class MessageDispatch : BaseCommand
-    {
-        public const byte ID_MessageDispatch = 21;
-    			
-        ConsumerId consumerId;
-        ActiveMQDestination destination;
-        Message message;
-        int redeliveryCounter;
+	/// <summary>
+	///  The ActiveMQ MessageDispatch Command
+	/// </summary>
+	public class MessageDispatch : BaseCommand
+	{
+		public const byte ID_MessageDispatch = 21;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConsumerId=" + ConsumerId
-                + " Destination=" + Destination
-                + " Message=" + Message
-                + " RedeliveryCounter=" + RedeliveryCounter
-                + " ]";
+		ConsumerId consumerId;
+		ActiveMQDestination destination;
+		Message message;
+		int redeliveryCounter;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConsumerId=" + ConsumerId
+				+ " Destination=" + Destination
+				+ " Message=" + Message
+				+ " RedeliveryCounter=" + RedeliveryCounter
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_MessageDispatch;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_MessageDispatch;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConsumerId ConsumerId
-        {
-            get { return consumerId; }
-            set { this.consumerId = value; }            
-        }
+		public ConsumerId ConsumerId
+		{
+			get { return consumerId; }
+			set { this.consumerId = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public Message Message
-        {
-            get { return message; }
-            set { this.message = value; }            
-        }
+		public Message Message
+		{
+			get { return message; }
+			set { this.message = value; }
+		}
 
-        public int RedeliveryCounter
-        {
-            get { return redeliveryCounter; }
-            set { this.redeliveryCounter = value; }            
-        }
+		public int RedeliveryCounter
+		{
+			get { return redeliveryCounter; }
+			set { this.redeliveryCounter = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processMessageDispatch(this);
+		}
+	}
 }

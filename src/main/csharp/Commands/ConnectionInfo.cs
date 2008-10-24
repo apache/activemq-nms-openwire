@@ -20,98 +20,101 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConnectionInfo Command
-    /// </summary>
-    public class ConnectionInfo : BaseCommand
-    {
-        public const byte ID_ConnectionInfo = 3;
-    			
-        ConnectionId connectionId;
-        string clientId;
-        string password;
-        string userName;
-        BrokerId[] brokerPath;
-        bool brokerMasterConnector;
-        bool manageable;
-        bool clientMaster = true;
+	/// <summary>
+	///  The ActiveMQ ConnectionInfo Command
+	/// </summary>
+	public class ConnectionInfo : BaseCommand
+	{
+		public const byte ID_ConnectionInfo = 3;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConnectionId=" + ConnectionId
-                + " ClientId=" + ClientId
-                + " Password=" + Password
-                + " UserName=" + UserName
-                + " BrokerPath=" + BrokerPath
-                + " BrokerMasterConnector=" + BrokerMasterConnector
-                + " Manageable=" + Manageable
-                + " ClientMaster=" + ClientMaster
-                + " ]";
+		ConnectionId connectionId;
+		string clientId;
+		string password;
+		string userName;
+		BrokerId[] brokerPath;
+		bool brokerMasterConnector;
+		bool manageable;
+		bool clientMaster = true;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConnectionId=" + ConnectionId
+				+ " ClientId=" + ClientId
+				+ " Password=" + Password
+				+ " UserName=" + UserName
+				+ " BrokerPath=" + BrokerPath
+				+ " BrokerMasterConnector=" + BrokerMasterConnector
+				+ " Manageable=" + Manageable
+				+ " ClientMaster=" + ClientMaster
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConnectionInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConnectionInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConnectionId ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public ConnectionId ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-        public string ClientId
-        {
-            get { return clientId; }
-            set { this.clientId = value; }            
-        }
+		public string ClientId
+		{
+			get { return clientId; }
+			set { this.clientId = value; }
+		}
 
-        public string Password
-        {
-            get { return password; }
-            set { this.password = value; }            
-        }
+		public string Password
+		{
+			get { return password; }
+			set { this.password = value; }
+		}
 
-        public string UserName
-        {
-            get { return userName; }
-            set { this.userName = value; }            
-        }
+		public string UserName
+		{
+			get { return userName; }
+			set { this.userName = value; }
+		}
 
-        public BrokerId[] BrokerPath
-        {
-            get { return brokerPath; }
-            set { this.brokerPath = value; }            
-        }
+		public BrokerId[] BrokerPath
+		{
+			get { return brokerPath; }
+			set { this.brokerPath = value; }
+		}
 
-        public bool BrokerMasterConnector
-        {
-            get { return brokerMasterConnector; }
-            set { this.brokerMasterConnector = value; }            
-        }
+		public bool BrokerMasterConnector
+		{
+			get { return brokerMasterConnector; }
+			set { this.brokerMasterConnector = value; }
+		}
 
-        public bool Manageable
-        {
-            get { return manageable; }
-            set { this.manageable = value; }            
-        }
+		public bool Manageable
+		{
+			get { return manageable; }
+			set { this.manageable = value; }
+		}
 
-        public bool ClientMaster
-        {
-            get { return clientMaster; }
-            set { this.clientMaster = value; }            
-        }
+		public bool ClientMaster
+		{
+			get { return clientMaster; }
+			set { this.clientMaster = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processAddConnection(this);
+		}
+	}
 }

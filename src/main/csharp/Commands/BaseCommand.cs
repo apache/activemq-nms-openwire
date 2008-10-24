@@ -24,115 +24,174 @@
 //        activemq-openwire module
 //
 
-using Apache.NMS.ActiveMQ.OpenWire;
 using System;
 
-
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    public abstract class BaseCommand : BaseDataStructure, Command
-    {
-        private int commandId;
-        
-        public int CommandId
-        {
-            get { return commandId; }
-            set { this.commandId = value; }
-        }
-        
-        public override int GetHashCode()
-        {
-            return (CommandId * 37) + GetDataStructureType();
-        }
-        
-        public override bool Equals(Object that)
-        {
-            if (that is BaseCommand)
-            {
-                BaseCommand thatCommand = (BaseCommand) that;
-                return this.GetDataStructureType() == thatCommand.GetDataStructureType()
-                    && this.CommandId == thatCommand.CommandId;
-            }
-            return false;
-        }
-        
-        public override String ToString()
-        {
-            string answer = GetDataStructureTypeAsString(GetDataStructureType());
-            if (answer.Length == 0)
-            {
-                answer = base.ToString();
-            }
-            return answer + ": id = " + CommandId;
-        }
-        
-        public static String GetDataStructureTypeAsString(int type)
-        {
-            String packetTypeStr = "";
-            switch (type)
-            {
-                case ActiveMQMessage.ID_ActiveMQMessage :
-                    packetTypeStr = "ACTIVEMQ_MESSAGE";
-                    break;
-                case ActiveMQTextMessage.ID_ActiveMQTextMessage :
-                    packetTypeStr = "ACTIVEMQ_TEXT_MESSAGE";
-                    break;
-                case ActiveMQObjectMessage.ID_ActiveMQObjectMessage:
-                    packetTypeStr = "ACTIVEMQ_OBJECT_MESSAGE";
-                    break;
-                case ActiveMQBytesMessage.ID_ActiveMQBytesMessage :
-                    packetTypeStr = "ACTIVEMQ_BYTES_MESSAGE";
-                    break;
-                case ActiveMQStreamMessage.ID_ActiveMQStreamMessage :
-                    packetTypeStr = "ACTIVEMQ_STREAM_MESSAGE";
-                    break;
-                case ActiveMQMapMessage.ID_ActiveMQMapMessage :
-                    packetTypeStr = "ACTIVEMQ_MAP_MESSAGE";
-                    break;
-                case MessageAck.ID_MessageAck :
-                    packetTypeStr = "ACTIVEMQ_MSG_ACK";
-                    break;
-                case Response.ID_Response :
-                    packetTypeStr = "RESPONSE";
-                    break;
-                case ConsumerInfo.ID_ConsumerInfo :
-                    packetTypeStr = "CONSUMER_INFO";
-                    break;
-                case ProducerInfo.ID_ProducerInfo :
-                    packetTypeStr = "PRODUCER_INFO";
-                    break;
-                case TransactionInfo.ID_TransactionInfo :
-                    packetTypeStr = "TRANSACTION_INFO";
-                    break;
-                case BrokerInfo.ID_BrokerInfo :
-                    packetTypeStr = "BROKER_INFO";
-                    break;
-                case ConnectionInfo.ID_ConnectionInfo :
-                    packetTypeStr = "CONNECTION_INFO";
-                    break;
-                case SessionInfo.ID_SessionInfo :
-                    packetTypeStr = "SESSION_INFO";
-                    break;
-                case RemoveSubscriptionInfo.ID_RemoveSubscriptionInfo :
-                    packetTypeStr = "DURABLE_UNSUBSCRIBE";
-                    break;
-                case IntegerResponse.ID_IntegerResponse :
-                    packetTypeStr = "INT_RESPONSE_RECEIPT_INFO";
-                    break;
-                case WireFormatInfo.ID_WireFormatInfo :
-                    packetTypeStr = "WIRE_FORMAT_INFO";
-                    break;
-                case RemoveInfo.ID_RemoveInfo :
-                    packetTypeStr = "REMOVE_INFO";
-                    break;
-                case KeepAliveInfo.ID_KeepAliveInfo :
-                    packetTypeStr = "KEEP_ALIVE";
-                    break;
-            }
-            return packetTypeStr;
-        }
-        
-    }
+	public abstract class BaseCommand : BaseDataStructure, Command, ICloneable
+	{
+		private int commandId;
+		private bool responseRequired;
+
+		public int CommandId
+		{
+			get { return commandId; }
+			set { this.commandId = value; }
+		}
+
+		public override int GetHashCode()
+		{
+			return (CommandId * 37) + GetDataStructureType();
+		}
+
+		public override bool Equals(Object that)
+		{
+			if(that is BaseCommand)
+			{
+				BaseCommand thatCommand = (BaseCommand) that;
+				return this.GetDataStructureType() == thatCommand.GetDataStructureType()
+					&& this.CommandId == thatCommand.CommandId;
+			}
+			return false;
+		}
+
+		public override String ToString()
+		{
+			string answer = GetDataStructureTypeAsString(GetDataStructureType());
+			if(answer.Length == 0)
+			{
+				answer = base.ToString();
+			}
+			return answer + ": id = " + CommandId;
+		}
+
+		public static String GetDataStructureTypeAsString(int type)
+		{
+			String packetTypeStr = "";
+			switch(type)
+			{
+				case ActiveMQMessage.ID_ActiveMQMessage:
+					packetTypeStr = "ACTIVEMQ_MESSAGE";
+					break;
+				case ActiveMQTextMessage.ID_ActiveMQTextMessage:
+					packetTypeStr = "ACTIVEMQ_TEXT_MESSAGE";
+					break;
+				case ActiveMQObjectMessage.ID_ActiveMQObjectMessage:
+					packetTypeStr = "ACTIVEMQ_OBJECT_MESSAGE";
+					break;
+				case ActiveMQBytesMessage.ID_ActiveMQBytesMessage:
+					packetTypeStr = "ACTIVEMQ_BYTES_MESSAGE";
+					break;
+				case ActiveMQStreamMessage.ID_ActiveMQStreamMessage:
+					packetTypeStr = "ACTIVEMQ_STREAM_MESSAGE";
+					break;
+				case ActiveMQMapMessage.ID_ActiveMQMapMessage:
+					packetTypeStr = "ACTIVEMQ_MAP_MESSAGE";
+					break;
+				case MessageAck.ID_MessageAck:
+					packetTypeStr = "ACTIVEMQ_MSG_ACK";
+					break;
+				case Response.ID_Response:
+					packetTypeStr = "RESPONSE";
+					break;
+				case ConsumerInfo.ID_ConsumerInfo:
+					packetTypeStr = "CONSUMER_INFO";
+					break;
+				case ProducerInfo.ID_ProducerInfo:
+					packetTypeStr = "PRODUCER_INFO";
+					break;
+				case TransactionInfo.ID_TransactionInfo:
+					packetTypeStr = "TRANSACTION_INFO";
+					break;
+				case BrokerInfo.ID_BrokerInfo:
+					packetTypeStr = "BROKER_INFO";
+					break;
+				case ConnectionInfo.ID_ConnectionInfo:
+					packetTypeStr = "CONNECTION_INFO";
+					break;
+				case SessionInfo.ID_SessionInfo:
+					packetTypeStr = "SESSION_INFO";
+					break;
+				case RemoveSubscriptionInfo.ID_RemoveSubscriptionInfo:
+					packetTypeStr = "DURABLE_UNSUBSCRIBE";
+					break;
+				case IntegerResponse.ID_IntegerResponse:
+					packetTypeStr = "INT_RESPONSE_RECEIPT_INFO";
+					break;
+				case WireFormatInfo.ID_WireFormatInfo:
+					packetTypeStr = "WIRE_FORMAT_INFO";
+					break;
+				case RemoveInfo.ID_RemoveInfo:
+					packetTypeStr = "REMOVE_INFO";
+					break;
+				case KeepAliveInfo.ID_KeepAliveInfo:
+					packetTypeStr = "KEEP_ALIVE";
+					break;
+			}
+			return packetTypeStr;
+		}
+
+		public virtual Response visit(ICommandVisitor visitor)
+		{
+			throw new ApplicationException("BaseCommand.Visit() not implemented");
+		}
+
+		public virtual bool IsMessage
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public virtual bool IsShutdownInfo
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public virtual bool IsBrokerInfo
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public virtual bool IsResponse
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public virtual bool ResponseRequired
+		{
+			get
+			{
+				return responseRequired;
+			}
+			set
+			{
+				responseRequired = value;
+			}
+		}
+
+		public override Object Clone()
+		{
+			// Since we are a derived class use the base's Clone()
+			// to perform the shallow copy. Since it is shallow it
+			// will include our derived class. Since we are derived,
+			// this method is an override.
+			BaseCommand o = (BaseCommand) base.Clone();
+
+			return o;
+		}
+	}
 }
 

@@ -20,178 +20,181 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS;
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConsumerInfo Command
-    /// </summary>
-    public class ConsumerInfo : BaseCommand
-    {
-        public const byte ID_ConsumerInfo = 5;
-    			
-        ConsumerId consumerId;
-        bool browser;
-        ActiveMQDestination destination;
-        int prefetchSize;
-        int maximumPendingMessageLimit;
-        bool dispatchAsync;
-        string selector;
-        string subscriptionName;
-        bool noLocal;
-        bool exclusive;
-        bool retroactive;
-        byte priority;
-        BrokerId[] brokerPath;
-        BooleanExpression additionalPredicate;
-        bool networkSubscription;
-        bool optimizedAcknowledge;
-        bool noRangeAcks;
-        AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
+	/// <summary>
+	///  The ActiveMQ ConsumerInfo Command
+	/// </summary>
+	public class ConsumerInfo : BaseCommand
+	{
+		public const byte ID_ConsumerInfo = 5;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ConsumerId=" + ConsumerId
-                + " Browser=" + Browser
-                + " Destination=" + Destination
-                + " PrefetchSize=" + PrefetchSize
-                + " MaximumPendingMessageLimit=" + MaximumPendingMessageLimit
-                + " DispatchAsync=" + DispatchAsync
-                + " Selector=" + Selector
-                + " SubscriptionName=" + SubscriptionName
-                + " NoLocal=" + NoLocal
-                + " Exclusive=" + Exclusive
-                + " Retroactive=" + Retroactive
-                + " Priority=" + Priority
-                + " BrokerPath=" + BrokerPath
-                + " AdditionalPredicate=" + AdditionalPredicate
-                + " NetworkSubscription=" + NetworkSubscription
-                + " OptimizedAcknowledge=" + OptimizedAcknowledge
-                + " NoRangeAcks=" + NoRangeAcks
-                + " AcknowledgementMode=" + AcknowledgementMode
-                + " ]";
+		ConsumerId consumerId;
+		bool browser;
+		ActiveMQDestination destination;
+		int prefetchSize;
+		int maximumPendingMessageLimit;
+		bool dispatchAsync;
+		string selector;
+		string subscriptionName;
+		bool noLocal;
+		bool exclusive;
+		bool retroactive;
+		byte priority;
+		BrokerId[] brokerPath;
+		BooleanExpression additionalPredicate;
+		bool networkSubscription;
+		bool optimizedAcknowledge;
+		bool noRangeAcks;
+		AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ConsumerId=" + ConsumerId
+				+ " Browser=" + Browser
+				+ " Destination=" + Destination
+				+ " PrefetchSize=" + PrefetchSize
+				+ " MaximumPendingMessageLimit=" + MaximumPendingMessageLimit
+				+ " DispatchAsync=" + DispatchAsync
+				+ " Selector=" + Selector
+				+ " SubscriptionName=" + SubscriptionName
+				+ " NoLocal=" + NoLocal
+				+ " Exclusive=" + Exclusive
+				+ " Retroactive=" + Retroactive
+				+ " Priority=" + Priority
+				+ " BrokerPath=" + BrokerPath
+				+ " AdditionalPredicate=" + AdditionalPredicate
+				+ " NetworkSubscription=" + NetworkSubscription
+				+ " OptimizedAcknowledge=" + OptimizedAcknowledge
+				+ " NoRangeAcks=" + NoRangeAcks
+				+ " AcknowledgementMode=" + AcknowledgementMode
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConsumerInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConsumerInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-        public ConsumerId ConsumerId
-        {
-            get { return consumerId; }
-            set { this.consumerId = value; }            
-        }
+		public ConsumerId ConsumerId
+		{
+			get { return consumerId; }
+			set { this.consumerId = value; }
+		}
 
-        public bool Browser
-        {
-            get { return browser; }
-            set { this.browser = value; }            
-        }
+		public bool Browser
+		{
+			get { return browser; }
+			set { this.browser = value; }
+		}
 
-        public ActiveMQDestination Destination
-        {
-            get { return destination; }
-            set { this.destination = value; }            
-        }
+		public ActiveMQDestination Destination
+		{
+			get { return destination; }
+			set { this.destination = value; }
+		}
 
-        public int PrefetchSize
-        {
-            get { return prefetchSize; }
-            set { this.prefetchSize = value; }            
-        }
+		public int PrefetchSize
+		{
+			get { return prefetchSize; }
+			set { this.prefetchSize = value; }
+		}
 
-        public int MaximumPendingMessageLimit
-        {
-            get { return maximumPendingMessageLimit; }
-            set { this.maximumPendingMessageLimit = value; }            
-        }
+		public int MaximumPendingMessageLimit
+		{
+			get { return maximumPendingMessageLimit; }
+			set { this.maximumPendingMessageLimit = value; }
+		}
 
-        public bool DispatchAsync
-        {
-            get { return dispatchAsync; }
-            set { this.dispatchAsync = value; }            
-        }
+		public bool DispatchAsync
+		{
+			get { return dispatchAsync; }
+			set { this.dispatchAsync = value; }
+		}
 
-        public string Selector
-        {
-            get { return selector; }
-            set { this.selector = value; }            
-        }
+		public string Selector
+		{
+			get { return selector; }
+			set { this.selector = value; }
+		}
 
-        public string SubscriptionName
-        {
-            get { return subscriptionName; }
-            set { this.subscriptionName = value; }            
-        }
+		public string SubscriptionName
+		{
+			get { return subscriptionName; }
+			set { this.subscriptionName = value; }
+		}
 
-        public bool NoLocal
-        {
-            get { return noLocal; }
-            set { this.noLocal = value; }            
-        }
+		public bool NoLocal
+		{
+			get { return noLocal; }
+			set { this.noLocal = value; }
+		}
 
-        public bool Exclusive
-        {
-            get { return exclusive; }
-            set { this.exclusive = value; }            
-        }
+		public bool Exclusive
+		{
+			get { return exclusive; }
+			set { this.exclusive = value; }
+		}
 
-        public bool Retroactive
-        {
-            get { return retroactive; }
-            set { this.retroactive = value; }            
-        }
+		public bool Retroactive
+		{
+			get { return retroactive; }
+			set { this.retroactive = value; }
+		}
 
-        public byte Priority
-        {
-            get { return priority; }
-            set { this.priority = value; }            
-        }
+		public byte Priority
+		{
+			get { return priority; }
+			set { this.priority = value; }
+		}
 
-        public BrokerId[] BrokerPath
-        {
-            get { return brokerPath; }
-            set { this.brokerPath = value; }            
-        }
+		public BrokerId[] BrokerPath
+		{
+			get { return brokerPath; }
+			set { this.brokerPath = value; }
+		}
 
-        public BooleanExpression AdditionalPredicate
-        {
-            get { return additionalPredicate; }
-            set { this.additionalPredicate = value; }            
-        }
+		public BooleanExpression AdditionalPredicate
+		{
+			get { return additionalPredicate; }
+			set { this.additionalPredicate = value; }
+		}
 
-        public bool NetworkSubscription
-        {
-            get { return networkSubscription; }
-            set { this.networkSubscription = value; }            
-        }
+		public bool NetworkSubscription
+		{
+			get { return networkSubscription; }
+			set { this.networkSubscription = value; }
+		}
 
-        public bool OptimizedAcknowledge
-        {
-            get { return optimizedAcknowledge; }
-            set { this.optimizedAcknowledge = value; }            
-        }
+		public bool OptimizedAcknowledge
+		{
+			get { return optimizedAcknowledge; }
+			set { this.optimizedAcknowledge = value; }
+		}
 
-        public bool NoRangeAcks
-        {
-            get { return noRangeAcks; }
-            set { this.noRangeAcks = value; }            
-        }
+		public bool NoRangeAcks
+		{
+			get { return noRangeAcks; }
+			set { this.noRangeAcks = value; }
+		}
 
-        public AcknowledgementMode AcknowledgementMode
-        {
-            get { return acknowledgementMode; }
-            set { this.acknowledgementMode = value; }            
-        }
-    }
+		public AcknowledgementMode AcknowledgementMode
+		{
+			get { return acknowledgementMode; }
+			set { this.acknowledgementMode = value; }
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processAddConsumer(this);
+		}
+	}
 }

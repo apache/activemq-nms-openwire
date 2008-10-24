@@ -20,74 +20,77 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConnectionControl Command
-    /// </summary>
-    public class ConnectionControl : BaseCommand
-    {
-        public const byte ID_ConnectionControl = 18;
-    			
-        bool close;
-        bool exit;
-        bool faultTolerant;
-        bool resume;
-        bool suspend;
+	/// <summary>
+	///  The ActiveMQ ConnectionControl Command
+	/// </summary>
+	public class ConnectionControl : BaseCommand
+	{
+		public const byte ID_ConnectionControl = 18;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Close=" + Close
-                + " Exit=" + Exit
-                + " FaultTolerant=" + FaultTolerant
-                + " Resume=" + Resume
-                + " Suspend=" + Suspend
-                + " ]";
+		bool close;
+		bool exit;
+		bool faultTolerant;
+		bool resume;
+		bool suspend;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Close=" + Close
+				+ " Exit=" + Exit
+				+ " FaultTolerant=" + FaultTolerant
+				+ " Resume=" + Resume
+				+ " Suspend=" + Suspend
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConnectionControl;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConnectionControl;
+		}
 
 
-        // Properties
+		// Properties
 
-        public bool Close
-        {
-            get { return close; }
-            set { this.close = value; }            
-        }
+		public bool Close
+		{
+			get { return close; }
+			set { this.close = value; }
+		}
 
-        public bool Exit
-        {
-            get { return exit; }
-            set { this.exit = value; }            
-        }
+		public bool Exit
+		{
+			get { return exit; }
+			set { this.exit = value; }
+		}
 
-        public bool FaultTolerant
-        {
-            get { return faultTolerant; }
-            set { this.faultTolerant = value; }            
-        }
+		public bool FaultTolerant
+		{
+			get { return faultTolerant; }
+			set { this.faultTolerant = value; }
+		}
 
-        public bool Resume
-        {
-            get { return resume; }
-            set { this.resume = value; }            
-        }
+		public bool Resume
+		{
+			get { return resume; }
+			set { this.resume = value; }
+		}
 
-        public bool Suspend
-        {
-            get { return suspend; }
-            set { this.suspend = value; }            
-        }
+		public bool Suspend
+		{
+			get { return suspend; }
+			set { this.suspend = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processConnectionControl(this);
+		}
+	}
 }

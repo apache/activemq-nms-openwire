@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.Transport;
-using Apache.NMS;
-using Apache.NMS.Util;
+
 using System;
 using System.Collections;
 using System.Threading;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -170,8 +170,8 @@ namespace Apache.NMS.ActiveMQ
 			Session session = new Session(this, info, sessionAcknowledgementMode);
 
 			// Set properties on session using parameters prefixed with "session."
-			System.Collections.Specialized.StringDictionary map = URISupport.ParseQuery(this.brokerUri.Query);
-			URISupport.SetProperties(session, map, "session.");
+			URISupport.CompositeData c = URISupport.parseComposite(this.brokerUri);
+			URISupport.SetProperties(session, c.Parameters, "session.");
 
 			if(IsStarted)
 			{
@@ -384,7 +384,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public LocalTransactionId CreateLocalTransactionId()
 		{
-			LocalTransactionId id= new LocalTransactionId();
+			LocalTransactionId id = new LocalTransactionId();
 			id.ConnectionId = ConnectionId;
 			id.Value = Interlocked.Increment(ref localTransactionCounter);
 			return id;

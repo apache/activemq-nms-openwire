@@ -14,29 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
+
+using System;
+
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	
+
 	/// <summary>
 	/// Summary description for DataStructureSupport.
 	/// </summary>
 	public abstract class DataStructureSupport : DataStructure
 	{
-		
+
 		protected DataStructureSupport()
 		{
 		}
-		
+
 		public virtual byte GetDataStructureType()
 		{
 			return 0;
 		}
-		
+
 		public virtual bool IsMarshallAware()
 		{
 			return false;
+		}
+
+		public virtual Object Clone()
+		{
+			// Since we are the lowest level base class, do a
+			// shallow copy which will include the derived classes.
+			// From here we would do deep cloning of other objects
+			// if we had any.
+			return this.MemberwiseClone();
 		}
 	}
 }

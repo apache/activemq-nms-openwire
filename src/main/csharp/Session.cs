@@ -445,7 +445,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			DestinationInfo command = new DestinationInfo();
 			command.ConnectionId = Connection.ConnectionId;
-			command.OperationType = 0; // 0 is add
+			command.OperationType = DestinationInfo.ADD_OPERATION_TYPE ; // 0 is add
 			command.Destination = tempDestination;
 
 			this.DoSend(command);
@@ -455,7 +455,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			DestinationInfo command = new DestinationInfo();
 			command.ConnectionId = Connection.ConnectionId;
-			command.OperationType = 1; // 1 is remove
+			command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE ; // 1 is remove
 			command.Destination = tempDestination;
 
 			this.DoSend(command);

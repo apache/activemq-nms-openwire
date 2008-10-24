@@ -14,77 +14,72 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
 using System;
 using Apache.NMS.ActiveMQ.OpenWire;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    
-    /// <summary>
-    /// Base class for all DataStructure implementations
-    /// </summary>
-    public abstract class BaseDataStructure : DataStructure
-    {
-        private bool responseRequired;
-        
-        public virtual byte GetDataStructureType()
-        {
-            return 0;
-        }
-        
-        public bool ResponseRequired
-        {
-            get { return responseRequired; }
-            set { this.responseRequired = value; }
-        }
-        
-        public virtual bool IsResponse {
-			get { return false; }
+
+	/// <summary>
+	/// Base class for all DataStructure implementations
+	/// </summary>
+	public abstract class BaseDataStructure : DataStructure, ICloneable
+	{
+		public virtual byte GetDataStructureType()
+		{
+			return 0;
 		}
-		
-        public virtual bool IsMarshallAware()
-        {
-            return false;
-        }
-        
-        
-        public virtual void BeforeMarshall(OpenWireFormat wireFormat)
-        {
-        }
-        
-        public virtual void AfterMarshall(OpenWireFormat wireFormat)
-        {
-        }
-        
-        public virtual void BeforeUnmarshall(OpenWireFormat wireFormat)
-        {
-        }
-        
-        public virtual void AfterUnmarshall(OpenWireFormat wireFormat)
-        {
-        }
-        
-        public virtual void SetMarshalledForm(OpenWireFormat wireFormat, byte[] data)
-        {
-        }
-        
-        public virtual byte[] GetMarshalledForm(OpenWireFormat wireFormat)
-        {
-            return null;
-        }
-        
-        // Helper methods
-        public int HashCode(object value)
-        {
-            if (value != null)
-            {
-                return value.GetHashCode();
-            }
-            else
-            {
-                return -1;
-            }
-        }
-    }
+
+		public virtual bool IsMarshallAware()
+		{
+			return false;
+		}
+
+		public virtual void BeforeMarshall(OpenWireFormat wireFormat)
+		{
+		}
+
+		public virtual void AfterMarshall(OpenWireFormat wireFormat)
+		{
+		}
+
+		public virtual void BeforeUnmarshall(OpenWireFormat wireFormat)
+		{
+		}
+
+		public virtual void AfterUnmarshall(OpenWireFormat wireFormat)
+		{
+		}
+
+		public virtual void SetMarshalledForm(OpenWireFormat wireFormat, byte[] data)
+		{
+		}
+
+		public virtual byte[] GetMarshalledForm(OpenWireFormat wireFormat)
+		{
+			return null;
+		}
+
+		// Helper methods
+		public int HashCode(object value)
+		{
+			if(value != null)
+			{
+				return value.GetHashCode();
+			}
+			else
+			{
+				return -1;
+			}
+		}
+
+		public virtual Object Clone()
+		{
+			// Since we are the lowest level base class, do a
+			// shallow copy which will include the derived classes.
+			// From here we would do deep cloning of other objects
+			// if we had any.
+			return this.MemberwiseClone();
+		}
+	}
 }

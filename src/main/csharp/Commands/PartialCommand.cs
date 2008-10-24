@@ -21,49 +21,97 @@
 //
 
 using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ PartialCommand Command
-    /// </summary>
-    public class PartialCommand : BaseDataStructure, Command
-    {
-        public const byte ID_PartialCommand = 60;
-    			
-        int commandId;
-        byte[] data;
+	/// <summary>
+	///  The ActiveMQ PartialCommand Command
+	/// </summary>
+	public class PartialCommand : BaseDataStructure, Command
+	{
+		public const byte ID_PartialCommand = 60;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " CommandId=" + CommandId
-                + " Data=" + Data
-                + " ]";
+		int commandId;
+		byte[] data;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " CommandId=" + CommandId
+				+ " Data=" + Data
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_PartialCommand;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_PartialCommand;
+		}
 
 
-        // Properties
+		// Properties
 
-        public int CommandId
-        {
-            get { return commandId; }
-            set { this.commandId = value; }            
-        }
+		public int CommandId
+		{
+			get { return commandId; }
+			set { this.commandId = value; }
+		}
 
-        public byte[] Data
-        {
-            get { return data; }
-            set { this.data = value; }            
-        }
+		public byte[] Data
+		{
+			get { return data; }
+			set { this.data = value; }
+		}
 
-    }
+		public bool IsMessage
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public bool IsShutdownInfo
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public bool IsBrokerInfo
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public bool IsResponse
+		{
+			get
+			{
+				return false;
+			}
+		}
+
+		public virtual bool ResponseRequired
+		{
+			get
+			{
+				return false;
+			}
+			set
+			{
+				throw new ApplicationException("PartialCommand should not set ResponseRequired");
+			}
+		}
+
+		public virtual Response visit(ICommandVisitor visitor)
+		{
+			throw new ApplicationException("The transport layer should filter out PartialCommand instances but received: " + this);
+		}
+	}
 }

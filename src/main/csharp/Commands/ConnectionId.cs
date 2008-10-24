@@ -20,62 +20,73 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConnectionId Command
-    /// </summary>
-    public class ConnectionId : BaseDataStructure, DataStructure
-    {
-        public const byte ID_ConnectionId = 120;
-    			
-        string value;
+	/// <summary>
+	///  The ActiveMQ ConnectionId Command
+	/// </summary>
+	public class ConnectionId : BaseDataStructure, DataStructure
+	{
+		public const byte ID_ConnectionId = 120;
 
-		public override int GetHashCode() {
-            int answer = 0;
-            answer = (answer * 37) + HashCode(Value);
-            return answer;
+		string value;
+
+		public override int GetHashCode()
+		{
+			int answer = 0;
+			answer = (answer * 37) + HashCode(Value);
+			return answer;
 
 		}
 
-		public override bool Equals(object that) {
-	    	if (that is ConnectionId) {
-	    	    return Equals((ConnectionId) that);
+		public override bool Equals(object that)
+		{
+			if(that is ConnectionId)
+			{
+				return Equals((ConnectionId) that);
 			}
 			return false;
-    	}
+		}
 
-		public virtual bool Equals(ConnectionId that) {
-            if (! Equals(this.Value, that.Value)) return false;
-            return true;
+		public virtual bool Equals(ConnectionId that)
+		{
+			if(!Equals(this.Value, that.Value))
+				return false;
+			return true;
 
 		}
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Value=" + Value
-                + " ]";
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Value=" + Value
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConnectionId;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConnectionId;
+		}
 
 
-        // Properties
+		// Properties
 
-        public string Value
-        {
-            get { return value; }
-            set { this.value = value; }            
-        }
+		public string Value
+		{
+			get { return value; }
+			set { this.value = value; }
+		}
 
-    }
+		public ConnectionId(SessionId id)
+		{
+			this.value = id.ConnectionId;
+		}
+
+		public ConnectionId()
+		{
+		}
+	}
 }

@@ -20,47 +20,54 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ Response Command
-    /// </summary>
-    public class Response : BaseCommand
-    {
-        public const byte ID_Response = 30;
-    			
-        int correlationId;
+	/// <summary>
+	///  The ActiveMQ Response Command
+	/// </summary>
+	public class Response : BaseCommand
+	{
+		public const byte ID_Response = 30;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " CorrelationId=" + CorrelationId
-                + " ]";
+		int correlationId;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " CorrelationId=" + CorrelationId
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_Response;
-        }
-
-
-        // Properties
-
-        public int CorrelationId
-        {
-            get { return correlationId; }
-            set { this.correlationId = value; }
-        }
-		
-        public override bool IsResponse {
-			get { return true; }
+		public override byte GetDataStructureType()
+		{
+			return ID_Response;
 		}
-		
-		
-    }
+
+
+		// Properties
+
+		public int CorrelationId
+		{
+			get { return correlationId; }
+			set { this.correlationId = value; }
+		}
+
+		public override bool IsResponse
+		{
+			get
+			{
+				return true;
+			}
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return null;
+		}
+
+	}
 }

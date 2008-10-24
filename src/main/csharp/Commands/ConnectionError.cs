@@ -20,50 +20,53 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConnectionError Command
-    /// </summary>
-    public class ConnectionError : BaseCommand
-    {
-        public const byte ID_ConnectionError = 16;
-    			
-        BrokerError exception;
-        ConnectionId connectionId;
+	/// <summary>
+	///  The ActiveMQ ConnectionError Command
+	/// </summary>
+	public class ConnectionError : BaseCommand
+	{
+		public const byte ID_ConnectionError = 16;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Exception=" + Exception
-                + " ConnectionId=" + ConnectionId
-                + " ]";
+		BrokerError exception;
+		ConnectionId connectionId;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Exception=" + Exception
+				+ " ConnectionId=" + ConnectionId
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConnectionError;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConnectionError;
+		}
 
 
-        // Properties
+		// Properties
 
-        public BrokerError Exception
-        {
-            get { return exception; }
-            set { this.exception = value; }            
-        }
+		public BrokerError Exception
+		{
+			get { return exception; }
+			set { this.exception = value; }
+		}
 
-        public ConnectionId ConnectionId
-        {
-            get { return connectionId; }
-            set { this.connectionId = value; }            
-        }
+		public ConnectionId ConnectionId
+		{
+			get { return connectionId; }
+			set { this.connectionId = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processConnectionError(this);
+		}
+	}
 }

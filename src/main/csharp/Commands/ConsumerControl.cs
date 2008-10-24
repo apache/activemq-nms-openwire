@@ -20,82 +20,85 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ConsumerControl Command
-    /// </summary>
-    public class ConsumerControl : BaseCommand
-    {
-        public const byte ID_ConsumerControl = 17;
-    			
-        bool close;
-        ConsumerId consumerId;
-        int prefetch;
-        bool flush;
-        bool start;
-        bool stop;
+	/// <summary>
+	///  The ActiveMQ ConsumerControl Command
+	/// </summary>
+	public class ConsumerControl : BaseCommand
+	{
+		public const byte ID_ConsumerControl = 17;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " Close=" + Close
-                + " ConsumerId=" + ConsumerId
-                + " Prefetch=" + Prefetch
-                + " Flush=" + Flush
-                + " Start=" + Start
-                + " Stop=" + Stop
-                + " ]";
+		bool close;
+		ConsumerId consumerId;
+		int prefetch;
+		bool flush;
+		bool start;
+		bool stop;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " Close=" + Close
+				+ " ConsumerId=" + ConsumerId
+				+ " Prefetch=" + Prefetch
+				+ " Flush=" + Flush
+				+ " Start=" + Start
+				+ " Stop=" + Stop
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ConsumerControl;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ConsumerControl;
+		}
 
 
-        // Properties
+		// Properties
 
-        public bool Close
-        {
-            get { return close; }
-            set { this.close = value; }            
-        }
+		public bool Close
+		{
+			get { return close; }
+			set { this.close = value; }
+		}
 
-        public ConsumerId ConsumerId
-        {
-            get { return consumerId; }
-            set { this.consumerId = value; }            
-        }
+		public ConsumerId ConsumerId
+		{
+			get { return consumerId; }
+			set { this.consumerId = value; }
+		}
 
-        public int Prefetch
-        {
-            get { return prefetch; }
-            set { this.prefetch = value; }            
-        }
+		public int Prefetch
+		{
+			get { return prefetch; }
+			set { this.prefetch = value; }
+		}
 
-        public bool Flush
-        {
-            get { return flush; }
-            set { this.flush = value; }            
-        }
+		public bool Flush
+		{
+			get { return flush; }
+			set { this.flush = value; }
+		}
 
-        public bool Start
-        {
-            get { return start; }
-            set { this.start = value; }            
-        }
+		public bool Start
+		{
+			get { return start; }
+			set { this.start = value; }
+		}
 
-        public bool Stop
-        {
-            get { return stop; }
-            set { this.stop = value; }            
-        }
+		public bool Stop
+		{
+			get { return stop; }
+			set { this.stop = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processConsumerControl(this);
+		}
+	}
 }

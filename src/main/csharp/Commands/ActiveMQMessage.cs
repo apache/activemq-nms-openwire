@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS;
-using Apache.NMS.Util;
 using System;
+
+using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.State;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
 	public delegate void AcknowledgeHandler(ActiveMQMessage message);
-}
 
-namespace Apache.NMS.ActiveMQ.Commands
-{
 	public class ActiveMQMessage : Message, IMessage, MarshallAware
 	{
 		public const byte ID_ActiveMQMessage = 23;
@@ -259,10 +257,15 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public override void BeforeMarshall(OpenWireFormat wireFormat)
 		{
 			MarshalledProperties = null;
-			if (properties != null)
+			if(properties != null)
 			{
 				MarshalledProperties = properties.Marshal();
 			}
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processMessage(this);
 		}
 	}
 }

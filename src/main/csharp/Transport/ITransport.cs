@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS;
+
 using System;
+using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -26,11 +26,11 @@ namespace Apache.NMS.ActiveMQ.Transport
 	/// <summary>
 	/// Represents the logical networking transport layer.
 	/// </summary>
-	public interface ITransport : IStartable, IDisposable
-    {
-        void Oneway(Command command);
-        
-        FutureResponse AsyncRequest(Command command);
+	public interface ITransport : IStartable, IDisposable, IStoppable
+	{
+		void Oneway(Command command);
+
+		FutureResponse AsyncRequest(Command command);
 
 		TimeSpan RequestTimeout
 		{
@@ -38,20 +38,25 @@ namespace Apache.NMS.ActiveMQ.Transport
 			set;
 		}
 
-        Response Request(Command command);
+		Response Request(Command command);
 		Response Request(Command command, TimeSpan timeout);
-        
-        CommandHandler Command
+
+		CommandHandler Command
 		{
-            get;
-            set;
-        }
-		
-        ExceptionHandler Exception
+			get;
+			set;
+		}
+
+		ExceptionHandler Exception
 		{
-            get;
-            set;
-        }
-    }
+			get;
+			set;
+		}
+
+		bool IsDisposed
+		{
+			get;
+		}
+	}
 }
 

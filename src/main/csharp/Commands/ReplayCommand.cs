@@ -20,50 +20,54 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ReplayCommand Command
-    /// </summary>
-    public class ReplayCommand : BaseCommand
-    {
-        public const byte ID_ReplayCommand = 65;
-    			
-        int firstNakNumber;
-        int lastNakNumber;
+	/// <summary>
+	///  The ActiveMQ ReplayCommand Command
+	/// </summary>
+	public class ReplayCommand : BaseCommand
+	{
+		public const byte ID_ReplayCommand = 65;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " FirstNakNumber=" + FirstNakNumber
-                + " LastNakNumber=" + LastNakNumber
-                + " ]";
+		int firstNakNumber;
+		int lastNakNumber;
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " FirstNakNumber=" + FirstNakNumber
+				+ " LastNakNumber=" + LastNakNumber
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ReplayCommand;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ReplayCommand;
+		}
 
 
-        // Properties
+		// Properties
 
-        public int FirstNakNumber
-        {
-            get { return firstNakNumber; }
-            set { this.firstNakNumber = value; }            
-        }
+		public int FirstNakNumber
+		{
+			get { return firstNakNumber; }
+			set { this.firstNakNumber = value; }
+		}
 
-        public int LastNakNumber
-        {
-            get { return lastNakNumber; }
-            set { this.lastNakNumber = value; }            
-        }
+		public int LastNakNumber
+		{
+			get { return lastNakNumber; }
+			set { this.lastNakNumber = value; }
+		}
 
-    }
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return null;
+		}
+
+	}
 }

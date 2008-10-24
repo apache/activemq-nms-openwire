@@ -20,34 +20,46 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ ShutdownInfo Command
-    /// </summary>
-    public class ShutdownInfo : BaseCommand
-    {
-        public const byte ID_ShutdownInfo = 11;
-    			
+	/// <summary>
+	///  The ActiveMQ ShutdownInfo Command
+	/// </summary>
+	public class ShutdownInfo : BaseCommand
+	{
+		public const byte ID_ShutdownInfo = 11;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ]";
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_ShutdownInfo;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ShutdownInfo;
+		}
 
 
-        // Properties
+		// Properties
 
-    }
+		public override bool IsShutdownInfo
+		{
+			get
+			{
+				return true;
+			}
+		}
+
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processShutdown(this);
+		}
+
+	}
 }

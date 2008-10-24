@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-using Apache.NMS.ActiveMQ.Commands;
 using System;
-using Apache.NMS;
 
 
 //
@@ -31,8 +29,8 @@ using Apache.NMS;
 namespace Apache.NMS.ActiveMQ.Commands
 {
 	public abstract class ActiveMQTempDestination : ActiveMQDestination
-    {
-		
+	{
+
 		/// <summary>
 		/// Method GetDestinationType
 		/// </summary>
@@ -42,7 +40,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			// TODO: Implement this method
 			return 0;
 		}
-		
+
 		/// <summary>
 		/// Method CreateDestination
 		/// </summary>
@@ -53,26 +51,44 @@ namespace Apache.NMS.ActiveMQ.Commands
 			// TODO: Implement this method
 			return null;
 		}
-		
+
 		abstract override public DestinationType DestinationType
 		{
 			get;
 		}
-		
-        public const byte ID_ActiveMQTempDestination = 0;
-        
-        public ActiveMQTempDestination() : base()
-        {
-        }
-        
-        public ActiveMQTempDestination(String name) : base(name)
-        {
-        }
-        
-        public override byte GetDataStructureType()
-        {
-            return ID_ActiveMQTempDestination;
-        }
-    }
+
+		public const byte ID_ActiveMQTempDestination = 0;
+
+		public ActiveMQTempDestination()
+			: base()
+		{
+		}
+
+		public ActiveMQTempDestination(String name)
+			: base(name)
+		{
+		}
+
+		public override byte GetDataStructureType()
+		{
+			return ID_ActiveMQTempDestination;
+		}
+
+		public override Object Clone()
+		{
+			// Since we are a derived class use the base's Clone()
+			// to perform the shallow copy. Since it is shallow it
+			// will include our derived class. Since we are derived,
+			// this method is an override.
+			ActiveMQTempDestination o = (ActiveMQTempDestination) base.Clone();
+
+			// Now do the deep work required
+			// If any new variables are added then this routine will
+			// likely need updating
+
+			return o;
+		}
+
+	}
 }
 

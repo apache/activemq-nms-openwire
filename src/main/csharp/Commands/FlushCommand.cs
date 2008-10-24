@@ -20,34 +20,37 @@
 //         activemq-core module
 //
 
-using System;
-using System.Collections;
 
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    /// <summary>
-    ///  The ActiveMQ FlushCommand Command
-    /// </summary>
-    public class FlushCommand : BaseCommand
-    {
-        public const byte ID_FlushCommand = 15;
-    			
+	/// <summary>
+	///  The ActiveMQ FlushCommand Command
+	/// </summary>
+	public class FlushCommand : BaseCommand
+	{
+		public const byte ID_FlushCommand = 15;
 
-		public override string ToString() {
-            return GetType().Name + "["
-                + " ]";
+
+		public override string ToString()
+		{
+			return GetType().Name + "["
+				+ " ]";
 
 		}
 
-        public override byte GetDataStructureType() {
-            return ID_FlushCommand;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_FlushCommand;
+		}
 
+		public override Response visit(ICommandVisitor visitor)
+		{
+			return visitor.processFlush(this);
+		}
 
-        // Properties
+		// Properties
 
-    }
+	}
 }
