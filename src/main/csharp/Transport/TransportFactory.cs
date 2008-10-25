@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 
+using Apache.NMS.ActiveMQ.Transport.Discovery;
 using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
 
@@ -25,13 +26,49 @@ namespace Apache.NMS.ActiveMQ.Transport
 {
 	public class TransportFactory
 	{
-
-		private static Dictionary<String, ITransportFactory> TRANSPORT_FACTORYS = new Dictionary<String, ITransportFactory>();
+		private static readonly Dictionary<String, ITransportFactory> factoryCache;
+		public static event ExceptionListener OnException;
 
 		static TransportFactory()
 		{
-			TRANSPORT_FACTORYS.Add("tcp", new TcpTransportFactory());
-			TRANSPORT_FACTORYS.Add("failover", new FailoverTransportFactory());
+			TransportFactory.factoryCache = new Dictionary<string, ITransportFactory>();
+		}
+
+		private static void HandleException(Exception ex)
+		{
+			if(TransportFactory.OnException != null)
+			{
+				TransportFactory.OnException(ex);
+			}
+		}
+
+		private static ITransportFactory AddTransportFactory(string scheme)
+		{
+			ITransportFactory factory;
+
+			switch(scheme.ToLower())
+			{
+				case "tcp":
+					factory = new TcpTransportFactory();
+					break;
+				case "discovery":
+					factory = new DiscoveryTransportFactory();
+					DiscoveryTransportFactory.OnException += TransportFactory.HandleException;
+					break;
+				case "failover":
+					factory = new FailoverTransportFactory();
+					break;
+				default:
+					throw new ApplicationException("The transport " + scheme + " is not supported.");
+			}
+
+			if(null == factory)
+			{
+				throw new ApplicationException("Unable to create a transport.");
+			}
+
+			TransportFactory.factoryCache.Add(scheme, factory);
+			return factory;
 		}
 
 		/// <summary>
@@ -41,32 +78,39 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// <returns>the transport</returns>
 		public static ITransport CreateTransport(Uri location)
 		{
-			ITransportFactory tf = findTransportFactory(location);
+			ITransportFactory tf = TransportFactory.findTransportFactory(location);
 			return tf.CreateTransport(location);
 		}
 
 		public static ITransport CompositeConnect(Uri location)
 		{
-			ITransportFactory tf = findTransportFactory(location);
+			ITransportFactory tf = TransportFactory.findTransportFactory(location);
 			return tf.CompositeConnect(location);
 		}
 
 		/// <summary>
+		/// Find the transport factory for the scheme.  We will cache the transport
+		/// factory in a lookup table.  If we do not support the transport protocol,
+		/// an ApplicationException will be thrown.
 		/// </summary>
 		/// <param name="location"></param>
 		/// <returns></returns>
 		private static ITransportFactory findTransportFactory(Uri location)
 		{
-			String scheme = location.Scheme;
-			if(scheme == null)
+			string scheme = location.Scheme;
+
+			if(null == scheme)
 			{
 				throw new IOException("Transport not scheme specified: [" + location + "]");
 			}
-			ITransportFactory tf = TRANSPORT_FACTORYS[scheme];
-			if(tf == null)
+
+			scheme = scheme.ToLower();
+			ITransportFactory tf = TransportFactory.factoryCache[scheme];
+			if(null == tf)
 			{
-				throw new ApplicationException("Transport Factory for " + scheme + " does not exist.");
+				tf = TransportFactory.AddTransportFactory(scheme);
 			}
+
 			return tf;
 		}
 	}

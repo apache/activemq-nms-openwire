@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,17 +20,14 @@ using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-
-	/**
-	 * A ProducerAck command is sent by a broker to a producer to let it know it has
-	 * received and processed messages that it has produced. The producer will be
-	 * flow controlled if it does not receive ProducerAck commands back from the
-	 * broker.
-	 * 
-	 */
+	/// <summary>
+	/// A ProducerAck command is sent by a broker to a producer to let it know it has
+	/// received and processed messages that it has produced. The producer will be
+	/// flow controlled if it does not receive ProducerAck commands back from the
+	/// broker.
+	/// </summary>
 	public class ProducerAck : BaseCommand
 	{
-
 		protected ProducerId myProducerId;
 		protected int mySize;
 
@@ -49,10 +46,9 @@ namespace Apache.NMS.ActiveMQ.Commands
 			return visitor.processProducerAck(this);
 		}
 
-		/**
-		 * The producer id that this ack message is destined for.
-		 * 
-		 */
+		/// <summary>
+		/// The producer id that this ack message is destined for.
+		/// </summary>
 		public ProducerId ProducerId
 		{
 			get
@@ -65,10 +61,9 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
-		/**
-		 * The number of bytes that are being acked.
-		 * 
-		 */
+		/// <summary>
+		/// The number of bytes that are being acked.
+		/// </summary>
 		public int Size
 		{
 			get

@@ -440,10 +440,6 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
-		/// <summary>
-		/// </summary>
-		/// <returns>a list of child destinations if this destination represents a composite destination.</returns>
-
 		/*public List GetChildDestinations() {
 		 List answer = new ArrayList();
 		 StringTokenizer iter = new StringTokenizer(physicalName, COMPOSITE_SEPARATOR);

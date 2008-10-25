@@ -721,6 +721,8 @@
     <Compile Include="src\main\csharp\TransactionContext.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Transport\Discovery\DiscoveryTransportFactory.cs" />
+    <Compile Include="src\main\csharp\Transport\Discovery\Multicast\MulticastDiscoveryAgent.cs" />
     <Compile Include="src\main\csharp\Transport\Failover\BackupTransport.cs" />
     <Compile Include="src\main\csharp\Transport\Failover\FailoverTransport.cs" />
     <Compile Include="src\main\csharp\Transport\Failover\FailoverTransportFactory.cs" />

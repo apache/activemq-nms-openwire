@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -44,7 +44,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		private Mutex reconnectMutex = new Mutex();
 		private Mutex backupMutex = new Mutex();
 		private Mutex sleepMutex = new Mutex();
-		private Mutex listenerMutex = new Mutex();
 		private ConnectionStateTracker stateTracker = new ConnectionStateTracker();
 		private Dictionary<int, Command> requestMap = new Dictionary<int, Command>();
 
@@ -75,14 +74,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public TimeSpan RequestTimeout
 		{
-			get
-			{
-				return requestTimeout;
-			}
-			set
-			{
-				requestTimeout = value;
-			}
+			get { return requestTimeout; }
+			set { requestTimeout = value; }
 		}
 
 		private class FailoverTask : Task
@@ -102,7 +95,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				try
 				{
 					parent.backupMutex.WaitOne();
-					if(parent.ConnectedTransport == null && !parent.disposed)
+					if(parent.ConnectedTransport == null && doReconnect)
 					{
 						result = parent.doReconnect();
 						buildBackup = false;
@@ -112,6 +105,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					parent.backupMutex.ReleaseMutex();
 				}
+
 				if(buildBackup)
 				{
 					parent.buildBackups();
@@ -165,12 +159,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						{
 						}
 					}
+
 					Tracked t = oo as Tracked;
 					if(t != null)
 					{
 						t.onResponses();
 					}
 				}
+
 				if(!initialized)
 				{
 					if(command.IsBrokerInfo)
@@ -185,10 +181,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								add(brokerString);
 							}
 						}
+
 						initialized = true;
 					}
 				}
 			}
+
 			this.Command(sender, command);
 		}
 
@@ -295,6 +293,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					return;
 				}
+
 				started = false;
 				disposed = true;
 				connected = false;
@@ -313,6 +312,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				reconnectMutex.ReleaseMutex();
 			}
+
 			try
 			{
 				sleepMutex.WaitOne();
@@ -321,6 +321,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				sleepMutex.ReleaseMutex();
 			}
+
 			reconnectTask.shutdown();
 			if(transportToStop != null)
 			{
@@ -330,146 +331,74 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public int InitialReconnectDelay
 		{
-			get
-			{
-				return _initialReconnectDelay;
-			}
-			set
-			{
-				_initialReconnectDelay = value;
-			}
+			get { return _initialReconnectDelay; }
+			set { _initialReconnectDelay = value; }
 		}
 
 		public int MaxReconnectDelay
 		{
-			get
-			{
-				return _maxReconnectDelay;
-			}
-			set
-			{
-				_maxReconnectDelay = value;
-			}
+			get { return _maxReconnectDelay; }
+			set { _maxReconnectDelay = value; }
 		}
 
 		public int ReconnectDelay
 		{
-			get
-			{
-				return _reconnectDelay;
-			}
-			set
-			{
-				_reconnectDelay = value;
-			}
+			get { return _reconnectDelay; }
+			set { _reconnectDelay = value; }
 		}
 
 		public int ReconnectDelayExponent
 		{
-			get
-			{
-				return _backOffMultiplier;
-			}
-			set
-			{
-				_backOffMultiplier = value;
-			}
+			get { return _backOffMultiplier; }
+			set { _backOffMultiplier = value; }
 		}
 
 		public ITransport ConnectedTransport
 		{
-			get
-			{
-				return connectedTransport.Value;
-			}
-			set
-			{
-				connectedTransport.Value = value;
-			}
+			get { return connectedTransport.Value; }
+			set { connectedTransport.Value = value; }
 		}
 
 		public Uri ConnectedTransportURI
 		{
-			get
-			{
-				return connectedTransportURI;
-			}
-			set
-			{
-				connectedTransportURI = value;
-			}
+			get { return connectedTransportURI; }
+			set { connectedTransportURI = value; }
 		}
 
 		public int MaxReconnectAttempts
 		{
-			get
-			{
-				return _maxReconnectAttempts;
-			}
-			set
-			{
-				_maxReconnectAttempts = value;
-			}
+			get { return _maxReconnectAttempts; }
+			set { _maxReconnectAttempts = value; }
 		}
 
 		public bool Randomize
 		{
-			get
-			{
-				return _randomize;
-			}
-			set
-			{
-				_randomize = value;
-			}
+			get { return _randomize; }
+			set { _randomize = value; }
 		}
 
 		public bool Backup
 		{
-			get
-			{
-				return _backup;
-			}
-			set
-			{
-				_backup = value;
-			}
+			get { return _backup; }
+			set { _backup = value; }
 		}
 
 		public int BackupPoolSize
 		{
-			get
-			{
-				return _backupPoolSize;
-			}
-			set
-			{
-				_backupPoolSize = value;
-			}
+			get { return _backupPoolSize; }
+			set { _backupPoolSize = value; }
 		}
 
 		public bool TrackMessages
 		{
-			get
-			{
-				return _trackMessages;
-			}
-			set
-			{
-				_trackMessages = value;
-			}
+			get { return _trackMessages; }
+			set { _trackMessages = value; }
 		}
 
 		public int MaxCacheSize
 		{
-			get
-			{
-				return _maxCacheSize;
-			}
-			set
-			{
-				_maxCacheSize = value;
-			}
+			get { return _maxCacheSize; }
+			set { _maxCacheSize = value; }
 		}
 
 		/// <summary>
@@ -486,7 +415,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			Exception error = null;
 			try
 			{
-
 				try
 				{
 					reconnectMutex.WaitOne();
@@ -498,6 +426,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							// Skipping send of ShutdownInfo command when not connected.
 							return;
 						}
+
 						if(command is RemoveInfo)
 						{
 							// Simulate response to RemoveInfo command
@@ -539,6 +468,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								{
 									reconnectMutex.WaitOne();
 								}
+
 								transport = ConnectedTransport;
 							}
 
@@ -630,6 +560,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				Thread.CurrentThread.Interrupt();
 				throw new ThreadInterruptedException();
 			}
+
 			if(!disposed)
 			{
 				if(error != null)
@@ -667,6 +598,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					}
 				}
 			}
+
 			Reconnect();
 		}
 
@@ -679,6 +611,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					uris.Remove(u[i]);
 				}
 			}
+
 			Reconnect();
 		}
 
@@ -750,6 +683,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					removed = l.Remove(failedConnectTransportURI);
 				}
+
 				if(Randomize)
 				{
 					// Randomly, reorder the list by random swapping
@@ -762,10 +696,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						l[i] = t;
 					}
 				}
+
 				if(removed)
 				{
 					l.Add(failedConnectTransportURI);
 				}
+
 				return l;
 			}
 		}
@@ -783,6 +719,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				tmpMap = new Dictionary<int, Command>(requestMap);
 			}
+
 			foreach(Command command in tmpMap.Values)
 			{
 				t.Oneway(command);
@@ -791,14 +728,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public bool UseExponentialBackOff
 		{
-			get
-			{
-				return _useExponentialBackOff;
-			}
-			set
-			{
-				_useExponentialBackOff = value;
-			}
+			get { return _useExponentialBackOff; }
+			set { _useExponentialBackOff = value; }
 		}
 
 		public override String ToString()
@@ -821,10 +752,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public bool IsFaultTolerant
 		{
-			get
-			{
-				return true;
-			}
+			get { return true; }
 		}
 
 		bool doReconnect()
@@ -927,6 +855,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								{
 									Tracer.Info("Successfully reconnected to " + uri);
 								}
+
 								connected = true;
 								return false;
 							}
@@ -943,9 +872,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					Tracer.Error("Failed to connect to transport after: " + connectFailures + " attempt(s)");
 					connectionFailure = failure;
-
 					onException(this, connectionFailure);
-
 					return false;
 				}
 			}
@@ -953,6 +880,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				reconnectMutex.ReleaseMutex();
 			}
+
 			if(!disposed)
 			{
 
@@ -1004,6 +932,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							backups.Remove(bt);
 						}
 					}
+
 					foreach(Uri uri in connectList)
 					{
 						if(ConnectedTransportURI != null && !ConnectedTransportURI.Equals(uri))
@@ -1028,6 +957,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								Tracer.Debug("Failed to build backup ");
 							}
 						}
+
 						if(backups.Count < BackupPoolSize)
 						{
 							break;
@@ -1039,23 +969,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				backupMutex.ReleaseMutex();
 			}
+
 			return false;
 		}
 
 		public bool IsDisposed
 		{
-			get
-			{
-				return disposed;
-			}
+			get { return disposed; }
 		}
 
 		public bool Connected
 		{
-			get
-			{
-				return connected;
-			}
+			get { return connected; }
 		}
 
 		public void Reconnect(Uri uri)
@@ -1080,34 +1005,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public CommandHandler Command
 		{
-			get
-			{
-				return _commandHandler;
-			}
-			set
-			{
-				_commandHandler = value;
-			}
+			get { return _commandHandler; }
+			set { _commandHandler = value; }
 		}
 
 		public ExceptionHandler Exception
 		{
-			get
-			{
-				return _exceptionHandler;
-			}
-			set
-			{
-				_exceptionHandler = value;
-			}
+			get { return _exceptionHandler; }
+			set { _exceptionHandler = value; }
 		}
 
 		public bool IsStarted
 		{
-			get
-			{
-				return started;
-			}
+			get { return started; }
 		}
 
 		public void Dispose()
@@ -1122,6 +1032,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				// get rid of unmanaged stuff
 			}
+
 			disposed = true;
 		}
 

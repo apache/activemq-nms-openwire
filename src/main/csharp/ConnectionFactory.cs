@@ -30,22 +30,23 @@ namespace Apache.NMS.ActiveMQ
 		public const string DEFAULT_BROKER_URL = "activemq:tcp://localhost:61616";
 		public const string ENV_BROKER_URL = "ACTIVEMQ_BROKER_URL";
 
+		private static event ExceptionListener onException;
 		private Uri brokerUri;
 		private string connectionUserName;
 		private string connectionPassword;
 		private string clientId;
+
+		static ConnectionFactory()
+		{
+			TransportFactory.OnException += ConnectionFactory.ExceptionHandler;
+		}
 
 		public static string GetDefaultBrokerUrl()
 		{
 #if (PocketPC||NETCF||NETCF_2_0)
 			return DEFAULT_BROKER_URL;
 #else
-			string answer = Environment.GetEnvironmentVariable(ENV_BROKER_URL);
-			if(answer == null)
-			{
-				answer = DEFAULT_BROKER_URL;
-			}
-			return answer;
+			return Environment.GetEnvironmentVariable(ENV_BROKER_URL) ?? DEFAULT_BROKER_URL;
 #endif
 		}
 
@@ -83,10 +84,16 @@ namespace Apache.NMS.ActiveMQ
 		public IConnection CreateConnection(string userName, string password)
 		{
 			Uri uri = brokerUri;
-			// Do we need to strip off the activemq prefix??
-			if("activemq".Equals(brokerUri.Scheme))
+			string scheme = brokerUri.Scheme;
+
+			if(null != scheme)
 			{
-				uri = new Uri(brokerUri.AbsolutePath + brokerUri.Query);
+				// Do we need to strip off the activemq prefix??
+				scheme = scheme.ToLower();
+				if("activemq".Equals(scheme))
+				{
+					uri = new Uri(brokerUri.AbsolutePath + brokerUri.Query);
+				}
 			}
 
 			ConnectionInfo info = CreateConnectionInfo(userName, password);
@@ -129,7 +136,17 @@ namespace Apache.NMS.ActiveMQ
 			set { clientId = value; }
 		}
 
-		// Implementation methods
+		public event ExceptionListener OnException
+		{
+			add { onException += value; }
+			remove
+			{
+				if(onException != null)
+				{
+					onException -= value;
+				}
+			}
+		}
 
 		protected virtual ConnectionInfo CreateConnectionInfo(string userName, string password)
 		{
@@ -140,14 +157,8 @@ namespace Apache.NMS.ActiveMQ
 			answer.ConnectionId = connectionId;
 			answer.UserName = userName;
 			answer.Password = password;
-			if(clientId == null)
-			{
-				answer.ClientId = CreateNewGuid();
-			}
-			else
-			{
-				answer.ClientId = clientId;
-			}
+			answer.ClientId = clientId ?? CreateNewGuid();
+
 			return answer;
 		}
 
@@ -156,5 +167,12 @@ namespace Apache.NMS.ActiveMQ
 			return Guid.NewGuid().ToString();
 		}
 
+		protected static void ExceptionHandler(Exception ex)
+		{
+			if(ConnectionFactory.onException != null)
+			{
+				ConnectionFactory.onException(ex);
+			}
+		}
 	}
 }

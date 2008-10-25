@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -54,14 +54,13 @@ namespace Apache.NMS.ActiveMQ.Threads
 			ThreadPool.QueueUserWorkItem(new WaitCallback(run), this);
 		}
 
-		/**
-		 * We Expect MANY wakeup calls on the same TaskRunner.
-		 */
+		/// <summary>
+		/// We Expect MANY wakeup calls on the same TaskRunner.
+		/// </summary>
 		public void wakeup()
 		{
 			lock(runable)
 			{
-
 				// When we get in here, we make some assumptions of state:
 				// queued=false, iterating=false: wakeup() has not be called and
 				// therefore task is not executing.
@@ -88,10 +87,10 @@ namespace Apache.NMS.ActiveMQ.Threads
 			}
 		}
 
-		/**
-		 * shut down the task
-		 *
-		 */
+		/// <summary>
+		/// shut down the task
+		/// </summary>
+		/// <param name="timeout"></param>
 		public void shutdown(int timeout)
 		{
 			lock(runable)

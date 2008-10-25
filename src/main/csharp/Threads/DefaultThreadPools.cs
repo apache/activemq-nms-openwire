@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,7 +19,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 {
 	public class DefaultThreadPools
 	{
-		/***
+		/*
 		 * Java's execution model is different enough that I have left out
 		 * the Executure concept in this implementation. This must be
 		 * reviewed to see what is appropriate for the future.
@@ -41,7 +41,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 		{
 			get { return DEFAULT_POOL; }
 		}
-		***/
+		*/
 
 		private static TaskRunnerFactory DEFAULT_TASK_RUNNER_FACTORY = new TaskRunnerFactory();
 
