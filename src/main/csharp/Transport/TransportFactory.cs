@@ -46,7 +46,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			ITransportFactory factory;
 
-			switch(scheme.ToLower())
+			switch(scheme)
 			{
 				case "tcp":
 					factory = new TcpTransportFactory();
@@ -105,10 +105,15 @@ namespace Apache.NMS.ActiveMQ.Transport
 			}
 
 			scheme = scheme.ToLower();
-			ITransportFactory tf = TransportFactory.factoryCache[scheme];
-			if(null == tf)
+			ITransportFactory tf;
+			try
 			{
-				tf = TransportFactory.AddTransportFactory(scheme);
+			    tf = TransportFactory.factoryCache[scheme];
+			}
+			catch
+			{
+			    // missing in the cache - go add request it if it exists
+			    tf = TransportFactory.AddTransportFactory(scheme);
 			}
 
 			return tf;
