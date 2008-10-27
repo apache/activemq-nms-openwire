@@ -50,14 +50,15 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 
 		public OpenWireFormat()
 		{
-			PreferedWireFormatInfo.CacheEnabled = false;
-			PreferedWireFormatInfo.StackTraceEnabled = false;
-			PreferedWireFormatInfo.TcpNoDelayEnabled = true;
+            // See the following link for defaults: http://activemq.apache.org/configuring-wire-formats.html
+			PreferedWireFormatInfo.CacheEnabled = true;
+			PreferedWireFormatInfo.StackTraceEnabled = true;
+			PreferedWireFormatInfo.TcpNoDelayEnabled = true;    // Deviate from defaults for platform speed increase.
 			PreferedWireFormatInfo.SizePrefixDisabled = false;
-			PreferedWireFormatInfo.TightEncodingEnabled = false;
-			PreferedWireFormatInfo.MaxInactivityDuration = 0;
+			PreferedWireFormatInfo.TightEncodingEnabled = true;
+			PreferedWireFormatInfo.MaxInactivityDuration = 30000;
 			PreferedWireFormatInfo.MaxInactivityDurationInitialDelay = 0;
-			PreferedWireFormatInfo.CacheSize = 0;
+			PreferedWireFormatInfo.CacheSize = 1024;
 			PreferedWireFormatInfo.Version = 2;
 
 			dataMarshallers = new BaseDataStreamMarshaller[256];
