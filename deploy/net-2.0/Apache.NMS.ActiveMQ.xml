@@ -105,132 +105,197 @@
             </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.ACTIVEMQ_TOPIC">
+            <summary>
             Topic Destination object
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.ACTIVEMQ_TEMPORARY_TOPIC">
+            <summary>
             Temporary Topic Destination object
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.ACTIVEMQ_QUEUE">
+            <summary>
             Queue Destination object
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.ACTIVEMQ_TEMPORARY_QUEUE">
+            <summary>
             Temporary Queue Destination object
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.ADVISORY_PREFIX">
+            <summary>
             prefix for Advisory message destinations
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CONSUMER_ADVISORY_PREFIX">
+            <summary>
             prefix for consumer advisory destinations
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.PRODUCER_ADVISORY_PREFIX">
+            <summary>
             prefix for producer advisory destinations
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CONNECTION_ADVISORY_PREFIX">
+            <summary>
             prefix for connection advisory destinations
+            </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.DEFAULT_ORDERED_TARGET">
+            <summary>
             The default target for ordered destinations
+            </summary>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.#ctor">
+            <summary>
             The Default Constructor
+            </summary>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.#ctor(System.String)">
-             Construct the Destination with a defined physical name;
-            
-             @param name
+            <summary>
+            Construct the Destination with a defined physical name;
+            </summary>
+            <param name="name"></param>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsAdvisory">
-            @return Returns the advisory.
+            <summary>
+            </summary>
+            <returns>Returns the advisory.</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.SetAdvisory(System.Boolean)">
-            @param advisory The advisory to set.
+            <summary>
+            </summary>
+            <param name="advisory">The advisory to set.</param>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsConsumerAdvisory">
-            @return true if this is a destination for Consumer advisories
+            <summary>
+            </summary>
+            <returns>true if this is a destination for Consumer advisories</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsProducerAdvisory">
-            @return true if this is a destination for Producer advisories
+            <summary>
+            </summary>
+            <returns>true if this is a destination for Producer advisories</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsConnectionAdvisory">
-            @return true if this is a destination for Connection advisories
+            <summary>
+            </summary>
+            <returns>true if this is a destination for Connection advisories</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsExclusive">
-            @return Returns the exclusive.
+            <summary>
+            </summary>
+            <returns>Returns the exclusive.</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.SetExclusive(System.Boolean)">
-            @param exclusive The exclusive to set.
+            <summary>
+            </summary>
+            <param name="exclusive">The exclusive to set.</param>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsOrdered">
-            @return Returns the ordered.
+            <summary>
+            </summary>
+            <returns>Returns the ordered.</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.SetOrdered(System.Boolean)">
-            @param ordered The ordered to set.
+            <summary>
+            </summary>
+            <param name="ordered">The ordered to set.</param>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.GetOrderedTarget">
-            @return Returns the orderedTarget.
+            <summary>
+            </summary>
+            <returns>Returns the orderedTarget.</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.SetOrderedTarget(System.String)">
-            @param orderedTarget The orderedTarget to set.
+            <summary>
+            </summary>
+            <param name="orderedTarget">The orderedTarget to set.</param>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.Inspect(Apache.NMS.ActiveMQ.Commands.ActiveMQDestination)">
-             A helper method to return a descriptive string for the topic or queue
-             @param destination
-            
-             @return a descriptive string for this queue or topic
+            <summary>
+            A helper method to return a descriptive string for the topic or queue
+            </summary>
+            <param name="destination"></param>
+            <returns>a descriptive string for this queue or topic</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.Transform(Apache.NMS.IDestination)">
-            @param destination
+            <summary>
+            </summary>
+            <param name="destination"></param>
+            <returns></returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CreateDestination(System.Int32,System.String)">
+            <summary>
             Create a Destination
-            @param type
-            @param pyhsicalName
-            @return
+            </summary>
+            <param name="type"></param>
+            <param name="pyhsicalName"></param>
+            <returns></returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CreateTemporaryName(System.String)">
-             Create a temporary name from the clientId
-            
-             @param clientId
-             @return
+            <summary>
+            Create a temporary name from the clientId
+            </summary>
+            <param name="clientId"></param>
+            <returns></returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.GetClientId(Apache.NMS.ActiveMQ.Commands.ActiveMQDestination)">
-             From a temporary destination find the clientId of the Connection that created it
-            
-             @param destination
-             @return the clientId or null if not a temporary destination
+            <summary>
+            From a temporary destination find the clientId of the Connection that created it
+            </summary>
+            <param name="destination"></param>
+            <returns>the clientId or null if not a temporary destination</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CompareTo(System.Object)">
-            @param o object to compare
-            @return 1 if this is less than o else 0 if they are equal or -1 if this is less than o
+            <summary>
+            </summary>
+            <param name="o">object to compare</param>
+            <returns>1 if this is less than o else 0 if they are equal or -1 if this is less than o</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CompareTo(Apache.NMS.ActiveMQ.Commands.ActiveMQDestination)">
-             Lets sort by name first then lets sort topics greater than queues
-            
-             @param that another destination to compare against
-             @return 1 if this is less than o else 0 if they are equal or -1 if this is less than o
+            <summary>
+            Lets sort by name first then lets sort topics greater than queues
+            </summary>
+            <param name="that">another destination to compare against</param>
+            <returns>1 if this is less than o else 0 if they are equal or -1 if this is less than o</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.GetDestinationType">
-            @return Returns the Destination type
+            <summary>
+            </summary>
+            <returns>Returns the Destination type</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.ToString">
-            @return string representation of this instance
+            <summary>
+            </summary>
+            <returns>string representation of this instance</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.GetHashCode">
-            @return hashCode for this instance
+            <summary>
+            </summary>
+            <returns>hashCode for this instance</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.Equals(System.Object)">
-             if the object passed in is equivalent, return true
-            
-             @param obj the object to compare
-             @return true if this instance and obj are equivalent
+            <summary>
+            if the object passed in is equivalent, return true
+            </summary>
+            <param name="obj">the object to compare</param>
+            <returns>true if this instance and obj are equivalent</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsWildcard">
-            @return true if the destination matches multiple possible destinations
+            <summary>
+            </summary>
+            <returns>true if the destination matches multiple possible destinations</returns>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.CreateDestination(System.String)">
+            <summary>
             Factory method to create a child destination if this destination is a composite
-            @param name
-            @return the created Destination
+            </summary>
+            <param name="name"></param>
+            <returns>the created Destination</returns>
         </member>
         <member name="P:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.Options">
             <summary>
@@ -240,14 +305,14 @@
             </summary>
         </member>
         <member name="P:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination.IsComposite">
-             Returns true if this destination represents a collection of
-             destinations; allowing a set of destinations to be published to or subscribed
-             from in one NMS operation.
-             <p/>
-             If this destination is a composite then you can call {@link #getChildDestinations()}
-             to return the list of child destinations.
-            
-             @return true if this destination represents a collection of child destinations.
+            <summary>
+            Returns true if this destination represents a collection of
+            destinations; allowing a set of destinations to be published to or subscribed
+            from in one NMS operation.
+            <p/>
+            If this destination is a composite then you can call {@link #getChildDestinations()}
+            to return the list of child destinations.
+            </summary>
         </member>
         <member name="T:Apache.NMS.ActiveMQ.Commands.ActiveMQQueue">
             <summary>
@@ -455,6 +520,24 @@
         <member name="T:Apache.NMS.ActiveMQ.Commands.NetworkBridgeFilter">
             <summary>
              The ActiveMQ NetworkBridgeFilter Command
+            </summary>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.Commands.ProducerAck">
+            <summary>
+            A ProducerAck command is sent by a broker to a producer to let it know it has
+            received and processed messages that it has produced. The producer will be
+            flow controlled if it does not receive ProducerAck commands back from the
+            broker.
+            </summary>
+        </member>
+        <member name="P:Apache.NMS.ActiveMQ.Commands.ProducerAck.ProducerId">
+            <summary>
+            The producer id that this ack message is destined for.
+            </summary>
+        </member>
+        <member name="P:Apache.NMS.ActiveMQ.Commands.ProducerAck.Size">
+            <summary>
+            The number of bytes that are being acked.
             </summary>
         </member>
         <member name="T:Apache.NMS.ActiveMQ.Commands.ProducerId">
@@ -1340,6 +1423,100 @@
             Unmarshals the primitive type map from the given byte array
             </summary>
         </member>
+        <member name="T:Apache.NMS.ActiveMQ.State.ConnectionStateTracker">
+            <summary>
+            Tracks the state of a connection so a newly established transport can be
+            re-initialized to the state that was tracked.
+            </summary>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.State.ConnectionStateTracker.track(Apache.NMS.ActiveMQ.Commands.Command)">
+            <summary>
+            </summary>
+            <param name="command"></param>
+            <returns>null if the command is not state tracked.</returns>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.State.ConnectionStateTracker.DoRestoreSessions(Apache.NMS.ActiveMQ.Transport.ITransport,Apache.NMS.ActiveMQ.State.ConnectionState)">
+            <summary>
+            </summary>
+            <param name="transport"></param>
+            <param name="connectionState"></param>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.State.ConnectionStateTracker.DoRestoreConsumers(Apache.NMS.ActiveMQ.Transport.ITransport,Apache.NMS.ActiveMQ.State.SessionState)">
+            <summary>
+            </summary>
+            <param name="transport"></param>
+            <param name="sessionState"></param>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.State.ConnectionStateTracker.DoRestoreProducers(Apache.NMS.ActiveMQ.Transport.ITransport,Apache.NMS.ActiveMQ.State.SessionState)">
+            <summary>
+            </summary>
+            <param name="transport"></param>
+            <param name="sessionState"></param>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.State.ConnectionStateTracker.DoRestoreTempDestinations(Apache.NMS.ActiveMQ.Transport.ITransport,Apache.NMS.ActiveMQ.State.ConnectionState)">
+            <summary>
+            </summary>
+            <param name="transport"></param>
+            <param name="connectionState"></param>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.Threads.TaskRunner">
+            <summary>
+            Allows you to request a thread execute the associated Task.
+            </summary>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.Threads.PooledTaskRunner.wakeup">
+            <summary>
+            We Expect MANY wakeup calls on the same TaskRunner.
+            </summary>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.Threads.PooledTaskRunner.shutdown(System.Int32)">
+            <summary>
+            shut down the task
+            </summary>
+            <param name="timeout"></param>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.Threads.Task">
+            <summary>
+            Represents a task that may take a few iterations to complete.
+            </summary>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.Threads.TaskRunnerFactory">
+            <summary>
+            Manages the thread pool for long running tasks. Long running tasks are not
+            always active but when they are active, they may need a few iterations of
+            processing for them to become idle. The manager ensures that each task is
+            processes but that no one task overtakes the system. This is kina like
+            cooperative multitasking.
+            </summary>
+        </member>
+        <member name="F:Apache.NMS.ActiveMQ.Transport.Discovery.Multicast.MulticastDiscoveryAgent.remoteBrokers">
+            <summary>
+            Indexed by service name
+            </summary>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.Transport.Failover.FailoverTransport">
+            <summary>
+            A Transport that is made reliable by being able to fail over to another
+            transport when a transport failure is detected.
+            </summary>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.Transport.ITransport">
+            <summary>
+            Represents the logical networking transport layer.
+            </summary>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.Transport.Failover.FailoverTransport.IsShutdownCommand(Apache.NMS.ActiveMQ.Commands.Command)">
+            <summary>
+            </summary>
+            <param name="command"></param>
+            <returns>Returns true if the command is one sent when a connection is being closed.</returns>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.Transport.Failover.FailoverTransportFactory.CreateTransport(Apache.NMS.Util.URISupport.CompositeData)">
+            <summary>
+            </summary>
+            <param name="compositData"></param>
+            <returns></returns>
+        </member>
         <member name="T:Apache.NMS.ActiveMQ.Transport.Stomp.StompFrameStream">
             <summary>
             A Stream for writing a <a href="http://stomp.codehaus.org/">STOMP</a> Frame
@@ -1358,11 +1535,6 @@
         <member name="T:Apache.NMS.ActiveMQ.Transport.Tcp.TcpTransport">
             <summary>
             An implementation of ITransport that uses sockets to communicate with the broker
-            </summary>
-        </member>
-        <member name="T:Apache.NMS.ActiveMQ.Transport.ITransport">
-            <summary>
-            Represents the logical networking transport layer.
             </summary>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Transport.Tcp.TcpTransport.Start">
@@ -1476,6 +1648,22 @@
             A Transport that correlates asynchronous send/receive messages into single request/response.
             </summary>
         </member>
+        <member name="M:Apache.NMS.ActiveMQ.Transport.TransportFactory.CreateTransport(System.Uri)">
+            <summary>
+            Creates a normal transport. 
+            </summary>
+            <param name="location"></param>
+            <returns>the transport</returns>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.Transport.TransportFactory.findTransportFactory(System.Uri)">
+            <summary>
+            Find the transport factory for the scheme.  We will cache the transport
+            factory in a lookup table.  If we do not support the transport protocol,
+            an ApplicationException will be thrown.
+            </summary>
+            <param name="location"></param>
+            <returns></returns>
+        </member>
         <member name="T:Apache.NMS.ActiveMQ.Transport.WireFormatNegotiator">
             <summary>
             A Transport which negotiates the wire format
@@ -1494,6 +1682,11 @@
         <member name="T:Apache.NMS.ActiveMQ.Connection">
             <summary>
             Represents a connection with a message broker
+            </summary>
+        </member>
+        <member name="F:Apache.NMS.ActiveMQ.Connection.myLock">
+            <summary>
+            Private object used for synchronization, instead of public "this"
             </summary>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Connection.Start">
@@ -1519,9 +1712,9 @@
             </summary>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Connection.SyncRequest(Apache.NMS.ActiveMQ.Commands.Command)">
-            <summary>
-            Performs a synchronous request-response with the broker
-            </summary>
+             <summary>
+             Performs a synchronous request-response with the broker
+             </summary>
             
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Connection.CreateTemporaryDestinationName">
@@ -1622,6 +1815,11 @@
             Method Dequeue
             </summary>
         </member>
+        <member name="T:Apache.NMS.ActiveMQ.IOException">
+            <summary>
+            Exception thrown when an IO error occurs
+            </summary>
+        </member>
         <member name="M:Apache.NMS.ActiveMQ.ISynchronization.BeforeCommit">
             <summary>
             Called before a commit
@@ -1661,6 +1859,11 @@
         <member name="T:Apache.NMS.ActiveMQ.Session">
             <summary>
             Default provider of ISession
+            </summary>
+        </member>
+        <member name="F:Apache.NMS.ActiveMQ.Session.myLock">
+            <summary>
+            Private object used for synchronization, instead of public "this"
             </summary>
         </member>
         <member name="F:Apache.NMS.ActiveMQ.Session.PrefetchSize">
@@ -1712,18 +1915,6 @@
             <summary>
             Private method called by the dispatcher thread in order to perform
             asynchronous delivery of queued (inbound) messages.
-            </summary>
-        </member>
-        <member name="M:Apache.NMS.ActiveMQ.Session.GetConsumers">
-            <summary>
-            Returns a copy of the current consumers in a thread safe way to avoid concurrency
-            problems if the consumers are changed in another thread
-            </summary>
-        </member>
-        <member name="M:Apache.NMS.ActiveMQ.Session.GetProducers">
-            <summary>
-            Returns a copy of the current consumers in a thread safe way to avoid concurrency
-            problems if the consumers are changed in another thread
             </summary>
         </member>
         <member name="M:Apache.NMS.ActiveMQ.Session.Configure(Apache.NMS.ActiveMQ.Commands.ActiveMQMessage)">

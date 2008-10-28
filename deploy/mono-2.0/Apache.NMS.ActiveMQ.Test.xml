@@ -1,8 +1,15 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>C:\Src\ActiveMQ\activemq-dotnet\Apache.NMS.ActiveMQ\tags\1.0.0\build\mono-2.0\release\Apache.NMS.ActiveMQ.Test</name>
+        <name>D:\Hudson\jobs\Apache.NMS.ActiveMQ Trunk\workspace\Apache.NMS.ActiveMQ\build\mono-2.0\release\Apache.NMS.ActiveMQ.Test</name>
     </assembly>
     <members>
+        <member name="M:Apache.NMS.Test.MaxInactivityDurationTest.GetNameTestURI">
+            <summary>
+            The name of the connection configuration that CreateNMSFactory() will load.
+            </summary>
+            <returns>
+            </returns>
+        </member>
     </members>
 </doc>
