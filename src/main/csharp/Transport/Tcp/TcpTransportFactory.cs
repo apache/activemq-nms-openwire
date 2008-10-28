@@ -112,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			Tracer.Debug("Opening socket to: " + location.Host + " on port: " + location.Port);
 			Socket socket = Connect(location.Host, location.Port);
 
-#if !NETCF && !NET_1_1
+#if !NETCF
 			socket.ReceiveBufferSize = ReceiveBufferSize;
 			socket.SendBufferSize = SendBufferSize;
 			socket.ReceiveTimeout = ReceiveTimeout;
@@ -156,13 +156,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			// Looping through the AddressList allows different type of connections to be tried
 			// (IPv4, IPv6 and whatever else may be available).
-#if NET_1_1 || NET_1_0
-			// The following GetHostByName() API has been obsoleted in .NET 2.0.  It has been
-			// superceded by GetHostEntry(). 
-			IPHostEntry hostEntry = Dns.GetHostByName(host);
-#else
 			IPHostEntry hostEntry = Dns.GetHostEntry(host);
-#endif
 
 			foreach(IPAddress address in hostEntry.AddressList)
 			{

@@ -35,6 +35,9 @@
   <property name="Apache.NMS.Test.dll" value="${basedir}/vendor/Apache.NMS/${current.build.framework}//Apache.NMS.Test.dll" dynamic="true"/>
   <property name="Apache.NMS.Test.pdb" value="${basedir}/vendor/Apache.NMS/${current.build.framework}/Apache.NMS.Test.pdb" dynamic="true"/>
 
+  <!-- Skip certain frameworks, since ActiveMQ.NET Client is not supported on those platforms. -->
+  <property name="build.net-1.1.skip" value="true"/>
+
   <target name="dependency-init" description="Initializes build dependencies">
     <if test="${not file::exists(Apache.NMS.dll)}">
 	 <echo message="Apache.NMS assembly for ${current.build.framework.name} is not available. Build skipped." />
