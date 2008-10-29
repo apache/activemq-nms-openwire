@@ -107,6 +107,7 @@ namespace Apache.NMS.ActiveMQ
 			URISupport.CompositeData c = URISupport.parseComposite(brokerUri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
+			connection.ITransport.Start();
 			return connection;
 		}
 
