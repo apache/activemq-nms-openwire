@@ -60,7 +60,6 @@ namespace Apache.NMS.ActiveMQ
 			this.transport = transport;
 			this.transport.Command = new CommandHandler(OnCommand);
 			this.transport.Exception = new ExceptionHandler(OnException);
-			this.transport.Start();
 		}
 
 		~Connection()
