@@ -104,13 +104,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 				throw new IOException("Transport not scheme specified: [" + location + "]");
 			}
 
-			scheme = scheme.ToLower();
 			ITransportFactory tf;
-			try
-			{
-			    tf = TransportFactory.factoryCache[scheme];
-			}
-			catch
+
+			scheme = scheme.ToLower();
+			if(!TransportFactory.factoryCache.TryGetValue(scheme, out tf))
 			{
 			    // missing in the cache - go add request it if it exists
 			    tf = TransportFactory.AddTransportFactory(scheme);
