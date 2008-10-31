@@ -53,12 +53,12 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			// See the following link for defaults: http://activemq.apache.org/configuring-wire-formats.html
 			// See also the following link for OpenWire format info: http://activemq.apache.org/openwire-version-2-specification.html
 			PreferedWireFormatInfo.CacheEnabled = false;
-			PreferedWireFormatInfo.StackTraceEnabled = true;
+			PreferedWireFormatInfo.StackTraceEnabled = false;
 			PreferedWireFormatInfo.TcpNoDelayEnabled = true;
 			PreferedWireFormatInfo.SizePrefixDisabled = false;
 			PreferedWireFormatInfo.TightEncodingEnabled = false;
 			PreferedWireFormatInfo.MaxInactivityDuration = 30000;
-			PreferedWireFormatInfo.MaxInactivityDurationInitialDelay = 0;
+			PreferedWireFormatInfo.MaxInactivityDurationInitialDelay = 10000;
 			PreferedWireFormatInfo.CacheSize = 0;
 			PreferedWireFormatInfo.Version = 2;
 
