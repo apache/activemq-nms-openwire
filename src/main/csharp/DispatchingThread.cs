@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 using System;
 using System.Threading;
-using Apache.NMS;
 
 
 namespace Apache.NMS.ActiveMQ
@@ -37,7 +37,7 @@ namespace Apache.NMS.ActiveMQ
 			m_dispatchFunc = dispatchFunc;
 		}
 
-               // TODO can't use EventWaitHandle on MONO 1.0
+		// TODO can't use EventWaitHandle on MONO 1.0
 		public AutoResetEvent EventHandle
 		{
 			get { return m_event; }
@@ -45,21 +45,15 @@ namespace Apache.NMS.ActiveMQ
 
 		internal event ExceptionHandler ExceptionListener
 		{
-			add
-			{
-				m_exceptionListener += value;
-			}
-			remove
-			{
-				m_exceptionListener -= value;
-			}
+			add { m_exceptionListener += value; }
+			remove { m_exceptionListener -= value; }
 		}
 
 		internal void Start()
 		{
-			lock (this)
+			lock(this)
 			{
-				if (m_thread == null)
+				if(m_thread == null)
 				{
 					m_bStopFlag = false;
 					m_thread = new Thread(new ThreadStart(MyThreadFunc));
@@ -76,22 +70,22 @@ namespace Apache.NMS.ActiveMQ
 			Stop(System.Threading.Timeout.Infinite);
 		}
 
-
 		internal void Stop(int timeoutMilliseconds)
 		{
 			Tracer.Info("Stopping dispatcher thread for session");
 			Thread localThread = null;
-			lock (this)
+			lock(this)
 			{
 				localThread = m_thread;
 				m_thread = null;
-				if (!m_bStopFlag)
+				if(!m_bStopFlag)
 				{
 					m_bStopFlag = true;
 					m_event.Set();
 				}
 			}
-			if(localThread!=null)
+
+			if(localThread != null)
 			{
 				if(!localThread.Join(timeoutMilliseconds))
 				{
@@ -99,6 +93,7 @@ namespace Apache.NMS.ActiveMQ
 					localThread.Abort();
 				}
 			}
+
 			Tracer.Info("Dispatcher thread joined");
 		}
 
@@ -107,40 +102,21 @@ namespace Apache.NMS.ActiveMQ
 			Tracer.Info("Dispatcher thread started");
 			try
 			{
-				while (true) // loop forever (well, at least until we've been asked to stop)
+				while(true) // loop forever (well, at least until we've been asked to stop)
 				{
-					lock (this)
+					lock(this)
 					{
-						if (m_bStopFlag)
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+						if(m_bStopFlag)
+						{
 							break;
-	
-	
+						}
 					}
-	
+
 					try
 					{
 						m_dispatchFunc();
 					}
-					catch (Exception ex)
+					catch(Exception ex)
 					{
 						if(m_exceptionListener != null)
 						{
