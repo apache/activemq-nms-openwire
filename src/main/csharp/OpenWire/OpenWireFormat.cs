@@ -159,59 +159,71 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			}
 		}
 
+		private BaseDataStreamMarshaller GetDataStreamMarshallerForType(byte dataType)
+		{
+			BaseDataStreamMarshaller dsm = this.dataMarshallers[dataType & 0xFF];
+			if(null == dsm)
+			{
+				throw new IOException("Unknown data type: " + dataType);
+			}
+			return dsm;
+		}
+
 		public void Marshal(Object o, BinaryWriter ds)
 		{
 			int size = 1;
 			if(o != null)
 			{
+				DataStructure c = (DataStructure) o;
+				byte type = c.GetDataStructureType();
+				BaseDataStreamMarshaller dsm;
+				bool _tightEncodingEnabled;
+				bool _sizePrefixDisabled;
+
 				lock(this.marshalLock)
 				{
-					DataStructure c = (DataStructure) o;
-					byte type = c.GetDataStructureType();
-					BaseDataStreamMarshaller dsm = dataMarshallers[type & 0xFF];
-					if(null == dsm)
+					dsm = GetDataStreamMarshallerForType(type);
+					_tightEncodingEnabled = this.tightEncodingEnabled;
+					_sizePrefixDisabled = this.sizePrefixDisabled;
+				}
+
+				if(_tightEncodingEnabled)
+				{
+					BooleanStream bs = new BooleanStream();
+					size += dsm.TightMarshal1(this, c, bs);
+					size += bs.MarshalledSize();
+
+					if(!_sizePrefixDisabled)
 					{
-						throw new IOException("Unknown data type: " + type);
+						ds.Write(size);
 					}
 
-					if(tightEncodingEnabled)
+					ds.Write(type);
+					bs.Marshal(ds);
+					dsm.TightMarshal2(this, c, ds, bs);
+				}
+				else
+				{
+					BinaryWriter looseOut = ds;
+					MemoryStream ms = null;
+
+					// If we are prefixing then we need to first write it to memory,
+					// otherwise we can write direct to the stream.
+					if(!_sizePrefixDisabled)
 					{
-						BooleanStream bs = new BooleanStream();
-						size += dsm.TightMarshal1(this, c, bs);
-						size += bs.MarshalledSize();
-
-						if(!sizePrefixDisabled)
-						{
-							ds.Write(size);
-						}
-
-						ds.Write(type);
-						bs.Marshal(ds);
-						dsm.TightMarshal2(this, c, ds, bs);
+						ms = new MemoryStream();
+						looseOut = new OpenWireBinaryWriter(ms);
+						looseOut.Write(size);
 					}
-					else
+
+					looseOut.Write(type);
+					dsm.LooseMarshal(this, c, looseOut);
+
+					if(!_sizePrefixDisabled)
 					{
-						BinaryWriter looseOut = ds;
-						MemoryStream ms = null;
-
-						// If we are prefixing then we need to first write it to memory,
-						// otherwise we can write direct to the stream.
-						if(!sizePrefixDisabled)
-						{
-							ms = new MemoryStream();
-							looseOut = new OpenWireBinaryWriter(ms);
-							looseOut.Write(size);
-						}
-
-						looseOut.Write(type);
-						dsm.LooseMarshal(this, c, looseOut);
-
-						if(!sizePrefixDisabled)
-						{
-							ms.Position = 0;
-							looseOut.Write((int) ms.Length - 4);
-							ds.Write(ms.GetBuffer(), 0, (int) ms.Length);
-						}
+						ms.Position = 0;
+						looseOut.Write((int) ms.Length - 4);
+						ds.Write(ms.GetBuffer(), 0, (int) ms.Length);
 					}
 				}
 			}
@@ -235,29 +247,29 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 
 			if(dataType != NULL_TYPE)
 			{
+				BaseDataStreamMarshaller dsm;
+				bool _tightEncodingEnabled;
+
 				lock(this.marshalLock)
 				{
-					BaseDataStreamMarshaller dsm = dataMarshallers[dataType & 0xFF];
-					if(null == dsm)
-					{
-						throw new IOException("Unknown data type: " + dataType);
-					}
+					dsm = GetDataStreamMarshallerForType(dataType);
+					_tightEncodingEnabled = this.tightEncodingEnabled;
+				}
 
-					Tracer.Debug("Parsing type: " + dataType + " with: " + dsm);
-					Object data = dsm.CreateObject();
+				Tracer.Debug("Parsing type: " + dataType + " with: " + dsm);
+				Object data = dsm.CreateObject();
 
-					if(tightEncodingEnabled)
-					{
-						BooleanStream bs = new BooleanStream();
-						bs.Unmarshal(dis);
-						dsm.TightUnmarshal(this, data, dis, bs);
-						return data;
-					}
-					else
-					{
-						dsm.LooseUnmarshal(this, data, dis);
-						return data;
-					}
+				if(_tightEncodingEnabled)
+				{
+					BooleanStream bs = new BooleanStream();
+					bs.Unmarshal(dis);
+					dsm.TightUnmarshal(this, data, dis, bs);
+					return data;
+				}
+				else
+				{
+					dsm.LooseUnmarshal(this, data, dis);
+					return data;
 				}
 			}
 			else
@@ -291,18 +303,14 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 				throw new IOException("No valid data structure type for: " + o + " of type: " + o.GetType());
 			}
 
+			BaseDataStreamMarshaller dsm;
 			lock(this.marshalLock)
 			{
-				BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[type & 0xFF];
-
-				if(null == dsm)
-				{
-					throw new IOException("Unknown data type: " + type);
-				}
-
-				Tracer.Debug("Marshalling type: " + type + " with structure: " + o);
-				return 1 + dsm.TightMarshal1(this, o, bs);
+				dsm = GetDataStreamMarshallerForType(type);
 			}
+
+			Tracer.Debug("Marshalling type: " + type + " with structure: " + o);
+			return 1 + dsm.TightMarshal1(this, o, bs);
 		}
 
 		public void TightMarshalNestedObject2(DataStructure o, BinaryWriter ds, BooleanStream bs)
@@ -323,17 +331,14 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			}
 			else
 			{
+				BaseDataStreamMarshaller dsm;
+
 				lock(this.marshalLock)
 				{
-					BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[type & 0xFF];
-
-					if(null == dsm)
-					{
-						throw new IOException("Unknown data type: " + type);
-					}
-
-					dsm.TightMarshal2(this, o, ds, bs);
+					dsm = GetDataStreamMarshallerForType(type);
 				}
+
+				dsm.TightMarshal2(this, o, ds, bs);
 			}
 		}
 
@@ -342,36 +347,31 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			if(bs.ReadBoolean())
 			{
 				DataStructure data;
+				BaseDataStreamMarshaller dsm;
+				byte dataType = dis.ReadByte();
 
 				lock(this.marshalLock)
 				{
-					byte dataType = dis.ReadByte();
-					BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[dataType & 0xFF];
+					dsm = GetDataStreamMarshallerForType(dataType);
+				}
 
-					if(null == dsm)
-					{
-						throw new IOException("Unknown data type: " + dataType);
-					}
+				data = dsm.CreateObject();
+				if(data.IsMarshallAware() && bs.ReadBoolean())
+				{
+					dis.ReadInt32();
+					dis.ReadByte();
 
-					data = dsm.CreateObject();
+					BooleanStream bs2 = new BooleanStream();
+					bs2.Unmarshal(dis);
+					dsm.TightUnmarshal(this, data, dis, bs2);
 
-					if(data.IsMarshallAware() && bs.ReadBoolean())
-					{
-						dis.ReadInt32();
-						dis.ReadByte();
-
-						BooleanStream bs2 = new BooleanStream();
-						bs2.Unmarshal(dis);
-						dsm.TightUnmarshal(this, data, dis, bs2);
-
-						// TODO: extract the sequence from the dis and associate it.
-						//                MarshallAware ma = (MarshallAware)data
-						//                ma.setCachedMarshalledForm(this, sequence);
-					}
-					else
-					{
-						dsm.TightUnmarshal(this, data, dis, bs);
-					}
+					// TODO: extract the sequence from the dis and associate it.
+					//                MarshallAware ma = (MarshallAware)data
+					//                ma.setCachedMarshalledForm(this, sequence);
+				}
+				else
+				{
+					dsm.TightUnmarshal(this, data, dis, bs);
 				}
 
 				return data;
@@ -387,20 +387,16 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			dataOut.Write(o != null);
 			if(o != null)
 			{
+				BaseDataStreamMarshaller dsm;
 				byte type = o.GetDataStructureType();
 				dataOut.Write(type);
 
 				lock(this.marshalLock)
 				{
-					BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[type & 0xFF];
-
-					if(null == dsm)
-					{
-						throw new IOException("Unknown data type: " + type);
-					}
-
-					dsm.LooseMarshal(this, o, dataOut);
+					dsm = GetDataStreamMarshallerForType(type);
 				}
+
+				dsm.LooseMarshal(this, o, dataOut);
 			}
 		}
 
@@ -408,22 +404,17 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			if(dis.ReadBoolean())
 			{
+				BaseDataStreamMarshaller dsm;
 				byte dataType = dis.ReadByte();
 				DataStructure data;
 
 				lock(this.marshalLock)
 				{
-					BaseDataStreamMarshaller dsm = (BaseDataStreamMarshaller) dataMarshallers[dataType & 0xFF];
-
-					if(null == dsm)
-					{
-						throw new IOException("Unknown data type: " + dataType);
-					}
-
-					data = dsm.CreateObject();
-					dsm.LooseUnmarshal(this, data, dis);
+					dsm = GetDataStreamMarshallerForType(dataType);
 				}
 
+				data = dsm.CreateObject();
+				dsm.LooseUnmarshal(this, data, dis);
 				return data;
 			}
 			else

@@ -14,39 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS;
+
 using NUnit.Framework;
+using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]
-    public class NMSConnectionFactoryTest 
-    {
-        [Test]
-        public void TestTcpURI()
-        {
-            NMSConnectionFactory factory = new NMSConnectionFactory("tcp://localhost:61616");
-            Assert.IsNotNull(factory);
-            Assert.IsNotNull(factory.ConnectionFactory);
-            Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
-        }
-
-		[Test]
-        public void TestStompURI()
-        {
-            NMSConnectionFactory factory = new NMSConnectionFactory("stomp://localhost:61613");
-            Assert.IsNotNull(factory);
-            Assert.IsNotNull(factory.ConnectionFactory);
-            Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
-        }
-
-        [Test]
-        public void TestActiveMQURI()
-        {
-            NMSConnectionFactory factory = new NMSConnectionFactory("activemq:tcp://localhost:61616");
-            Assert.IsNotNull(factory);
-            Assert.IsNotNull(factory.ConnectionFactory);
-            Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
-        }
-    }
+	[TestFixture]
+	public class NMSConnectionFactoryTest
+	{
+		[RowTest]
+		[Row("tcp://localhost:61616")]
+		[Row("stomp://localhost:61613")]
+		[Row("activemq:tcp://localhost:61616")]
+		[Row("activemq:failover://localhost:61616")]
+		[Row("activemq:failover://(tcp://localhost:61616,tcp://localhost:61616)")]
+		public void TestURI(string connectionURI)
+		{
+			NMSConnectionFactory factory = new NMSConnectionFactory(connectionURI);
+			Assert.IsNotNull(factory);
+			Assert.IsNotNull(factory.ConnectionFactory);
+			Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
+		}
+	}
 }
