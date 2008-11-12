@@ -124,7 +124,7 @@ namespace Apache.NMS.ActiveMQ.Test.OpenWire
 				dis.ReadByte();
 				Assert.Fail("Should have reached the end of the stream");
 			}
-			catch(IOException)
+			catch(EndOfStreamException)
 			{
 			}
 		}

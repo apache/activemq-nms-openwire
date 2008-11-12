@@ -224,17 +224,18 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 
 		public Object Unmarshal(BinaryReader dis)
 		{
-			lock(this.marshalLock)
+			// lets ignore the size of the packet
+			if(!sizePrefixDisabled)
 			{
-				// lets ignore the size of the packet
-				if(!sizePrefixDisabled)
-				{
-					dis.ReadInt32();
-				}
+				dis.ReadInt32();
+			}
 
-				// first byte is the type of the packet
-				byte dataType = dis.ReadByte();
-				if(dataType != NULL_TYPE)
+			// first byte is the type of the packet
+			byte dataType = dis.ReadByte();
+
+			if(dataType != NULL_TYPE)
+			{
+				lock(this.marshalLock)
 				{
 					BaseDataStreamMarshaller dsm = dataMarshallers[dataType & 0xFF];
 					if(null == dsm)
@@ -258,10 +259,10 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 						return data;
 					}
 				}
-				else
-				{
-					return null;
-				}
+			}
+			else
+			{
+				return null;
 			}
 		}
 
