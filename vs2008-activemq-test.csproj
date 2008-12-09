@@ -91,6 +91,11 @@
       <Name>vs2008-activemq</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Apache.NMS.ActiveMQ.Test.nunit">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <PropertyGroup>
     <PostBuildEvent>cd $(ProjectDir)
