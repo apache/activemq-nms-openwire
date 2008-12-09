@@ -57,7 +57,7 @@ namespace Apache.NMS.ActiveMQ.State
 			tempDestinations.Add(info);
 		}
 
-		public void removeTempDestination(ActiveMQDestination destination)
+		public void removeTempDestination(IDestination destination)
 		{
 			for(int i = tempDestinations.Count - 1; i >= 0; i--)
 			{

@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public const byte REMOVE_OPERATION_TYPE = 1;
 
 		ConnectionId connectionId;
-		ActiveMQDestination destination;
+		IDestination destination;
 		byte operationType;
 		long timeout;
 		BrokerId[] brokerPath;
@@ -67,7 +67,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			set { this.connectionId = value; }
 		}
 
-		public ActiveMQDestination Destination
+		public IDestination Destination
 		{
 			get { return destination; }
 			set { this.destination = value; }

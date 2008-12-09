@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 using System;
 using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
@@ -41,7 +41,7 @@ namespace Apache.NMS.ActiveMQ
 		private long producerCounter;
 		internal bool startedAsyncDelivery = false;
 		private bool disposed = false;
-        private bool closed = false;
+		private bool closed = false;
 		private bool closing = false;
 		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
 
@@ -326,6 +326,18 @@ namespace Apache.NMS.ActiveMQ
 			return answer;
 		}
 
+		/// <summary>
+		/// Delete a destination (Queue, Topic, Temp Queue, Temp Topic).
+		/// </summary>
+		public void DeleteDestination(IDestination destination)
+		{
+			DestinationInfo command = new DestinationInfo();
+			command.ConnectionId = Connection.ConnectionId;
+			command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE; // 1 is remove
+			command.Destination = destination;
+
+			this.DoSend(command);
+		}
 
 		public IMessage CreateMessage()
 		{
@@ -333,7 +345,6 @@ namespace Apache.NMS.ActiveMQ
 			Configure(answer);
 			return answer;
 		}
-
 
 		public ITextMessage CreateTextMessage()
 		{
@@ -445,17 +456,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			DestinationInfo command = new DestinationInfo();
 			command.ConnectionId = Connection.ConnectionId;
-			command.OperationType = DestinationInfo.ADD_OPERATION_TYPE ; // 0 is add
-			command.Destination = tempDestination;
-
-			this.DoSend(command);
-		}
-
-		protected void DestroyTemporaryDestination(ActiveMQDestination tempDestination)
-		{
-			DestinationInfo command = new DestinationInfo();
-			command.ConnectionId = Connection.ConnectionId;
-			command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE ; // 1 is remove
+			command.OperationType = DestinationInfo.ADD_OPERATION_TYPE; // 0 is add
 			command.Destination = tempDestination;
 
 			this.DoSend(command);
