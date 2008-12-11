@@ -110,7 +110,26 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			get
 			{
-				return sessions[id];
+				#if DEBUG
+				try
+				{
+				#endif
+					return sessions[id];
+				#if DEBUG
+				}
+				catch(System.Collections.Generic.KeyNotFoundException ex)
+				{
+					// Useful for dignosing missing session ids
+					string sessionList = string.Empty;
+					foreach(SessionId sessionId in sessions.Keys)
+					{
+						sessionList += sessionId.ToString() + "\n";
+					}
+					System.Diagnostics.Debug.Assert(false,
+						string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
+					throw;
+				}
+				#endif
 			}
 		}
 

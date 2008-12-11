@@ -120,7 +120,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public SessionId(ProducerId id)
 		{
 			this.connectionId = id.ConnectionId;
-			this.value = id.Value;
+            this.value = id.SessionId;
 		}
 
 		public SessionId(ConsumerId id)
