@@ -35,6 +35,8 @@
   <property name="Apache.NMS.Test.dll" value="${basedir}/lib/Apache.NMS/${current.build.framework}//Apache.NMS.Test.dll" dynamic="true"/>
   <property name="Apache.NMS.Test.pdb" value="${basedir}/lib/Apache.NMS/${current.build.framework}/Apache.NMS.Test.pdb" dynamic="true"/>
 
+  <property name="NUnit.Projectfile" value="${basedir}/Apache.NMS.ActiveMQ.Test.nunit"/>
+
   <!-- Skip certain frameworks, since ActiveMQ.NET Client is not supported on those platforms. -->
   <property name="build.net-1.1.skip" value="true"/>
 
@@ -93,6 +95,7 @@
       <include name="${Apache.NMS.Test.pdb}"/>
       <include name="${nunit.dll}"/>
       <include name="${nunit.extensions.dll}"/>
+      <include name="${NUnit.Projectfile}"/>
     </fileset>
 
     <fileset id="install.filenames">
