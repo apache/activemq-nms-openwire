@@ -1932,6 +1932,11 @@
             This property indicates whether or not async send is enabled.
             </summary>
         </member>
+        <member name="M:Apache.NMS.ActiveMQ.Session.DeleteDestination(Apache.NMS.IDestination)">
+            <summary>
+            Delete a destination (Queue, Topic, Temp Queue, Temp Topic).
+            </summary>
+        </member>
         <member name="M:Apache.NMS.ActiveMQ.Session.DoStartTransaction">
             <summary>
             Ensures that a transaction is started
