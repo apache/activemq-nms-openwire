@@ -99,18 +99,21 @@ namespace Apache.NMS.ActiveMQ
 		public IMessage Receive()
 		{
 			CheckClosed();
+			SendPullRequest(0);
 			return SetupAcknowledge(dispatcher.Dequeue());
 		}
 
 		public IMessage Receive(System.TimeSpan timeout)
 		{
 			CheckClosed();
+			SendPullRequest((long) timeout.TotalMilliseconds);
 			return SetupAcknowledge(dispatcher.Dequeue(timeout));
 		}
 
 		public IMessage ReceiveNoWait()
 		{
 			CheckClosed();
+			SendPullRequest(-1);
 			return SetupAcknowledge(dispatcher.DequeueNoWait());
 		}
 
@@ -257,6 +260,22 @@ namespace Apache.NMS.ActiveMQ
 			}
 
 			return message;
+		}
+		
+		protected void SendPullRequest( long timeout ) 
+		{
+            CheckClosed();
+
+			if(this.info.PrefetchSize == 0 && this.dispatcher.isEmpty())
+			{
+				MessagePull messagePull = new MessagePull();
+				messagePull.ConsumerId = this.info.ConsumerId;
+                messagePull.Destination = this.info.Destination;
+                messagePull.Timeout = timeout;
+
+				Tracer.Debug("Sending MessagePull: " + messagePull);
+				session.Connection.OneWay(messagePull);
+			}
 		}
 
 		protected void DoNothingAcknowledge(ActiveMQMessage message)

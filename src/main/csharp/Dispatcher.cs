@@ -34,6 +34,11 @@ namespace Apache.NMS.ActiveMQ
         AutoResetEvent messageReceivedEventHandle = new AutoResetEvent(false);
         bool m_bAsyncDelivery = false;
         bool m_bClosed = false;
+		
+		public bool isEmpty() 
+		{
+			return this.queue.Count == 0;
+		}
 
 		public void SetAsyncDelivery(AutoResetEvent eventHandle)
 		{
