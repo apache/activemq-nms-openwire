@@ -18,6 +18,7 @@
 using System;
 using NUnit.Framework;
 using Apache.NMS.Util;
+using Apache.NMS.ActiveMQ;
 using NUnit.Framework.Extensions;
 using System.Threading;
 
@@ -26,7 +27,7 @@ namespace Apache.NMS.Test
 	[TestFixture]
 	public class PrefetchSizeZeroTest : NMSTestSupport
 	{	
-        protected static string DESTINATION_NAME = "TestPrefetchSizeZero?consumer.prefetchSize=0";
+        protected static string DESTINATION_NAME = "TestPrefetchSizeZero";
 			
 		[Test, Explicit]
 		public void TestZeroPrefetchSize()
@@ -34,9 +35,10 @@ namespace Apache.NMS.Test
 			using(IConnection connection = CreateConnection())
 			{
 				connection.Start();
-				using(ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+				using(Session session = (Session)connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
 				{
 					IDestination destination = SessionUtil.GetDestination(session, DESTINATION_NAME);
+                    session.PrefetchSize = 0;
 					using(IMessageConsumer consumer = session.CreateConsumer(destination))
 					using(IMessageProducer producer = session.CreateProducer(destination))
 					{
@@ -49,13 +51,10 @@ namespace Apache.NMS.Test
                         Assert.IsNotNull(receivedMsg);
 						receivedMsg = consumer.Receive(TimeSpan.FromSeconds(5));
                         Assert.IsNull(receivedMsg);
-                        
-						// Go inactive...
-						Thread.Sleep(TimeSpan.FromSeconds(10));
 
 						// Send another message.
 						SendMessage(producer);
-						receivedMsg = consumer.Receive(TimeSpan.FromSeconds(5));
+                        receivedMsg = consumer.Receive(TimeSpan.FromSeconds(5));
 						Assert.IsNotNull(receivedMsg);
                    
 					}
