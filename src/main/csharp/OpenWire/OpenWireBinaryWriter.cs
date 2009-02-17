@@ -14,26 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
 using System;
 using System.Collections;
 using System.IO;
-using System.Text;
 
 namespace Apache.NMS.ActiveMQ.OpenWire
 {
-    /// <summary>
+	/// <summary>
 	/// A BinaryWriter that switches the endian orientation of the write opperations so that they
 	/// are compatible with marshalling used by OpenWire.
-    /// </summary>
+	/// </summary>
 	[CLSCompliant(false)]
-    public class OpenWireBinaryWriter : BinaryWriter
-    {
-		
-		public OpenWireBinaryWriter(Stream output) : base(output)
+	public class OpenWireBinaryWriter : BinaryWriter
+	{
+		public const int MAXSTRINGLEN = short.MaxValue;
+
+		public OpenWireBinaryWriter(Stream output)
+			: base(output)
 		{
 		}
-				
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -42,7 +42,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -51,7 +51,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -61,7 +61,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			int x = EndianSupport.SwitchEndian(value);
 			base.Write(x);
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -71,12 +71,13 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		public override void Write(char[] chars, int index, int count)
 		{
 			char[] t = new char[count];
-			for( int i=0; i < count; i++ ) {
-				t[index+i] = EndianSupport.SwitchEndian(t[index+i]);
+			for(int i = 0; i < count; i++)
+			{
+				t[index + i] = EndianSupport.SwitchEndian(t[index + i]);
 			}
 			base.Write(t);
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -85,7 +86,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			Write(chars, 0, chars.Length);
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -94,18 +95,18 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
-				
-		
+
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
 		/// <param name="ch">A  char</param>
 		public override void Write(char ch)
 		{
-			base.Write( (byte)( ( ch>>8 ) & 0xFF ) );
-			base.Write( (byte)( ch & 0xFF ) );
+			base.Write((byte) ((ch >> 8) & 0xFF));
+			base.Write((byte) (ch & 0xFF));
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -114,7 +115,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
-		
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
@@ -123,91 +124,211 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
-				
-				
+
+		public override void Write(String text)
+		{
+			foreach(string textPackage in new StringPackageSplitter(text))
+			{
+				WriteString(textPackage);
+			}
+		}
+
 		/// <summary>
 		/// Method Write
 		/// </summary>
 		/// <param name="text">A  string</param>
-		public override void Write(String text)
+		private void WriteString(String text)
 		{
-            if (text != null)
-            {
-				if( text.Length > short.MaxValue ) {
-					throw new IOException("Cannot marshall string longer than: "+short.MaxValue+" characters, supplied steing was: "+text.Length+" characters");
+			if(text != null)
+			{
+				if(text.Length > OpenWireBinaryWriter.MAXSTRINGLEN)
+				{
+					throw new IOException(String.Format("Cannot marshall string longer than: {0} characters, supplied string was: {1} characters", OpenWireBinaryWriter.MAXSTRINGLEN, text.Length));
 				}
-                short strlen = (short)text.Length;
-                short utflen = 0;
-                int c, count = 0;
-                
-                char[] charr = text.ToCharArray();
-                
-                for (int i = 0; i < strlen; i++)
-                {
-                    c = charr[i];
-                    if ((c >= 0x0001) && (c <= 0x007F))
-                    {
-                        utflen++;
-                    }
-                    else if (c > 0x07FF)
-                    {
-                        utflen += 3;
-                    }
-                    else
-                    {
-                        utflen += 2;
-                    }
-                }
-                
-                Write(utflen);
-                byte[] bytearr = new byte[utflen];
-                for (int i = 0; i < strlen; i++)
-                {
-                    c = charr[i];
-                    if ((c >= 0x0001) && (c <= 0x007F))
-                    {
-                        bytearr[count++] = (byte) c;
-                    }
-                    else if (c > 0x07FF)
-                    {
-                        bytearr[count++] = (byte) (0xE0 | ((c >> 12) & 0x0F));
-                        bytearr[count++] = (byte) (0x80 | ((c >> 6) & 0x3F));
-                        bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
-                    }
-                    else
-                    {
-                        bytearr[count++] = (byte) (0xC0 | ((c >> 6) & 0x1F));
-                        bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
-                    }
-                }
-				
-                Write(bytearr);
-                
-            }
-            else
-            {
-                Write((short)-1);
-            }
+
+				int strlen = text.Length;
+				short utflen = 0;
+				int c = 0;
+				int count = 0;
+
+				char[] charr = text.ToCharArray();
+
+				for(int i = 0; i < strlen; i++)
+				{
+					c = charr[i];
+					if((c >= 0x0001) && (c <= 0x007F))
+					{
+						utflen++;
+					}
+					else if(c > 0x07FF)
+					{
+						utflen += 3;
+					}
+					else
+					{
+						utflen += 2;
+					}
+				}
+
+				Write((short) utflen);
+
+				byte[] bytearr = new byte[utflen];
+				for(int i = 0; i < strlen; i++)
+				{
+					c = charr[i];
+					if((c >= 0x0001) && (c <= 0x007F))
+					{
+						bytearr[count++] = (byte) c;
+					}
+					else if(c > 0x07FF)
+					{
+						bytearr[count++] = (byte) (0xE0 | ((c >> 12) & 0x0F));
+						bytearr[count++] = (byte) (0x80 | ((c >> 6) & 0x3F));
+						bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
+					}
+					else
+					{
+						bytearr[count++] = (byte) (0xC0 | ((c >> 6) & 0x1F));
+						bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
+					}
+				}
+
+				Write(bytearr);
+
+			}
+			else
+			{
+				Write((short) -1);
+			}
 		}
 
-        /// <summary>
-        /// Method Write
-        /// </summary>
-        /// <param name="value">A  double</param>
-        public override void Write(float value)
-        {
-            base.Write(EndianSupport.SwitchEndian(value));
-        }
-		
-        /// <summary>
-        /// Method Write
-        /// </summary>
-        /// <param name="value">A  double</param>
-        public override void Write(double value)
-        {
-            base.Write(EndianSupport.SwitchEndian(value));
-        }
-		
-    }
+		/// <summary>
+		/// Method Write
+		/// </summary>
+		/// <param name="value">A  double</param>
+		public override void Write(float value)
+		{
+			base.Write(EndianSupport.SwitchEndian(value));
+		}
+
+		/// <summary>
+		/// Method Write
+		/// </summary>
+		/// <param name="value">A  double</param>
+		public override void Write(double value)
+		{
+			base.Write(EndianSupport.SwitchEndian(value));
+		}
+	}
+
+	#region StringPackageSplitter
+
+	/// <summary>
+	/// StringPackageSplitter
+	/// </summary>
+	class StringPackageSplitter : IEnumerable
+	{
+		public StringPackageSplitter(string value)
+		{
+			this.value = value;
+		}
+
+		/// <summary>
+		/// Emumerator class for StringPackageSplitter
+		/// </summary>
+		class StringPackageSplitterEnumerator : IEnumerator
+		{
+			/// <summary>
+			/// </summary>
+			/// <param name="parent"></param>
+			public StringPackageSplitterEnumerator(StringPackageSplitter parent)
+			{
+				this.parent = parent;
+			}
+
+			private int Position = -1;
+			private StringPackageSplitter parent;
+
+			#region IEnumerator Members
+
+			public string Current
+			{
+				get
+				{
+					int delta = parent.value.Length - Position;
+
+					if(delta >= OpenWireBinaryWriter.MAXSTRINGLEN)
+					{
+						return parent.value.Substring(Position, OpenWireBinaryWriter.MAXSTRINGLEN);
+					}
+					else
+					{
+						return parent.value.Substring(Position, delta);
+					}
+				}
+			}
+
+			#endregion
+
+			#region IDisposable Members
+
+			public void Dispose()
+			{
+			}
+
+			#endregion
+
+			#region IEnumerator Members
+
+			object IEnumerator.Current
+			{
+				get { return parent.value.Substring(Position, OpenWireBinaryWriter.MAXSTRINGLEN); }
+			}
+
+			public bool MoveNext()
+			{
+				if(parent.value == null)
+				{
+					return false;
+				}
+
+				if(Position == -1)
+				{
+					Position = 0;
+					return true;
+				}
+
+				if((Position + OpenWireBinaryWriter.MAXSTRINGLEN) < parent.value.Length)
+				{
+					Position += OpenWireBinaryWriter.MAXSTRINGLEN;
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+			public void Reset()
+			{
+				Position = -1;
+			}
+
+			#endregion
+		}
+
+		private String value;
+
+		#region IEnumerable Members
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return new StringPackageSplitterEnumerator(this);
+		}
+
+		#endregion
+	}
+
+	#endregion // END StringPackageSplitter
 }
 

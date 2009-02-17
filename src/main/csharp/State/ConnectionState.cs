@@ -127,7 +127,7 @@ namespace Apache.NMS.ActiveMQ.State
 					}
 					System.Diagnostics.Debug.Assert(false,
 						string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
-					throw;
+					throw ex;
 				}
 				#endif
 			}
