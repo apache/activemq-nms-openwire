@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -44,11 +43,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		private const int SOCKET_TIMEOUT_MILLISECONDS = 500;
 
 		private string group;
+		private object stopstartSemaphore = new object();
 		private bool isStarted = false;
 		private readonly Uri discoveryUri;
 		private Socket multicastSocket;
 		private IPEndPoint endPoint;
-		private BackgroundWorker worker;
+		private Thread worker;
 
 		private event NewBrokerServiceFound onNewServiceFound;
 		private event BrokerServiceRemoved onServiceRemoved;
@@ -67,58 +67,65 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 
 		public void Start()
 		{
-			if(!isStarted)
+			lock(stopstartSemaphore)
 			{
-				isStarted = true;
-
-				if(multicastSocket == null)
+				if(!isStarted)
 				{
-					int numFailedAttempts = 0;
-					int backoffTime = DEFAULT_BACKOFF_MILLISECONDS;
+					Tracer.Info("Starting multicast discovery agent worker thread");
+					isStarted = true;
 
-					while(!TryToConnectSocket())
+					if(multicastSocket == null)
 					{
-						numFailedAttempts++;
+						int numFailedAttempts = 0;
+						int backoffTime = DEFAULT_BACKOFF_MILLISECONDS;
 
-						if(numFailedAttempts > MAX_SOCKET_CONNECTION_RETRY_ATTEMPS)
+						while(!TryToConnectSocket())
 						{
-							throw new ApplicationException(
-								"Could not open the socket in order to discover advertising brokers.");
-						}
+							numFailedAttempts++;
+							if(numFailedAttempts > MAX_SOCKET_CONNECTION_RETRY_ATTEMPS)
+							{
+								throw new ApplicationException(
+									"Could not open the socket in order to discover advertising brokers.");
+							}
 
-						Thread.Sleep(backoffTime);
-						backoffTime *= BACKOFF_MULTIPLIER;
+							Thread.Sleep(backoffTime);
+							backoffTime *= BACKOFF_MULTIPLIER;
+						}
+					}
+
+					if(worker == null)
+					{
+						worker = new Thread(new ThreadStart(worker_DoWork));
+						worker.Start();
 					}
 				}
-
-				if(worker == null)
-				{
-					worker = new BackgroundWorker();
-					worker.DoWork += worker_DoWork;
-				}
-
-				if(!worker.IsBusy)
-				{
-					worker.RunWorkerAsync();
-				}
-
 			}
 		}
 
 		public void Stop()
 		{
-			isStarted = false;
+			Tracer.Info("Stopping multicast discovery agent worker thread");
+			Thread localThread = null;
 
-			DateTime expireTime = DateTime.Now.AddSeconds(WORKER_KILL_TIME_SECONDS);
-
-			//wait for the worker to stop. Give it up to WORKER_KILL_TIME_SECONDS
-			while(worker.IsBusy)
+			lock(stopstartSemaphore)
 			{
-				if(expireTime < DateTime.Now)
+				localThread = worker;
+				worker = null;
+				// Changing the isStarted flag will signal the thread that it needs to shut down.
+				isStarted = false;
+			}
+
+			if(localThread != null)
+			{
+				// wait for the worker to stop.
+				if(!localThread.Join(WORKER_KILL_TIME_SECONDS))
 				{
-					throw new ApplicationException("Unable to stop the worker thread.");
+					Tracer.Info("!! Timeout waiting for multicast discovery agent localThread to stop");
+					localThread.Abort();
 				}
 			}
+
+			Tracer.Info("Multicast discovery agent worker thread joined");
 		}
 
 		private bool TryToConnectSocket()
@@ -138,7 +145,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 
 				multicastSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
 												 new MulticastOption(ip, IPAddress.Any));
+#if !NETCF
 				multicastSocket.ReceiveTimeout = SOCKET_TIMEOUT_MILLISECONDS;
+#endif
 				hasSucceeded = true;
 			}
 			catch(SocketException)
@@ -148,7 +157,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 			return hasSucceeded;
 		}
 
-		private void worker_DoWork(object sender, DoWorkEventArgs e)
+		private void worker_DoWork()
 		{
 			Thread.CurrentThread.Name = "Discovery Agent Thread.";
 			byte[] buffer = new byte[BUFF_SIZE];
@@ -159,8 +168,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 			{
 				try
 				{
-					multicastSocket.Receive(buffer);
-					receivedInfoRaw = System.Text.Encoding.UTF8.GetString(buffer);
+					int numBytes = multicastSocket.Receive(buffer);
+					receivedInfoRaw = System.Text.Encoding.UTF8.GetString(buffer, 0, numBytes);
 					// We have to remove all of the null bytes.
 					receivedInfo = receivedInfoRaw.Substring(0, receivedInfoRaw.IndexOf("\0"));
 					ProcessBrokerMessage(receivedInfo);

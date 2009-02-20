@@ -23,6 +23,11 @@ using Apache.NMS.ActiveMQ.State;
 using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.Util;
 
+#if NETCF
+using ThreadInterruptedException = System.Exception;
+#endif
+
+
 namespace Apache.NMS.ActiveMQ.Transport.Failover
 {
 	/// <summary>
@@ -118,9 +123,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					{
 						parent.reconnectTask.wakeup();
 					}
-					catch(ThreadInterruptedException e)
+					catch(ThreadInterruptedException)
 					{
-						e.GetType();
 						Tracer.Debug("Reconnect task has been interrupted.");
 					}
 				}
@@ -415,150 +419,139 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			Exception error = null;
 			try
 			{
-				try
+				reconnectMutex.WaitOne();
+
+				if(IsShutdownCommand(command) && ConnectedTransport == null)
 				{
-					reconnectMutex.WaitOne();
-
-					if(IsShutdownCommand(command) && ConnectedTransport == null)
+					if(command.IsShutdownInfo)
 					{
-						if(command.IsShutdownInfo)
-						{
-							// Skipping send of ShutdownInfo command when not connected.
-							return;
-						}
-
-						if(command is RemoveInfo)
-						{
-							// Simulate response to RemoveInfo command
-							Response response = new Response();
-							response.CorrelationId = command.CommandId;
-							onCommand(this, response);
-							return;
-						}
+						// Skipping send of ShutdownInfo command when not connected.
+						return;
 					}
-					// Keep trying until the message is sent.
-					for(int i = 0; !disposed; i++)
+
+					if(command is RemoveInfo)
 					{
-						try
+						// Simulate response to RemoveInfo command
+						Response response = new Response();
+						response.CorrelationId = command.CommandId;
+						onCommand(this, response);
+						return;
+					}
+				}
+				// Keep trying until the message is sent.
+				for(int i = 0; !disposed; i++)
+				{
+					try
+					{
+						// Wait for transport to be connected.
+						ITransport transport = ConnectedTransport;
+						while(transport == null && !disposed
+							&& connectionFailure == null
+							// && !Thread.CurrentThread.isInterrupted()
+							)
 						{
-							// Wait for transport to be connected.
-							ITransport transport = ConnectedTransport;
-							while(transport == null && !disposed
-								&& connectionFailure == null
-								// && !Thread.CurrentThread.isInterrupted()
-								)
-							{
-								Tracer.Info("Waiting for transport to reconnect.");
-								try
-								{
-									// Release so that the reconnect task can run
-									reconnectMutex.ReleaseMutex();
-									try
-									{
-										// Wait for something
-										Thread.Sleep(1000);
-									}
-									catch(ThreadInterruptedException e)
-									{
-										Thread.CurrentThread.Interrupt();		// KILROY - not needed
-										Tracer.Debug("Interupted: " + e);
-									}
-								}
-								finally
-								{
-									reconnectMutex.WaitOne();
-								}
-
-								transport = ConnectedTransport;
-							}
-
-							if(transport == null)
-							{
-								// Previous loop may have exited due to use being
-								// disposed.
-								if(disposed)
-								{
-									error = new IOException("Transport disposed.");
-								}
-								else if(connectionFailure != null)
-								{
-									error = connectionFailure;
-								}
-								else
-								{
-									error = new IOException("Unexpected failure.");
-								}
-								break;
-							}
-
-							// If it was a request and it was not being tracked by
-							// the state tracker,
-							// then hold it in the requestMap so that we can replay
-							// it later.
-							Tracked tracked = stateTracker.track(command);
-							lock(requestMap)
-							{
-								if(tracked != null && tracked.WaitingForResponse)
-								{
-									requestMap.Add(command.CommandId, tracked);
-								}
-								else if(tracked == null && command.ResponseRequired)
-								{
-									requestMap.Add(command.CommandId, command);
-								}
-							}
-
-							// Send the message.
+							Tracer.Info("Waiting for transport to reconnect.");
 							try
 							{
-								transport.Oneway(command);
-								stateTracker.trackBack(command);
-							}
-							catch(Exception e)
-							{
-
-								// If the command was not tracked.. we will retry in
-								// this method
-								if(tracked == null)
+								// Release so that the reconnect task can run
+								reconnectMutex.ReleaseMutex();
+								try
 								{
-
-									// since we will retry in this method.. take it
-									// out of the request
-									// map so that it is not sent 2 times on
-									// recovery
-									if(command.ResponseRequired)
-									{
-										requestMap.Remove(command.CommandId);
-									}
-
-									// Rethrow the exception so it will handled by
-									// the outer catch
-									throw e;
+									// Wait for something
+									Thread.Sleep(1000);
 								}
-
+								catch(ThreadInterruptedException e)
+								{
+									Tracer.Debug("Interupted: " + e);
+								}
+							}
+							finally
+							{
+								reconnectMutex.WaitOne();
 							}
 
-							return;
+							transport = ConnectedTransport;
+						}
 
+						if(transport == null)
+						{
+							// Previous loop may have exited due to use being
+							// disposed.
+							if(disposed)
+							{
+								error = new IOException("Transport disposed.");
+							}
+							else if(connectionFailure != null)
+							{
+								error = connectionFailure;
+							}
+							else
+							{
+								error = new IOException("Unexpected failure.");
+							}
+							break;
+						}
+
+						// If it was a request and it was not being tracked by
+						// the state tracker,
+						// then hold it in the requestMap so that we can replay
+						// it later.
+						Tracked tracked = stateTracker.track(command);
+						lock(requestMap)
+						{
+							if(tracked != null && tracked.WaitingForResponse)
+							{
+								requestMap.Add(command.CommandId, tracked);
+							}
+							else if(tracked == null && command.ResponseRequired)
+							{
+								requestMap.Add(command.CommandId, command);
+							}
+						}
+
+						// Send the message.
+						try
+						{
+							transport.Oneway(command);
+							stateTracker.trackBack(command);
 						}
 						catch(Exception e)
 						{
-							Tracer.Debug("Send Oneway attempt: " + i + " failed.");
-							handleTransportFailure(e);
+
+							// If the command was not tracked.. we will retry in
+							// this method
+							if(tracked == null)
+							{
+
+								// since we will retry in this method.. take it
+								// out of the request
+								// map so that it is not sent 2 times on
+								// recovery
+								if(command.ResponseRequired)
+								{
+									requestMap.Remove(command.CommandId);
+								}
+
+								// Rethrow the exception so it will handled by
+								// the outer catch
+								throw e;
+							}
+
 						}
+
+						return;
+
+					}
+					catch(Exception e)
+					{
+						Tracer.Debug("Send Oneway attempt: " + i + " failed.");
+						handleTransportFailure(e);
 					}
 				}
-				finally
-				{
-					reconnectMutex.ReleaseMutex();
-				}
 			}
-			catch(ThreadInterruptedException e)
+			finally
 			{
-				e.GetType();
-				// Some one may be trying to stop our thread.
-				Thread.CurrentThread.Interrupt();
-				throw new ThreadInterruptedException();
+				reconnectMutex.ReleaseMutex();
 			}
 
 			if(!disposed)
@@ -656,10 +649,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					{
 						reconnectTask.wakeup();
 					}
-					catch(ThreadInterruptedException e)
+					catch(ThreadInterruptedException)
 					{
-						e.GetType();	// Suppress warning
-						Thread.CurrentThread.Interrupt();
 					}
 				}
 				else
@@ -892,10 +883,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					{
 						Thread.Sleep(ReconnectDelay);
 					}
-					catch(ThreadInterruptedException e)
+					catch(ThreadInterruptedException)
 					{
-						e.GetType();
-						Thread.CurrentThread.Interrupt();
 					}
 				}
 				finally

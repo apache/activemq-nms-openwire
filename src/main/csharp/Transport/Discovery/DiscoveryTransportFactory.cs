@@ -30,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 		private static MulticastDiscoveryAgent agent;
 		private static string currentServiceName;
 		private static readonly object uriLock = new object();
+		private static readonly AutoResetEvent uriDiscoveredEvent = new AutoResetEvent(false);
 		public static event ExceptionListener OnException;
 
 		public DiscoveryTransportFactory()
@@ -48,7 +49,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 				}
 
 				// This will end the wait in the CreateTransport method.
-				Monitor.Pulse(uriLock);
+				uriDiscoveredEvent.Set();
 			}
 		}
 
@@ -105,7 +106,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 							"Unable to find a connection before the timeout period expired.");
 					}
 
-					Monitor.Wait(uriLock, TIMEOUT_IN_SECONDS * 1000);
+					uriDiscoveredEvent.WaitOne(TIMEOUT_IN_SECONDS * 1000, true);
 				}
 			}
 

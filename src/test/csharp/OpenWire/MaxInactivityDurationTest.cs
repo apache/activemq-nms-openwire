@@ -53,7 +53,7 @@ namespace Apache.NMS.Test
 						Assert.AreEqual(CORRELATION_ID, receivedMsg.NMSCorrelationID, "Invalid correlation ID.");
 
 						// Go inactive...
-						Thread.Sleep(TimeSpan.FromSeconds(60));
+						Thread.Sleep(60 * 1000);
 
 						// Send another message.
 						SendMessage(producer);

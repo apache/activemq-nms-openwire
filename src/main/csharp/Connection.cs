@@ -46,9 +46,9 @@ namespace Apache.NMS.ActiveMQ
 		private bool connected = false;
 		private bool closed = false;
 		private bool closing = false;
-		private long sessionCounter = 0;
-		private long temporaryDestinationCounter = 0;
-		private long localTransactionCounter;
+		private int sessionCounter = 0;
+		private int temporaryDestinationCounter = 0;
+		private int localTransactionCounter;
 		private readonly AtomicBoolean started = new AtomicBoolean(false);
 		private bool disposed = false;
 

@@ -132,6 +132,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
+#if !NETCF
 		public IEnumerator GetEnumerator(int index, int count)
 		{
 			lock(myLock)
@@ -139,7 +140,7 @@ namespace Apache.NMS.ActiveMQ.State
 				return _collection.GetEnumerator(index, count);
 			}
 		}
-
+#endif
 	}
 
 	public class SynchronizedDictionary<TKey, TValue>

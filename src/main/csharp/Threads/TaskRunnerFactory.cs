@@ -29,10 +29,10 @@ namespace Apache.NMS.ActiveMQ.Threads
  	/// </summary>
 	public class TaskRunnerFactory
 	{
-		private int maxIterationsPerRun;
-		private String name;
-		private ThreadPriority priority;
-		private bool daemon;
+		protected int maxIterationsPerRun;
+		protected String name;
+		protected ThreadPriority priority;
+		protected bool daemon;
 
 		public TaskRunnerFactory()
 		{
@@ -51,7 +51,6 @@ namespace Apache.NMS.ActiveMQ.Threads
 
 		public void initTaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun, bool dedicatedTaskRunner)
 		{
-
 			this.name = name;
 			this.priority = priority;
 			this.daemon = daemon;

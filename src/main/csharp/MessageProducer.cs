@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ
 		private Session session;
 		private bool closed = false;
 		private readonly ProducerInfo info;
-		private long messageCounter = 0;
+		private int messageCounter = 0;
 
 		private bool msgPersistent = NMSConstants.defaultPersistence;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;

@@ -32,13 +32,13 @@ namespace Apache.NMS.ActiveMQ
 		/// Private object used for synchronization, instead of public "this"
 		/// </summary>
 		private readonly object myLock = new object();
-		private long consumerCounter;
+		private int consumerCounter;
 		private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
 		private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
 		private readonly DispatchingThread dispatchingThread;
 		private DispatchingThread.ExceptionHandler dispatchingThread_ExceptionHandler;
 		private readonly SessionInfo info;
-		private long producerCounter;
+		private int producerCounter;
 		internal bool startedAsyncDelivery = false;
 		private bool disposed = false;
 		private bool closed = false;
