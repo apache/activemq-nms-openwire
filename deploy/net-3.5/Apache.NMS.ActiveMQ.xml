@@ -1358,7 +1358,7 @@
             </summary>
             <param name="value">A  short</param>
         </member>
-        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter.Write(System.String)">
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter.WriteString(System.String)">
             <summary>
             Method Write
             </summary>
@@ -1375,6 +1375,21 @@
             Method Write
             </summary>
             <param name="value">A  double</param>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter">
+            <summary>
+            StringPackageSplitter
+            </summary>
+        </member>
+        <member name="T:Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter.StringPackageSplitterEnumerator">
+            <summary>
+            Emumerator class for StringPackageSplitter
+            </summary>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter.StringPackageSplitterEnumerator.#ctor(Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter)">
+            <summary>
+            </summary>
+            <param name="parent"></param>
         </member>
         <member name="T:Apache.NMS.ActiveMQ.OpenWire.OpenWireFormat">
             <summary>
