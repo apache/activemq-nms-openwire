@@ -282,7 +282,21 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 
 			object IEnumerator.Current
 			{
-				get { return parent.value.Substring(Position, OpenWireBinaryWriter.MAXSTRINGLEN); }
+				get
+                {
+                    int delta;
+
+                    delta = parent.value.Length - Position;
+
+                    if (delta >= OpenWireBinaryWriter.MAXSTRINGLEN)
+                    {
+                        return parent.value.Substring(Position, OpenWireBinaryWriter.MAXSTRINGLEN);
+                    }
+                    else
+                    {
+                        return parent.value.Substring(Position, delta);
+                    }
+                }
 			}
 
 			public bool MoveNext()
