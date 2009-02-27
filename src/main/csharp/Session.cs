@@ -165,7 +165,6 @@ namespace Apache.NMS.ActiveMQ
 				{
 					this.closing = true;
 					StopAsyncDelivery();
-					Connection.RemoveSession(this);
 					lock(consumers.SyncRoot)
 					{
 						foreach(MessageConsumer consumer in consumers.Values)
@@ -183,6 +182,7 @@ namespace Apache.NMS.ActiveMQ
 						}
 					}
 					producers.Clear();
+                    Connection.RemoveSession(this);
 				}
 				catch(Exception ex)
 				{
