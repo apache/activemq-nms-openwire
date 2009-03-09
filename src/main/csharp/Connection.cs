@@ -441,23 +441,23 @@ namespace Apache.NMS.ActiveMQ
 			}
 			else if(command is ConnectionError)
 			{
-			    if(!closing && !closed)
-			    {
-			        ConnectionError connectionError = (ConnectionError) command;
-			        BrokerError brokerError = connectionError.Exception;
-			        string message = "Broker connection error.";
-			        string cause = "";
+				if(!closing && !closed)
+				{
+					ConnectionError connectionError = (ConnectionError) command;
+					BrokerError brokerError = connectionError.Exception;
+					string message = "Broker connection error.";
+					string cause = "";
 
-			        if(null != brokerError)
-			        {
-			            message = brokerError.Message;
-			            if(null != brokerError.Cause)
-			            {
-			                cause = brokerError.Cause.Message;
-			            }
-			        }
+					if(null != brokerError)
+					{
+						message = brokerError.Message;
+						if(null != brokerError.Cause)
+						{
+							cause = brokerError.Cause.Message;
+						}
+					}
 
-			        OnException(commandTransport, new NMSConnectionException(message, cause));
+					OnException(commandTransport, new NMSConnectionException(message, cause));
 			    }
 			}
 			else
