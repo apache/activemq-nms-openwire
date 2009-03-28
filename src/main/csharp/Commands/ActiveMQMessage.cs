@@ -41,6 +41,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 		// TODO generate Equals method
 		// TODO generate GetHashCode method
 
+		public ActiveMQMessage()
+				: base()
+		{
+			Timestamp = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
+		}
 
 		public override byte GetDataStructureType()
 		{
@@ -98,27 +103,23 @@ namespace Apache.NMS.ActiveMQ.Commands
 			get { return Destination; }
 		}
 
-		private long expirationBaseTime = 0;
+		private TimeSpan timeToLive = TimeSpan.FromMilliseconds(0);
 		/// <summary>
 		/// The time in milliseconds that this message should expire in
 		/// </summary>
 		public TimeSpan NMSTimeToLive
 		{
-			get
-			{
-				return TimeSpan.FromMilliseconds(Expiration - expirationBaseTime);
-			}
+			get { return timeToLive; }
 
 			set
 			{
-				if(0 != value.TotalMilliseconds)
+				timeToLive = value;
+				if(timeToLive.TotalMilliseconds > 0)
 				{
-					expirationBaseTime = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
-					Expiration = expirationBaseTime + (long) Math.Abs(value.TotalMilliseconds);
+					Expiration = Timestamp + (long) timeToLive.TotalMilliseconds;
 				}
 				else
 				{
-					expirationBaseTime = 0;
 					Expiration = 0;
 				}
 			}
@@ -129,7 +130,15 @@ namespace Apache.NMS.ActiveMQ.Commands
 		/// </summary>
 		public string NMSMessageId
 		{
-			get { return BaseDataStreamMarshaller.ToString(MessageId); }
+			get
+			{
+				if(null != MessageId)
+				{
+					return BaseDataStreamMarshaller.ToString(MessageId);
+				}
+
+				return String.Empty;
+			}
 		}
 
 		/// <summary>
@@ -173,7 +182,14 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public DateTime NMSTimestamp
 		{
 			get { return DateUtils.ToDateTime(Timestamp); }
-			set { Timestamp = DateUtils.ToJavaTimeUtc(value); }
+			set
+			{
+				Timestamp = DateUtils.ToJavaTimeUtc(value);
+				if(timeToLive.TotalMilliseconds > 0)
+				{
+					Expiration = Timestamp + (long) timeToLive.TotalMilliseconds;
+				}
+			}
 		}
 
 		/// <summary>
@@ -232,7 +248,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 					return BaseDataStreamMarshaller.ToString(txnId);
 				}
 
-				return null;
+				return String.Empty;
 			}
 		}
 
