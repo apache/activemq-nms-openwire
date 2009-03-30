@@ -167,7 +167,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				m_bClosed = true;
 				queue.Clear();
-				if(m_bAsyncDelivery)
+				if(!m_bAsyncDelivery)
 				{
 					messageReceivedEventHandle.Set();
 				}
