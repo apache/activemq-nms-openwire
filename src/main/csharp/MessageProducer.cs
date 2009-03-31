@@ -137,6 +137,19 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void Send(IDestination destination, IMessage message, bool persistent, byte priority, TimeSpan timeToLive, bool specifiedTimeToLive)
 		{
+			if(null == destination)
+			{
+				// See if this producer was created without a destination.
+				if(null == info.Destination)
+				{
+					throw new NotSupportedException();
+				}
+
+				// The producer was created with a destination, but an invalid destination
+				// was specified.
+				throw new Apache.NMS.InvalidDestinationException();
+			}
+
 			CheckClosed();
 			ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
