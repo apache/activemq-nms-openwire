@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
@@ -152,22 +153,99 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		#endregion
 
-		protected Socket Connect(string host, int port)
+		private static IDictionary<string, IPHostEntry> CachedIPHostEntries = new Dictionary<string, IPHostEntry>();
+		public static IPHostEntry GetIPHostEntry(string host)
 		{
-			// Looping through the AddressList allows different type of connections to be tried
-			// (IPv4, IPv6 and whatever else may be available).
-			IPHostEntry hostEntry = Dns.GetHostEntry(host);
+			IPHostEntry ipEntry;
+			string hostUpperName = host.ToUpper();
 
-			foreach(IPAddress address in hostEntry.AddressList)
+			if(!CachedIPHostEntries.TryGetValue(hostUpperName, out ipEntry))
 			{
-				Socket socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-				socket.Connect(new IPEndPoint(address, port));
-				if(socket.Connected)
+				try
 				{
-					return socket;
+					ipEntry = Dns.GetHostEntry(hostUpperName);
+					CachedIPHostEntries.Add(hostUpperName, ipEntry);
+				}
+				catch
+				{
+					ipEntry = null;
 				}
 			}
-			throw new SocketException();
+
+			return ipEntry;
+		}
+
+		private Socket ConnectSocket(IPAddress address, int port)
+		{
+			try
+			{
+				Socket socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+				if(null != socket)
+				{
+					socket.Connect(new IPEndPoint(address, port));
+					if(socket.Connected)
+					{
+						return socket;
+					}
+				}
+			}
+			catch
+			{
+			}
+
+			return null;
+		}
+
+		private static bool TryParseIPAddress(string host, out IPAddress ipaddress)
+		{
+#if !NETCF
+			return IPAddress.TryParse(host, out ipaddress);
+#else
+			try
+			{
+				ipaddress = IPAddress.Parse(host);
+			}
+			catch
+			{
+				ipaddress = null;
+			}
+
+			return (null != ipaddress);
+#endif
+		}
+
+		protected Socket Connect(string host, int port)
+		{
+			Socket socket = null;
+			IPAddress ipaddress;
+
+			if(TryParseIPAddress(host, out ipaddress))
+			{
+				socket = ConnectSocket(ipaddress, port);
+			}
+			else
+			{
+				// Looping through the AddressList allows different type of connections to be tried
+				// (IPv4, IPv6 and whatever else may be available).
+				IPHostEntry hostEntry = GetIPHostEntry(host);
+
+				foreach(IPAddress address in hostEntry.AddressList)
+				{
+					socket = ConnectSocket(address, port);
+					if(null != socket)
+					{
+						break;
+					}
+				}
+			}
+
+			if(null == socket)
+			{
+				throw new SocketException();
+			}
+
+			return socket;
 		}
 
 		protected IWireFormat CreateWireFormat(Uri location, StringDictionary map)

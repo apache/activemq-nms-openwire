@@ -237,8 +237,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					bool reconnectOk = false;
 					if(started)
 					{
-						Tracer.Warn("Transport failed to " + ConnectedTransportURI + " , attempting to automatically reconnect due to: " + e.Message);
-						Tracer.Debug("Transport failed with the following exception:" + e.Message);
+						Tracer.WarnFormat("Transport failed to {0}, attempting to automatically reconnect due to: {1}", ConnectedTransportURI, e.Message);
 						reconnectOk = true;
 					}
 
@@ -462,7 +461,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								}
 								catch(ThreadInterruptedException e)
 								{
-									Tracer.Debug("Interupted: " + e);
+									Tracer.DebugFormat("Interupted: {0}", e.Message);
 								}
 							}
 							finally
@@ -544,7 +543,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					}
 					catch(Exception e)
 					{
-						Tracer.Debug("Send Oneway attempt: " + i + " failed.");
+						Tracer.DebugFormat("Send Oneway attempt: {0} failed.", i);
 						handleTransportFailure(e);
 					}
 				}
@@ -625,7 +624,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			}
 			catch(Exception e)
 			{
-				Tracer.Error("Failed to parse URI: " + u + " because " + e.Message);
+				Tracer.ErrorFormat("Failed to parse URI: {0} because {1}", u, e.Message);
 			}
 		}
 
@@ -796,7 +795,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransportURI = uri;
 									ConnectedTransport = t;
 									connectFailures = 0;
-									Tracer.Info("Successfully reconnected to backup " + uri);
+									Tracer.InfoFormat("Successfully reconnected to backup {0}", uri);
 									return false;
 								}
 								catch(Exception e)
@@ -820,7 +819,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 							try
 							{
-								Tracer.Debug("Attempting connect to: " + uri);
+								Tracer.DebugFormat("Attempting connect to: {0}", uri);
 								ITransport t = TransportFactory.CompositeConnect(uri);
 								t.Command = new CommandHandler(onCommand);
 								t.Exception = new ExceptionHandler(onException);
@@ -840,11 +839,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								if(firstConnection)
 								{
 									firstConnection = false;
-									Tracer.Info("Successfully connected to " + uri);
+									Tracer.InfoFormat("Successfully connected to: {0}", uri);
 								}
 								else
 								{
-									Tracer.Info("Successfully reconnected to " + uri);
+									Tracer.InfoFormat("Successfully reconnected to: {0}", uri);
 								}
 
 								connected = true;
@@ -853,7 +852,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							catch(Exception e)
 							{
 								failure = e;
-								Tracer.Debug("Connect fail to: " + uri + ", reason: " + e);
+								Tracer.DebugFormat("Connect fail to: (0}, reason: {1}", uri, e.Message);
 							}
 						}
 					}
@@ -861,7 +860,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 				if(MaxReconnectAttempts > 0 && ++connectFailures >= MaxReconnectAttempts)
 				{
-					Tracer.Error("Failed to connect to transport after: " + connectFailures + " attempt(s)");
+					Tracer.ErrorFormat("Failed to connect to transport after: {0} attempt(s)", connectFailures);
 					connectionFailure = failure;
 					onException(this, connectionFailure);
 					return false;
@@ -875,7 +874,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			if(!disposed)
 			{
 
-				Tracer.Debug("Waiting " + ReconnectDelay + " ms before attempting connection. ");
+				Tracer.DebugFormat("Waiting {0}ms before attempting connection.", ReconnectDelay);
 				try
 				{
 					sleepMutex.WaitOne();
@@ -942,8 +941,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							}
 							catch(Exception e)
 							{
-								e.GetType();
-								Tracer.Debug("Failed to build backup ");
+								Tracer.DebugFormat("Failed to build backup: {0}", e.Message);
 							}
 						}
 
