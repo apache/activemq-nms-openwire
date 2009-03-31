@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>D:\Hudson\jobs\Apache.NMS.ActiveMQ Trunk\workspace\build\mono-2.0\release\Apache.NMS.ActiveMQ</name>
+        <name>C:\Projects\ActiveMQ\activemq-dotnet\Apache.NMS.ActiveMQ\trunk\build\mono-2.0\release\Apache.NMS.ActiveMQ</name>
     </assembly>
     <members>
         <member name="T:Apache.NMS.ActiveMQ.Commands.ActiveMQDestination">
