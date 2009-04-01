@@ -177,21 +177,24 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		private Socket ConnectSocket(IPAddress address, int port)
 		{
-			try
+			if(null != address)
 			{
-				Socket socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-				if(null != socket)
+				try
 				{
-					socket.Connect(new IPEndPoint(address, port));
-					if(socket.Connected)
+					Socket socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+					if(null != socket)
 					{
-						return socket;
+						socket.Connect(new IPEndPoint(address, port));
+						if(socket.Connected)
+						{
+							return socket;
+						}
 					}
 				}
-			}
-			catch
-			{
+				catch
+				{
+				}
 			}
 
 			return null;
@@ -215,6 +218,22 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 #endif
 		}
 
+		private static IPAddress GetIPAddress(IPHostEntry hostEntry, AddressFamily addressFamily)
+		{
+			if(null != hostEntry)
+			{
+				foreach(IPAddress address in hostEntry.AddressList)
+				{
+					if(address.AddressFamily == addressFamily)
+					{
+						return address;
+					}
+				}
+			}
+
+			return null;
+		}
+
 		protected Socket Connect(string host, int port)
 		{
 			Socket socket = null;
@@ -227,15 +246,36 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			else
 			{
 				// Looping through the AddressList allows different type of connections to be tried
-				// (IPv4, IPv6 and whatever else may be available).
+				// (IPv6, IPv4 and whatever else may be available).
 				IPHostEntry hostEntry = GetIPHostEntry(host);
 
-				foreach(IPAddress address in hostEntry.AddressList)
+				// Prefer IPv6 first.
+				ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetworkV6);
+				socket = ConnectSocket(ipaddress, port);
+				if(null == socket)
 				{
-					socket = ConnectSocket(address, port);
-					if(null != socket)
+					// Try IPv4 next.
+					ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetwork);
+					socket = ConnectSocket(ipaddress, port);
+					if(null == socket)
 					{
-						break;
+						// Try whatever else there is.
+						foreach(IPAddress address in hostEntry.AddressList)
+						{
+							if(AddressFamily.InterNetworkV6 == address.AddressFamily
+								|| AddressFamily.InterNetwork == address.AddressFamily)
+							{
+								// Already tried these protocols.
+								continue;
+							}
+
+							socket = ConnectSocket(address, port);
+							if(null != socket)
+							{
+								ipaddress = address;
+								break;
+							}
+						}
 					}
 				}
 			}
@@ -245,6 +285,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				throw new SocketException();
 			}
 
+			Tracer.DebugFormat("Connected to {0}:{1} using {0} protocol.", host, port, ipaddress.AddressFamily.ToString());
 			return socket;
 		}
 
