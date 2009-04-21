@@ -455,12 +455,12 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 				if (s.Length > 8191)
 				{
 					dataOut.Write(BIG_STRING_TYPE);
-					dataOut.Write(s);
+					((OpenWireBinaryWriter)dataOut).WriteString32(s);
 				}
 				else
 				{
 					dataOut.Write(STRING_TYPE);
-					dataOut.Write(s);
+					((OpenWireBinaryWriter)dataOut).WriteString16(s);
 				}
 			}
 			else if (value is IDictionary)
@@ -519,10 +519,10 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 					value = data;
 					break;
 				case STRING_TYPE:
-					value = dataIn.ReadString();
+					value = ((OpenWireBinaryReader)dataIn).ReadString16();
 					break;
 				case BIG_STRING_TYPE:
-					value = dataIn.ReadString();
+					value = ((OpenWireBinaryReader)dataIn).ReadString32();
 					break;
 				case MAP_TYPE:
 					value = UnmarshalPrimitiveMap(dataIn);

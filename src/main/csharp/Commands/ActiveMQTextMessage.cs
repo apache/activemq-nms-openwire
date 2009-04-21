@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 using Apache.NMS;
+using Apache.NMS.ActiveMQ.OpenWire;
 using System;
-
+using System.IO;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
 	public class ActiveMQTextMessage : ActiveMQMessage, ITextMessage
     {
         public const byte ID_ActiveMQTextMessage = 28;
-
-		public const int SIZE_OF_INT = 4; // sizeof(int) - though causes unsafe issues with net 1.1
         
         private String text;
-
-        private static System.Text.UTF8Encoding encoder = new System.Text.UTF8Encoding();
         
         public ActiveMQTextMessage()
         {
@@ -53,7 +50,6 @@ namespace Apache.NMS.ActiveMQ.Commands
             return ID_ActiveMQTextMessage;
         }
         
-        
         // Properties
         
         public string Text
@@ -65,7 +61,9 @@ namespace Apache.NMS.ActiveMQ.Commands
                     byte[] data = this.Content;
                     if (data != null)
                     {
-                        text = encoder.GetString(data, SIZE_OF_INT, data.Length - SIZE_OF_INT);
+                        MemoryStream stream = new MemoryStream(data);
+                        OpenWireBinaryReader reader = new OpenWireBinaryReader(stream);
+                        text = reader.ReadString32();
                     }
                 }
                 return text;
@@ -77,28 +75,15 @@ namespace Apache.NMS.ActiveMQ.Commands
                 if (text != null)
                 {
 					// TODO lets make the evaluation of the Content lazy!
-					
-					// TODO assume that the text is ASCII
-                    byte[] utf8bytes = encoder.GetBytes( this.text );
-                    byte[] sizePrefix = System.BitConverter.GetBytes(utf8bytes.Length);
-                    data = new byte[utf8bytes.Length + sizePrefix.Length];  //int at the front of it
-															
-					// add the size prefix
-					for (int j = 0; j < sizePrefix.Length; j++)
-                    {
-						// The bytes need to be encoded in big endian
-						if ( BitConverter.IsLittleEndian ) {
-							data[j] = sizePrefix[sizePrefix.Length - j - 1];
-						} else {
-							data[j] = sizePrefix[j];
-						}
-                    }
-					
-					// Add the data.
-                    for (int i = 0; i < utf8bytes.Length; i++)
-                    {
-                        data[i + sizePrefix.Length] = (byte)utf8bytes[i];
-                    }
+
+                    // Set initial size to the size of the string the UTF-8 encode could
+                    // result in more if there are chars that encode to multibye values.
+                    MemoryStream stream = new MemoryStream( text.Length );
+                    OpenWireBinaryWriter writer = new OpenWireBinaryWriter(stream);
+
+                    writer.WriteString32(text);
+
+                    data = stream.GetBuffer();
 				}
 				this.Content = data;
 					

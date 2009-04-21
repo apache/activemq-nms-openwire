@@ -125,82 +125,104 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
 
-		public override void Write(String text)
+		/// <summary>
+		/// Method Write, writes a string to the output using the WriteString16
+        /// method.
+		/// </summary>
+		/// <param name="text">A  string</param>
+        public override void Write(String text)
 		{
-			foreach(string textPackage in new StringPackageSplitter(text))
-			{
-				WriteString(textPackage);
-			}
+            WriteString16(text);
 		}
 
 		/// <summary>
-		/// Method Write
-		/// </summary>
+        /// Method WriteString16, writes a string to the output using the Java 
+        /// standard modified UTF-8 encoding with an unsigned short value written first to 
+        /// indicate the length of the encoded data, the short is read as an unsigned 
+        /// value so the max amount of data this method can write is 65535 encoded bytes.
+        /// 
+        /// Unlike the WriteString32 method this method does not encode the length
+        /// value to -1 if the string is null, this is to match the behaviour of 
+        /// the Java DataOuputStream class's writeUTF method.	
+        /// 
+        /// Because modified UTF-8 encding can result in a number of bytes greater that 
+        /// the size of the String this method must first check that the encoding proces 
+        /// will not result in a value that cannot be written becuase it is greater than
+        /// the max value of an unsigned short.
+        /// </summary>
 		/// <param name="text">A  string</param>
-		private void WriteString(String text)
+		public void WriteString16(String text)
 		{
-			if(text != null)
-			{
-				if(text.Length > OpenWireBinaryWriter.MAXSTRINGLEN)
-				{
-					throw new IOException(String.Format("Cannot marshall string longer than: {0} characters, supplied string was: {1} characters", OpenWireBinaryWriter.MAXSTRINGLEN, text.Length));
-				}
+            if (text != null)
+            {
+                if (text.Length > ushort.MaxValue)
+                {
+                    throw new IOException(
+                        String.Format(
+                            "Cannot marshall string longer than: {0} characters, supplied string was: " +
+                            "{1} characters", ushort.MaxValue, text.Length));
+                }
 
-				int strlen = text.Length;
-				short utflen = 0;
-				int c = 0;
-				int count = 0;
+                char[] charr = text.ToCharArray();
+                uint utfLength = CountUtf8Bytes(charr);
+
+                if (utfLength > ushort.MaxValue)
+                {
+                    throw new IOException(
+                        String.Format(
+                            "Cannot marshall an encoded string longer than: {0} bytes, supplied" +
+                            "string requires: {1} characters to encode", ushort.MaxValue, utfLength));
+                }
+
+                byte[] bytearr = new byte[utfLength];
+                encodeUTF8toBuffer(charr, bytearr);
+
+                Write( (ushort)utfLength);
+                Write(bytearr);
+            }
+		}
+
+        /// <summary>
+        /// Method WriteString32, writes a string to the output using the Openwire 
+        /// standard modified UTF-8 encoding which an int value written first to 
+        /// indicate the length of the encoded data, the int is read as an signed 
+        /// value so the max amount of data this method can write is 2^31 encoded bytes.
+        /// 
+        /// In the case of a null value being passed this method writes a -1 to the 
+        /// stream to indicate that the string is null.
+        /// 
+        /// Because modified UTF-8 encding can result in a number of bytes greater that 
+        /// the size of the String this method must first check that the encoding proces 
+        /// will not result in a value that cannot be written becuase it is greater than
+        /// the max value of an int.
+        /// </summary>
+        /// <param name="text">A  string</param>
+        public void WriteString32(String text)
+        {
+            if( text != null ) {
 
 				char[] charr = text.ToCharArray();
+                uint utfLength = CountUtf8Bytes(charr);
 
-				for(int i = 0; i < strlen; i++)
-				{
-					c = charr[i];
-					if((c >= 0x0001) && (c <= 0x007F))
-					{
-						utflen++;
-					}
-					else if(c > 0x07FF)
-					{
-						utflen += 3;
-					}
-					else
-					{
-						utflen += 2;
-					}
-				}
+                if( utfLength > int.MaxValue ) 
+                {
+					throw new IOException(
+                        String.Format(
+                            "Cannot marshall an encoded string longer than: {0} bytes, supplied" + 
+                            "string requires: {1} characters to encode", int.MaxValue, utfLength ) );
+                }
 
-				Write((short) utflen);
+                byte[] bytearr = new byte[utfLength];
+                encodeUTF8toBuffer(charr, bytearr);
 
-				byte[] bytearr = new byte[utflen];
-				for(int i = 0; i < strlen; i++)
-				{
-					c = charr[i];
-					if((c >= 0x0001) && (c <= 0x007F))
-					{
-						bytearr[count++] = (byte) c;
-					}
-					else if(c > 0x07FF)
-					{
-						bytearr[count++] = (byte) (0xE0 | ((c >> 12) & 0x0F));
-						bytearr[count++] = (byte) (0x80 | ((c >> 6) & 0x3F));
-						bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
-					}
-					else
-					{
-						bytearr[count++] = (byte) (0xC0 | ((c >> 6) & 0x1F));
-						bytearr[count++] = (byte) (0x80 | ((c >> 0) & 0x3F));
-					}
-				}
-
-				Write(bytearr);
-
-			}
-			else
-			{
-				Write((short) -1);
-			}
-		}
+                Write(utfLength);
+                Write(bytearr);
+            } 
+            else
+            {
+                Write((int)-1);
+            }
+        }
 
 		/// <summary>
 		/// Method Write
@@ -219,130 +241,57 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		{
 			base.Write(EndianSupport.SwitchEndian(value));
 		}
-	}
 
-	#region StringPackageSplitter
+        private uint CountUtf8Bytes(char[] chars)
+        {
+            uint utfLength = 0;
+            int c = 0;
 
-	/// <summary>
-	/// StringPackageSplitter
-	/// </summary>
-	class StringPackageSplitter : IEnumerable
-	{
-		public StringPackageSplitter(string value)
-		{
-			this.value = value;
-		}
-
-		/// <summary>
-		/// Emumerator class for StringPackageSplitter
-		/// </summary>
-		class StringPackageSplitterEnumerator : IEnumerator
-		{
-			/// <summary>
-			/// </summary>
-			/// <param name="parent"></param>
-			public StringPackageSplitterEnumerator(StringPackageSplitter parent)
-			{
-				this.parent = parent;
-			}
-
-			private int Position = -1;
-			private StringPackageSplitter parent;
-
-			#region IEnumerator Members
-
-			public string Current
-			{
-				get
-				{
-					int delta = parent.value.Length - Position;
-
-					if(delta >= OpenWireBinaryWriter.MAXSTRINGLEN)
-					{
-						return parent.value.Substring(Position, OpenWireBinaryWriter.MAXSTRINGLEN);
-					}
-					else
-					{
-						return parent.value.Substring(Position, delta);
-					}
-				}
-			}
-
-			#endregion
-
-			#region IDisposable Members
-
-			public void Dispose()
-			{
-			}
-
-			#endregion
-
-			#region IEnumerator Members
-
-			object IEnumerator.Current
-			{
-				get
+            for (int i = 0; i < chars.Length; i++)
+            {
+                c = chars[i];
+                if ((c >= 0x0001) && (c <= 0x007F))
                 {
-                    int delta;
-
-                    delta = parent.value.Length - Position;
-
-                    if (delta >= OpenWireBinaryWriter.MAXSTRINGLEN)
-                    {
-                        return parent.value.Substring(Position, OpenWireBinaryWriter.MAXSTRINGLEN);
-                    }
-                    else
-                    {
-                        return parent.value.Substring(Position, delta);
-                    }
+                    utfLength++;
                 }
-			}
+                else if (c > 0x07FF)
+                {
+                    utfLength += 3;
+                }
+                else
+                {
+                    utfLength += 2;
+                }
+            }
 
-			public bool MoveNext()
-			{
-				if(parent.value == null)
-				{
-					return false;
-				}
+            return utfLength;
+        }
 
-				if(Position == -1)
-				{
-					Position = 0;
-					return true;
-				}
+        private void encodeUTF8toBuffer(char[] chars, byte[] buffer )
+        {
+            int c = 0;
+            int count = 0;
 
-				if((Position + OpenWireBinaryWriter.MAXSTRINGLEN) < parent.value.Length)
-				{
-					Position += OpenWireBinaryWriter.MAXSTRINGLEN;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
-
-			public void Reset()
-			{
-				Position = -1;
-			}
-
-			#endregion
-		}
-
-		private String value;
-
-		#region IEnumerable Members
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return new StringPackageSplitterEnumerator(this);
-		}
-
-		#endregion
+            for (int i = 0; i < chars.Length; i++)
+            {
+                c = chars[i];
+                if ((c >= 0x0001) && (c <= 0x007F))
+                {
+                    buffer[count++] = (byte)c;
+                }
+                else if (c > 0x07FF)
+                {
+                    buffer[count++] = (byte)(0xE0 | ((c >> 12) & 0x0F));
+                    buffer[count++] = (byte)(0x80 | ((c >> 6) & 0x3F));
+                    buffer[count++] = (byte)(0x80 | ((c >> 0) & 0x3F));
+                }
+                else
+                {
+                    buffer[count++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                    buffer[count++] = (byte)(0x80 | ((c >> 0) & 0x3F));
+                }
+            }
+        }
 	}
-
-	#endregion // END StringPackageSplitter
 }
 
