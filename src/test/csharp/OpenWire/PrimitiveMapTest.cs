@@ -59,6 +59,20 @@ namespace Apache.NMS.ActiveMQ.Test.OpenWire
             AssertPrimitiveMap(map);
         }
 
+        [Test]
+        public void TestMarshalledWithBigString()
+        {
+            PrimitiveMap map = CreatePrimitiveMap();
+            String test = new String( 'a', 65538 );
+            map.SetString( "BIG_STRING", test );
+            Console.WriteLine("data: " + map);
+            byte[] data = map.Marshal();
+            map = PrimitiveMap.Unmarshal(data);
+            Console.WriteLine("data: " + map);
+            AssertPrimitiveMap(map);
+            Assert.AreEqual( test, map.GetString( "BIG_STRING" ) );
+        }
+
         protected PrimitiveMap CreatePrimitiveMap()
         {
             PrimitiveMap map = new PrimitiveMap();
