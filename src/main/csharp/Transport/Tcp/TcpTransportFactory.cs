@@ -120,7 +120,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			socket.SendTimeout = SendTimeout;
 #endif
 
-			IWireFormat wireformat = CreateWireFormat(location, map);
+			IWireFormat wireformat = CreateWireFormat(map);
 			ITransport transport = new TcpTransport(socket, wireformat);
 
 			wireformat.Transport = transport;
@@ -289,16 +289,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			return socket;
 		}
 
-		protected IWireFormat CreateWireFormat(Uri location, StringDictionary map)
+		protected IWireFormat CreateWireFormat(StringDictionary map)
 		{
 			object properties = null;
 			IWireFormat wireFormatItf = null;
-
-			// Detect STOMP etc
-			if(String.Compare(location.Scheme, "stomp", true) == 0)
-			{
-				this.wireFormat = "STOMP";
-			}
 
 			if(String.Compare(this.wireFormat, "stomp", true) == 0)
 			{
