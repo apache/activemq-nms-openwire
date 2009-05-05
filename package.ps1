@@ -42,6 +42,7 @@ foreach($configuration in $configurations)
 	foreach($framework in $frameworks)
 	{
 		zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.dll"
+		zip -9 -u "$zipfile" "$framework\$configuration\nmsprovider*.config"
 	}
 }
 
@@ -88,7 +89,7 @@ write-progress "Packaging Source code files." "Scanning..."
 $pkgdir = "package"
 $zipfile = "$pkgdir\$pkgname-$pkgver-src.zip"
 
-zip -9 -u "$zipfile" LICENSE.txt NOTICE.txt nant-common.xml nant.build package.ps1 vs2008-activemq-test.csproj vs2008-activemq.csproj vs2008-activemq.sln
+zip -9 -u "$zipfile" LICENSE.txt NOTICE.txt nant-common.xml nant.build package.ps1 vs2008-activemq-test.csproj vs2008-activemq.csproj vs2008-activemq.sln nmsprovider*.config
 zip -9 -u -r "$zipfile" keyfile src
 
 write-progress "Packaging" "Complete."
