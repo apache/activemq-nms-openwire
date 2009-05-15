@@ -17,6 +17,7 @@
 using System;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -34,7 +35,7 @@ namespace Apache.NMS.ActiveMQ
 	public class MessageConsumer : IMessageConsumer
 	{
 		private readonly AcknowledgementMode acknowledgementMode;
-		private bool closed = false;
+		private AtomicBoolean closed = new AtomicBoolean( false );
 		private readonly Dispatcher dispatcher = new Dispatcher();
 		private readonly ConsumerInfo info;
 		private int maximumRedeliveryCount = 10;
@@ -151,7 +152,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			lock(this)
 			{
-				if(closed)
+				if(closed.Value)
 				{
 					return;
 				}
@@ -174,7 +175,7 @@ namespace Apache.NMS.ActiveMQ
 
 				session = null;
 				ackSession = null;
-				closed = true;
+				closed.Value = true;
 			}
 		}
 
@@ -228,12 +229,9 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void CheckClosed()
 		{
-			lock(this)
+			if(closed.Value)
 			{
-				if(closed)
-				{
-					throw new ConnectionClosedException();
-				}
+				throw new ConnectionClosedException();
 			}
 		}
 
