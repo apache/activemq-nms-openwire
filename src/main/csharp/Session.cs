@@ -239,6 +239,11 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal)
 		{
+            if (destination == null)
+            {
+                throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
+            }
+
 			ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			command.NoLocal = noLocal;
 			command.AcknowledgementMode = this.AcknowledgementMode;
@@ -267,7 +272,12 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal)
 		{
-			ConsumerInfo command = CreateConsumerInfo(destination, selector);
+            if (destination == null)
+            {
+                throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
+            }
+            
+            ConsumerInfo command = CreateConsumerInfo(destination, selector);
 			ConsumerId consumerId = command.ConsumerId;
 			command.SubscriptionName = name;
 			command.NoLocal = noLocal;
