@@ -31,11 +31,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 		private static string currentServiceName;
 		private static readonly object uriLock = new object();
 		private static readonly AutoResetEvent uriDiscoveredEvent = new AutoResetEvent(false);
-		public static event ExceptionListener OnException;
+		private static event ExceptionListener OnException;
 
+		static DiscoveryTransportFactory()
+		{
+			DiscoveryTransportFactory.OnException += TransportFactory.HandleException;
+			agent = new MulticastDiscoveryAgent();
+			agent.OnNewServiceFound += agent_OnNewServiceFound;
+			agent.OnServiceRemoved += agent_OnServiceRemoved;
+		}
+		
 		public DiscoveryTransportFactory()
 		{
 			currentServiceName = String.Empty;
+		}
+		
+		public static Uri DiscoveredUri
+		{
+			get { lock(uriLock) { return discoveredUri; } }
+			set { lock(uriLock) { discoveredUri = value; } }
 		}
 
 		private static void agent_OnNewServiceFound(string brokerName, string serviceName)
@@ -47,84 +61,47 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 					currentServiceName = serviceName;
 					discoveredUri = new Uri(currentServiceName);
 				}
-
-				// This will end the wait in the CreateTransport method.
-				uriDiscoveredEvent.Set();
 			}
+
+			// This will end the wait in the CreateTransport method.
+			uriDiscoveredEvent.Set();
 		}
 
 		private static void agent_OnServiceRemoved(string brokerName, string serviceName)
 		{
 			if(serviceName == currentServiceName)
 			{
-				lock(uriLock)
-				{
-					discoveredUri = null;
-				}
-
-				if(OnException != null)
-				{
-					OnException(new Exception("Broker is dead!"));
-				}
+				DiscoveredUri = null;
+				DiscoveryTransportFactory.OnException(new Exception("Broker connection is no longer valid."));
 			}
 		}
 
-		private static MulticastDiscoveryAgent Agent
-		{
-			get
-			{
-				if(agent == null)
-				{
-					agent = new MulticastDiscoveryAgent();
-					agent.OnNewServiceFound += agent_OnNewServiceFound;
-					agent.OnServiceRemoved += agent_OnServiceRemoved;
-				}
-
-				return agent;
-			}
-		}
-
-		#region Overloaded FailoverTransportFactory Members
+		#region Overloaded ITransportFactory Members
 
 		public ITransport CreateTransport(Uri location)
 		{
-			if(!Agent.IsStarted)
+			if(!agent.IsStarted)
 			{
-				Agent.Start();
+				agent.Start();
 			}
-
-			DateTime expireTime = DateTime.Now.AddSeconds(TIMEOUT_IN_SECONDS);
-
-			// If a new broker is found the agent will fire an event which will result in discoveredUri being set.
-			lock(uriLock)
+			
+			if(null == DiscoveredUri)
 			{
-				while(discoveredUri == null)
+				// If a new broker is found the agent will fire an event which will result in discoveredUri being set.
+				uriDiscoveredEvent.WaitOne(TIMEOUT_IN_SECONDS * 1000, true);
+				if(null == DiscoveredUri)
 				{
-					if(expireTime < DateTime.Now)
-					{
-						throw new NMSConnectionException(
-							"Unable to find a connection before the timeout period expired.");
-					}
-
-					uriDiscoveredEvent.WaitOne(TIMEOUT_IN_SECONDS * 1000, true);
+					throw new NMSConnectionException("Unable to find a connection before the timeout period expired.");
 				}
 			}
 
-			ITransport transport;
-
-			lock(uriLock)
-			{
-				TcpTransportFactory tcpTransFactory = new TcpTransportFactory();
-
-				transport = tcpTransFactory.CreateTransport(new Uri(discoveredUri + location.Query));
-			}
-
-			return transport;
+			TcpTransportFactory tcpTransFactory = new TcpTransportFactory();
+			return tcpTransFactory.CreateTransport(new Uri(DiscoveredUri + location.Query));
 		}
 
 		public ITransport CompositeConnect(Uri location)
 		{
-			throw new NMSConnectionException("Composite connection not supported with Discovery transport.");
+			throw new NMSConnectionException("Composite connection not supported with MulticastDiscovery transport.");
 		}
 
 		#endregion
