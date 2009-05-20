@@ -26,49 +26,14 @@ namespace Apache.NMS.ActiveMQ.Transport
 {
 	public class TransportFactory
 	{
-		private static readonly Dictionary<String, ITransportFactory> factoryCache;
 		public static event ExceptionListener OnException;
 
-		static TransportFactory()
-		{
-			TransportFactory.factoryCache = new Dictionary<string, ITransportFactory>();
-		}
-
-		private static void HandleException(Exception ex)
+		public static void HandleException(Exception ex)
 		{
 			if(TransportFactory.OnException != null)
 			{
 				TransportFactory.OnException(ex);
 			}
-		}
-
-		private static ITransportFactory AddTransportFactory(string scheme)
-		{
-			ITransportFactory factory;
-
-			switch(scheme)
-			{
-				case "tcp":
-					factory = new TcpTransportFactory();
-					break;
-				case "discovery":
-					factory = new DiscoveryTransportFactory();
-					DiscoveryTransportFactory.OnException += TransportFactory.HandleException;
-					break;
-				case "failover":
-					factory = new FailoverTransportFactory();
-					break;
-				default:
-					throw new ApplicationException("The transport " + scheme + " is not supported.");
-			}
-
-			if(null == factory)
-			{
-				throw new ApplicationException("Unable to create a transport.");
-			}
-
-			TransportFactory.factoryCache.Add(scheme, factory);
-			return factory;
 		}
 
 		/// <summary>
@@ -78,42 +43,65 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// <returns>the transport</returns>
 		public static ITransport CreateTransport(Uri location)
 		{
-			ITransportFactory tf = TransportFactory.findTransportFactory(location);
+			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
 			return tf.CreateTransport(location);
 		}
 
 		public static ITransport CompositeConnect(Uri location)
 		{
-			ITransportFactory tf = TransportFactory.findTransportFactory(location);
+			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
 			return tf.CompositeConnect(location);
 		}
 
 		/// <summary>
-		/// Find the transport factory for the scheme.  We will cache the transport
-		/// factory in a lookup table.  If we do not support the transport protocol,
-		/// an ApplicationException will be thrown.
+		/// Create a transport factory for the scheme.  If we do not support the transport protocol,
+		/// an NMSConnectionException will be thrown.
 		/// </summary>
 		/// <param name="location"></param>
 		/// <returns></returns>
-		private static ITransportFactory findTransportFactory(Uri location)
+		private static ITransportFactory CreateTransportFactory(Uri location)
 		{
 			string scheme = location.Scheme;
 
-			if(null == scheme)
+			if(null == scheme || 0 == scheme.Length)
 			{
-				throw new IOException("Transport not scheme specified: [" + location + "]");
+				throw new NMSConnectionException(String.Format("Transport scheme invalid: [{0}]", location.ToString()));
 			}
 
-			ITransportFactory tf;
+			ITransportFactory factory = null;
 
-			scheme = scheme.ToLower();
-			if(!TransportFactory.factoryCache.TryGetValue(scheme, out tf))
+			try
 			{
-			    // missing in the cache - go add request it if it exists
-			    tf = TransportFactory.AddTransportFactory(scheme);
+				switch(scheme.ToLower())
+				{
+					case "tcp":
+						factory = new TcpTransportFactory();
+						break;
+					case "discovery":
+						factory = new DiscoveryTransportFactory();
+						break;
+					case "failover":
+						factory = new FailoverTransportFactory();
+						break;
+					default:
+						throw new NMSConnectionException(String.Format("The transport {0} is not supported.", scheme));
+				}
+			}
+			catch(NMSConnectionException)
+			{
+				throw;
+			}
+			catch
+			{
+				throw new NMSConnectionException("Error creating transport.");
 			}
 
-			return tf;
+			if(null == factory)
+			{
+				throw new NMSConnectionException("Unable to create a transport.");
+			}
+
+			return factory;
 		}
 	}
 }

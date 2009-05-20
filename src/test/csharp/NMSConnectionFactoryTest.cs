@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
 
@@ -24,11 +25,19 @@ namespace Apache.NMS.ActiveMQ.Test
 	public class NMSConnectionFactoryTest
 	{
 		[RowTest]
-		[Row("tcp://localhost:61616")]
-		[Row("stomp://localhost:61613")]
-		[Row("activemq:tcp://localhost:61616")]
-		[Row("activemq:failover://localhost:61616")]
-		[Row("activemq:failover://(tcp://localhost:61616,tcp://localhost:61616)")]
+		[Row("tcp://activemqhost:61616")]
+		[Row("activemq:tcp://activemqhost:61616")]
+		[Row("activemq:multicast://activemqhost:6155")]
+		[Row("activemq:failover://activemqhost:61616")]
+		[Row("activemq:failover://(tcp://activemqhost:61616,tcp://activemqhost:61616)")]
+
+		[Row("ftp://activemqhost:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("http://activemqhost:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("discovery://activemqhost:6155", ExpectedException = typeof(NMSConnectionException))]
+		[Row("sms://activemqhost:61616", ExpectedException = typeof(NMSConnectionException))]
+
+		[Row("(tcp://activemqhost:61616,tcp://activemqhost:61616)", ExpectedException = typeof(UriFormatException))]
+		[Row("tcp://activemqhost:61616,tcp://activemqhost:61616", ExpectedException = typeof(UriFormatException))]
 		public void TestURI(string connectionURI)
 		{
 			NMSConnectionFactory factory = new NMSConnectionFactory(connectionURI);

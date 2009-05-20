@@ -17,24 +17,18 @@
 
 using System;
 using System.Collections.Specialized;
-
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Failover
 {
 	public class FailoverTransportFactory : ITransportFactory
 	{
-		private ITransport wrapTransport(ITransport transport)
-		{
-			transport = new MutexTransport(transport);
-			transport = new ResponseCorrelator(transport);
-			return transport;
-		}
-
 		private ITransport doConnect(Uri location)
 		{
 			ITransport transport = CreateTransport(URISupport.parseComposite(location));
-			return wrapTransport(transport);
+			transport = new MutexTransport(transport);
+			transport = new ResponseCorrelator(transport);
+			return transport;
 		}
 
 		public ITransport CompositeConnect(Uri location)

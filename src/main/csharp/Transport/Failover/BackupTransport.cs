@@ -16,7 +16,6 @@
  */
 
 using System;
-
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport.Failover
