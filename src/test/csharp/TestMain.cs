@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// START SNIPPET: demo
 using System;
 using Apache.NMS;
 using Apache.NMS.Util;
@@ -27,7 +28,6 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			try
 			{
-				// START SNIPPET: demo
 				Uri connecturi = new Uri("activemq:tcp://activemqhost:61616");
 				
 				Console.WriteLine("About to connect to " + connecturi);
@@ -76,7 +76,6 @@ namespace Apache.NMS.ActiveMQ.Test
 						}
 					}
 				}
-				// END SNIPPET: demo
 			}
 			catch(Exception e)
 			{
@@ -86,3 +85,4 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
+// END SNIPPET: demo
