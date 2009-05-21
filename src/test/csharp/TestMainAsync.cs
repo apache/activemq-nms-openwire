@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// NOTE: Keep leading spaces.  Do not convert to tabs.  This file
+// is auto-linked on the NMS website as example code.
+
 // START SNIPPET: demo
 using System;
 using System.Threading;
@@ -23,80 +26,80 @@ using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-	public class TestMain
-	{
-		protected static AutoResetEvent semaphore = new AutoResetEvent(false);
-		protected static ITextMessage message = null;
-		protected static TimeSpan receiveTimeout = TimeSpan.FromSeconds(10);
-		
-		public static void Main(string[] args)
-		{
-			try
-			{
-				Uri connecturi = new Uri("activemq:tcp://activemqhost:61616");
-				
-				Console.WriteLine("About to connect to " + connecturi);
+    public class TestMain
+    {
+        protected static AutoResetEvent semaphore = new AutoResetEvent(false);
+        protected static ITextMessage message = null;
+        protected static TimeSpan receiveTimeout = TimeSpan.FromSeconds(10);
+        
+        public static void Main(string[] args)
+        {
+            try
+            {
+                Uri connecturi = new Uri("activemq:tcp://activemqhost:61616");
+                
+                Console.WriteLine("About to connect to " + connecturi);
 
-				// NOTE: ensure the nmsprovider-activemq.config file exists in the executable folder.
-				IConnectionFactory factory = new NMSConnectionFactory(connecturi);
+                // NOTE: ensure the nmsprovider-activemq.config file exists in the executable folder.
+                IConnectionFactory factory = new NMSConnectionFactory(connecturi);
 
-				using(IConnection connection = factory.CreateConnection())
-				using(ISession session = connection.CreateSession())
-				{
-					/*
-					 * Examples for getting a destination:
-					 *   IDestination destination = session.GetQueue("FOO.BAR");  // Hard coded to queue destination
-					 *   IDestination destination = session.GetTopic("FOO.BAR");  // Hard coded to topic destination
-					 *   IDestination destination = SessionUtil.GetDestination(session, "queue://FOO.BAR");  // Allows destination type to be embedded in name
-					 *   IDestination destination = SessionUtil.GetDestination(session, "topic://FOO.BAR");  // Allows destination type to be embedded in name
-					 *   IDestination destination = SessionUtil.GetDestination(session, "FOO.BAR");          // Defaults to queue if type not specified.
-					 */
-					IDestination destination = SessionUtil.GetDestination(session, "queue://FOO.BAR");
-					Console.WriteLine("Using destination: " + destination);
+                using(IConnection connection = factory.CreateConnection())
+                using(ISession session = connection.CreateSession())
+                {
+                    /*
+                     * Examples for getting a destination:
+                     *   IDestination destination = session.GetQueue("FOO.BAR");  // Hard coded to queue destination
+                     *   IDestination destination = session.GetTopic("FOO.BAR");  // Hard coded to topic destination
+                     *   IDestination destination = SessionUtil.GetDestination(session, "queue://FOO.BAR");  // Allows destination type to be embedded in name
+                     *   IDestination destination = SessionUtil.GetDestination(session, "topic://FOO.BAR");  // Allows destination type to be embedded in name
+                     *   IDestination destination = SessionUtil.GetDestination(session, "FOO.BAR");          // Defaults to queue if type not specified.
+                     */
+                    IDestination destination = SessionUtil.GetDestination(session, "queue://FOO.BAR");
+                    Console.WriteLine("Using destination: " + destination);
 
-					// Create a consumer and producer
-					using(IMessageConsumer consumer = session.CreateConsumer(destination))
-					using(IMessageProducer producer = session.CreateProducer(destination))
-					{
-						connection.Start();		// Must start the connection for async messaging.
-						producer.Persistent = true;
-						producer.RequestTimeout = receiveTimeout;
-						consumer.Listener += new MessageListener(OnMessage);
+                    // Create a consumer and producer
+                    using(IMessageConsumer consumer = session.CreateConsumer(destination))
+                    using(IMessageProducer producer = session.CreateProducer(destination))
+                    {
+                        connection.Start();     // Must start the connection for async messaging.
+                        producer.Persistent = true;
+                        producer.RequestTimeout = receiveTimeout;
+                        consumer.Listener += new MessageListener(OnMessage);
 
-						// Send a message
-						ITextMessage request = session.CreateTextMessage("Hello World!");
-						request.NMSCorrelationID = "abc";
-						request.Properties["NMSXGroupID"] = "cheese";
-						request.Properties["myHeader"] = "Cheddar";
+                        // Send a message
+                        ITextMessage request = session.CreateTextMessage("Hello World!");
+                        request.NMSCorrelationID = "abc";
+                        request.Properties["NMSXGroupID"] = "cheese";
+                        request.Properties["myHeader"] = "Cheddar";
 
-						producer.Send(request);
+                        producer.Send(request);
 
-						// Wait for the message
-						semaphore.WaitOne((int) receiveTimeout.TotalMilliseconds, true);
-						if(message == null)
-						{
-							Console.WriteLine("No message received!");
-						}
-						else
-						{
-							Console.WriteLine("Received message with ID:   " + message.NMSMessageId);
-							Console.WriteLine("Received message with text: " + message.Text);
-						}
-					}
-				}
-			}
-			catch(Exception e)
-			{
-				Console.WriteLine("Caught: " + e);
-				Console.WriteLine("Stack: " + e.StackTrace);
-			}
-		}
+                        // Wait for the message
+                        semaphore.WaitOne((int) receiveTimeout.TotalMilliseconds, true);
+                        if(message == null)
+                        {
+                            Console.WriteLine("No message received!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Received message with ID:   " + message.NMSMessageId);
+                            Console.WriteLine("Received message with text: " + message.Text);
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Caught: " + e);
+                Console.WriteLine("Stack: " + e.StackTrace);
+            }
+        }
 
-		protected static void OnMessage(IMessage receivedMsg)
-		{
-			message = receivedMsg as ITextMessage;
-			semaphore.Set();
-		}
-	}
+        protected static void OnMessage(IMessage receivedMsg)
+        {
+            message = receivedMsg as ITextMessage;
+            semaphore.Set();
+        }
+    }
 }
 // END SNIPPET: demo
