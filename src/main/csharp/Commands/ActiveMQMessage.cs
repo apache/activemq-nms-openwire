@@ -144,19 +144,19 @@ namespace Apache.NMS.ActiveMQ.Commands
 		/// <summary>
 		/// Whether or not this message is persistent
 		/// </summary>
-		public bool NMSPersistent
+		public MsgDeliveryMode NMSDeliveryMode
 		{
-			get { return Persistent; }
-			set { Persistent = value; }
+			get { return (Persistent ? MsgDeliveryMode.Persistent : MsgDeliveryMode.NonPersistent); }
+			set { Persistent = (MsgDeliveryMode.Persistent == value); }
 		}
 
 		/// <summary>
 		/// The Priority on this message
 		/// </summary>
-		public byte NMSPriority
+		public MsgPriority NMSPriority
 		{
-			get { return Priority; }
-			set { Priority = value; }
+			get { return (MsgPriority) Priority; }
+			set { Priority = (byte) value; }
 		}
 
 		/// <summary>

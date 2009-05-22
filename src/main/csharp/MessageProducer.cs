@@ -31,10 +31,10 @@ namespace Apache.NMS.ActiveMQ
 		private readonly ProducerInfo info;
 		private int messageCounter = 0;
 
-		private bool msgPersistent = NMSConstants.defaultPersistence;
+		private MsgDeliveryMode msgDeliveryMode = NMSConstants.defaultDeliveryMode;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
 		private TimeSpan msgTimeToLive = NMSConstants.defaultTimeToLive;
-		private byte msgPriority = NMSConstants.defaultPriority;
+		private MsgPriority msgPriority = NMSConstants.defaultPriority;
 		private bool disableMessageID = false;
 		private bool disableMessageTimestamp = false;
 		protected bool disposed = false;
@@ -117,25 +117,25 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Send(IMessage message)
 		{
-			Send(info.Destination, message, this.msgPersistent, this.msgPriority, this.msgTimeToLive, false);
+			Send(info.Destination, message, this.msgDeliveryMode, this.msgPriority, this.msgTimeToLive, false);
 		}
 
 		public void Send(IDestination destination, IMessage message)
 		{
-			Send(destination, message, this.msgPersistent, this.msgPriority, this.msgTimeToLive, false);
+			Send(destination, message, this.msgDeliveryMode, this.msgPriority, this.msgTimeToLive, false);
 		}
 
-		public void Send(IMessage message, bool persistent, byte priority, TimeSpan timeToLive)
+		public void Send(IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority, TimeSpan timeToLive)
 		{
-			Send(info.Destination, message, persistent, priority, timeToLive, true);
+			Send(info.Destination, message, deliveryMode, priority, timeToLive, true);
 		}
 
-		public void Send(IDestination destination, IMessage message, bool persistent, byte priority, TimeSpan timeToLive)
+		public void Send(IDestination destination, IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority, TimeSpan timeToLive)
 		{
-			Send(destination, message, persistent, priority, timeToLive, true);
+			Send(destination, message, deliveryMode, priority, timeToLive, true);
 		}
 
-		protected void Send(IDestination destination, IMessage message, bool persistent, byte priority, TimeSpan timeToLive, bool specifiedTimeToLive)
+		protected void Send(IDestination destination, IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority, TimeSpan timeToLive, bool specifiedTimeToLive)
 		{
 			if(null == destination)
 			{
@@ -163,7 +163,7 @@ namespace Apache.NMS.ActiveMQ
 
 			activeMessage.ProducerId = info.ProducerId;
 			activeMessage.FromDestination = destination;
-			activeMessage.NMSPersistent = persistent;
+			activeMessage.NMSDeliveryMode = deliveryMode;
 			activeMessage.NMSPriority = priority;
 
 			if(session.Transacted)
@@ -185,10 +185,10 @@ namespace Apache.NMS.ActiveMQ
 			session.DoSend(activeMessage, this.RequestTimeout);
 		}
 
-		public bool Persistent
+		public MsgDeliveryMode DeliveryMode
 		{
-			get { return msgPersistent; }
-			set { this.msgPersistent = value; }
+			get { return msgDeliveryMode; }
+			set { this.msgDeliveryMode = value; }
 		}
 
 		public TimeSpan TimeToLive
@@ -203,7 +203,7 @@ namespace Apache.NMS.ActiveMQ
 			set { this.requestTimeout = value; }
 		}
 
-		public byte Priority
+		public MsgPriority Priority
 		{
 			get { return msgPriority; }
 			set { this.msgPriority = value; }
