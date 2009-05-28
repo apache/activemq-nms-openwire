@@ -30,7 +30,7 @@ namespace Apache.NMS.Test
 		protected static string CONSUMER_B_DESTINATION_NAME = "queue://Consumer.B.VirtualTopic.TestDestination";
 		protected static string TEST_CLIENT_ID = "VirtualTopicClientId";
 
-		protected const int totalMsgs = 100;
+		protected const int totalMsgs = 1;
 		protected AcknowledgementMode currentAckMode;
 		protected int receivedA;
 		protected int receivedB;
@@ -38,11 +38,11 @@ namespace Apache.NMS.Test
 #if !NET_1_1
 		[RowTest]
 		[Row(AcknowledgementMode.AutoAcknowledge, false)]
-		[Row(AcknowledgementMode.ClientAcknowledge, false)]
-		[Row(AcknowledgementMode.Transactional, false)]
+        [Row(AcknowledgementMode.ClientAcknowledge, false)]
+        [Row(AcknowledgementMode.Transactional, false)]
 
-		[Row(AcknowledgementMode.AutoAcknowledge, true)]
-		[Row(AcknowledgementMode.ClientAcknowledge, true)]
+        [Row(AcknowledgementMode.AutoAcknowledge, true)]
+        [Row(AcknowledgementMode.ClientAcknowledge, true)]
 		// Do not use listeners with transactional processing.
 #endif
 		public void SendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, bool useListeners)
@@ -67,46 +67,57 @@ namespace Apache.NMS.Test
 							consumerB.Listener += MessageListenerB;
 						}
 
-						for(int index = 0; index < totalMsgs; index++)
-						{
-							producer.Send(session.CreateTextMessage("Message #" + index));
-							if(AcknowledgementMode.Transactional == currentAckMode)
-							{
-								session.Commit();
-							}
+                        for (int index = 0; index < totalMsgs; index++)
+                        {
+                            producer.Send(session.CreateTextMessage("Message #" + index));
+                        }
 
-							if(!useListeners)
-							{
-								IMessage messageA = consumerA.Receive(receiveTimeout);
-								IMessage messageB = consumerB.Receive(receiveTimeout);
+                        if (AcknowledgementMode.Transactional == currentAckMode)
+                        {
+                            session.Commit();
+                        }
 
-								Assert.IsNotNull(messageA, "Did not receive message for consumer A.");
-								Assert.IsNotNull(messageB, "Did not receive message for consumer B.");
+                        if (!useListeners)
+                        {
+                            for (int index = 0; index < totalMsgs; index++)
+                            {
+                                IMessage messageA = consumerA.Receive(receiveTimeout);
+                                IMessage messageB = consumerB.Receive(receiveTimeout);
 
-								if(AcknowledgementMode.Transactional == currentAckMode)
-								{
-									session.Commit();
-								}
-								else if(AcknowledgementMode.ClientAcknowledge == currentAckMode)
-								{
-									messageA.Acknowledge();
-									messageB.Acknowledge();
-								}
-							}
-						}
+                                Assert.IsNotNull(messageA, "Did not receive message for consumer A.");
+                                Assert.IsNotNull(messageB, "Did not receive message for consumer B.");
 
-						int waitCount = 0;
-						while(receivedA < totalMsgs && receivedB < totalMsgs)
-						{
-							if(waitCount++ > 50)
-							{
-								Assert.Fail("Timed out waiting for message consumers.  A = " + receivedA + ", B = " + receivedB);
-							}
+                                if (AcknowledgementMode.ClientAcknowledge == currentAckMode)
+                                {
+                                    messageA.Acknowledge();
+                                    messageB.Acknowledge();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            int waitCount = 0;
+                            while (receivedA < totalMsgs && receivedB < totalMsgs)
+                            {
+                                if (waitCount++ > 50)
+                                {
+                                    Assert.Fail("Timed out waiting for message consumers.  A = " + receivedA + ", B = " + receivedB);
+                                }
 
-							Thread.Sleep(250);
-						}
+                                Thread.Sleep(250);
+                            }
+                        }
 					}
+
+                    if (AcknowledgementMode.Transactional == currentAckMode)
+                    {
+                        session.Commit();
+                    }
+
+                    session.Close();
 				}
+
+                connection.Close();
 			}
 		}
 
