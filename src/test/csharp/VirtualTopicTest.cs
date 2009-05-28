@@ -25,118 +25,151 @@ namespace Apache.NMS.Test
 	[TestFixture]
 	public class VirtualTopicTest : NMSTestSupport
 	{
-		protected static string PRODUCER_DESTINATION_NAME = "topic://VirtualTopic.TestDestination";
-		protected static string CONSUMER_A_DESTINATION_NAME = "queue://Consumer.A.VirtualTopic.TestDestination";
-		protected static string CONSUMER_B_DESTINATION_NAME = "queue://Consumer.B.VirtualTopic.TestDestination";
-		protected static string TEST_CLIENT_ID = "VirtualTopicClientId";
+		protected static string DESTINATION_NAME = "TestDestination";
+		protected static string PRODUCER_DESTINATION_NAME = "VirtualTopic." + DESTINATION_NAME;
+		protected static string CONSUMER_A_DESTINATION_NAME = "Consumer.A." + PRODUCER_DESTINATION_NAME;
+		protected static string CONSUMER_B_DESTINATION_NAME = "Consumer.B." + PRODUCER_DESTINATION_NAME;
+		protected static string TEST_CLIENT_ID = "VirtualTopicTestClientId";
 
 		protected const int totalMsgs = 5;
-		protected AcknowledgementMode currentAckMode;
+
+#if !NET_1_1
+		[RowTest]
+		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.Persistent)]
+		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.Persistent)]
+		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.Persistent)]
+		[Row(AcknowledgementMode.Transactional,     MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.Transactional,     MsgDeliveryMode.Persistent)]
+#endif
+		public void SendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, MsgDeliveryMode deliveryMode)
+		{
+			using(IConnection connection = CreateConnection(TEST_CLIENT_ID))
+			{
+				connection.Start();
+				using(ISession session = connection.CreateSession(ackMode))
+				{
+					using(IMessageConsumer consumerA = session.CreateConsumer(session.GetQueue(CONSUMER_A_DESTINATION_NAME)))
+					using(IMessageConsumer consumerB = session.CreateConsumer(session.GetQueue(CONSUMER_B_DESTINATION_NAME)))
+					using(IMessageProducer producer = session.CreateProducer(session.GetTopic(PRODUCER_DESTINATION_NAME)))
+					{
+						producer.RequestTimeout = receiveTimeout;
+						producer.DeliveryMode = deliveryMode;
+
+						for(int index = 0; index < totalMsgs; index++)
+						{
+							string msgText = "Message #" + index;
+							Tracer.Info("Sending: " + msgText);
+							producer.Send(session.CreateTextMessage(msgText));
+						}
+
+						if(AcknowledgementMode.Transactional == ackMode)
+						{
+							session.Commit();
+						}
+
+						for(int index = 0; index < totalMsgs; index++)
+						{
+							string msgText = "Message #" + index;
+							ITextMessage messageA = consumerA.Receive(receiveTimeout) as ITextMessage;
+							Assert.IsNotNull(messageA, "Did not receive message for consumer A.");
+							messageA.Acknowledge();
+							Tracer.Info("Received A: " + msgText);
+
+							ITextMessage messageB = consumerB.Receive(receiveTimeout) as ITextMessage;
+							Assert.IsNotNull(messageB, "Did not receive message for consumer B.");
+							messageB.Acknowledge();
+							Tracer.Info("Received B: " + msgText);
+
+							Assert.AreEqual(msgText, messageA.Text, "Message text A does not match.");
+							Assert.AreEqual(msgText, messageB.Text, "Message text B does not match.");
+						}
+
+						if(AcknowledgementMode.Transactional == ackMode)
+						{
+							session.Commit();
+						}
+					}
+				}
+			}
+		}
+
 		protected int receivedA;
 		protected int receivedB;
 
 #if !NET_1_1
 		[RowTest]
-		[Row(AcknowledgementMode.AutoAcknowledge, false)]
-        [Row(AcknowledgementMode.ClientAcknowledge, false)]
-        [Row(AcknowledgementMode.Transactional, false)]
-
-        [Row(AcknowledgementMode.AutoAcknowledge, true)]
-        [Row(AcknowledgementMode.ClientAcknowledge, true)]
+		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.Persistent)]
+		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.Persistent)]
+		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.NonPersistent)]
+		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.Persistent)]
 		// Do not use listeners with transactional processing.
 #endif
-		public void SendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, bool useListeners)
+		public void AsyncSendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, MsgDeliveryMode deliveryMode)
 		{
-			currentAckMode = ackMode;
 			receivedA = 0;
 			receivedB = 0;
 
 			using(IConnection connection = CreateConnection(TEST_CLIENT_ID))
 			{
 				connection.Start();
-				using(ISession session = connection.CreateSession(currentAckMode))
+				using(ISession session = connection.CreateSession(ackMode))
 				{
-					using(IMessageConsumer consumerA = session.CreateConsumer(SessionUtil.GetDestination(session, CONSUMER_A_DESTINATION_NAME)))
-					using(IMessageConsumer consumerB = session.CreateConsumer(SessionUtil.GetDestination(session, CONSUMER_B_DESTINATION_NAME)))
-					using(IMessageProducer producer = session.CreateProducer(SessionUtil.GetDestination(session, PRODUCER_DESTINATION_NAME)))
+					using(IMessageConsumer consumerA = session.CreateConsumer(session.GetQueue(CONSUMER_A_DESTINATION_NAME)))
+					using(IMessageConsumer consumerB = session.CreateConsumer(session.GetQueue(CONSUMER_B_DESTINATION_NAME)))
+					using(IMessageProducer producer = session.CreateProducer(session.GetTopic(PRODUCER_DESTINATION_NAME)))
 					{
 						producer.RequestTimeout = receiveTimeout;
-						if(useListeners)
+						producer.DeliveryMode = deliveryMode;
+
+						consumerA.Listener += MessageListenerA;
+						consumerB.Listener += MessageListenerB;
+
+						for(int index = 0; index < totalMsgs; index++)
 						{
-							consumerA.Listener += MessageListenerA;
-							consumerB.Listener += MessageListenerB;
+							string msgText = "Message #" + index;
+							Tracer.Info("Sending: " + msgText);
+							producer.Send(session.CreateTextMessage(msgText));
 						}
 
-                        for (int index = 0; index < totalMsgs; index++)
-                        {
-                            producer.Send(session.CreateTextMessage("Message #" + index));
-                        }
+						int waitCount = 0;
+						while(receivedA < totalMsgs && receivedB < totalMsgs)
+						{
+							if(waitCount++ > 50)
+							{
+								Assert.Fail("Timed out waiting for message consumers.  A = " + receivedA + ", B = " + receivedB);
+							}
 
-                        if (AcknowledgementMode.Transactional == currentAckMode)
-                        {
-                            session.Commit();
-                        }
-
-                        if (!useListeners)
-                        {
-                            for (int index = 0; index < totalMsgs; index++)
-                            {
-                                IMessage messageA = consumerA.Receive(receiveTimeout);
-                                IMessage messageB = consumerB.Receive(receiveTimeout);
-
-                                Assert.IsNotNull(messageA, "Did not receive message for consumer A.");
-                                Assert.IsNotNull(messageB, "Did not receive message for consumer B.");
-
-                                if (AcknowledgementMode.ClientAcknowledge == currentAckMode)
-                                {
-                                    messageA.Acknowledge();
-                                    messageB.Acknowledge();
-                                }
-                            }
-                        }
-                        else
-                        {
-                            int waitCount = 0;
-                            while (receivedA < totalMsgs && receivedB < totalMsgs)
-                            {
-                                if (waitCount++ > 50)
-                                {
-                                    Assert.Fail("Timed out waiting for message consumers.  A = " + receivedA + ", B = " + receivedB);
-                                }
-
-                                Thread.Sleep(250);
-                            }
-                        }
+							Tracer.Info("Waiting... Received A = " + receivedA + ", Received B = " + receivedB);
+							Thread.Sleep(250);
+						}
 					}
-
-                    if (AcknowledgementMode.Transactional == currentAckMode)
-                    {
-                        session.Commit();
-                    }
-
-                    session.Close();
 				}
-
-                connection.Close();
 			}
 		}
 
 		private void MessageListenerA(IMessage message)
 		{
+			message.Acknowledge();
+			ITextMessage messageA = message as ITextMessage;
+			string msgText = "Message #" + receivedA;
+			Assert.AreEqual(msgText, messageA.Text, "Message text A does not match.");
+			Tracer.Info("Received Listener A: " + msgText);
 			receivedA++;
-			if(AcknowledgementMode.ClientAcknowledge == currentAckMode)
-			{
-				message.Acknowledge();
-			}
 		}
 
 		private void MessageListenerB(IMessage message)
 		{
+			message.Acknowledge();
+			ITextMessage messageB = message as ITextMessage;
+			string msgText = "Message #" + receivedB;
+			Assert.AreEqual(msgText, messageB.Text, "Message text B does not match.");
+			Tracer.Info("Received Listener B: " + msgText);
 			receivedB++;
-			if(AcknowledgementMode.ClientAcknowledge == currentAckMode)
-			{
-				message.Acknowledge();
-			}
 		}
 	}
 }
