@@ -30,7 +30,7 @@ namespace Apache.NMS.Test
 		protected static string CONSUMER_B_DESTINATION_NAME = "queue://Consumer.B.VirtualTopic.TestDestination";
 		protected static string TEST_CLIENT_ID = "VirtualTopicClientId";
 
-		protected const int totalMsgs = 1;
+		protected const int totalMsgs = 5;
 		protected AcknowledgementMode currentAckMode;
 		protected int receivedA;
 		protected int receivedB;

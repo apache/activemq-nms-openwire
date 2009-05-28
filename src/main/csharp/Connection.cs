@@ -470,6 +470,12 @@ namespace Apache.NMS.ActiveMQ
 		{
 			bool dispatched = false;
 
+            // Override the Message's Destination with the one from the Dispatch since in the
+            // case of a virtual Topic the correct destination ack is the one from the Dispatch.
+            // This is a bit of a hack since we should really be sending the entire dispatch to
+            // the Consumer.
+            dispatch.Message.Destination = dispatch.Destination;
+
 			lock(sessions.SyncRoot)
 			{
 				foreach(Session session in sessions)
