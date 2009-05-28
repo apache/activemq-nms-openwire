@@ -27,6 +27,7 @@ namespace Apache.NMS.ActiveMQ
 		public delegate void ExceptionHandler(Exception exception);
 
 		private readonly AutoResetEvent m_event = new AutoResetEvent(false);
+		private object initobjectLock = new object();
 		private bool m_bStopFlag = false;
 		private Thread m_thread = null;
 		private readonly DispatchFunction m_dispatchFunc;
@@ -37,7 +38,6 @@ namespace Apache.NMS.ActiveMQ
 			m_dispatchFunc = dispatchFunc;
 		}
 
-		// TODO can't use EventWaitHandle on MONO 1.0
 		public AutoResetEvent EventHandle
 		{
 			get { return m_event; }
@@ -51,7 +51,7 @@ namespace Apache.NMS.ActiveMQ
 
 		internal void Start()
 		{
-			lock(this)
+			lock(initobjectLock)
 			{
 				if(m_thread == null)
 				{
@@ -74,7 +74,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			Tracer.Info("Stopping dispatcher thread for session");
 			Thread localThread = null;
-			lock(this)
+			lock(initobjectLock)
 			{
 				localThread = m_thread;
 				m_thread = null;
@@ -104,7 +104,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				while(true) // loop forever (well, at least until we've been asked to stop)
 				{
-					lock(this)
+					lock(initobjectLock)
 					{
 						if(m_bStopFlag)
 						{

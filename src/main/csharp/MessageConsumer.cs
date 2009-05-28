@@ -35,7 +35,8 @@ namespace Apache.NMS.ActiveMQ
 	public class MessageConsumer : IMessageConsumer
 	{
 		private readonly AcknowledgementMode acknowledgementMode;
-		private AtomicBoolean closed = new AtomicBoolean( false );
+		private bool closed = false;
+		private object closedLock = new object();
 		private readonly Dispatcher dispatcher = new Dispatcher();
 		private readonly ConsumerInfo info;
 		private int maximumRedeliveryCount = 10;
@@ -53,7 +54,7 @@ namespace Apache.NMS.ActiveMQ
 			this.acknowledgementMode = acknowledgementMode;
 			if(AcknowledgementMode.AutoAcknowledge == acknowledgementMode)
 			{
-				this.ackSession = (Session) session.Connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+				this.ackSession = (Session) session.Connection.CreateSession(acknowledgementMode);
 			}
 		}
 
@@ -99,21 +100,18 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessage Receive()
 		{
-			CheckClosed();
 			SendPullRequest(0);
 			return SetupAcknowledge(dispatcher.Dequeue());
 		}
 
 		public IMessage Receive(System.TimeSpan timeout)
 		{
-			CheckClosed();
 			SendPullRequest((long) timeout.TotalMilliseconds);
 			return SetupAcknowledge(dispatcher.Dequeue(timeout));
 		}
 
 		public IMessage ReceiveNoWait()
 		{
-			CheckClosed();
 			SendPullRequest(-1);
 			return SetupAcknowledge(dispatcher.DequeueNoWait());
 		}
@@ -150,9 +148,9 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Close()
 		{
-			lock(this)
+			lock(closedLock)
 			{
-				if(closed.Value)
+				if(closed)
 				{
 					return;
 				}
@@ -175,7 +173,7 @@ namespace Apache.NMS.ActiveMQ
 
 				session = null;
 				ackSession = null;
-				closed.Value = true;
+				closed = true;
 			}
 		}
 
@@ -194,13 +192,19 @@ namespace Apache.NMS.ActiveMQ
 		/// <param name="message">An ActiveMQMessage</param>
 		public void Dispatch(ActiveMQMessage message)
 		{
-			lock(this)
+			if(AcknowledgementMode.AutoAcknowledge == this.acknowledgementMode)
 			{
-				if(ackSession != null)
+				MessageAck ack = CreateMessageAck(message);
+				Tracer.Debug("Sending AutoAck: " + ack);
+				message.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
+
+				lock(closedLock)
 				{
-					message.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
-					MessageAck ack = CreateMessageAck(message);
-					Tracer.Debug("Sending AutoAck: " + ack);
+					if(closed)
+					{
+						throw new ConnectionClosedException();
+					}
+
 					ackSession.Connection.OneWay(ack);
 				}
 			}
@@ -227,14 +231,6 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		protected void CheckClosed()
-		{
-			if(closed.Value)
-			{
-				throw new ConnectionClosedException();
-			}
-		}
-
 		protected IMessage SetupAcknowledge(IMessage message)
 		{
 			if(null == message)
@@ -244,7 +240,7 @@ namespace Apache.NMS.ActiveMQ
 
 			if(message is ActiveMQMessage)
 			{
-				ActiveMQMessage activeMessage = (ActiveMQMessage)message;
+				ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
 				if(AcknowledgementMode.ClientAcknowledge == acknowledgementMode)
 				{
@@ -259,20 +255,26 @@ namespace Apache.NMS.ActiveMQ
 
 			return message;
 		}
-		
-		protected void SendPullRequest( long timeout ) 
-		{
-            CheckClosed();
 
+		protected void SendPullRequest(long timeout)
+		{
 			if(this.info.PrefetchSize == 0 && this.dispatcher.isEmpty())
 			{
 				MessagePull messagePull = new MessagePull();
 				messagePull.ConsumerId = this.info.ConsumerId;
-                messagePull.Destination = this.info.Destination;
-                messagePull.Timeout = timeout;
+				messagePull.Destination = this.info.Destination;
+				messagePull.Timeout = timeout;
 
 				Tracer.Debug("Sending MessagePull: " + messagePull);
-				session.Connection.OneWay(messagePull);
+				lock(closedLock)
+				{
+					if(closed)
+					{
+						throw new ConnectionClosedException();
+					}
+
+					session.Connection.OneWay(messagePull);
+				}
 			}
 		}
 
@@ -284,7 +286,15 @@ namespace Apache.NMS.ActiveMQ
 		{
 			MessageAck ack = CreateMessageAck(message);
 			Tracer.Debug("Sending Ack: " + ack);
-			session.Connection.OneWay(ack);
+			lock(closedLock)
+			{
+				if(closed)
+				{
+					throw new ConnectionClosedException();
+				}
+
+				session.Connection.OneWay(ack);
+			}
 		}
 
 		protected virtual MessageAck CreateMessageAck(Message message)

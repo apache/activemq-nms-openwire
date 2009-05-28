@@ -30,7 +30,6 @@ namespace Apache.NMS.ActiveMQ
 		readonly Object semaphore = new Object();
 		readonly ArrayList messagesToRedeliver = new ArrayList();
         
-        // TODO can't use EventWaitHandle on MONO 1.0
         AutoResetEvent messageReceivedEventHandle = new AutoResetEvent(false);
         bool m_bAsyncDelivery = false;
         bool m_bClosed = false;

@@ -28,6 +28,7 @@ namespace Apache.NMS.ActiveMQ
 	{
 		private Session session;
 		private bool closed = false;
+        private object closedLock = new object();
 		private readonly ProducerInfo info;
 		private int messageCounter = 0;
 
@@ -83,7 +84,7 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Close()
 		{
-			lock(this)
+			lock(closedLock)
 			{
 				if(closed)
 				{
@@ -101,17 +102,6 @@ namespace Apache.NMS.ActiveMQ
 
 				session = null;
 				closed = true;
-			}
-		}
-
-		protected void CheckClosed()
-		{
-			lock(this)
-			{
-				if(closed)
-				{
-					throw new ConnectionClosedException();
-				}
 			}
 		}
 
@@ -150,7 +140,6 @@ namespace Apache.NMS.ActiveMQ
 				throw new Apache.NMS.InvalidDestinationException();
 			}
 
-			CheckClosed();
 			ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
 			if(!disableMessageID)
@@ -166,12 +155,6 @@ namespace Apache.NMS.ActiveMQ
 			activeMessage.NMSDeliveryMode = deliveryMode;
 			activeMessage.NMSPriority = priority;
 
-			if(session.Transacted)
-			{
-				session.DoStartTransaction();
-				activeMessage.TransactionId = session.TransactionContext.TransactionId;
-			}
-
 			if(!disableMessageTimestamp)
 			{
 				activeMessage.NMSTimestamp = DateTime.UtcNow;
@@ -182,7 +165,21 @@ namespace Apache.NMS.ActiveMQ
 				activeMessage.NMSTimeToLive = timeToLive;
 			}
 
-			session.DoSend(activeMessage, this.RequestTimeout);
+			lock(closedLock)
+			{
+				if(closed)
+				{
+					throw new ConnectionClosedException();
+				}
+
+				if(session.Transacted)
+				{
+					session.DoStartTransaction();
+					activeMessage.TransactionId = session.TransactionContext.TransactionId;
+				}
+
+				session.DoSend(activeMessage, this.RequestTimeout);
+			}
 		}
 
 		public MsgDeliveryMode DeliveryMode
@@ -223,43 +220,36 @@ namespace Apache.NMS.ActiveMQ
 
 		public IMessage CreateMessage()
 		{
-			CheckClosed();
 			return session.CreateMessage();
 		}
 
 		public ITextMessage CreateTextMessage()
 		{
-			CheckClosed();
 			return session.CreateTextMessage();
 		}
 
 		public ITextMessage CreateTextMessage(string text)
 		{
-			CheckClosed();
 			return session.CreateTextMessage(text);
 		}
 
 		public IMapMessage CreateMapMessage()
 		{
-			CheckClosed();
 			return session.CreateMapMessage();
 		}
 
 		public IObjectMessage CreateObjectMessage(object body)
 		{
-			CheckClosed();
 			return session.CreateObjectMessage(body);
 		}
 
 		public IBytesMessage CreateBytesMessage()
 		{
-			CheckClosed();
 			return session.CreateBytesMessage();
 		}
 
 		public IBytesMessage CreateBytesMessage(byte[] body)
 		{
-			CheckClosed();
 			return session.CreateBytesMessage(body);
 		}
 	}
