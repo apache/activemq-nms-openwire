@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 		private static MulticastDiscoveryAgent agent;
 		private static string currentServiceName;
 		private static readonly object uriLock = new object();
-		private static readonly AutoResetEvent uriDiscoveredEvent = new AutoResetEvent(false);
+		private static readonly AutoResetEvent discoveredUriEvent = new AutoResetEvent(false);
 		private static event ExceptionListener OnException;
 
 		static DiscoveryTransportFactory()
@@ -64,15 +64,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 			}
 
 			// This will end the wait in the CreateTransport method.
-			uriDiscoveredEvent.Set();
+			discoveredUriEvent.Set();
 		}
 
 		private static void agent_OnServiceRemoved(string brokerName, string serviceName)
 		{
-			if(serviceName == currentServiceName)
+			lock(uriLock)
 			{
-				DiscoveredUri = null;
-				DiscoveryTransportFactory.OnException(new Exception("Broker connection is no longer valid."));
+				if(serviceName == currentServiceName)
+				{
+					DiscoveredUri = null;
+					DiscoveryTransportFactory.OnException(new Exception("Broker connection is no longer valid."));
+				}
 			}
 		}
 
@@ -84,19 +87,22 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 			{
 				agent.Start();
 			}
+
+			Uri hostUri = DiscoveredUri;
 			
-			if(null == DiscoveredUri)
+			if(null == hostUri)
 			{
 				// If a new broker is found the agent will fire an event which will result in discoveredUri being set.
-				uriDiscoveredEvent.WaitOne(TIMEOUT_IN_SECONDS * 1000, true);
-				if(null == DiscoveredUri)
+				discoveredUriEvent.WaitOne(TIMEOUT_IN_SECONDS * 1000, true);
+				hostUri = DiscoveredUri;
+				if(null == hostUri)
 				{
-					throw new NMSConnectionException("Unable to find a connection before the timeout period expired.");
+					throw new NMSConnectionException(String.Format("Unable to find a connection to {0} before the timeout period expired.", location.ToString()));
 				}
 			}
 
 			TcpTransportFactory tcpTransFactory = new TcpTransportFactory();
-			return tcpTransFactory.CreateTransport(new Uri(DiscoveredUri + location.Query));
+			return tcpTransFactory.CreateTransport(new Uri(hostUri + location.Query));
 		}
 
 		public ITransport CompositeConnect(Uri location)

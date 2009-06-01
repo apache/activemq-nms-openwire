@@ -212,8 +212,12 @@ namespace Apache.NMS.ActiveMQ
 					}
 					sessions.Clear();
 
-					DisposeOf(ConnectionId);
-					transport.Oneway(new ShutdownInfo());
+					if(connected)
+					{
+						DisposeOf(ConnectionId);
+						transport.Oneway(new ShutdownInfo());
+					}
+
 					transport.Dispose();
 				}
 				catch(Exception ex)
@@ -224,6 +228,7 @@ namespace Apache.NMS.ActiveMQ
 				{
 					this.transport = null;
 					this.closed = true;
+					this.connected = false;
 					this.closing = false;
 				}
 			}
@@ -352,6 +357,7 @@ namespace Apache.NMS.ActiveMQ
 			command.ObjectId = objectId;
 			if(asyncClose)
 			{
+				Tracer.Info("Asynchronously closing Connection.");
 				OneWay(command);
 			}
 			else
@@ -361,6 +367,7 @@ namespace Apache.NMS.ActiveMQ
 				// the broker can dispose of the object.  Allow up to 5 seconds to process.
 				try
 				{
+					Tracer.Info("Synchronously closing Connection...");
 					SyncRequest(command, TimeSpan.FromSeconds(5));
 				}
 				catch // (BrokerException)

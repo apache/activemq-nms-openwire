@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class ConnectionFactory : IConnectionFactory
 	{
-		public const string DEFAULT_BROKER_URL = "activemq:tcp://localhost:61616";
+		public const string DEFAULT_BROKER_URL = "tcp://localhost:61616";
 		public const string ENV_BROKER_URL = "ACTIVEMQ_BROKER_URL";
 
 		private static event ExceptionListener onException;
@@ -83,18 +83,15 @@ namespace Apache.NMS.ActiveMQ
 
 		public IConnection CreateConnection(string userName, string password)
 		{
-			Uri uri = brokerUri;
-			string scheme = brokerUri.Scheme;
+			return CreateConnection(userName, password, true);
+		}
 
-			if(null != scheme)
-			{
-				// Do we need to strip off the activemq prefix??
-				scheme = scheme.ToLower();
-				if("activemq".Equals(scheme))
-				{
-					uri = new Uri(brokerUri.AbsolutePath + brokerUri.Query);
-				}
-			}
+		public IConnection CreateConnection(string userName, string password, bool startTransport)
+		{
+			// Strip off the activemq prefix, if it exists.
+			Uri uri = new Uri(URISupport.stripPrefix(brokerUri.OriginalString, "activemq:"));
+
+			Tracer.InfoFormat("Connecting to: {0}", uri.ToString());
 
 			ConnectionInfo info = CreateConnectionInfo(userName, password);
 			ITransport transport = TransportFactory.CreateTransport(uri);
@@ -104,10 +101,14 @@ namespace Apache.NMS.ActiveMQ
 			// Since this could be a composite Uri, assume the connection-specific parameters
 			// are associated with the outer-most specification of the composite Uri. What's nice
 			// is that this works with simple Uri as well.
-			URISupport.CompositeData c = URISupport.parseComposite(brokerUri);
+			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
-			connection.ITransport.Start();
+			if(startTransport)
+			{
+				connection.ITransport.Start();
+			}
+
 			return connection;
 		}
 

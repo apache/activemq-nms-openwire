@@ -18,6 +18,7 @@
 using System;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
+using Apache.NMS.Test;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
@@ -25,34 +26,40 @@ namespace Apache.NMS.ActiveMQ.Test
 	public class NMSConnectionFactoryTest
 	{
 		[RowTest]
-		[Row("tcp://activemqhost:61616")]
-		[Row("activemq:tcp://activemqhost:61616")]
-		[Row("activemq:tcp://activemqhost:61616?connection.asyncclose=false")]
-		[Row("activemq:(tcp://activemqhost:61616)?connection.asyncclose=false")]
-		[Row("activemq:multicast://activemqhost:6155")]
-		[Row("activemq:failover://activemqhost:61616")]
-		[Row("activemq:failover://(tcp://activemqhost:61616,tcp://activemqhost:61616)")]
+		[Row("tcp://${activemqhost}:61616")]
+		[Row("activemq:tcp://${activemqhost}:61616")]
+		[Row("activemq:tcp://${activemqhost}:61616?connection.asyncclose=false")]
+		[Row("activemq:failover:tcp://${activemqhost}:61616")]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
+		[Row("activemq:discovery://${activemqhost}:6155")]
 
-		[Row("tcp://activemqhost:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:tcp://activemqhost:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:(tcp://activemqhost:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:(tcp://activemqhost:61616?connection.InvalidParameter=true)", ExpectedException = typeof(NMSException))]
-		[Row("activemq:(tcp://activemqhost:61616,tcp://activemqbackup:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:(tcp://activemqhost:61616,tcp://activemqbackup:61616?connection.InvalidParameter=true)", ExpectedException = typeof(NMSException))]
+		[Row("tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
+		[Row("activemq:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616?connection.InvalidParameter=true)", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqbackuphost}:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616?connection.InvalidParameter=true,tcp://${activemqbackuphost}:61616)", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqbackuphost}:61616?connection.InvalidParameter=true)", ExpectedException = typeof(NMSException))]
 
-		[Row("ftp://activemqhost:61616", ExpectedException = typeof(NMSConnectionException))]
-		[Row("http://activemqhost:61616", ExpectedException = typeof(NMSConnectionException))]
-		[Row("discovery://activemqhost:6155", ExpectedException = typeof(NMSConnectionException))]
-		[Row("sms://activemqhost:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("ftp://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("http://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("discovery://${activemqhost}:6155", ExpectedException = typeof(NMSConnectionException))]
+		[Row("sms://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:multicast://${activemqhost}:6155", ExpectedException = typeof(NMSConnectionException))]
 
-		[Row("(tcp://activemqhost:61616,tcp://activemqhost:61616)", ExpectedException = typeof(UriFormatException))]
-		[Row("tcp://activemqhost:61616,tcp://activemqhost:61616", ExpectedException = typeof(UriFormatException))]
+		[Row("activemq:(tcp://${activemqhost}:61616)?connection.asyncclose=false", ExpectedException = typeof(UriFormatException))]
+		[Row("(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)", ExpectedException = typeof(UriFormatException))]
+		[Row("tcp://${activemqhost}:61616,tcp://${activemqhost}:61616", ExpectedException = typeof(UriFormatException))]
 		public void TestURI(string connectionURI)
 		{
-			NMSConnectionFactory factory = new NMSConnectionFactory(connectionURI);
+			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 			Assert.IsNotNull(factory);
-			Assert.IsNotNull(factory.ConnectionFactory);
-			Assert.IsTrue(factory.ConnectionFactory is Apache.NMS.ActiveMQ.ConnectionFactory);
+			Apache.NMS.ActiveMQ.ConnectionFactory activemqFactory = factory.ConnectionFactory as Apache.NMS.ActiveMQ.ConnectionFactory;
+			Assert.IsNotNull(activemqFactory);
+			using(IConnection connection = activemqFactory.CreateConnection("", "", false))
+			{
+			}
 		}
 	}
 }

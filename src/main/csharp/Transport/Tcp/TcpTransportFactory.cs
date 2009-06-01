@@ -200,7 +200,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			return null;
 		}
 
-		private static bool TryParseIPAddress(string host, out IPAddress ipaddress)
+		public static bool TryParseIPAddress(string host, out IPAddress ipaddress)
 		{
 #if !NETCF
 			return IPAddress.TryParse(host, out ipaddress);
@@ -218,7 +218,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 #endif
 		}
 
-		private static IPAddress GetIPAddress(IPHostEntry hostEntry, AddressFamily addressFamily)
+		public static IPAddress GetIPAddress(string hostname, AddressFamily addressFamily)
+		{
+			IPAddress ipaddress = null;
+			IPHostEntry hostEntry = GetIPHostEntry(hostname);
+
+			if(null != hostEntry)
+			{
+				ipaddress = GetIPAddress(hostEntry, addressFamily);
+			}
+
+			return ipaddress;
+		}
+
+		public static IPAddress GetIPAddress(IPHostEntry hostEntry, AddressFamily addressFamily)
 		{
 			if(null != hostEntry)
 			{

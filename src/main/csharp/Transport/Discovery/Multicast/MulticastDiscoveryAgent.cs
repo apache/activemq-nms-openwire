@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Apache.NMS.ActiveMQ.Transport.Tcp;
 
 namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 {
@@ -69,46 +70,43 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		{
 			lock(stopstartSemaphore)
 			{
-				if(!isStarted)
+				if(multicastSocket == null)
+				{
+					int numFailedAttempts = 0;
+					int backoffTime = DEFAULT_BACKOFF_MILLISECONDS;
+
+					Tracer.Info("Connecting to multicast discovery socket.");
+					while(!TryToConnectSocket())
+					{
+						numFailedAttempts++;
+						if(numFailedAttempts > MAX_SOCKET_CONNECTION_RETRY_ATTEMPS)
+						{
+							throw new ApplicationException(
+								"Could not open the socket in order to discover advertising brokers.");
+						}
+
+						Thread.Sleep(backoffTime);
+						backoffTime *= BACKOFF_MULTIPLIER;
+					}
+				}
+
+				if(worker == null)
 				{
 					Tracer.Info("Starting multicast discovery agent worker thread");
+					worker = new Thread(new ThreadStart(worker_DoWork));
+					worker.Start();
 					isStarted = true;
-
-					if(multicastSocket == null)
-					{
-						int numFailedAttempts = 0;
-						int backoffTime = DEFAULT_BACKOFF_MILLISECONDS;
-
-						while(!TryToConnectSocket())
-						{
-							numFailedAttempts++;
-							if(numFailedAttempts > MAX_SOCKET_CONNECTION_RETRY_ATTEMPS)
-							{
-								throw new ApplicationException(
-									"Could not open the socket in order to discover advertising brokers.");
-							}
-
-							Thread.Sleep(backoffTime);
-							backoffTime *= BACKOFF_MULTIPLIER;
-						}
-					}
-
-					if(worker == null)
-					{
-						worker = new Thread(new ThreadStart(worker_DoWork));
-						worker.Start();
-					}
 				}
 			}
 		}
 
 		public void Stop()
 		{
-			Tracer.Info("Stopping multicast discovery agent worker thread");
 			Thread localThread = null;
 
 			lock(stopstartSemaphore)
 			{
+				Tracer.Info("Stopping multicast discovery agent worker thread");
 				localThread = worker;
 				worker = null;
 				// Changing the isStarted flag will signal the thread that it needs to shut down.
@@ -141,10 +139,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 				multicastSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
 				multicastSocket.Bind(endPoint);
 
-				IPAddress ip = IPAddress.Parse(discoveryUri.Host);
+				IPAddress ipaddress;
+
+				if(!TcpTransportFactory.TryParseIPAddress(discoveryUri.Host, out ipaddress))
+				{
+					ipaddress = TcpTransportFactory.GetIPAddress(discoveryUri.Host, AddressFamily.InterNetwork);
+					if(null == ipaddress)
+					{
+						throw new NMSConnectionException("Invalid host address.");
+					}
+				}
 
 				multicastSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership,
-												 new MulticastOption(ip, IPAddress.Any));
+												 new MulticastOption(ipaddress, IPAddress.Any));
 #if !NETCF
 				multicastSocket.ReceiveTimeout = SOCKET_TIMEOUT_MILLISECONDS;
 #endif
@@ -173,7 +180,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 					// We have to remove all of the null bytes.
 					receivedInfo = receivedInfoRaw.Substring(0, receivedInfoRaw.IndexOf("\0"));
 					ProcessBrokerMessage(receivedInfo);
-
 				}
 				catch(SocketException)
 				{
@@ -331,7 +337,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 			{
 				this.lastHeartBeat = DateTime.Now;
 			}
-
 		}
 	}
 }
