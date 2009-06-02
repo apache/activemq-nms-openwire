@@ -153,10 +153,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		#endregion
 
+		// DISCUSSION: Caching host entries may not be the best strategy when using the
+		// failover protocol.  The failover protocol needs to be very dynamic when looking
+		// up hostnames at runtime.  If old hostname->IP mappings are kept around, this may
+		// lead to runtime failures that could have been avoided by dynamically looking up
+		// the new hostname IP.
+#if CACHE_HOSTENTRIES
 		private static IDictionary<string, IPHostEntry> CachedIPHostEntries = new Dictionary<string, IPHostEntry>();
+#endif
 		public static IPHostEntry GetIPHostEntry(string host)
 		{
 			IPHostEntry ipEntry;
+
+#if CACHE_HOSTENTRIES
 			string hostUpperName = host.ToUpper();
 
 			if(!CachedIPHostEntries.TryGetValue(hostUpperName, out ipEntry))
@@ -171,6 +180,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					ipEntry = null;
 				}
 			}
+#else
+			try
+			{
+				ipEntry = Dns.GetHostEntry(host);
+			}
+			catch
+			{
+				ipEntry = null;
+			}
+#endif
 
 			return ipEntry;
 		}
@@ -262,31 +281,34 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				// (IPv6, IPv4 and whatever else may be available).
 				IPHostEntry hostEntry = GetIPHostEntry(host);
 
-				// Prefer IPv6 first.
-				ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetworkV6);
-				socket = ConnectSocket(ipaddress, port);
-				if(null == socket)
+				if(null != hostEntry)
 				{
-					// Try IPv4 next.
-					ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetwork);
+					// Prefer IPv6 first.
+					ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetworkV6);
 					socket = ConnectSocket(ipaddress, port);
 					if(null == socket)
 					{
-						// Try whatever else there is.
-						foreach(IPAddress address in hostEntry.AddressList)
+						// Try IPv4 next.
+						ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetwork);
+						socket = ConnectSocket(ipaddress, port);
+						if(null == socket)
 						{
-							if(AddressFamily.InterNetworkV6 == address.AddressFamily
-								|| AddressFamily.InterNetwork == address.AddressFamily)
+							// Try whatever else there is.
+							foreach(IPAddress address in hostEntry.AddressList)
 							{
-								// Already tried these protocols.
-								continue;
-							}
+								if(AddressFamily.InterNetworkV6 == address.AddressFamily
+									|| AddressFamily.InterNetwork == address.AddressFamily)
+								{
+									// Already tried these protocols.
+									continue;
+								}
 
-							socket = ConnectSocket(address, port);
-							if(null != socket)
-							{
-								ipaddress = address;
-								break;
+								socket = ConnectSocket(address, port);
+								if(null != socket)
+								{
+									ipaddress = address;
+									break;
+								}
 							}
 						}
 					}

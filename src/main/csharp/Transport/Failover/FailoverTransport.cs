@@ -102,7 +102,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					parent.backupMutex.WaitOne();
 					if(parent.ConnectedTransport == null && doReconnect)
 					{
-						result = parent.doReconnect();
+						result = parent.doConnect(true);
 						buildBackup = false;
 					}
 				}
@@ -262,11 +262,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			try
 			{
 				reconnectMutex.WaitOne();
-				Tracer.Debug("Started.");
 				if(started)
 				{
+					Tracer.Debug("FailoverTransport Already Started.");
 					return;
 				}
+
+				Tracer.Debug("FailoverTransport Started.");
 				started = true;
 				stateTracker.MaxCacheSize = MaxCacheSize;
 				stateTracker.TrackMessages = TrackMessages;
@@ -276,7 +278,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				}
 				else
 				{
-					Reconnect();
+					doConnect(false);
+					if(ConnectedTransport == null)
+					{
+						throw new NMSConnectionException("Error creating initial connection.");
+					}
 				}
 			}
 			finally
@@ -291,12 +297,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			try
 			{
 				reconnectMutex.WaitOne();
-				Tracer.Debug("Stopped.");
 				if(!started)
 				{
+					Tracer.Debug("FailoverTransport Already Stopped.");
 					return;
 				}
 
+				Tracer.Debug("FailoverTransport Stopped.");
 				started = false;
 				disposed = true;
 				connected = false;
@@ -325,7 +332,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				sleepMutex.ReleaseMutex();
 			}
 
-			reconnectTask.shutdown();
+			if(reconnectTask != null)
+			{
+				reconnectTask.shutdown();
+			}
+
 			if(transportToStop != null)
 			{
 				transportToStop.Stop();
@@ -461,7 +472,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								}
 								catch(ThreadInterruptedException e)
 								{
-									Tracer.DebugFormat("Interupted: {0}", e.Message);
+									Tracer.DebugFormat("Interrupted: {0}", e.Message);
 								}
 							}
 							finally
@@ -561,12 +572,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				}
 			}
 		}
-
-		/*
-		public FutureResponse asyncRequest(Object command, ResponseCallback responseCallback) {
-		throw new AssertionError("Unsupported Method");
-		}
-		*/
 
 		public Object Request(Object command)
 		{
@@ -745,16 +750,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			get { return true; }
 		}
 
-		bool doReconnect()
+		private bool doConnect(bool reconnecting)
 		{
 			Exception failure = null;
 			try
 			{
 				reconnectMutex.WaitOne();
-
-				if(disposed || connectionFailure != null)
-				{
-				}
 
 				if(ConnectedTransport != null || disposed || connectionFailure != null)
 				{
@@ -765,7 +766,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					List<Uri> connectList = ConnectList;
 					if(connectList.Count == 0)
 					{
-						failure = new IOException("No URIs available for connection.");
+						failure = new NMSConnectionException("No URIs available for connection.");
 					}
 					else
 					{
@@ -852,7 +853,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							catch(Exception e)
 							{
 								failure = e;
-								Tracer.DebugFormat("Connect fail to '{0}': {1}", uri.ToString(), e.Message);
+								Tracer.ErrorFormat("Connect fail to '{0}': {1}", uri.ToString(), e.Message);
 							}
 						}
 					}
@@ -871,7 +872,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				reconnectMutex.ReleaseMutex();
 			}
 
-			if(!disposed)
+			if(!disposed && reconnecting)
 			{
 
 				Tracer.DebugFormat("Waiting {0}ms before attempting connection.", ReconnectDelay);
@@ -905,7 +906,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		}
 
 
-		bool buildBackups()
+		private bool buildBackups()
 		{
 			try
 			{

@@ -31,16 +31,15 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("activemq:tcp://${activemqhost}:61616?connection.asyncclose=false")]
 		[Row("activemq:failover:tcp://${activemqhost}:61616")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
-		[Row("activemq:discovery://${activemqhost}:6155")]
+		// ?? [Row("activemq:discovery://${activemqhost}:6155")]
 
 		[Row("tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:failover:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:failover:(tcp://${activemqhost}:61616?connection.InvalidParameter=true)", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616?transport.InvalidParameter=true)", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqbackuphost}:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:failover:(tcp://${activemqhost}:61616?connection.InvalidParameter=true,tcp://${activemqbackuphost}:61616)", ExpectedException = typeof(NMSException))]
-		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqbackuphost}:61616?connection.InvalidParameter=true)", ExpectedException = typeof(NMSException))]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616?transport.InvalidParameter=true,tcp://${activemqbackuphost}:61616)", ExpectedException = typeof(NMSConnectionException))]
 
 		[Row("ftp://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("http://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
@@ -55,9 +54,8 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 			Assert.IsNotNull(factory);
-			Apache.NMS.ActiveMQ.ConnectionFactory activemqFactory = factory.ConnectionFactory as Apache.NMS.ActiveMQ.ConnectionFactory;
-			Assert.IsNotNull(activemqFactory);
-			using(IConnection connection = activemqFactory.CreateConnection("", "", false))
+			Assert.IsNotNull(factory.ConnectionFactory);
+			using(IConnection connection = factory.CreateConnection("", ""))
 			{
 			}
 		}

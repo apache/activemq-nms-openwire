@@ -83,11 +83,6 @@ namespace Apache.NMS.ActiveMQ
 
 		public IConnection CreateConnection(string userName, string password)
 		{
-			return CreateConnection(userName, password, true);
-		}
-
-		public IConnection CreateConnection(string userName, string password, bool startTransport)
-		{
 			// Strip off the activemq prefix, if it exists.
 			Uri uri = new Uri(URISupport.stripPrefix(brokerUri.OriginalString, "activemq:"));
 
@@ -104,11 +99,7 @@ namespace Apache.NMS.ActiveMQ
 			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
-			if(startTransport)
-			{
-				connection.ITransport.Start();
-			}
-
+			connection.ITransport.Start();
 			return connection;
 		}
 

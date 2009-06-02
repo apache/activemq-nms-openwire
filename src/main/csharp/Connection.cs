@@ -513,14 +513,16 @@ namespace Apache.NMS.ActiveMQ
 				}
 				catch(Exception ex)
 				{
-					OnException(commandTransport, ex);
+					if(!closing && !closed)
+					{
+						OnException(commandTransport, ex);
+					}
 				}
 			}
 		}
 
 		protected void OnException(ITransport sender, Exception exception)
 		{
-			Tracer.ErrorFormat("Transport Exception: {0}", exception.ToString());
 			if(ExceptionListener != null)
 			{
 				try
@@ -536,7 +538,6 @@ namespace Apache.NMS.ActiveMQ
 
 		internal void OnSessionException(Session sender, Exception exception)
 		{
-			Tracer.ErrorFormat("Session Exception: {0}", exception.ToString());
 			if(ExceptionListener != null)
 			{
 				try
