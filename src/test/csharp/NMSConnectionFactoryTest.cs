@@ -16,9 +16,10 @@
  */
 
 using System;
+using System.Net.Sockets;
+using Apache.NMS.Test;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
-using Apache.NMS.Test;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
@@ -30,8 +31,16 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("activemq:tcp://${activemqhost}:61616")]
 		[Row("activemq:tcp://${activemqhost}:61616?connection.asyncclose=false")]
 		[Row("activemq:failover:tcp://${activemqhost}:61616")]
+		[Row("activemq:failover:(tcp://${activemqhost}:61616)")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
 		// ?? [Row("activemq:discovery://${activemqhost}:6155")]
+
+		[Row("tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:tcp://InvalidHost:61616?connection.asyncclose=false", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:failover:tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:failover:(tcp://InvalidHost:61616)", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:failover:(tcp://InvalidHost:61616,tcp://InvalidHost:61616)", ExpectedException = typeof(NMSConnectionException))]
 
 		[Row("tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
