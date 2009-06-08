@@ -136,7 +136,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		private void DoRestoreTransactions(ITransport transport, ConnectionState connectionState)
 		{
-			SynchronizedCollection<TransactionState> transactionStates = connectionState.TransactionStates;
+			AtomicCollection<TransactionState> transactionStates = connectionState.TransactionStates;
 			foreach(TransactionState transactionState in transactionStates)
 			{
 				foreach(Command command in transactionState.Commands)

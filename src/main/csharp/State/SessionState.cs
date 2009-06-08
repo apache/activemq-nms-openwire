@@ -25,8 +25,8 @@ namespace Apache.NMS.ActiveMQ.State
 	{
 		SessionInfo info;
 
-		private SynchronizedDictionary<ProducerId, ProducerState> producers = new SynchronizedDictionary<ProducerId, ProducerState>();
-		private SynchronizedDictionary<ConsumerId, ConsumerState> consumers = new SynchronizedDictionary<ConsumerId, ConsumerState>();
+		private AtomicDictionary<ProducerId, ProducerState> producers = new AtomicDictionary<ProducerId, ProducerState>();
+		private AtomicDictionary<ConsumerId, ConsumerState> consumers = new AtomicDictionary<ConsumerId, ConsumerState>();
 		private AtomicBoolean _shutdown = new AtomicBoolean(false);
 
 		public SessionState(SessionInfo info)
@@ -73,7 +73,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<ConsumerId> ConsumerIds
+		public AtomicCollection<ConsumerId> ConsumerIds
 		{
 			get
 			{
@@ -81,7 +81,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<ProducerId> ProducerIds
+		public AtomicCollection<ProducerId> ProducerIds
 		{
 			get
 			{
@@ -89,7 +89,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<ProducerState> ProducerStates
+		public AtomicCollection<ProducerState> ProducerStates
 		{
 			get
 			{
@@ -110,7 +110,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<ConsumerState> ConsumerStates
+		public AtomicCollection<ConsumerState> ConsumerStates
 		{
 			get
 			{

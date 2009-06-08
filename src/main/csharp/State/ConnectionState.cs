@@ -25,9 +25,9 @@ namespace Apache.NMS.ActiveMQ.State
 	{
 
 		ConnectionInfo info;
-		private SynchronizedDictionary<TransactionId, TransactionState> transactions = new SynchronizedDictionary<TransactionId, TransactionState>();
-		private SynchronizedDictionary<SessionId, SessionState> sessions = new SynchronizedDictionary<SessionId, SessionState>();
-		private SynchronizedCollection<DestinationInfo> tempDestinations = new SynchronizedCollection<DestinationInfo>();
+		private AtomicDictionary<TransactionId, TransactionState> transactions = new AtomicDictionary<TransactionId, TransactionState>();
+		private AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
+		private AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
 		private AtomicBoolean _shutdown = new AtomicBoolean(false);
 
 		public ConnectionState(ConnectionInfo info)
@@ -98,7 +98,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<TransactionState> TransactionStates
+		public AtomicCollection<TransactionState> TransactionStates
 		{
 			get
 			{
@@ -161,7 +161,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<SessionId> SessionIds
+		public AtomicCollection<SessionId> SessionIds
 		{
 			get
 			{
@@ -169,7 +169,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<DestinationInfo> TempDestinations
+		public AtomicCollection<DestinationInfo> TempDestinations
 		{
 			get
 			{
@@ -177,7 +177,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<SessionState> SessionStates
+		public AtomicCollection<SessionState> SessionStates
 		{
 			get
 			{

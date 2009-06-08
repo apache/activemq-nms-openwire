@@ -21,18 +21,18 @@ using System.Collections.Generic;
 
 namespace Apache.NMS.ActiveMQ.State
 {
-	public class SynchronizedCollection<TValue>
+	public class AtomicCollection<TValue>
 		where TValue : class
 	{
 		private Object myLock = new Object();
 		private ArrayList _collection;
 
-		public SynchronizedCollection()
+		public AtomicCollection()
 		{
 			_collection = new ArrayList();
 		}
 
-		public SynchronizedCollection(ICollection c)
+		public AtomicCollection(ICollection c)
 		{
 			_collection = new ArrayList(c);
 		}
@@ -143,7 +143,7 @@ namespace Apache.NMS.ActiveMQ.State
 #endif
 	}
 
-	public class SynchronizedDictionary<TKey, TValue>
+	public class AtomicDictionary<TKey, TValue>
 		where TKey : class
 		where TValue : class
 	{
@@ -175,24 +175,24 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SynchronizedCollection<TKey> Keys
+		public AtomicCollection<TKey> Keys
 		{
 			get
 			{
 				lock(myLock)
 				{
-					return new SynchronizedCollection<TKey>(_dictionary.Keys);
+					return new AtomicCollection<TKey>(_dictionary.Keys);
 				}
 			}
 		}
 
-		public SynchronizedCollection<TValue> Values
+		public AtomicCollection<TValue> Values
 		{
 			get
 			{
 				lock(myLock)
 				{
-					return new SynchronizedCollection<TValue>(_dictionary.Values);
+					return new AtomicCollection<TValue>(_dictionary.Values);
 				}
 			}
 		}
