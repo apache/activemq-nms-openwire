@@ -24,24 +24,28 @@ namespace Apache.NMS.ActiveMQ.State
 	public class AtomicCollection<TValue>
 		where TValue : class
 	{
-		private Object myLock = new Object();
-		private ArrayList _collection;
+		private ArrayList _collection = new ArrayList();
 
 		public AtomicCollection()
 		{
-			_collection = new ArrayList();
 		}
 
 		public AtomicCollection(ICollection c)
 		{
-			_collection = new ArrayList(c);
+			lock(c.SyncRoot)
+			{
+				foreach(object obj in c)
+				{
+					_collection.Add(obj);
+				}
+			}
 		}
 
 		public int Count
 		{
 			get
 			{
-				lock(myLock)
+				lock(_collection.SyncRoot)
 				{
 					return _collection.Count;
 				}
@@ -58,7 +62,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public int Add(TValue v)
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				return _collection.Add(v);
 			}
@@ -66,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void Clear()
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				_collection.Clear();
 			}
@@ -74,7 +78,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public bool Contains(TValue v)
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				return _collection.Contains(v);
 			}
@@ -82,7 +86,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void CopyTo(TValue[] a, int index)
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				_collection.CopyTo(a, index);
 			}
@@ -90,7 +94,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void Remove(TValue v)
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				_collection.Remove(v);
 			}
@@ -98,7 +102,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void RemoveAt(int index)
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				_collection.RemoveAt(index);
 			}
@@ -109,7 +113,7 @@ namespace Apache.NMS.ActiveMQ.State
 			get
 			{
 				TValue ret;
-				lock(myLock)
+				lock(_collection.SyncRoot)
 				{
 					ret = (TValue) _collection[index];
 				}
@@ -117,7 +121,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 			set
 			{
-				lock(myLock)
+				lock(_collection.SyncRoot)
 				{
 					_collection[index] = value;
 				}
@@ -126,7 +130,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public IEnumerator GetEnumerator()
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				return _collection.GetEnumerator();
 			}
@@ -135,7 +139,7 @@ namespace Apache.NMS.ActiveMQ.State
 #if !NETCF
 		public IEnumerator GetEnumerator(int index, int count)
 		{
-			lock(myLock)
+			lock(_collection.SyncRoot)
 			{
 				return _collection.GetEnumerator(index, count);
 			}
@@ -147,7 +151,6 @@ namespace Apache.NMS.ActiveMQ.State
 		where TKey : class
 		where TValue : class
 	{
-		private Object myLock = new Object();
 		private Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
 
 		public void Clear()
@@ -160,7 +163,7 @@ namespace Apache.NMS.ActiveMQ.State
 			get
 			{
 				TValue ret;
-				lock(myLock)
+				lock(((ICollection) _dictionary).SyncRoot)
 				{
 					ret = _dictionary[key];
 				}
@@ -168,7 +171,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 			set
 			{
-				lock(myLock)
+				lock(((ICollection) _dictionary).SyncRoot)
 				{
 					_dictionary[key] = value;
 				}
@@ -179,7 +182,7 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			get
 			{
-				lock(myLock)
+				lock(((ICollection) _dictionary).SyncRoot)
 				{
 					return new AtomicCollection<TKey>(_dictionary.Keys);
 				}
@@ -190,7 +193,7 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			get
 			{
-				lock(myLock)
+				lock(((ICollection) _dictionary).SyncRoot)
 				{
 					return new AtomicCollection<TValue>(_dictionary.Values);
 				}
@@ -199,7 +202,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void Add(TKey k, TValue v)
 		{
-			lock(myLock)
+			lock(((ICollection) _dictionary).SyncRoot)
 			{
 				_dictionary.Add(k, v);
 			}
@@ -207,7 +210,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public bool Remove(TKey v)
 		{
-			lock(myLock)
+			lock(((ICollection) _dictionary).SyncRoot)
 			{
 				return _dictionary.Remove(v);
 			}

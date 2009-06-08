@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
@@ -151,7 +152,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				if(command.IsResponse)
 				{
 					Object oo = null;
-					lock(requestMap)
+					lock(((ICollection) requestMap).SyncRoot)
 					{
 						int v = ((Response) command).CorrelationId;
 						try
@@ -481,8 +482,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 						if(transport == null)
 						{
-							// Previous loop may have exited due to use being
-							// disposed.
+							// Previous loop may have exited due to use being disposed.
 							if(disposed)
 							{
 								error = new IOException("Transport disposed.");
@@ -499,11 +499,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						}
 
 						// If it was a request and it was not being tracked by
-						// the state tracker,
-						// then hold it in the requestMap so that we can replay
-						// it later.
+						// the state tracker, then hold it in the requestMap so
+						// that we can replay it later.
 						Tracked tracked = stateTracker.track(command);
-						lock(requestMap)
+						lock(((ICollection) requestMap).SyncRoot)
 						{
 							if(tracked != null && tracked.WaitingForResponse)
 							{
@@ -530,12 +529,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							{
 
 								// since we will retry in this method.. take it
-								// out of the request
-								// map so that it is not sent 2 times on
-								// recovery
+								// out of the request map so that it is not
+								// sent 2 times on recovery
 								if(command.ResponseRequired)
 								{
-									requestMap.Remove(command.CommandId);
+									lock(((ICollection) requestMap).SyncRoot)
+									{
+										requestMap.Remove(command.CommandId);
+									}
 								}
 
 								// Rethrow the exception so it will handled by
@@ -699,14 +700,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		protected void restoreTransport(ITransport t)
 		{
+			Tracer.Info("Restoring previous transport connection.");
 			t.Start();
 			//send information to the broker - informing it we are an ft client
 			ConnectionControl cc = new ConnectionControl();
 			cc.FaultTolerant = true;
 			t.Oneway(cc);
 			stateTracker.DoRestore(t);
+			
+			Tracer.Info("Sending queued commands...");
 			Dictionary<int, Command> tmpMap = null;
-			lock(requestMap)
+			lock(((ICollection) requestMap).SyncRoot)
 			{
 				tmpMap = new Dictionary<int, Command>(requestMap);
 			}
@@ -792,7 +796,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransportURI = uri;
 									ConnectedTransport = t;
 									connectFailures = 0;
-                                    connected = true;
+									connected = true;
 									Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
 									return false;
 								}
@@ -833,6 +837,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								ConnectedTransportURI = uri;
 								ConnectedTransport = t;
 								connectFailures = 0;
+								connected = true;
 
 								if(firstConnection)
 								{
@@ -844,7 +849,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									Tracer.InfoFormat("Successfully reconnected to: {0}", uri.ToString());
 								}
 
-								connected = true;
 								return false;
 							}
 							catch(Exception e)
