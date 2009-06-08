@@ -278,7 +278,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				}
 				else
 				{
-					doConnect();
+					Reconnect();
 				}
 			}
 			finally
