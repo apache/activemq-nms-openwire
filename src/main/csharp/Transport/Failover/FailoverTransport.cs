@@ -102,7 +102,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					parent.backupMutex.WaitOne();
 					if(parent.ConnectedTransport == null && doReconnect)
 					{
-						result = parent.doConnect(true);
+						result = parent.doConnect();
 						buildBackup = false;
 					}
 				}
@@ -278,11 +278,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				}
 				else
 				{
-					doConnect(false);
-					if(ConnectedTransport == null)
-					{
-						throw new NMSConnectionException("Error creating initial connection.");
-					}
+					doConnect();
 				}
 			}
 			finally
@@ -750,7 +746,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			get { return true; }
 		}
 
-		private bool doConnect(bool reconnecting)
+		private bool doConnect()
 		{
 			Exception failure = null;
 			try
@@ -796,6 +792,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransportURI = uri;
 									ConnectedTransport = t;
 									connectFailures = 0;
+                                    connected = true;
 									Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
 									return false;
 								}
@@ -872,7 +869,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				reconnectMutex.ReleaseMutex();
 			}
 
-			if(!disposed && reconnecting)
+			if(!disposed)
 			{
 
 				Tracer.DebugFormat("Waiting {0}ms before attempting connection.", ReconnectDelay);

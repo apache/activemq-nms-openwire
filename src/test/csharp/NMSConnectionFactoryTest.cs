@@ -38,17 +38,12 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:tcp://InvalidHost:61616?connection.asyncclose=false", ExpectedException = typeof(NMSConnectionException))]
-		[Row("activemq:failover:tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
-		[Row("activemq:failover:(tcp://InvalidHost:61616)", ExpectedException = typeof(NMSConnectionException))]
-		[Row("activemq:failover:(tcp://InvalidHost:61616,tcp://InvalidHost:61616)", ExpectedException = typeof(NMSConnectionException))]
 
 		[Row("tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:failover:tcp://${activemqhost}:61616?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:failover:(tcp://${activemqhost}:61616?transport.InvalidParameter=true)", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqbackuphost}:61616)?connection.InvalidParameter=true", ExpectedException = typeof(NMSException))]
-		[Row("activemq:failover:(tcp://${activemqhost}:61616?transport.InvalidParameter=true,tcp://${activemqbackuphost}:61616)", ExpectedException = typeof(NMSConnectionException))]
 
 		[Row("ftp://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("http://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
