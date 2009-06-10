@@ -49,7 +49,7 @@
             The message ID which is set by the provider
             </summary>
         </member>
-        <member name="P:Apache.NMS.ActiveMQ.Commands.ActiveMQMessage.NMSPersistent">
+        <member name="P:Apache.NMS.ActiveMQ.Commands.ActiveMQMessage.NMSDeliveryMode">
             <summary>
             Whether or not this message is persistent
             </summary>
@@ -1296,6 +1296,20 @@
             </summary>
             <returns>A string</returns>
         </member>
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryReader.ReadString16">
+            <summary>
+            Method ReadString16, reads a String value encoded in the Java modified
+            UTF-8 format with a length index encoded as a 16bit unsigned short.
+            </summary>
+            <returns>A string</returns>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryReader.ReadString32">
+            <summary>
+            Method ReadString32, reads a String value encoded in the Java modified 
+            UTF-8 format with a length index encoded as a singed integer value.
+            </summary>
+            <returns>A string</returns>
+        </member>
         <member name="T:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter">
             <summary>
             A BinaryWriter that switches the endian orientation of the write opperations so that they
@@ -1358,9 +1372,45 @@
             </summary>
             <param name="value">A  short</param>
         </member>
-        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter.WriteString(System.String)">
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter.Write(System.String)">
             <summary>
-            Method Write
+            Method Write, writes a string to the output using the WriteString16
+            method.
+            </summary>
+            <param name="text">A  string</param>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter.WriteString16(System.String)">
+            <summary>
+            Method WriteString16, writes a string to the output using the Java 
+            standard modified UTF-8 encoding with an unsigned short value written first to 
+            indicate the length of the encoded data, the short is read as an unsigned 
+            value so the max amount of data this method can write is 65535 encoded bytes.
+            
+            Unlike the WriteString32 method this method does not encode the length
+            value to -1 if the string is null, this is to match the behaviour of 
+            the Java DataOuputStream class's writeUTF method.	
+            
+            Because modified UTF-8 encding can result in a number of bytes greater that 
+            the size of the String this method must first check that the encoding proces 
+            will not result in a value that cannot be written becuase it is greater than
+            the max value of an unsigned short.
+            </summary>
+            <param name="text">A  string</param>
+        </member>
+        <member name="M:Apache.NMS.ActiveMQ.OpenWire.OpenWireBinaryWriter.WriteString32(System.String)">
+            <summary>
+            Method WriteString32, writes a string to the output using the Openwire 
+            standard modified UTF-8 encoding which an int value written first to 
+            indicate the length of the encoded data, the int is read as an signed 
+            value so the max amount of data this method can write is 2^31 encoded bytes.
+            
+            In the case of a null value being passed this method writes a -1 to the 
+            stream to indicate that the string is null.
+            
+            Because modified UTF-8 encding can result in a number of bytes greater that 
+            the size of the String this method must first check that the encoding proces 
+            will not result in a value that cannot be written becuase it is greater than
+            the max value of an int.
             </summary>
             <param name="text">A  string</param>
         </member>
@@ -1375,21 +1425,6 @@
             Method Write
             </summary>
             <param name="value">A  double</param>
-        </member>
-        <member name="T:Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter">
-            <summary>
-            StringPackageSplitter
-            </summary>
-        </member>
-        <member name="T:Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter.StringPackageSplitterEnumerator">
-            <summary>
-            Emumerator class for StringPackageSplitter
-            </summary>
-        </member>
-        <member name="M:Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter.StringPackageSplitterEnumerator.#ctor(Apache.NMS.ActiveMQ.OpenWire.StringPackageSplitter)">
-            <summary>
-            </summary>
-            <param name="parent"></param>
         </member>
         <member name="T:Apache.NMS.ActiveMQ.OpenWire.OpenWireFormat">
             <summary>
@@ -1670,11 +1705,10 @@
             <param name="location"></param>
             <returns>the transport</returns>
         </member>
-        <member name="M:Apache.NMS.ActiveMQ.Transport.TransportFactory.findTransportFactory(System.Uri)">
+        <member name="M:Apache.NMS.ActiveMQ.Transport.TransportFactory.CreateTransportFactory(System.Uri)">
             <summary>
-            Find the transport factory for the scheme.  We will cache the transport
-            factory in a lookup table.  If we do not support the transport protocol,
-            an ApplicationException will be thrown.
+            Create a transport factory for the scheme.  If we do not support the transport protocol,
+            an NMSConnectionException will be thrown.
             </summary>
             <param name="location"></param>
             <returns></returns>
