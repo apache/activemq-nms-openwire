@@ -1544,6 +1544,11 @@
             Indexed by service name
             </summary>
         </member>
+        <member name="P:Apache.NMS.ActiveMQ.Transport.Discovery.Multicast.MulticastDiscoveryAgent.DiscoveryURI">
+            <summary>
+            This property indicates whether or not async send is enabled.
+            </summary>
+        </member>
         <member name="T:Apache.NMS.ActiveMQ.Transport.Failover.FailoverTransport">
             <summary>
             A Transport that is made reliable by being able to fail over to another
