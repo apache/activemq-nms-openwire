@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		public const int MAX_SOCKET_CONNECTION_RETRY_ATTEMPS = 3;
 		public const int DEFAULT_BACKOFF_MILLISECONDS = 100;
 		public const int BACKOFF_MULTIPLIER = 2;
-		public const string DEFAULT_DISCOVERY_URI_STRING = "multicast://localhost:6155";
+        public const string DEFAULT_DISCOVERY_URI_STRING = "multicast://239.255.2.3:6155";
 		private const string TYPE_SUFFIX = "ActiveMQ-4.";
 		private const string ALIVE = "alive";
 		private const string DEAD = "dead";
@@ -46,7 +46,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		private string group;
 		private object stopstartSemaphore = new object();
 		private bool isStarted = false;
-		private readonly Uri discoveryUri;
+		private Uri discoveryUri;
 		private Socket multicastSocket;
 		private IPEndPoint endPoint;
 		private Thread worker;
@@ -61,7 +61,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 
 		public MulticastDiscoveryAgent()
 		{
-			discoveryUri = new Uri(DEFAULT_DISCOVERY_URI_STRING);
 			group = DEFAULT_GROUP;
 			remoteBrokers = new Dictionary<string, RemoteBrokerData>();
 		}
@@ -70,6 +69,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		{
 			lock(stopstartSemaphore)
 			{
+                if (discoveryUri == null)
+                {
+                    discoveryUri = new Uri(DEFAULT_DISCOVERY_URI_STRING);
+                }
+
 				if(multicastSocket == null)
 				{
 					int numFailedAttempts = 0;
@@ -177,8 +181,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 				{
 					int numBytes = multicastSocket.Receive(buffer);
 					receivedInfoRaw = System.Text.Encoding.UTF8.GetString(buffer, 0, numBytes);
-					// We have to remove all of the null bytes.
-					receivedInfo = receivedInfoRaw.Substring(0, receivedInfoRaw.IndexOf("\0"));
+					// We have to remove all of the null bytes if there are any otherwise we just
+                    // take the whole string as is.
+                    if (receivedInfoRaw.IndexOf("\0") != -1)
+                    {
+                        receivedInfo = receivedInfoRaw.Substring(0, receivedInfoRaw.IndexOf("\0"));
+                    }
+                    else
+                    {
+                        receivedInfo = receivedInfoRaw;
+                    }
+
 					ProcessBrokerMessage(receivedInfo);
 				}
 				catch(SocketException)
@@ -281,6 +294,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 			}
 		}
 
+        #region Properties
+
+        /// <summary>
+        /// This property indicates whether or not async send is enabled.
+        /// </summary>
+        public Uri DiscoveryURI
+        {
+            get { return discoveryUri; }
+            set { discoveryUri = value; }
+        }
+
 		public bool IsStarted
 		{
 			get { return isStarted; }
@@ -290,9 +314,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		{
 			get { return group; }
 			set { group = value; }
-		}
+        }
 
-		internal string MulticastType
+        #endregion
+
+        internal string MulticastType
 		{
 			get { return group + "." + TYPE_SUFFIX; }
 		}
