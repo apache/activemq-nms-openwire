@@ -43,7 +43,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 		
 		public DiscoveryTransportFactory()
 		{
-			currentServiceName = String.Empty;
+			lock(uriLock)
+			{
+				currentServiceName = String.Empty;
+			}
 		}
 		
 		public static Uri DiscoveredUri
