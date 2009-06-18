@@ -105,6 +105,9 @@ namespace Apache.NMS.ActiveMQ
 
 		// Properties
 
+		/// <summary>
+		/// Get/or set the broker Uri.
+		/// </summary>
 		public Uri BrokerUri
 		{
 			get { return brokerUri; }
