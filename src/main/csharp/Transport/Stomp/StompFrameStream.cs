@@ -31,95 +31,95 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
     /// </summary>
     public class StompFrameStream
     {
-		public const String NEWLINE = "\n";
-		public const String SEPARATOR = ":";
-		public const char NULL = (char) 0;
-		
-		private StringBuilder builder = new StringBuilder();
-		private BinaryWriter ds;
-		private byte[] content;
-		private int contentLength = -1;
-		private Encoding encoding;
-		
-		public StompFrameStream(BinaryWriter ds, Encoding encoding)
-		{
-			this.ds = ds;
-			this.encoding = encoding;
-		}
+        public const String NEWLINE = "\n";
+        public const String SEPARATOR = ":";
+        public const byte NULL = (byte) 0;
 
-		
-		public byte[] Content
-		{
-			get { return content; }
-			set { content = value; }
-		}
-		
-		public int ContentLength
-		{
-			get { return contentLength; }
-			set
-			{
-				contentLength = value;
-				WriteHeader("content-length", contentLength);
-			}
-		}
+        private StringBuilder builder = new StringBuilder();
+        private BinaryWriter ds;
+        private byte[] content;
+        private int contentLength = -1;
+        private Encoding encoding;
 
-		public void WriteCommand(Command command, String name)
-		{
-			WriteCommand(command, name, false);
-		}
+        public StompFrameStream(BinaryWriter ds, Encoding encoding)
+        {
+            this.ds = ds;
+            this.encoding = encoding;
+        }
 
-		public void WriteCommand(Command command, String name, bool ignoreErrors)
-		{
-			builder.Append(name);
-			builder.Append(NEWLINE);
-			if(command.ResponseRequired)
-			{
-				if(ignoreErrors)
-				{
-					WriteHeader("receipt", "ignore:" + command.CommandId);
-				}
-				else
-				{
-					WriteHeader("receipt", command.CommandId);
-				}
-			}
-		}
-		
-		public void WriteHeader(String name, Object value)
-		{
-			if (value != null)
-			{
-				builder.Append(name);
-				builder.Append(SEPARATOR);
-				builder.Append(value);
-				builder.Append(NEWLINE);
-			}
-		}
-		
-		public void WriteHeader(String name, bool value)
-		{
-			if (value)
-			{
-				builder.Append(name);
-				builder.Append(SEPARATOR);
-				builder.Append("true");
-				builder.Append(NEWLINE);
-			}
-		}
-		
-		public void Flush()
-		{
-			builder.Append(NEWLINE);
-			ds.Write(encoding.GetBytes(builder.ToString()));
-			
-			if (content != null)
-			{
-				ds.Write(content);
-			}
 
-			// Always write a terminating NULL byte to end the content frame.
-			ds.Write(NULL);
-		}
+        public byte[] Content
+        {
+            get { return content; }
+            set { content = value; }
+        }
+
+        public int ContentLength
+        {
+            get { return contentLength; }
+            set
+            {
+                contentLength = value;
+                WriteHeader("content-length", contentLength);
+            }
+        }
+
+        public void WriteCommand(Command command, String name)
+        {
+            WriteCommand(command, name, false);
+        }
+
+        public void WriteCommand(Command command, String name, bool ignoreErrors)
+        {
+            builder.Append(name);
+            builder.Append(NEWLINE);
+            if(command.ResponseRequired)
+            {
+                if(ignoreErrors)
+                {
+                    WriteHeader("receipt", "ignore:" + command.CommandId);
+                }
+                else
+                {
+                    WriteHeader("receipt", command.CommandId);
+                }
+            }
+        }
+
+        public void WriteHeader(String name, Object value)
+        {
+            if (value != null)
+            {
+                builder.Append(name);
+                builder.Append(SEPARATOR);
+                builder.Append(value);
+                builder.Append(NEWLINE);
+            }
+        }
+
+        public void WriteHeader(String name, bool value)
+        {
+            if (value)
+            {
+                builder.Append(name);
+                builder.Append(SEPARATOR);
+                builder.Append("true");
+                builder.Append(NEWLINE);
+            }
+        }
+
+        public void Flush()
+        {
+            builder.Append(NEWLINE);
+            ds.Write(encoding.GetBytes(builder.ToString()));
+
+            if (content != null)
+            {
+                ds.Write(content);
+            }
+
+            // Always write a terminating NULL byte to end the content frame.
+            ds.Write(NULL);
+        }
     }
 }
