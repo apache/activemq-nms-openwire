@@ -31,9 +31,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
     /// </summary>
     public class StompFrameStream
     {
+        /// Used to terminate a header line or end of a headers section of the Frame.
         public const String NEWLINE = "\n";
+        /// Used to seperate the Key / Value pairing in Frame Headers
         public const String SEPARATOR = ":";
-        public const byte NULL = (byte) 0;
+        /// Used to mark the End of the Frame.
+        public const byte FRAME_TERMINUS = (byte) 0;
 
         private StringBuilder builder = new StringBuilder();
         private BinaryWriter ds;
@@ -46,7 +49,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
             this.ds = ds;
             this.encoding = encoding;
         }
-
 
         public byte[] Content
         {
@@ -119,7 +121,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
             }
 
             // Always write a terminating NULL byte to end the content frame.
-            ds.Write(NULL);
+            ds.Write(FRAME_TERMINUS);
         }
     }
 }
