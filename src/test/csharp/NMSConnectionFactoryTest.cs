@@ -33,8 +33,14 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("activemq:failover:tcp://${activemqhost}:61616")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616)")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
-		// ?? [Row("activemq:discovery://${activemqhost}:6155")]
-
+#if false
+		[Row("activemq:discovery:multicast://default")]
+		[Row("activemq:discovery:(multicast://default)")]
+		[Row("activemq:failover:discovery:multicast://default")]
+		[Row("activemq:failover:discovery:(multicast://default)")]
+		[Row("activemq:failover:(discovery:(multicast://default))")]
+#endif
+	
 		[Row("tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:tcp://InvalidHost:61616?connection.asyncclose=false", ExpectedException = typeof(NMSConnectionException))]
@@ -61,6 +67,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			Assert.IsNotNull(factory.ConnectionFactory);
 			using(IConnection connection = factory.CreateConnection("", ""))
 			{
+				Assert.IsNotNull(connection);
 			}
 		}
 	}
