@@ -57,7 +57,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 		public override int GetDestinationType()
 		{
-			return ACTIVEMQ_TOPIC;
+            return ACTIVEMQ_TEMPORARY_TOPIC;
 		}
 
 		public override ActiveMQDestination CreateDestination(String name)
