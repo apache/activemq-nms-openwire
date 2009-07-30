@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,64 +16,90 @@
  */
 
 using System;
+using System.Collections;
+
 using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	/// <summary>
-	/// A ProducerAck command is sent by a broker to a producer to let it know it has
-	/// received and processed messages that it has produced. The producer will be
-	/// flow controlled if it does not receive ProducerAck commands back from the
-	/// broker.
-	/// </summary>
-	public class ProducerAck : BaseCommand
-	{
-		protected ProducerId myProducerId;
-		protected int mySize;
+    /*
+     *
+     *  Command code for OpenWire format for ProducerAck
+     *
+     *  NOTE!: This file is auto generated - do not modify!
+     *         if you need to make a change, please see the Java Classes
+     *         in the nms-activemq-openwire-generator module
+     *
+     */
+    public class ProducerAck : BaseCommand
+    {
+        public const byte ID_PRODUCERACK = 19;
 
-		public ProducerAck()
-		{
-		}
+        ProducerId producerId;
+        int size;
 
-		public ProducerAck(ProducerId producerId, int size)
-		{
-			this.myProducerId = producerId;
-			this.mySize = size;
-		}
+        ///
+        /// <summery>
+        ///  Get the unique identifier that this object and its own
+        ///  Marshaler share.
+        /// </summery>
+        ///
+        public override byte GetDataStructureType()
+        {
+            return ID_PRODUCERACK;
+        }
 
-		public override Response visit(ICommandVisitor visitor)
-		{
-			return visitor.processProducerAck(this);
-		}
+        ///
+        /// <summery>
+        ///  Returns a string containing the information for this DataStructure
+        ///  such as its type and value of its elements.
+        /// </summery>
+        ///
+        public override string ToString()
+        {
+            return GetType().Name + "[" + 
+                "ProducerId=" + ProducerId + 
+                "Size=" + Size + 
+                "]";
+        }
 
-		/// <summary>
-		/// The producer id that this ack message is destined for.
-		/// </summary>
-		public ProducerId ProducerId
-		{
-			get
-			{
-				return myProducerId;
-			}
-			set
-			{
-				myProducerId = value;
-			}
-		}
+        public ProducerId ProducerId
+        {
+            get { return producerId; }
+            set { this.producerId = value; }
+        }
 
-		/// <summary>
-		/// The number of bytes that are being acked.
-		/// </summary>
-		public int Size
-		{
-			get
-			{
-				return mySize;
-			}
-			set
-			{
-				mySize = value;
-			}
-		}
-	}
+        public int Size
+        {
+            get { return size; }
+            set { this.size = value; }
+        }
+
+        ///
+        /// <summery>
+        ///  Return an answer of true to the isProducerAck() query.
+        /// </summery>
+        ///
+        public override bool IsProducerAck
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        ///
+        /// <summery>
+        ///  Allows a Visitor to visit this command and return a response to the
+        ///  command based on the command type being visited.  The command will call
+        ///  the proper processXXX method in the visitor.
+        /// </summery>
+        ///
+        public override Response visit(ICommandVisitor visitor)
+        {
+            return visitor.processProducerAck( this );
+        }
+
+    };
 }
+

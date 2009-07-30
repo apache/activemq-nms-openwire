@@ -40,29 +40,29 @@ namespace Apache.NMS.ActiveMQ.Commands
     //
     public class ActiveMQObjectMessage : ActiveMQMessage, IObjectMessage
     {
-        public const byte ID_ActiveMQObjectMessage = 26;
-    			
+        public const byte ID_ACTIVEMQOBJECTMESSAGE = 26;
+
 #if !(PocketPC||NETCF||NETCF_2_0)
         private object body;
         private IFormatter formatter;
 #endif
 
-		public override string ToString() {
+        public override string ToString() {
             return GetType().Name + "["
                 + " ]";
-		}
-	
+        }
+
         public override byte GetDataStructureType() {
-            return ID_ActiveMQObjectMessage;
+            return ID_ACTIVEMQOBJECTMESSAGE;
         }
 
 
         // Properties
-	    
+
         public object Body
         {
-            get 
-			{
+            get
+            {
 #if !(PocketPC||NETCF||NETCF_2_0)
                 if (body == null)
                 {
@@ -74,10 +74,10 @@ namespace Apache.NMS.ActiveMQ.Commands
 #endif
             }
 
-			set 
-			{
+            set
+            {
 #if !(PocketPC||NETCF||NETCF_2_0)
-				body = value;
+                body = value;
 #else
                 throw new NotImplementedException();
 #endif
@@ -93,32 +93,32 @@ namespace Apache.NMS.ActiveMQ.Commands
             }
             else
             {
-				MemoryStream stream = new MemoryStream();
-				Formatter.Serialize(stream, body);
+                MemoryStream stream = new MemoryStream();
+                Formatter.Serialize(stream, body);
                 Content = stream.ToArray();
             }
-            
+
             //Console.WriteLine("BeforeMarshalling, content is: " + Content);
-			
+
             base.BeforeMarshall(wireFormat);
         }
 
-		public IFormatter Formatter
-		{
-			get
-			{
-				if (formatter == null)
-				{
-					formatter = new BinaryFormatter();
-				}
-				return formatter;
-			}
-			
-			set 
-			{
-				formatter = value;
-			}
-		}
+        public IFormatter Formatter
+        {
+            get
+            {
+                if (formatter == null)
+                {
+                    formatter = new BinaryFormatter();
+                }
+                return formatter;
+            }
+
+            set
+            {
+                formatter = value;
+            }
+        }
 #endif
     }
 }

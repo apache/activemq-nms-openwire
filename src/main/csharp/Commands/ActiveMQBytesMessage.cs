@@ -19,14 +19,14 @@ using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	public class ActiveMQBytesMessage : ActiveMQMessage, IBytesMessage
+    public class ActiveMQBytesMessage : ActiveMQMessage, IBytesMessage
     {
-        public const byte ID_ActiveMQBytesMessage = 24;
-        
-        
+        public const byte ID_ACTIVEMQBYTESMESSAGE = 24;
+
+
         public override byte GetDataStructureType()
         {
-            return ID_ActiveMQBytesMessage;
+            return ID_ACTIVEMQBYTESMESSAGE;
         }
     }
 }

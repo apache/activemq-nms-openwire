@@ -19,26 +19,26 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	public class ActiveMQStreamMessage : ActiveMQMessage
+    public class ActiveMQStreamMessage : ActiveMQMessage
     {
-		public const byte ID_ActiveMQStreamMessage = 27;
-		
-		
-		
-		
+        public const byte ID_ACTIVEMQSTREAMMESSAGE = 27;
+
+
+
+
         // TODO generate Equals method
         // TODO generate GetHashCode method
         // TODO generate ToString method
-		
-		
+
+
         public override byte GetDataStructureType()
-		{
-            return ID_ActiveMQStreamMessage;
+        {
+            return ID_ACTIVEMQSTREAMMESSAGE;
         }
-		
-		
+
+
         // Properties
-		
+
     }
 }
 

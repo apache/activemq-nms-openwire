@@ -22,44 +22,149 @@ using Apache.NMS.ActiveMQ.State;
 namespace Apache.NMS.ActiveMQ.Commands
 {
 
-	/// <summary>
-	/// An OpenWire command
-	/// </summary>
-	public interface Command : DataStructure, ICloneable
-	{
-		int CommandId
-		{
-			get;
-			set;
-		}
+    /// <summary>
+    /// An OpenWire command
+    /// </summary>
+    public interface Command : DataStructure, ICloneable
+    {
+        int CommandId
+        {
+            get;
+            set;
+        }
 
-		bool ResponseRequired
-		{
-			get;
-			set;
-		}
+        bool ResponseRequired
+        {
+            get;
+            set;
+        }
 
-		bool IsResponse
-		{
-			get;
-		}
+        bool IsBrokerInfo
+        {
+            get;
+        }
 
-		bool IsBrokerInfo
-		{
-			get;
-		}
+        bool IsConnectionControl
+        {
+            get;
+        }
 
-		bool IsMessage
-		{
-			get;
-		}
+        bool IsConnectionInfo
+        {
+            get;
+        }
 
-		bool IsShutdownInfo
-		{
-			get;
-		}
+        bool IsConnectionError
+        {
+            get;
+        }
 
-		Response visit(ICommandVisitor visitor);
-	}
+        bool IsConsumerControl
+        {
+            get;
+        }
+
+        bool IsConsumerInfo
+        {
+            get;
+        }
+
+        bool IsControlCommand
+        {
+            get;
+        }
+
+        bool IsDestinationInfo
+        {
+            get;
+        }
+
+        bool IsFlushCommand
+        {
+            get;
+        }
+
+        bool IsKeepAliveInfo
+        {
+            get;
+        }
+
+        bool IsMessage
+        {
+            get;
+        }
+
+        bool IsMessageAck
+        {
+            get;
+        }
+
+        bool IsMessageDispatch
+        {
+            get;
+        }
+
+        bool IsMessageDispatchNotification
+        {
+            get;
+        }
+
+        bool IsMessagePull
+        {
+            get;
+        }
+
+        bool IsProducerAck
+        {
+            get;
+        }
+
+        bool IsProducerInfo
+        {
+            get;
+        }
+
+        bool IsRemoveInfo
+        {
+            get;
+        }
+
+        bool IsRemoveSubscriptionInfo
+        {
+            get;
+        }
+
+        bool IsReplayCommand
+        {
+            get;
+        }
+
+        bool IsResponse
+        {
+            get;
+        }
+
+        bool IsSessionInfo
+        {
+            get;
+        }
+
+        bool IsShutdownInfo
+        {
+            get;
+        }
+
+        bool IsTransactionInfo
+        {
+            get;
+        }
+
+        bool IsWireFormatInfo
+        {
+           get;
+        }
+
+        Response visit(ICommandVisitor visitor);
+    }
 }
 

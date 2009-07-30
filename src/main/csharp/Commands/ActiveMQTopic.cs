@@ -19,65 +19,65 @@ using System;
 namespace Apache.NMS.ActiveMQ.Commands
 {
 
-	/// <summary>
-	/// Summary description for ActiveMQTopic.
-	/// </summary>
-	public class ActiveMQTopic : ActiveMQDestination, ITopic
-	{
-		public const byte ID_ActiveMQTopic = 101;
+    /// <summary>
+    /// Summary description for ActiveMQTopic.
+    /// </summary>
+    public class ActiveMQTopic : ActiveMQDestination, ITopic
+    {
+        public const byte ID_ACTIVEMQTOPIC = 101;
 
-		public ActiveMQTopic()
-			: base()
-		{
-		}
-		public ActiveMQTopic(String name)
-			: base(name)
-		{
-		}
+        public ActiveMQTopic()
+            : base()
+        {
+        }
+        public ActiveMQTopic(String name)
+            : base(name)
+        {
+        }
 
-		override public DestinationType DestinationType
-		{
-			get
-			{
-				return DestinationType.Topic;
-			}
-		}
+        override public DestinationType DestinationType
+        {
+            get
+            {
+                return DestinationType.Topic;
+            }
+        }
 
 
-		public String TopicName
-		{
-			get { return PhysicalName; }
-		}
+        public String TopicName
+        {
+            get { return PhysicalName; }
+        }
 
-		public override byte GetDataStructureType()
-		{
-			return ID_ActiveMQTopic;
-		}
+        public override byte GetDataStructureType()
+        {
+            return ID_ACTIVEMQTOPIC;
+        }
 
-		public override int GetDestinationType()
-		{
-			return ACTIVEMQ_TOPIC;
-		}
+        public override int GetDestinationType()
+        {
+            return ACTIVEMQ_TOPIC;
+        }
 
-		public override ActiveMQDestination CreateDestination(String name)
-		{
-			return new ActiveMQTopic(name);
-		}
+        public override ActiveMQDestination CreateDestination(String name)
+        {
+            return new ActiveMQTopic(name);
+        }
 
-		public override Object Clone()
-		{
-			// Since we are a derived class use the base's Clone()
-			// to perform the shallow copy. Since it is shallow it
-			// will include our derived class. Since we are derived,
-			// this method is an override.
-			ActiveMQTopic o = (ActiveMQTopic) base.Clone();
+        public override Object Clone()
+        {
+            // Since we are a derived class use the base's Clone()
+            // to perform the shallow copy. Since it is shallow it
+            // will include our derived class. Since we are derived,
+            // this method is an override.
+            ActiveMQTopic o = (ActiveMQTopic) base.Clone();
 
-			// Now do the deep work required
-			// If any new variables are added then this routine will
-			// likely need updating
+            // Now do the deep work required
+            // If any new variables are added then this routine will
+            // likely need updating
 
-			return o;
-		}
-	}
+            return o;
+        }
+    }
 }
 

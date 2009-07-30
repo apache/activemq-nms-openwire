@@ -21,37 +21,37 @@ using System.IO;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	public class ActiveMQTextMessage : ActiveMQMessage, ITextMessage
+    public class ActiveMQTextMessage : ActiveMQMessage, ITextMessage
     {
-        public const byte ID_ActiveMQTextMessage = 28;
-        
+        public const byte ID_ACTIVEMQTEXTMESSAGE = 28;
+
         private String text;
-        
+
         public ActiveMQTextMessage()
         {
         }
-        
+
         public ActiveMQTextMessage(String text)
         {
             this.Text = text;
         }
-        
+
         // TODO generate Equals method
         // TODO generate GetHashCode method
         // TODO generate ToString method
 
-	    public override string ToString()
-	    {
-	        return base.ToString() + " Text="+Text;
-	    }
-
-	    public override byte GetDataStructureType()
+        public override string ToString()
         {
-            return ID_ActiveMQTextMessage;
+            return base.ToString() + " Text="+Text;
         }
-        
+
+        public override byte GetDataStructureType()
+        {
+            return ID_ACTIVEMQTEXTMESSAGE;
+        }
+
         // Properties
-        
+
         public string Text
         {
             get {
@@ -68,13 +68,13 @@ namespace Apache.NMS.ActiveMQ.Commands
                 }
                 return text;
             }
-            
+
             set {
                 this.text = value;
                 byte[] data = null;
                 if (text != null)
                 {
-					// TODO lets make the evaluation of the Content lazy!
+                    // TODO lets make the evaluation of the Content lazy!
 
                     // Set initial size to the size of the string the UTF-8 encode could
                     // result in more if there are chars that encode to multibye values.
@@ -84,9 +84,9 @@ namespace Apache.NMS.ActiveMQ.Commands
                     writer.WriteString32(text);
 
                     data = stream.GetBuffer();
-				}
-				this.Content = data;
-					
+                }
+                this.Content = data;
+
             }
         }
     }

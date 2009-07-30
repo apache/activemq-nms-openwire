@@ -21,18 +21,18 @@ using System;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-	public class ActiveMQMapMessage : ActiveMQMessage, IMapMessage
+    public class ActiveMQMapMessage : ActiveMQMessage, IMapMessage
     {
-        public const byte ID_ActiveMQMapMessage = 25;
-        
+        public const byte ID_ACTIVEMQMAPMESSAGE = 25;
+
         private PrimitiveMap body;
-        
-        
+
+
         public override byte GetDataStructureType()
         {
-            return ID_ActiveMQMapMessage;
+            return ID_ACTIVEMQMAPMESSAGE;
         }
-        
+
         public IPrimitiveMap Body
         {
             get {
@@ -43,7 +43,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                 return body;
             }
         }
-        
+
         public override void BeforeMarshall(OpenWireFormat wireFormat)
         {
             if (body == null)
@@ -54,12 +54,12 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 Content = body.Marshal();
             }
-            
+
             Tracer.Debug("BeforeMarshalling, content is: " + Content);
-			
+
             base.BeforeMarshall(wireFormat);
         }
-        
+
     }
 }
 

@@ -19,64 +19,64 @@ using System;
 namespace Apache.NMS.ActiveMQ.Commands
 {
 
-	/// <summary>
-	/// Summary description for ActiveMQQueue.
-	/// </summary>
-	public class ActiveMQQueue : ActiveMQDestination, IQueue
-	{
-		public const byte ID_ActiveMQQueue = 100;
+    /// <summary>
+    /// Summary description for ActiveMQQueue.
+    /// </summary>
+    public class ActiveMQQueue : ActiveMQDestination, IQueue
+    {
+        public const byte ID_ACTIVEMQQUEUE = 100;
 
-		public ActiveMQQueue()
-			: base()
-		{
-		}
-		public ActiveMQQueue(String name)
-			: base(name)
-		{
-		}
+        public ActiveMQQueue()
+            : base()
+        {
+        }
+        public ActiveMQQueue(String name)
+            : base(name)
+        {
+        }
 
-		override public DestinationType DestinationType
-		{
-			get
-			{
-				return DestinationType.Queue;
-			}
-		}
+        override public DestinationType DestinationType
+        {
+            get
+            {
+                return DestinationType.Queue;
+            }
+        }
 
-		public String QueueName
-		{
-			get { return PhysicalName; }
-		}
+        public String QueueName
+        {
+            get { return PhysicalName; }
+        }
 
-		public override byte GetDataStructureType()
-		{
-			return ID_ActiveMQQueue;
-		}
+        public override byte GetDataStructureType()
+        {
+            return ID_ACTIVEMQQUEUE;
+        }
 
-		public override int GetDestinationType()
-		{
-			return ACTIVEMQ_QUEUE;
-		}
+        public override int GetDestinationType()
+        {
+            return ACTIVEMQ_QUEUE;
+        }
 
-		public override ActiveMQDestination CreateDestination(String name)
-		{
-			return new ActiveMQQueue(name);
-		}
+        public override ActiveMQDestination CreateDestination(String name)
+        {
+            return new ActiveMQQueue(name);
+        }
 
-		public override Object Clone()
-		{
-			// Since we are a derived class use the base's Clone()
-			// to perform the shallow copy. Since it is shallow it
-			// will include our derived class. Since we are derived,
-			// this method is an override.
-			ActiveMQQueue o = (ActiveMQQueue) base.Clone();
+        public override Object Clone()
+        {
+            // Since we are a derived class use the base's Clone()
+            // to perform the shallow copy. Since it is shallow it
+            // will include our derived class. Since we are derived,
+            // this method is an override.
+            ActiveMQQueue o = (ActiveMQQueue) base.Clone();
 
-			// Now do the deep work required
-			// If any new variables are added then this routine will
-			// likely need updating
+            // Now do the deep work required
+            // If any new variables are added then this routine will
+            // likely need updating
 
-			return o;
-		}
-	}
+            return o;
+        }
+    }
 }
 
