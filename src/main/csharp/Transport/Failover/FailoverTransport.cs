@@ -46,6 +46,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		private List<Uri> uris = new List<Uri>();
 		private CommandHandler _commandHandler;
 		private ExceptionHandler _exceptionHandler;
+		private InterruptedHandler interruptedHandler;
+		private ResumedHandler resumedHandler;
 
 		private Mutex reconnectMutex = new Mutex();
 		private Mutex backupMutex = new Mutex();
@@ -255,6 +257,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					reconnectMutex.ReleaseMutex();
 				}
+                
+                this.Interrupted( transport );
 			}
 		}
 
@@ -797,6 +801,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransport = t;
 									connectFailures = 0;
 									connected = true;
+                                    this.Resumed( t );
 									Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
 									return false;
 								}
@@ -832,6 +837,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									restoreTransport(t);
 								}
 
+                                this.Resumed( t );
 								Tracer.Debug("Connection established");
 								ReconnectDelay = InitialReconnectDelay;
 								ConnectedTransportURI = uri;
@@ -1004,6 +1010,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			set { _exceptionHandler = value; }
 		}
 
+		public InterruptedHandler Interrupted
+		{
+			get { return interruptedHandler; }
+			set { this.interruptedHandler = value; }
+		}
+		
+		public ResumedHandler Resumed
+		{
+			get { return resumedHandler; }
+			set { this.resumedHandler = value; }
+		}
+		
 		public bool IsStarted
 		{
 			get { return started; }

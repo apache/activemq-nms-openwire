@@ -22,6 +22,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 {
 	public delegate void CommandHandler(ITransport sender, Command command);
 	public delegate void ExceptionHandler(ITransport sender, Exception command);
+	public delegate void InterruptedHandler(ITransport sender);
+	public delegate void ResumedHandler(ITransport sender);
 
 	/// <summary>
 	/// Represents the logical networking transport layer.
@@ -53,6 +55,18 @@ namespace Apache.NMS.ActiveMQ.Transport
 			set;
 		}
 
+		InterruptedHandler Interrupted
+		{
+			get;
+			set;
+		}		
+
+		ResumedHandler Resumed
+		{
+			get;
+			set;
+		}		
+		
 		bool IsDisposed
 		{
 			get;

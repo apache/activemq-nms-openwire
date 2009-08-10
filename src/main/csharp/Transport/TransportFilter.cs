@@ -28,6 +28,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 		protected readonly ITransport next;
 		protected CommandHandler commandHandler;
 		protected ExceptionHandler exceptionHandler;
+		protected InterruptedHandler interruptedHandler;
+		protected ResumedHandler resumedHandler;
 		private bool disposed = false;
 
 		public TransportFilter(ITransport next)
@@ -165,6 +167,18 @@ namespace Apache.NMS.ActiveMQ.Transport
 			set { this.exceptionHandler = value; }
 		}
 
+		public InterruptedHandler Interrupted
+		{
+			get { return interruptedHandler; }
+			set { this.interruptedHandler = value; }
+		}
+		
+		public ResumedHandler Resumed
+		{
+			get { return resumedHandler; }
+			set { this.resumedHandler = value; }
+		}
+		
 		public virtual void Stop()
 		{
 		}

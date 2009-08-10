@@ -44,6 +44,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
+		private InterruptedHandler interruptedHandler;
+		private ResumedHandler resumedHandler;
 		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
 
 		public TcpTransport(Socket socket, IWireFormat wireformat)
@@ -356,6 +358,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			get { return exceptionHandler; }
 			set { this.exceptionHandler = value; }
+		}
+
+		public InterruptedHandler Interrupted
+		{
+			get { return interruptedHandler; }
+			set { this.interruptedHandler = value; }
+		}
+		
+		public ResumedHandler Resumed
+		{
+			get { return resumedHandler; }
+			set { this.resumedHandler = value; }
 		}
 
 		public IWireFormat Wireformat
