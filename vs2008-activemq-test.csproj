@@ -82,6 +82,8 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\test\csharp\StompHelperTest.cs" />
+    <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />
+    <Compile Include="src\test\csharp\Transport\Mock\MockTransportTest.cs" />
     <Compile Include="src\test\csharp\VirtualTopicTest.cs" />
   </ItemGroup>
   <ItemGroup>
