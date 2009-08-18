@@ -105,7 +105,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             // Set transport. properties on this (the factory)
             URISupport.SetProperties(this, map, "transport.");
          
-            Console.WriteLine( "Specified WireFormat is: " + this.wireFormat );
             if(String.Compare(this.wireFormat, "stomp", true) != 0 &&
                String.Compare(this.wireFormat, "openwire", true) != 0)
             {
