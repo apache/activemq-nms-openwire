@@ -60,6 +60,8 @@ namespace Apache.NMS.ActiveMQ
 			this.transport = transport;
 			this.transport.Command = new CommandHandler(OnCommand);
 			this.transport.Exception = new ExceptionHandler(OnException);
+			this.transport.Interrupted = new InterruptedHandler(OnTransportInterrupted);
+			this.transport.Resumed = new ResumedHandler(OnTransportResumed);
 		}
 
 		~Connection()
@@ -534,6 +536,16 @@ namespace Apache.NMS.ActiveMQ
 					sender.Dispose();
 				}
 			}
+		}
+
+		protected void OnTransportInterrupted(ITransport sender)
+		{
+			Tracer.Debug("Transport has been Interrupted.");			
+		}
+
+		protected void OnTransportResumed(ITransport sender)
+		{
+			Tracer.Debug("Transport has resumed normal operation.");			
 		}
 
 		internal void OnSessionException(Session sender, Exception exception)
