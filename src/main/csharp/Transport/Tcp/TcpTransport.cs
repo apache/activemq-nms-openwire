@@ -41,6 +41,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private AtomicBoolean closed = new AtomicBoolean(false);
 		private volatile bool seenShutdown;
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
+        private Uri connectedUri;
 
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
@@ -48,8 +49,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private ResumedHandler resumedHandler;
 		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
 
-		public TcpTransport(Socket socket, IWireFormat wireformat)
+		public TcpTransport(Uri uri, Socket socket, IWireFormat wireformat)
 		{
+            this.connectedUri = uri;
 			this.socket = socket;
 			this.wireformat = wireformat;
 		}
@@ -377,6 +379,32 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			get { return wireformat; }
 			set { wireformat = value; }
 		}
+
+        public bool IsFaultTolerant
+        {
+            get{ return false; }
+        }
+
+        public bool IsConnected
+        {
+            get{ return socket.Connected; }
+        }
+
+        public Uri RemoteAddress
+        {
+            get{ return connectedUri; }
+        }
+
+        public Object Narrow(Type type)
+        {
+            if( this.GetType().Equals(type) )
+            {
+                return this;
+            }
+
+            return null;
+        }
+        
 	}
 }
 

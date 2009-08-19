@@ -182,6 +182,32 @@ namespace Apache.NMS.ActiveMQ.Transport
 		public virtual void Stop()
 		{
 		}
-	}
+
+        public Object Narrow(Type type)
+        {
+            if( this.GetType().Equals( type ) ) {
+                return this;
+            } else if( this.next != null ) {
+                return this.next.Narrow( type );
+            }
+        
+            return null;
+        }
+        
+        public bool IsFaultTolerant
+        {
+            get{ return next.IsFaultTolerant; }
+        }
+
+        public bool IsConnected
+        {
+            get{ return next.IsConnected; }
+        }
+
+        public Uri RemoteAddress
+        {
+            get{ return next.RemoteAddress; }
+        }
+    }
 }
 

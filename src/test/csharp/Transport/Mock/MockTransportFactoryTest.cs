@@ -38,6 +38,13 @@ namespace Apache.NMS.ActiveMQ.Test
             ITransport transport = factory.CreateTransport(location);
             
             Assert.IsNotNull(transport);
+
+            Assert.IsInstanceOfType(typeof(MockTransport), transport.Narrow(typeof(MockTransport)));
+
+            MockTransport mock = (MockTransport) transport.Narrow(typeof(MockTransport));
+
+            Assert.IsTrue( mock.IsConnected );
+            Assert.IsFalse( mock.IsFaultTolerant );
         }
         
         [Test]

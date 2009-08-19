@@ -121,7 +121,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 #endif
 
 			IWireFormat wireformat = CreateWireFormat(map);
-			ITransport transport = new TcpTransport(socket, wireformat);
+			ITransport transport = new TcpTransport(location, socket, wireformat);
 
 			wireformat.Transport = transport;
 

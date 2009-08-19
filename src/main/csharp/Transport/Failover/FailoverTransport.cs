@@ -257,8 +257,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					reconnectMutex.ReleaseMutex();
 				}
-                
-                this.Interrupted( transport );
+
+                if( this.Interrupted != null )
+                {
+                    this.Interrupted( transport );
+                }
 			}
 		}
 
@@ -736,18 +739,31 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			return ConnectedTransportURI == null ? "unconnected" : ConnectedTransportURI.ToString();
 		}
 
-		public String RemoteAddress
+		public Uri RemoteAddress
 		{
 			get
 			{
-				FailoverTransport transport = ConnectedTransport as FailoverTransport;
-				if(transport != null)
+				if(ConnectedTransport != null)
 				{
-					return transport.RemoteAddress;
+					return ConnectedTransport.RemoteAddress;
 				}
 				return null;
 			}
 		}
+
+        public Object Narrow(Type type)
+        {
+            if(this.GetType().Equals(type))
+            {
+                return this;
+            }
+            else if(ConnectedTransport != null)
+            {
+                return ConnectedTransport.Narrow(type);
+            }
+
+            return null;
+        }
 
 		public bool IsFaultTolerant
 		{
@@ -801,8 +817,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransport = t;
 									connectFailures = 0;
 									connected = true;
-                                    this.Resumed( t );
-									Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
+                                    if( this.Resumed != null )
+                                    {
+                                        this.Resumed( t );
+                                    }
+                                    Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
 									return false;
 								}
 								catch(Exception e)
@@ -837,7 +856,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									restoreTransport(t);
 								}
 
-                                this.Resumed( t );
+                                if( this.Resumed != null )
+                                {
+                                    this.Resumed( t );
+                                }
+                                
 								Tracer.Debug("Connection established");
 								ReconnectDelay = InitialReconnectDelay;
 								ConnectedTransportURI = uri;
@@ -881,7 +904,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 			if(!disposed)
 			{
-
 				Tracer.DebugFormat("Waiting {0}ms before attempting connection.", ReconnectDelay);
 				try
 				{
@@ -911,7 +933,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			}
 			return !disposed;
 		}
-
 
 		private bool buildBackups()
 		{
@@ -973,7 +994,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			get { return disposed; }
 		}
 
-		public bool Connected
+		public bool IsConnected
 		{
 			get { return connected; }
 		}

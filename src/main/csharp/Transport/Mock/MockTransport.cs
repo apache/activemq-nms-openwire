@@ -91,11 +91,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
                     if( this.parent.FailOnReceiveMessage && 
                         this.parent.NumReceivedMessages > this.parent.NumReceivedMessagesBeforeFail ) {
                         
+                        Tracer.Debug("MockTransport Async Task: Performing configured receive failure." );
                         this.parent.Exception(this.parent, new IOException( "Failed to Receive Message."));
                     }
                 }                
                              
                 // Send all the responses.
+                Tracer.Debug("MockTransport Async Task: Simulate receive of Command: " + command.ToString() );
                 this.parent.Command(this.parent, command);
                 
                 return parent.receiveQueue.Count != 0;
@@ -123,6 +125,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
         public Response Request(Command command, TimeSpan timeout)
         {
+            Tracer.Debug("MockTransport sending Request Command: " + command.ToString() );
+            
             if( command.IsMessage ) {
                 this.numSentMessages++;
     
@@ -142,10 +146,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         
         public void Oneway(Command command)
         {
+            Tracer.Debug("MockTransport sending oneway Command: " + command.ToString() );
+            
             if( command.IsMessage ) {
                 this.numSentMessages++;
     
                 if( this.failOnSendMessage && this.numSentMessages > this.numSentMessagesBeforeFail ) {
+                    Tracer.Debug("MockTransport Oneway send, failing as per configuration." );
                     throw new IOException( "Failed to Send Message.");
                 }
             }
@@ -166,7 +173,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             this.asyncResponseTask.wakeup();
             
             // Send the Command to the Outgoing Command Snoop Hook.
-            this.OutgoingCommand(this, command);            
+            if( this.OutgoingCommand != null ) {
+                Tracer.Debug("MockTransport Oneway, Notifying Outgoing linstener." );
+                this.OutgoingCommand(this, command);
+            }
         }
         
         public FutureResponse AsyncRequest(Command command)
@@ -228,6 +238,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             }
             
             this.asyncResponseTask.wakeup();
+        }
+
+        public Object Narrow(Type type)
+        {
+            if( this.GetType().Equals(type) )
+            {
+                return this;
+            }
+
+            return null;
         }
         
 		#region Property Accessors
@@ -313,7 +333,22 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			get { return numReceivedMessages; }
 			set { numReceivedMessages = value; }
 		}
-	
+
+        public bool IsFaultTolerant
+        {
+            get{ return false; }
+        }
+
+        public bool IsConnected
+        {
+            get{ return true; }
+        }
+
+        public Uri RemoteAddress
+        {
+            get{ return null; }
+        }
+        
         #endregion
 	}
 }
