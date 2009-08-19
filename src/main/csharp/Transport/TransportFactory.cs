@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using Apache.NMS.ActiveMQ.Transport.Discovery;
 using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
+using Apache.NMS.ActiveMQ.Transport.Mock;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -83,7 +84,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 					case "failover":
 						factory = new FailoverTransportFactory();
 						break;
-					default:
+					case "mock":
+						factory = new MockTransportFactory();
+						break;
+				    default:
 						throw new NMSConnectionException(String.Format("The transport {0} is not supported.", scheme));
 				}
 			}

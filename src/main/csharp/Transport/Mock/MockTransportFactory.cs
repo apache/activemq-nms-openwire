@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 	/// <summary>
 	/// Factory class to create the MockTransport when given on a URI as mock://XXX
 	/// </summary>
-	public class MockTransportFactory
+	public class MockTransportFactory : ITransportFactory
 	{		
 		public MockTransportFactory()
 		{
