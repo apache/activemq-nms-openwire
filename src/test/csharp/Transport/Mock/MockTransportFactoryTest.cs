@@ -59,6 +59,18 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNotNull(transport);
             Assert.IsTrue(transport.FailOnSendMessage);
             Assert.AreEqual(20, transport.NumSentMessagesBeforeFail);
-        }        
+        }
+
+        [Test]
+        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]        
+        public void CreationFailMockTransportTest()
+        {
+            MockTransportFactory factory = new MockTransportFactory();
+            
+            Uri location = new Uri("mock://0.0.0.0:61616?transport.failOnCreate=true");
+            
+            factory.CreateTransport(location);
+        }
+        
     }
 }

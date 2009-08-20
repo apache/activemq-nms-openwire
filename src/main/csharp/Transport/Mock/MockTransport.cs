@@ -136,7 +136,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             }
 
             // Notify external Client of command that we "sent"
-            this.OutgoingCommand(this, command);            
+            if( this.OutgoingCommand != null )
+            {
+                this.OutgoingCommand(this, command);
+            }
 
             command.CommandId = Interlocked.Increment(ref this.nextCommandId);
             command.ResponseRequired = true;

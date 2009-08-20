@@ -83,6 +83,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             get { return numSentMessagesBeforeFail ; }
             set { numSentMessagesBeforeFail = value; }
         }
+
+        private bool failOnCreate = false;
+        public bool FailOnCreate
+        {
+            get{ return failOnCreate; }
+            set{ this.failOnCreate = value; }          
+        }
         
         #endregion
         
@@ -99,6 +106,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		
 		public ITransport CompositeConnect(Uri location)
 		{
+            Tracer.Debug("MockTransportFactory: Create new Transport with options: " + location.Query);
+            
 			// Extract query parameters from broker Uri
 			StringDictionary map = URISupport.ParseQuery(location.Query);
 
@@ -110,6 +119,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             {
                 throw new IOException("Unsupported WireFormat Supplied for MockTransport");
             }
+
+            if(this.FailOnCreate == true)
+            {
+                throw new IOException("Failed to Create new MockTransport.");
+            }                
             
             // Create the Mock Transport
             MockTransport transport = new MockTransport();

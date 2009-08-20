@@ -39,16 +39,19 @@ namespace Apache.NMS.ActiveMQ.Test
         
         public void OnException(ITransport transport, Exception exception)
         {
+            Tracer.DebugFormat("MockTransportTest::onException - " + exception );            
             exceptions.Add( exception );
         }
         
         public void OnCommand(ITransport transport, Command command)
         {
+            Tracer.DebugFormat("MockTransportTest::OnCommand - " + command );            
             received.Add( command );
         }
         
         public void OnOutgoingCommand(ITransport transport, Command command)
         {
+            Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command );            
             sent.Add( command );
         }
 
@@ -98,6 +101,17 @@ namespace Apache.NMS.ActiveMQ.Test
             ActiveMQTextMessage message = new ActiveMQTextMessage();
             transport.Oneway( message );
             Assert.IsTrue(transport.NumSentMessages == 1);
+            Assert.Contains(message, sent);
+        }
+
+        [Test]
+        public void RequestMessageTest()
+        {
+            transport.Start();
+            ActiveMQTextMessage message = new ActiveMQTextMessage();
+            transport.Request( message );
+            Assert.IsTrue(transport.NumSentMessages == 1);
+            Assert.Contains(message, sent);
         }
         
         [Test]

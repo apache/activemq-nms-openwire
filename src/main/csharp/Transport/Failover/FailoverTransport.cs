@@ -893,7 +893,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					Tracer.ErrorFormat("Failed to connect to transport after {0} attempt(s)", connectFailures);
 					connectionFailure = failure;
-					onException(this, connectionFailure);
+					this.Exception(this, connectionFailure);
 					return false;
 				}
 			}
