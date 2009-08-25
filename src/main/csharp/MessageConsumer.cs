@@ -205,7 +205,7 @@ namespace Apache.NMS.ActiveMQ
 						throw new ConnectionClosedException();
 					}
 
-					ackSession.Connection.OneWay(ack);
+					ackSession.Connection.Oneway(ack);
 				}
 			}
 
@@ -273,7 +273,7 @@ namespace Apache.NMS.ActiveMQ
 						throw new ConnectionClosedException();
 					}
 
-					session.Connection.OneWay(messagePull);
+					session.Connection.Oneway(messagePull);
 				}
 			}
 		}
@@ -293,7 +293,7 @@ namespace Apache.NMS.ActiveMQ
 					throw new ConnectionClosedException();
 				}
 
-				session.Connection.OneWay(ack);
+				session.Connection.Oneway(ack);
 			}
 		}
 
@@ -331,7 +331,7 @@ namespace Apache.NMS.ActiveMQ
 				ack.FirstMessageId = message.MessageId;
 				ack.LastMessageId = message.MessageId;
 				ack.MessageCount = 1;
-				session.Connection.OneWay(ack);
+				session.Connection.Oneway(ack);
 			}
 			else
 			{

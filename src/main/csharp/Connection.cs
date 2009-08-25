@@ -204,6 +204,7 @@ namespace Apache.NMS.ActiveMQ
 
 				try
 				{
+					Tracer.Info("Closing Connection.");
 					this.closing = true;
 					lock(sessions.SyncRoot)
 					{
@@ -217,7 +218,9 @@ namespace Apache.NMS.ActiveMQ
 					if(connected)
 					{
 						DisposeOf(ConnectionId);
-						transport.Oneway(new ShutdownInfo());
+						ShutdownInfo shutdowninfo = new ShutdownInfo();
+						shutdowninfo.ResponseRequired = false;
+						transport.Oneway(shutdowninfo);
 					}
 
 					transport.Dispose();
@@ -347,7 +350,7 @@ namespace Apache.NMS.ActiveMQ
 			return response;
 		}
 
-		public void OneWay(Command command)
+		public void Oneway(Command command)
 		{
 			CheckConnected();
 			transport.Oneway(command);
@@ -359,8 +362,12 @@ namespace Apache.NMS.ActiveMQ
 			command.ObjectId = objectId;
 			if(asyncClose)
 			{
-				Tracer.Info("Asynchronously closing Connection.");
-				OneWay(command);
+				Tracer.Info("Asynchronously disposing of Connection.");
+				if(connected)
+				{
+					command.ResponseRequired = false;
+					transport.Oneway(command);
+				}
 			}
 			else
 			{
@@ -369,7 +376,7 @@ namespace Apache.NMS.ActiveMQ
 				// the broker can dispose of the object.  Allow up to 5 seconds to process.
 				try
 				{
-					Tracer.Info("Synchronously closing Connection...");
+					Tracer.Info("Synchronously disposing of Connection.");
 					SyncRequest(command, TimeSpan.FromSeconds(5));
 				}
 				catch // (BrokerException)
@@ -467,7 +474,7 @@ namespace Apache.NMS.ActiveMQ
 					}
 
 					OnException(commandTransport, new NMSConnectionException(message, cause));
-			    }
+				}
 			}
 			else
 			{
@@ -479,11 +486,11 @@ namespace Apache.NMS.ActiveMQ
 		{
 			bool dispatched = false;
 
-            // Override the Message's Destination with the one from the Dispatch since in the
-            // case of a virtual Topic the correct destination ack is the one from the Dispatch.
-            // This is a bit of a hack since we should really be sending the entire dispatch to
-            // the Consumer.
-            dispatch.Message.Destination = dispatch.Destination;
+			// Override the Message's Destination with the one from the Dispatch since in the
+			// case of a virtual Topic the correct destination ack is the one from the Dispatch.
+			// This is a bit of a hack since we should really be sending the entire dispatch to
+			// the Consumer.
+			dispatch.Message.Destination = dispatch.Destination;
 
 			lock(sessions.SyncRoot)
 			{
@@ -510,8 +517,11 @@ namespace Apache.NMS.ActiveMQ
 			{
 				try
 				{
-					info.ResponseRequired = false;
-					OneWay(info);
+					if(connected)
+					{
+						info.ResponseRequired = false;
+						transport.Oneway(info);
+					}
 				}
 				catch(Exception ex)
 				{

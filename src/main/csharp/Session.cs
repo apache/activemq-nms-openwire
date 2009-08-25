@@ -479,7 +479,7 @@ namespace Apache.NMS.ActiveMQ
         {
             if(AsyncSend)
             {
-                Connection.OneWay(message);
+                Connection.Oneway(message);
             }
             else
             {
