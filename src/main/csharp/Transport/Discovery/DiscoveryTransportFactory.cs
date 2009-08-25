@@ -40,7 +40,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 			agent.OnNewServiceFound += agent_OnNewServiceFound;
 			agent.OnServiceRemoved += agent_OnServiceRemoved;
 		}
-		
+
 		public DiscoveryTransportFactory()
 		{
 			lock(uriLock)
@@ -48,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 				currentServiceName = String.Empty;
 			}
 		}
-		
+
 		public static Uri DiscoveredUri
 		{
 			get { lock(uriLock) { return discoveredUri; } }
@@ -92,7 +92,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 			}
 
 			Uri hostUri = DiscoveredUri;
-			
+
 			if(null == hostUri)
 			{
 				// If a new broker is found the agent will fire an event which will result in discoveredUri being set.
@@ -111,6 +111,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 		public ITransport CompositeConnect(Uri location)
 		{
 			throw new NMSConnectionException("Composite connection not supported with MulticastDiscovery transport.");
+		}
+
+
+		public ITransport CompositeConnect(Uri location, SetTransport setTransport)
+		{
+			throw new NMSConnectionException("Composite connection not supported with Discovery transport.");
 		}
 
 		#endregion

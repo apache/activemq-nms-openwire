@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
@@ -104,6 +103,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public ITransport CompositeConnect(Uri location)
 		{
+			return CompositeConnect(location, null);
+		}
+
+		public ITransport CompositeConnect(Uri location, SetTransport setTransport)
+		{
 			// Extract query parameters from broker Uri
 			StringDictionary map = URISupport.ParseQuery(location.Query);
 
@@ -137,6 +141,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 			transport.RequestTimeout = this.requestTimeout;
 
+			if(setTransport != null)
+			{
+				setTransport(transport, location);
+			}
+
 			return transport;
 		}
 
@@ -160,6 +169,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		// the new hostname IP.
 #if CACHE_HOSTENTRIES
 		private static IDictionary<string, IPHostEntry> CachedIPHostEntries = new Dictionary<string, IPHostEntry>();
+		private static readonly object _syncLock = new object();
 #endif
 		public static IPHostEntry GetIPHostEntry(string host)
 		{
@@ -168,16 +178,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 #if CACHE_HOSTENTRIES
 			string hostUpperName = host.ToUpper();
 
-			if(!CachedIPHostEntries.TryGetValue(hostUpperName, out ipEntry))
+			lock (_syncLock)
 			{
-				try
+				if (!CachedIPHostEntries.TryGetValue(hostUpperName, out ipEntry))
 				{
-					ipEntry = Dns.GetHostEntry(hostUpperName);
-					CachedIPHostEntries.Add(hostUpperName, ipEntry);
-				}
-				catch
-				{
-					ipEntry = null;
+					try
+					{
+						ipEntry = Dns.GetHostEntry(hostUpperName);
+						CachedIPHostEntries.Add(hostUpperName, ipEntry);
+					}
+					catch
+					{
+						ipEntry = null;
+					}
 				}
 			}
 #else

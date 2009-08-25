@@ -19,9 +19,12 @@ using System;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
+	public delegate void SetTransport(ITransport transport, Uri uri);
+
 	public interface ITransportFactory
 	{
 		ITransport CreateTransport(Uri location);
 		ITransport CompositeConnect(Uri location);
+		ITransport CompositeConnect(Uri location, SetTransport setTransport);
 	}
 }

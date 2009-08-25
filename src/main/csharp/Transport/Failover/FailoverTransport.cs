@@ -79,6 +79,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		private bool _trackMessages = false;
 		private int _maxCacheSize = 256;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
+		private volatile Exception _failure;
+		private readonly object _syncLock = new object();
+
+		internal Exception Failure
+		{
+			get
+			{
+				return _failure;
+			}
+
+			set
+			{
+				lock(_syncLock)
+				{
+					_failure = value;
+				}
+
+			}
+		}
 
 		public TimeSpan RequestTimeout
 		{
@@ -258,10 +277,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					reconnectMutex.ReleaseMutex();
 				}
 
-                if( this.Interrupted != null )
-                {
-                    this.Interrupted( transport );
-                }
+				if(this.Interrupted != null)
+				{
+					this.Interrupted(transport);
+				}
 			}
 		}
 
@@ -714,7 +733,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			cc.FaultTolerant = true;
 			t.Oneway(cc);
 			stateTracker.DoRestore(t);
-			
+
 			Tracer.Info("Sending queued commands...");
 			Dictionary<int, Command> tmpMap = null;
 			lock(((ICollection) requestMap).SyncRoot)
@@ -751,28 +770,55 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			}
 		}
 
-        public Object Narrow(Type type)
-        {
-            if(this.GetType().Equals(type))
-            {
-                return this;
-            }
-            else if(ConnectedTransport != null)
-            {
-                return ConnectedTransport.Narrow(type);
-            }
+		public Object Narrow(Type type)
+		{
+			if(this.GetType().Equals(type))
+			{
+				return this;
+			}
+			else if(ConnectedTransport != null)
+			{
+				return ConnectedTransport.Narrow(type);
+			}
 
-            return null;
-        }
+			return null;
+		}
 
 		public bool IsFaultTolerant
 		{
 			get { return true; }
 		}
 
+		private bool _asyncConnect = false;
+
+		/// <summary>
+		/// Gets or sets a value indicating whether to asynchronously connect to sockets
+		/// </summary>
+		/// <value><c>true</c> if [async connect]; otherwise, <c>false</c>.</value>
+		public bool AsyncConnect
+		{
+			set
+			{
+				_asyncConnect = value;
+			}
+		}
+
+		private int _asyncTimeout = 45000;
+
+		/// <summary>
+		/// If doing an asynchronous connect, the milliseconds before timing out if no connection can be made
+		/// </summary>
+		/// <value>The async timeout.</value>
+		public int AsyncTimeout
+		{
+			set
+			{
+				_asyncTimeout = value;
+			}
+		}
+
 		private bool doConnect()
 		{
-			Exception failure = null;
 			try
 			{
 				reconnectMutex.WaitOne();
@@ -786,7 +832,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					List<Uri> connectList = ConnectList;
 					if(connectList.Count == 0)
 					{
-						failure = new NMSConnectionException("No URIs available for connection.");
+						Failure = new NMSConnectionException("No URIs available for connection.");
 					}
 					else
 					{
@@ -794,6 +840,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						{
 							ReconnectDelay = InitialReconnectDelay;
 						}
+
 						try
 						{
 							backupMutex.WaitOne();
@@ -817,11 +864,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransport = t;
 									connectFailures = 0;
 									connected = true;
-                                    if( this.Resumed != null )
-                                    {
-                                        this.Resumed( t );
-                                    }
-                                    Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
+									if(this.Resumed != null)
+									{
+										this.Resumed(t);
+									}
+									Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
 									return false;
 								}
 								catch(Exception e)
@@ -836,65 +883,128 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							backupMutex.ReleaseMutex();
 						}
 
-						foreach(Uri uri in connectList)
+						ManualResetEvent allDone = new ManualResetEvent(false);
+						ITransport transport = null;
+						Uri chosenUri = null;
+						object syncLock = new object();
+
+						try
 						{
-							if(ConnectedTransport != null || disposed)
+							foreach(Uri uri in connectList)
 							{
-								break;
+								if(ConnectedTransport != null || disposed)
+								{
+									break;
+								}
+
+								Tracer.DebugFormat("Attempting connect to: {0}", uri);
+
+								if(_asyncConnect)
+								{
+									// set connector up
+									Connector connector = new Connector(
+										delegate(ITransport transportToUse, Uri uriToUse) {
+											if(transport == null)
+											{
+												lock(syncLock)
+												{
+													if(transport == null)
+													{
+														//the transport has not yet been set asynchronously so set it
+														transport = transportToUse;
+														chosenUri = uriToUse;
+													}
+													//notify issuing thread to move on
+													allDone.Set();
+												}
+											}
+										}, uri, this);
+
+									// initiate a thread to try connecting to broker
+									Thread thread = new Thread(connector.DoConnect);
+									thread.Name = uri.ToString();
+									thread.Start();
+								}
+								else
+								{
+									// synchronous connect
+									try
+									{
+										Tracer.DebugFormat("Attempting connect to: {0}", uri.ToString());
+										transport = TransportFactory.CompositeConnect(uri);
+										chosenUri = uri;
+										break;
+									}
+									catch(Exception e)
+									{
+										Failure = e;
+										Tracer.DebugFormat("Connect fail to: {0}, reason: {1}", uri, e.Message);
+									}
+								}
 							}
 
-							try
+							if(_asyncConnect)
 							{
-								Tracer.DebugFormat("Attempting connect to: {0}", uri.ToString());
-								ITransport t = TransportFactory.CompositeConnect(uri);
-								t.Command = new CommandHandler(onCommand);
-								t.Exception = new ExceptionHandler(onException);
-								t.Start();
+								// now wait for transport to be populated, but timeout eventually
+								allDone.WaitOne(_asyncTimeout, false);
+							}
+
+							if(transport != null)
+							{
+								transport.Command = new CommandHandler(onCommand);
+								transport.Exception = new ExceptionHandler(onException);
+								transport.Start();
 
 								if(started)
 								{
-									restoreTransport(t);
+									restoreTransport(transport);
 								}
 
-                                if( this.Resumed != null )
-                                {
-                                    this.Resumed( t );
-                                }
-                                
+								if(this.Resumed != null)
+								{
+									this.Resumed(transport);
+								}
+
 								Tracer.Debug("Connection established");
 								ReconnectDelay = InitialReconnectDelay;
-								ConnectedTransportURI = uri;
-								ConnectedTransport = t;
+								ConnectedTransportURI = chosenUri;
+								ConnectedTransport = transport;
 								connectFailures = 0;
 								connected = true;
 
 								if(firstConnection)
 								{
 									firstConnection = false;
-									Tracer.InfoFormat("Successfully connected to: {0}", uri.ToString());
+									Tracer.InfoFormat("Successfully connected to: {0}", chosenUri.ToString());
 								}
 								else
 								{
-									Tracer.InfoFormat("Successfully reconnected to: {0}", uri.ToString());
+									Tracer.InfoFormat("Successfully reconnected to: {0}", chosenUri.ToString());
 								}
 
 								return false;
 							}
-							catch(Exception e)
+
+							if(_asyncConnect)
 							{
-								failure = e;
-								Tracer.ErrorFormat("Connect fail to '{0}': {1}", uri.ToString(), e.Message);
+								Tracer.DebugFormat("Connect failed after waiting for asynchronous callback.");
 							}
+
+						}
+						catch(Exception e)
+						{
+							Failure = e;
+							Tracer.DebugFormat("Connect attempt failed.  Reason: {1}", e.Message);
 						}
 					}
-				}
 
-				if(MaxReconnectAttempts > 0 && ++connectFailures >= MaxReconnectAttempts)
-				{
-					Tracer.ErrorFormat("Failed to connect to transport after {0} attempt(s)", connectFailures);
-					connectionFailure = failure;
-					this.Exception(this, connectionFailure);
-					return false;
+					if(MaxReconnectAttempts > 0 && ++connectFailures >= MaxReconnectAttempts)
+					{
+						Tracer.ErrorFormat("Failed to connect to transport after {0} attempt(s)", connectFailures);
+						connectionFailure = Failure;
+						this.Exception(this, connectionFailure);
+						return false;
+					}
 				}
 			}
 			finally
@@ -932,6 +1042,57 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				}
 			}
 			return !disposed;
+		}
+
+		/// <summary>
+		/// This class is a helper for the asynchronous connect option
+		/// </summary>
+		public class Connector
+		{
+			/// <summary>
+			/// callback to properly set chosen transport
+			/// </summary>
+			SetTransport _setTransport;
+
+			/// <summary>
+			/// Uri to try connecting to
+			/// </summary>
+			Uri _uri;
+
+			/// <summary>
+			/// Failover transport issuing the connection attempt
+			/// </summary>
+			private FailoverTransport _transport;
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="Connector"/> class.
+			/// </summary>
+			/// <param name="setTransport">The set transport.</param>
+			/// <param name="uri">The URI.</param>
+			/// <param name="transport">The transport.</param>
+			public Connector(SetTransport setTransport, Uri uri, FailoverTransport transport)
+			{
+				_uri = uri;
+				_setTransport = setTransport;
+				_transport = transport;
+			}
+
+			/// <summary>
+			/// Does the connect.
+			/// </summary>
+			public void DoConnect()
+			{
+				try
+				{
+					TransportFactory.AsyncCompositeConnect(_uri, _setTransport);
+				}
+				catch(Exception e)
+				{
+					_transport.Failure = e;
+					Tracer.DebugFormat("Connect fail to: {0}, reason: {1}", _uri, e.Message);
+				}
+
+			}
 		}
 
 		private bool buildBackups()
@@ -989,6 +1150,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			return false;
 		}
 
+
 		public bool IsDisposed
 		{
 			get { return disposed; }
@@ -1036,13 +1198,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			get { return interruptedHandler; }
 			set { this.interruptedHandler = value; }
 		}
-		
+
 		public ResumedHandler Resumed
 		{
 			get { return resumedHandler; }
 			set { this.resumedHandler = value; }
 		}
-		
+
 		public bool IsStarted
 		{
 			get { return started; }

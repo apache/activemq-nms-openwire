@@ -36,6 +36,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			return CreateTransport(URISupport.parseComposite(location));
 		}
 
+		public ITransport CompositeConnect(Uri location, SetTransport setTransport)
+		{
+			throw new NMSConnectionException("Asynchronous composite connection not supported with Failover transport.");
+		}
+
 		public ITransport CreateTransport(Uri location)
 		{
 			return doConnect(location);

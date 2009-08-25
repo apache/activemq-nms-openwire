@@ -16,12 +16,10 @@
  */
 
 using System;
-using System.Collections.Generic;
-
 using Apache.NMS.ActiveMQ.Transport.Discovery;
 using Apache.NMS.ActiveMQ.Transport.Failover;
-using Apache.NMS.ActiveMQ.Transport.Tcp;
 using Apache.NMS.ActiveMQ.Transport.Mock;
+using Apache.NMS.ActiveMQ.Transport.Tcp;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -54,6 +52,12 @@ namespace Apache.NMS.ActiveMQ.Transport
 			return tf.CompositeConnect(location);
 		}
 
+		public static ITransport AsyncCompositeConnect(Uri location, SetTransport setTransport)
+		{
+			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
+			return tf.CompositeConnect(location, setTransport);
+		}
+
 		/// <summary>
 		/// Create a transport factory for the scheme.  If we do not support the transport protocol,
 		/// an NMSConnectionException will be thrown.
@@ -75,20 +79,20 @@ namespace Apache.NMS.ActiveMQ.Transport
 			{
 				switch(scheme.ToLower())
 				{
-					case "tcp":
-						factory = new TcpTransportFactory();
-						break;
-					case "discovery":
-						factory = new DiscoveryTransportFactory();
-						break;
-					case "failover":
-						factory = new FailoverTransportFactory();
-						break;
-					case "mock":
-						factory = new MockTransportFactory();
-						break;
-				    default:
-						throw new NMSConnectionException(String.Format("The transport {0} is not supported.", scheme));
+				case "tcp":
+					factory = new TcpTransportFactory();
+					break;
+				case "discovery":
+					factory = new DiscoveryTransportFactory();
+					break;
+				case "failover":
+					factory = new FailoverTransportFactory();
+					break;
+				case "mock":
+					factory = new MockTransportFactory();
+					break;
+				default:
+					throw new NMSConnectionException(String.Format("The transport {0} is not supported.", scheme));
 				}
 			}
 			catch(NMSConnectionException)
