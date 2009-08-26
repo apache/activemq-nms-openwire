@@ -20,7 +20,6 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
@@ -41,7 +40,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private AtomicBoolean closed = new AtomicBoolean(false);
 		private volatile bool seenShutdown;
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
-        private Uri connectedUri;
+		private Uri connectedUri;
 
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
@@ -51,7 +50,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public TcpTransport(Uri uri, Socket socket, IWireFormat wireformat)
 		{
-            this.connectedUri = uri;
+			this.connectedUri = uri;
 			this.socket = socket;
 			this.wireformat = wireformat;
 		}
@@ -86,8 +85,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 					// As reported in AMQ-988 it appears that NetworkStream is not thread safe
 					// so lets use an instance for each of the 2 streams
-					socketWriter = new OpenWireBinaryWriter(new NetworkStream(socket));
-					socketReader = new OpenWireBinaryReader(new NetworkStream(socket));
+					socketWriter = new EndianBinaryWriter(new NetworkStream(socket));
+					socketReader = new EndianBinaryReader(new NetworkStream(socket));
 
 					// now lets create the background read thread
 					readThread = new Thread(new ThreadStart(ReadLoop));
@@ -367,7 +366,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			get { return interruptedHandler; }
 			set { this.interruptedHandler = value; }
 		}
-		
+
 		public ResumedHandler Resumed
 		{
 			get { return resumedHandler; }
@@ -380,31 +379,31 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { wireformat = value; }
 		}
 
-        public bool IsFaultTolerant
-        {
-            get{ return false; }
-        }
+		public bool IsFaultTolerant
+		{
+			get { return false; }
+		}
 
-        public bool IsConnected
-        {
-            get{ return socket.Connected; }
-        }
+		public bool IsConnected
+		{
+			get { return socket.Connected; }
+		}
 
-        public Uri RemoteAddress
-        {
-            get{ return connectedUri; }
-        }
+		public Uri RemoteAddress
+		{
+			get { return connectedUri; }
+		}
 
-        public Object Narrow(Type type)
-        {
-            if( this.GetType().Equals(type) )
-            {
-                return this;
-            }
+		public Object Narrow(Type type)
+		{
+			if(this.GetType().Equals(type))
+			{
+				return this;
+			}
 
-            return null;
-        }
-        
+			return null;
+		}
+
 	}
 }
 

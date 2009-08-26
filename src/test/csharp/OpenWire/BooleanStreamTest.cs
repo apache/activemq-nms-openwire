@@ -18,6 +18,7 @@
 using System;
 using System.IO;
 using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.Util;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test.OpenWire
@@ -88,14 +89,14 @@ namespace Apache.NMS.ActiveMQ.Test.OpenWire
 				bs.WriteBoolean(valueDelegate(i, count));
 			}
 			MemoryStream buffer = new MemoryStream();
-			BinaryWriter ds = new OpenWireBinaryWriter(buffer);
+			BinaryWriter ds = new EndianBinaryWriter(buffer);
 			bs.Marshal(ds);
 			ds.Write(endOfStreamMarker);
 
 			// now lets read from the stream
 
 			MemoryStream ins = new MemoryStream(buffer.ToArray());
-			BinaryReader dis = new OpenWireBinaryReader(ins);
+			BinaryReader dis = new EndianBinaryReader(ins);
 			bs = new BooleanStream();
 			bs.Unmarshal(dis);
 
@@ -110,13 +111,11 @@ namespace Apache.NMS.ActiveMQ.Test.OpenWire
 				}
 				catch(Exception e)
 				{
-					Assert.Fail(
-							"Failed to parse bool: " + i + " out of: " + count + " due to: " + e);
+					Assert.Fail("Failed to parse bool: " + i + " out of: " + count + " due to: " + e);
 				}
 			}
 			int marker = dis.ReadInt32();
-			Assert.AreEqual(
-					endOfStreamMarker, marker, "did not match: " + endOfStreamMarker + " and " + marker);
+			Assert.AreEqual(endOfStreamMarker, marker, "did not match: " + endOfStreamMarker + " and " + marker);
 
 			// lets try read and we should get an exception
 			try

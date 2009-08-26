@@ -14,52 +14,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS;
-using System;
 
+using Apache.NMS.Util;
+using Apache.NMS.ActiveMQ.OpenWire;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    public class ActiveMQMapMessage : ActiveMQMessage, IMapMessage
-    {
-        public const byte ID_ACTIVEMQMAPMESSAGE = 25;
+	public class ActiveMQMapMessage : ActiveMQMessage, IMapMessage
+	{
+		public const byte ID_ACTIVEMQMAPMESSAGE = 25;
 
-        private PrimitiveMap body;
+		private PrimitiveMap body;
 
 
-        public override byte GetDataStructureType()
-        {
-            return ID_ACTIVEMQMAPMESSAGE;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ACTIVEMQMAPMESSAGE;
+		}
 
-        public IPrimitiveMap Body
-        {
-            get {
-                if (body == null)
-                {
-                    body = PrimitiveMap.Unmarshal(Content);
-                }
-                return body;
-            }
-        }
+		public IPrimitiveMap Body
+		{
+			get
+			{
+				if(body == null)
+				{
+					body = PrimitiveMap.Unmarshal(Content);
+				}
+				return body;
+			}
+		}
 
-        public override void BeforeMarshall(OpenWireFormat wireFormat)
-        {
-            if (body == null)
-            {
-                Content = null;
-            }
-            else
-            {
-                Content = body.Marshal();
-            }
+		public override void BeforeMarshall(OpenWireFormat wireFormat)
+		{
+			if(body == null)
+			{
+				Content = null;
+			}
+			else
+			{
+				Content = body.Marshal();
+			}
 
-            Tracer.Debug("BeforeMarshalling, content is: " + Content);
+			Tracer.Debug("BeforeMarshalling, content is: " + Content);
 
-            base.BeforeMarshall(wireFormat);
-        }
-
-    }
+			base.BeforeMarshall(wireFormat);
+		}
+	}
 }
-

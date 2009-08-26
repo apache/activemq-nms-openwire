@@ -14,81 +14,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS;
-using Apache.NMS.ActiveMQ.OpenWire;
+
 using System;
 using System.IO;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    public class ActiveMQTextMessage : ActiveMQMessage, ITextMessage
-    {
-        public const byte ID_ACTIVEMQTEXTMESSAGE = 28;
+	public class ActiveMQTextMessage : ActiveMQMessage, ITextMessage
+	{
+		public const byte ID_ACTIVEMQTEXTMESSAGE = 28;
 
-        private String text;
+		private String text;
 
-        public ActiveMQTextMessage()
-        {
-        }
+		public ActiveMQTextMessage()
+		{
+		}
 
-        public ActiveMQTextMessage(String text)
-        {
-            this.Text = text;
-        }
+		public ActiveMQTextMessage(String text)
+		{
+			this.Text = text;
+		}
 
-        // TODO generate Equals method
-        // TODO generate GetHashCode method
-        // TODO generate ToString method
+		// TODO generate Equals method
+		// TODO generate GetHashCode method
+		// TODO generate ToString method
 
-        public override string ToString()
-        {
-            return base.ToString() + " Text="+Text;
-        }
+		public override string ToString()
+		{
+			return base.ToString() + " Text=" + Text;
+		}
 
-        public override byte GetDataStructureType()
-        {
-            return ID_ACTIVEMQTEXTMESSAGE;
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ACTIVEMQTEXTMESSAGE;
+		}
 
-        // Properties
+		// Properties
 
-        public string Text
-        {
-            get {
-                if (text == null)
-                {
-                    // now lets read the content
-                    byte[] data = this.Content;
-                    if (data != null)
-                    {
-                        MemoryStream stream = new MemoryStream(data);
-                        OpenWireBinaryReader reader = new OpenWireBinaryReader(stream);
-                        text = reader.ReadString32();
-                    }
-                }
-                return text;
-            }
+		public string Text
+		{
+			get
+			{
+				if(text == null)
+				{
+					// now lets read the content
+					byte[] data = this.Content;
+					if(data != null)
+					{
+						MemoryStream stream = new MemoryStream(data);
+						EndianBinaryReader reader = new EndianBinaryReader(stream);
+						text = reader.ReadString32();
+					}
+				}
+				return text;
+			}
 
-            set {
-                this.text = value;
-                byte[] data = null;
-                if (text != null)
-                {
-                    // TODO lets make the evaluation of the Content lazy!
+			set
+			{
+				this.text = value;
+				byte[] data = null;
+				if(text != null)
+				{
+					// TODO lets make the evaluation of the Content lazy!
 
-                    // Set initial size to the size of the string the UTF-8 encode could
-                    // result in more if there are chars that encode to multibye values.
-                    MemoryStream stream = new MemoryStream( text.Length );
-                    OpenWireBinaryWriter writer = new OpenWireBinaryWriter(stream);
+					// Set initial size to the size of the string the UTF-8 encode could
+					// result in more if there are chars that encode to multibye values.
+					MemoryStream stream = new MemoryStream(text.Length);
+					EndianBinaryWriter writer = new EndianBinaryWriter(stream);
+					writer.WriteString32(text);
+					data = stream.GetBuffer();
+				}
+				this.Content = data;
 
-                    writer.WriteString32(text);
-
-                    data = stream.GetBuffer();
-                }
-                this.Content = data;
-
-            }
-        }
-    }
+			}
+		}
+	}
 }
 
