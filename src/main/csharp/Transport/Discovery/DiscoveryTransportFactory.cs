@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Transport.Discovery.Multicast;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
 
@@ -86,7 +87,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 
 		public ITransport CreateTransport(Uri location)
 		{
-			if(!agent.IsStarted)
+            URISupport.CompositeData cd = URISupport.parseComposite(location);
+
+            if(cd.Components.Length > 0)
+            {
+                agent.DiscoveryURI = cd.Components[0];
+            }
+
+            if(!agent.IsStarted)
 			{
 				agent.Start();
 			}
@@ -110,7 +118,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 
 		public ITransport CompositeConnect(Uri location)
 		{
-			throw new NMSConnectionException("Composite connection not supported with MulticastDiscovery transport.");
+            return CreateTransport(location);
 		}
 
 
