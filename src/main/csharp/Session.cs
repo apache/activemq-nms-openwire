@@ -562,6 +562,7 @@ namespace Apache.NMS.ActiveMQ
             answer.Exclusive = this.Exclusive;
             answer.DispatchAsync = this.DispatchAsync;
             answer.Retroactive = this.Retroactive;
+			answer.MaximumPendingMessageLimit = this.MaximumPendingMessageLimit;
 
             // If the destination contained a URI query, then use it to set public properties
             // on the ConsumerInfo
