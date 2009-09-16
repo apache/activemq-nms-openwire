@@ -87,14 +87,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 
 		public ITransport CreateTransport(Uri location)
 		{
-            URISupport.CompositeData cd = URISupport.parseComposite(location);
+			URISupport.CompositeData cd = URISupport.parseComposite(location);
 
-            if(cd.Components.Length > 0)
-            {
-                agent.DiscoveryURI = cd.Components[0];
-            }
+			if(cd.Components.Length > 0)
+			{
+				agent.DiscoveryURI = cd.Components[0];
+			}
 
-            if(!agent.IsStarted)
+			if(!agent.IsStarted)
 			{
 				agent.Start();
 			}
@@ -113,18 +113,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 			}
 
 			TcpTransportFactory tcpTransFactory = new TcpTransportFactory();
-			return tcpTransFactory.CreateTransport(new Uri(hostUri + location.Query));
+			return tcpTransFactory.CompositeConnect(new Uri(hostUri + location.Query));
 		}
 
 		public ITransport CompositeConnect(Uri location)
 		{
-            return CreateTransport(location);
+			return CreateTransport(location);
 		}
 
 
 		public ITransport CompositeConnect(Uri location, SetTransport setTransport)
 		{
-			throw new NMSConnectionException("Composite connection not supported with Discovery transport.");
+			return CreateTransport(location);
 		}
 
 		#endregion

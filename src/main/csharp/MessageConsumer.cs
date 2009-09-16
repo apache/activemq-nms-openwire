@@ -264,6 +264,7 @@ namespace Apache.NMS.ActiveMQ
 				messagePull.ConsumerId = this.info.ConsumerId;
 				messagePull.Destination = this.info.Destination;
 				messagePull.Timeout = timeout;
+				messagePull.ResponseRequired = false;
 
 				Tracer.Debug("Sending MessagePull: " + messagePull);
 				lock(closedLock)
@@ -306,7 +307,8 @@ namespace Apache.NMS.ActiveMQ
 			ack.FirstMessageId = message.MessageId;
 			ack.LastMessageId = message.MessageId;
 			ack.MessageCount = 1;
-
+			ack.ResponseRequired = false;
+			
 			if(session.Transacted)
 			{
 				session.DoStartTransaction();

@@ -932,7 +932,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									{
 										Tracer.DebugFormat("Attempting connect to: {0}", uri.ToString());
 										transport = TransportFactory.CompositeConnect(uri);
-										chosenUri = uri;
+										chosenUri = transport.RemoteAddress;
 										break;
 									}
 									catch(Exception e)

@@ -65,10 +65,11 @@ namespace Apache.NMS.ActiveMQ.Transport
 
 		public override void Oneway(Command command)
 		{
-			int commandId = GetNextCommandId();
+			if(0 == command.CommandId)
+			{
+				command.CommandId = GetNextCommandId();
+			}
 
-			command.CommandId = commandId;
-			command.ResponseRequired = false;
 			next.Oneway(command);
 		}
 

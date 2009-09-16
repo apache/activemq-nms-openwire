@@ -479,6 +479,7 @@ namespace Apache.NMS.ActiveMQ
         {
             if(AsyncSend)
             {
+                message.ResponseRequired = false;
                 Connection.Oneway(message);
             }
             else

@@ -64,6 +64,7 @@ namespace Apache.NMS.ActiveMQ
                 info.ConnectionId = session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.Begin;
+                info.ResponseRequired = false;
                 session.Connection.Oneway(info);
             }
         }
@@ -77,7 +78,7 @@ namespace Apache.NMS.ActiveMQ
                 info.ConnectionId = session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.Rollback;
-                
+                info.ResponseRequired = false;
                 transactionId = null;
                 session.Connection.Oneway(info);
             }
@@ -102,7 +103,7 @@ namespace Apache.NMS.ActiveMQ
                 info.ConnectionId = session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.CommitOnePhase;
-                
+                info.ResponseRequired = false;
                 transactionId = null;
                 session.Connection.Oneway(info);
             }
