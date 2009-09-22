@@ -65,6 +65,11 @@ namespace Apache.NMS.ActiveMQ.Commands
         long brokerInTime;
         long brokerOutTime;
 
+        protected bool readOnlyMsgProperties;
+        protected bool readOnlyMsgBody;
+
+        public const int DEFAULT_MINIMUM_MESSAGE_SIZE = 1024;
+
         ///
         /// <summery>
         ///  Get the unique identifier that this object and its own
@@ -136,6 +141,28 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "BrokerInTime=" + BrokerInTime + 
                 "BrokerOutTime=" + BrokerOutTime + 
                 "]";
+        }
+
+        public int Size()
+        {
+            int size = DEFAULT_MINIMUM_MESSAGE_SIZE;
+
+            if(marshalledProperties != null)
+            {
+                size += marshalledProperties.Length;
+            }
+            if(content != null)
+            {
+                size += content.Length;
+            }
+
+            return size;
+        }
+
+        public void OnSend()
+        {
+            this.ReadOnlyProperties = true;
+            this.ReadOnlyBody = true;
         }
 
         public ProducerId ProducerId
@@ -310,6 +337,18 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return brokerOutTime; }
             set { this.brokerOutTime = value; }
+        }
+
+        public bool ReadOnlyProperties
+        {
+            get { return readOnlyMsgProperties; }
+            set { readOnlyMsgProperties = value; }
+        }
+
+        public bool ReadOnlyBody
+        {
+            get { return readOnlyMsgBody; }
+            set { readOnlyMsgBody = value; }
         }
 
         ///
