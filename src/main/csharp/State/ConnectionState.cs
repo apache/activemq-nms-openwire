@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ.State
 		private AtomicDictionary<TransactionId, TransactionState> transactions = new AtomicDictionary<TransactionId, TransactionState>();
 		private AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
 		private AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
-		private AtomicBoolean _shutdown = new AtomicBoolean(false);
+		private Atomic<bool> _shutdown = new Atomic<bool>(false);
 
 		public ConnectionState(ConnectionInfo info)
 		{

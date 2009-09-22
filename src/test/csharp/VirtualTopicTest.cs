@@ -33,7 +33,6 @@ namespace Apache.NMS.Test
 
 		protected const int totalMsgs = 5;
 
-#if !NET_1_1
 		[RowTest]
 		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.NonPersistent)]
 		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.Persistent)]
@@ -43,7 +42,6 @@ namespace Apache.NMS.Test
 		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.Persistent)]
 		[Row(AcknowledgementMode.Transactional,     MsgDeliveryMode.NonPersistent)]
 		[Row(AcknowledgementMode.Transactional,     MsgDeliveryMode.Persistent)]
-#endif
 		public void SendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, MsgDeliveryMode deliveryMode)
 		{
 			using(IConnection connection = CreateConnection(TEST_CLIENT_ID))
@@ -99,7 +97,6 @@ namespace Apache.NMS.Test
 		protected int receivedA;
 		protected int receivedB;
 
-#if !NET_1_1
 		[RowTest]
 		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.NonPersistent)]
 		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.Persistent)]
@@ -108,7 +105,6 @@ namespace Apache.NMS.Test
 		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.NonPersistent)]
 		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.Persistent)]
 		// Do not use listeners with transactional processing.
-#endif
 		public void AsyncSendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, MsgDeliveryMode deliveryMode)
 		{
 			receivedA = 0;

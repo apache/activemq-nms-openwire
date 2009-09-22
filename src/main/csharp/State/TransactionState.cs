@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		private List<Command> commands = new List<Command>();
 		private TransactionId id;
-		private AtomicBoolean _shutdown = new AtomicBoolean(false);
+		private Atomic<bool> _shutdown = new Atomic<bool>(false);
 		private bool prepared;
 		private int preparedResult;
 

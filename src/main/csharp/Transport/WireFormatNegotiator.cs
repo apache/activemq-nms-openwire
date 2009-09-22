@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         private OpenWireFormat wireFormat;
         private TimeSpan negotiateTimeout = TimeSpan.FromSeconds(15);
 
-        private AtomicBoolean firstStart=new AtomicBoolean(true);
+        private Atomic<bool> firstStart=new Atomic<bool>(true);
         private CountDownLatch readyCountDownLatch = new CountDownLatch(1);
         private CountDownLatch wireInfoSentDownLatch = new CountDownLatch(1);
 

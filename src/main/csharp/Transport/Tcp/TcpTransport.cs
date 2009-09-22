@@ -37,7 +37,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private Thread readThread;
 		private bool started;
 		private bool disposed = false;
-		private AtomicBoolean closed = new AtomicBoolean(false);
+		private Atomic<bool> closed = new Atomic<bool>(false);
 		private volatile bool seenShutdown;
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
 		private Uri connectedUri;

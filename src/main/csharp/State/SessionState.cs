@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		private AtomicDictionary<ProducerId, ProducerState> producers = new AtomicDictionary<ProducerId, ProducerState>();
 		private AtomicDictionary<ConsumerId, ConsumerState> consumers = new AtomicDictionary<ConsumerId, ConsumerState>();
-		private AtomicBoolean _shutdown = new AtomicBoolean(false);
+		private Atomic<bool> _shutdown = new Atomic<bool>(false);
 
 		public SessionState(SessionInfo info)
 		{
