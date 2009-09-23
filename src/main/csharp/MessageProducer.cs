@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
@@ -27,10 +28,11 @@ namespace Apache.NMS.ActiveMQ
 	public class MessageProducer : IMessageProducer
 	{
 		private Session session;
+        private MemoryUsage usage = null;
 		private bool closed = false;
         private object closedLock = new object();
 		private readonly ProducerInfo info;
-		private int messageCounter = 0;
+        private long producerSequenceId = 0;
 
 		private MsgDeliveryMode msgDeliveryMode = NMSConstants.defaultDeliveryMode;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
@@ -100,6 +102,11 @@ namespace Apache.NMS.ActiveMQ
 					Tracer.ErrorFormat("Error during producer close: {0}", ex);
 				}
 
+                if(this.usage != null)
+                {
+                    this.usage.Stop();
+                }
+                
 				session = null;
 				closed = true;
 			}
@@ -142,19 +149,17 @@ namespace Apache.NMS.ActiveMQ
 
 			ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
-			if(!disableMessageID)
-			{
-				MessageId id = new MessageId();
-				id.ProducerId = info.ProducerId;
-				id.ProducerSequenceId = Interlocked.Increment(ref messageCounter);
-				activeMessage.MessageId = id;
-			}
-
 			activeMessage.ProducerId = info.ProducerId;
 			activeMessage.FromDestination = destination;
 			activeMessage.NMSDeliveryMode = deliveryMode;
 			activeMessage.NMSPriority = priority;
 
+            // Always set the message Id regardless of the disable flag.
+            MessageId id = new MessageId();
+            id.ProducerId = info.ProducerId;
+            id.ProducerSequenceId = Interlocked.Increment(ref this.producerSequenceId);
+            activeMessage.MessageId = id;
+            
 			if(!disableMessageTimestamp)
 			{
 				activeMessage.NMSTimestamp = DateTime.UtcNow;
@@ -165,6 +170,12 @@ namespace Apache.NMS.ActiveMQ
 				activeMessage.NMSTimeToLive = timeToLive;
 			}
 
+            // Ensure there's room left to send this message            
+            if(this.usage != null)
+            {
+                usage.WaitForSpace();
+            }
+            
 			lock(closedLock)
 			{
 				if(closed)
@@ -172,16 +183,15 @@ namespace Apache.NMS.ActiveMQ
 					throw new ConnectionClosedException();
 				}
 
-				if(session.Transacted)
-				{
-					session.DoStartTransaction();
-					activeMessage.TransactionId = session.TransactionContext.TransactionId;
-				}
-
-				session.DoSend(activeMessage, this.RequestTimeout);
+				session.DoSend(activeMessage, this, this.usage, this.RequestTimeout);
 			}
 		}
 
+        public ProducerId ProducerId
+        {
+            get { return info.ProducerId; }
+        }
+        
 		public MsgDeliveryMode DeliveryMode
 		{
 			get { return msgDeliveryMode; }
@@ -252,5 +262,13 @@ namespace Apache.NMS.ActiveMQ
 		{
 			return session.CreateBytesMessage(body);
 		}
+        
+        public void OnProducerAck(ProducerAck ack)
+        {
+            if(this.usage != null)
+            {
+                this.usage.DecreaseUsage( ack.Size );
+            }
+        }
 	}
 }

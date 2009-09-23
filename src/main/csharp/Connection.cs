@@ -37,12 +37,16 @@ namespace Apache.NMS.ActiveMQ
 		private BrokerInfo brokerInfo; // from broker
 		private WireFormatInfo brokerWireFormatInfo; // from broker
 		private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
+        private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
 		/// <summary>
 		/// Private object used for synchronization, instead of public "this"
 		/// </summary>
 		private readonly object myLock = new object();
 		private bool asyncSend = false;
+        private bool alwaysSyncSend = false;
 		private bool asyncClose = true;
+        private bool copyMessageOnSend = true;
+        private int producerWindowSize = 0;
 		private bool connected = false;
 		private bool closed = false;
 		private bool closing = false;
@@ -103,7 +107,46 @@ namespace Apache.NMS.ActiveMQ
 		{
 			set { this.acknowledgementMode = NMSConvert.ToAcknowledgementMode(value); }
 		}
+        
+        /// <summary>
+        /// This property is the maximum number of bytes in memory that a producer will transmit 
+        /// to a broker before waiting for acknowledgement messages from the broker that it has 
+        /// accepted the previously sent messages. In other words, this how you configure the 
+        /// producer flow control window that is used for async sends where the client is responsible 
+        /// for managing memory usage. The default value of 0 means no flow control at the client
+        /// </summary>
+        public int ProducerWindowSize
+        {
+            get { return producerWindowSize; }
+            set { producerWindowSize = value; }
+        }
+        
+        /// <summary>
+        /// This property forces all messages that are sent to be sent synchronously overriding
+        /// any usage of the AsyncSend flag. This can reduce performance in some cases since the 
+        /// only messages we normally send synchronously are Persistent messages not sent in a 
+        /// transaction. This options guarantees that no send will return until the broker has 
+        /// acknowledge receipt of the message
+        /// </summary>
+        public bool AlwaysSyncSend
+        {
+            get { return alwaysSyncSend; }
+            set { alwaysSyncSend = value; }
+        }
 
+        /// <summary>
+        /// This property indicates whether Message's should be copied before being sent via
+        /// one of the Connection's send methods.  Copying the Message object allows the user
+        /// to resuse the Object over for another send.  If the message isn't copied performance
+        /// can improve but the user must not reuse the Object as it may not have been sent
+        /// before they reset its payload.
+        /// </summary>
+        public bool CopyMessageOnSend
+        {
+            get { return copyMessageOnSend; }
+            set { copyMessageOnSend = value; }
+        }
+        
 		#endregion
 
 		/// <summary>
@@ -192,6 +235,16 @@ namespace Apache.NMS.ActiveMQ
 				sessions.Remove(session);
 			}
 		}
+        
+        public void addProducer( ProducerId id, MessageProducer producer ) 
+        {
+            this.producers.Add( id, producer );
+        }
+        
+        public void removeProducer( ProducerId id )
+        {
+            this.producers.Remove( id );
+        }   
 
 		public void Close()
 		{
@@ -454,6 +507,16 @@ namespace Apache.NMS.ActiveMQ
 				{
 					OnException(commandTransport, new NMSException("Broker closed this connection."));
 				}
+			}
+			else if(command is ProducerAck)
+			{
+                ProducerAck ack = (ProducerAck) command;
+                if(ack != null && ack.ProducerId != null) {
+                    MessageProducer producer = (MessageProducer) producers[ack.ProducerId];
+                    if( producer != null ) {
+                        producer.OnProducerAck(ack);
+                    }
+                }
 			}
 			else if(command is ConnectionError)
 			{

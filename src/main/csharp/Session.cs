@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ
         private bool closed = false;
         private bool closing = false;
         private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
-
+        
         public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
         {
             this.connection = connection;
@@ -470,12 +470,12 @@ namespace Apache.NMS.ActiveMQ
             this.DoSend(command);
         }
 
-        public void DoSend(Command message)
+        private void DoSend(Command message)
         {
             this.DoSend(message, this.RequestTimeout);
         }
 
-        public void DoSend(Command message, TimeSpan requestTimeout)
+        private void DoSend(Command message, TimeSpan requestTimeout)
         {
             if(AsyncSend)
             {
@@ -486,6 +486,54 @@ namespace Apache.NMS.ActiveMQ
             {
                 Connection.SyncRequest(message, requestTimeout);
             }
+        }
+
+        public void DoSend( ActiveMQMessage message, MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout )
+        {
+            ActiveMQMessage msg = message;
+            
+            if(Transacted)
+            {
+                DoStartTransaction();
+                msg.TransactionId = TransactionContext.TransactionId;
+            }
+                        
+            msg.RedeliveryCounter = 0;
+            msg.BrokerPath = null;
+
+            if(this.connection.CopyMessageOnSend)
+            {
+                msg = (ActiveMQMessage)msg.Clone();
+            }
+            
+            msg.OnSend();
+            msg.ProducerId = msg.MessageId.ProducerId;
+
+            if(sendTimeout.TotalMilliseconds <= 0 && !msg.ResponseRequired && !connection.AlwaysSyncSend && 
+               (!msg.Persistent || connection.AsyncSend || msg.TransactionId != null))
+            {
+                this.connection.Oneway(msg);
+                
+                if(producerWindow != null) 
+                {
+                    // Since we defer lots of the marshaling till we hit the wire, this 
+                    // might not provide and accurate size. We may change over to doing
+                    // more aggressive marshaling, to get more accurate sizes.. this is more 
+                    // important once users start using producer window flow control.
+                    producerWindow.IncreaseUsage(msg.Size());
+                }
+            } 
+            else 
+            {
+                if(sendTimeout.TotalMilliseconds > 0)
+                {
+                    this.connection.SyncRequest(msg, sendTimeout);
+                }
+                else
+                {
+                    this.connection.SyncRequest(msg);
+                }
+            }            
         }
 
         /// <summary>
@@ -563,7 +611,7 @@ namespace Apache.NMS.ActiveMQ
             answer.Exclusive = this.Exclusive;
             answer.DispatchAsync = this.DispatchAsync;
             answer.Retroactive = this.Retroactive;
-			answer.MaximumPendingMessageLimit = this.MaximumPendingMessageLimit;
+            answer.MaximumPendingMessageLimit = this.MaximumPendingMessageLimit;
 
             // If the destination contained a URI query, then use it to set public properties
             // on the ConsumerInfo
@@ -585,6 +633,7 @@ namespace Apache.NMS.ActiveMQ
             id.Value = Interlocked.Increment(ref producerCounter);
             answer.ProducerId = id;
             answer.Destination = ActiveMQDestination.Transform(destination);
+            answer.WindowSize = connection.ProducerWindowSize;
 
             // If the destination contained a URI query, then use it to set public
             // properties on the ProducerInfo
