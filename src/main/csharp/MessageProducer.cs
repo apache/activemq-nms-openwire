@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ
 		private bool closed = false;
         private object closedLock = new object();
 		private readonly ProducerInfo info;
-        private long producerSequenceId = 0;
+        private int producerSequenceId = 0;
 
 		private MsgDeliveryMode msgDeliveryMode = NMSConstants.defaultDeliveryMode;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
