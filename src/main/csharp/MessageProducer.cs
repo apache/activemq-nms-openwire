@@ -47,6 +47,13 @@ namespace Apache.NMS.ActiveMQ
 			this.session = session;
 			this.info = info;
 			this.RequestTimeout = session.RequestTimeout;
+            
+            // Version Three and higher will send us a ProducerAck, but only if we
+            // have a set producer window size.
+            if( session.Connection.ProtocolVersion >= 3 && info.WindowSize > 0 )
+            {
+                usage = new MemoryUsage( info.WindowSize );
+            }
 		}
 
 		~MessageProducer()
@@ -265,6 +272,8 @@ namespace Apache.NMS.ActiveMQ
         
         public void OnProducerAck(ProducerAck ack)
         {
+            Tracer.Debug("Received ProducerAck for Message of Size = {" + ack.Size + "}" );
+            
             if(this.usage != null)
             {
                 this.usage.DecreaseUsage( ack.Size );

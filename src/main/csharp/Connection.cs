@@ -76,6 +76,24 @@ namespace Apache.NMS.ActiveMQ
 		public event ExceptionListener ExceptionListener;
 
 		#region Properties
+        
+        /// <summary>
+        /// This property indicates what version of the Protocol we are using to
+        /// communicate with the Broker, if not set we return the lowest version
+        /// number to indicate we support only the basic command set.
+        /// </summary>        
+        public int ProtocolVersion
+        {
+            get
+            {
+                if(brokerWireFormatInfo != null)
+                {
+                    return brokerWireFormatInfo.Version;
+                }
+                
+                return 1;
+            }
+        }
 
 		/// <summary>
 		/// This property indicates whether or not async send is enabled.
@@ -484,8 +502,8 @@ namespace Apache.NMS.ActiveMQ
 		/// <param name="commandTransport">An ITransport</param>
 		/// <param name="command">A  Command</param>
 		protected void OnCommand(ITransport commandTransport, Command command)
-		{
-			if(command is MessageDispatch)
+		{			
+            if(command is MessageDispatch)
 			{
 				DispatchMessage((MessageDispatch) command);
 			}

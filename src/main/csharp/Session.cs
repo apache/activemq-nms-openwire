@@ -223,6 +223,9 @@ namespace Apache.NMS.ActiveMQ
 
                 throw;
             }
+            
+            // Registered with Connection so it can process Producer Acks.
+            connection.addProducer(producerId, producer);
 
             return producer;
         }
@@ -508,7 +511,7 @@ namespace Apache.NMS.ActiveMQ
             
             msg.OnSend();
             msg.ProducerId = msg.MessageId.ProducerId;
-
+            
             if(sendTimeout.TotalMilliseconds <= 0 && !msg.ResponseRequired && !connection.AlwaysSyncSend && 
                (!msg.Persistent || connection.AsyncSend || msg.TransactionId != null))
             {
@@ -559,6 +562,7 @@ namespace Apache.NMS.ActiveMQ
         public void DisposeOf(ProducerId objectId)
         {
             Connection.DisposeOf(objectId);
+            connection.removeProducer(objectId);
             if(!this.closing)
             {
                 producers.Remove(objectId);
