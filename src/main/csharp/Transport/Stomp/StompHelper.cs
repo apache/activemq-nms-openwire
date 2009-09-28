@@ -21,112 +21,134 @@ using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ.Transport.Stomp
 {
-    /// <summary>
-    /// Some <a href="http://stomp.codehaus.org/">STOMP</a> protocol conversion helper methods.
-    /// </summary>
-    public class StompHelper
-    {
+	/// <summary>
+	/// Some <a href="http://stomp.codehaus.org/">STOMP</a> protocol conversion helper methods.
+	/// </summary>
+	public class StompHelper
+	{
+		private static int ParseInt(string text)
+		{
+			StringBuilder sbtext = new StringBuilder();
 
+			for(int idx = 0; idx < text.Length; idx++)
+			{
+				if(char.IsNumber(text, idx))
+				{
+					sbtext.Append(text[idx]);
+				}
+				else
+				{
+					break;
+				}
+			}
+			
+			if(sbtext.Length > 0)
+			{
+				return Int32.Parse(sbtext.ToString());
+			}
+			
+			return 0;
+		}
 
 		public static ActiveMQDestination ToDestination(string text)
 		{
-		    if( text == null )
-		    {
-                return null;
-		    }		    
+			if(text == null)
+			{
+				return null;
+			}
+			
 			int type = ActiveMQDestination.ACTIVEMQ_QUEUE;
-			if (text.StartsWith("/queue/"))
+			string lowertext = text.ToLower();
+			if(lowertext.StartsWith("/queue/"))
 			{
 				text = text.Substring("/queue/".Length);
 			}
-			else if (text.StartsWith("/topic/"))
+			else if(lowertext.StartsWith("/topic/"))
 			{
 				text = text.Substring("/topic/".Length);
 				type = ActiveMQDestination.ACTIVEMQ_TOPIC;
 			}
-			else if (text.StartsWith("/temp-topic/"))
+			else if(lowertext.StartsWith("/temp-topic/"))
 			{
 				text = text.Substring("/temp-topic/".Length);
 				type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_TOPIC;
 			}
-			else if (text.StartsWith("/temp-queue/"))
+			else if(lowertext.StartsWith("/temp-queue/"))
 			{
 				text = text.Substring("/temp-queue/".Length);
 				type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_QUEUE;
 			}
-            else if (text.StartsWith("/remote-temp-topic/"))
-            {
-                type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_TOPIC;
-            }
-            else if (text.StartsWith("/remote-temp-queue/"))
-            {
-                type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_QUEUE;
-            }
-            return ActiveMQDestination.CreateDestination(type, text);
+			else if(lowertext.StartsWith("/remote-temp-topic/"))
+			{
+				type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_TOPIC;
+			}
+			else if(lowertext.StartsWith("/remote-temp-queue/"))
+			{
+				type = ActiveMQDestination.ACTIVEMQ_TEMPORARY_QUEUE;
+			}
+			
+			return ActiveMQDestination.CreateDestination(type, text);
 		}
 
 		public static string ToStomp(ActiveMQDestination destination)
 		{
-			if (destination == null)
+			if(destination == null)
 			{
 				return null;
 			}
-			else
+
+			switch (destination.DestinationType)
 			{
-				switch (destination.DestinationType)
-				{
-					case DestinationType.Topic:
-						return "/topic/" + destination.PhysicalName;
-					
-					case DestinationType.TemporaryTopic:
-                        if (destination.PhysicalName.StartsWith("/remote-temp-topic/"))
-                        {
-                            return destination.PhysicalName;
-                        }
-                        else 
-                        {
-                            return "/temp-topic/" + destination.PhysicalName;
-                        }
-					
-					case DestinationType.TemporaryQueue:
-                        if (destination.PhysicalName.StartsWith("/remote-temp-queue/"))
-                        {
-                            return destination.PhysicalName;
-                        }
-                        else 
-                        {
-                            return "/temp-queue/" + destination.PhysicalName;
-                        }
-					
-					default:
-						return "/queue/" + destination.PhysicalName;
-				}
+				case DestinationType.Topic:
+					return "/topic/" + destination.PhysicalName;
+
+				case DestinationType.TemporaryTopic:
+					if (destination.PhysicalName.ToLower().StartsWith("/remote-temp-topic/"))
+					{
+						return destination.PhysicalName;
+					}
+
+					return "/temp-topic/" + destination.PhysicalName;
+
+				case DestinationType.TemporaryQueue:
+					if (destination.PhysicalName.ToLower().StartsWith("/remote-temp-queue/"))
+					{
+						return destination.PhysicalName;
+					}
+
+					return "/temp-queue/" + destination.PhysicalName;
+
+				default:
+					return "/queue/" + destination.PhysicalName;
 			}
 		}
-		
+
 		public static string ToStomp(ConsumerId id)
 		{
 			return id.ConnectionId + ":" + id.SessionId + ":" + id.Value;
 		}
-		
+
 		public static ConsumerId ToConsumerId(string text)
 		{
-			if (text == null)
+			if(text == null)
 			{
 				return null;
 			}
+
 			ConsumerId answer = new ConsumerId();
 			int idx = text.LastIndexOf(':');
-			if (idx >= 0) {
+			if (idx >= 0)
+			{
 				try
 				{
-					answer.Value = Int32.Parse(text.Substring(idx + 1));
+					answer.Value = ParseInt(text.Substring(idx + 1));
 					text = text.Substring(0, idx);
 					idx = text.LastIndexOf(':');
-					if (idx >= 0) {
+					if (idx >= 0)
+					{
 						try
 						{
-							answer.SessionId = Int32.Parse(text.Substring(idx + 1));
+							answer.SessionId = ParseInt(text.Substring(idx + 1));
 							text = text.Substring(0, idx);
 						}
 						catch(Exception ex)
@@ -143,15 +165,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			answer.ConnectionId = text;
 			return answer;
 		}
-		
+
 		public static string ToStomp(ProducerId id)
 		{
 			StringBuilder producerBuilder = new StringBuilder();
 
 			producerBuilder.Append(id.ConnectionId);
-            producerBuilder.Append(":");
-            producerBuilder.Append(id.SessionId);
-            producerBuilder.Append(":");
+			producerBuilder.Append(":");
+			producerBuilder.Append(id.SessionId);
+			producerBuilder.Append(":");
 			producerBuilder.Append(id.Value);
 
 			return producerBuilder.ToString();
@@ -159,23 +181,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 		
 		public static ProducerId ToProducerId(string text)
 		{
-			if (text == null)
+			if(text == null)
 			{
 				return null;
 			}
+
 			ProducerId answer = new ProducerId();
 			int idx = text.LastIndexOf(':');
-			if (idx >= 0) {
+			if(idx >= 0)
+			{
 				try
 				{
-					answer.Value = Int32.Parse(text.Substring(idx + 1));
-                    text = text.Substring(0, idx);
-                    idx = text.LastIndexOf(':');
-                    if (idx >= 0)
-                    {
-                        answer.SessionId = Int32.Parse(text.Substring(idx + 1));
-                        text = text.Substring(0, idx);
-                    }
+					answer.Value = ParseInt(text.Substring(idx + 1));
+					text = text.Substring(0, idx);
+					idx = text.LastIndexOf(':');
+					if (idx >= 0)
+					{
+						answer.SessionId = ParseInt(text.Substring(idx + 1));
+						text = text.Substring(0, idx);
+					}
 				}
 				catch(Exception ex)
 				{
@@ -185,7 +209,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			answer.ConnectionId = text;
 			return answer;
 		}
-		
+
 		public static string ToStomp(MessageId id)
 		{
 			StringBuilder messageBuilder = new StringBuilder();
@@ -193,22 +217,24 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			messageBuilder.Append(ToStomp(id.ProducerId));
 			messageBuilder.Append(":");
 			messageBuilder.Append(id.ProducerSequenceId);
-			
+
 			return messageBuilder.ToString();
 		}
-		
+
 		public static MessageId ToMessageId(string text)
 		{
-			if (text == null)
+			if(text == null)
 			{
 				return null;
 			}
+			
 			MessageId answer = new MessageId();
 			int idx = text.LastIndexOf(':');
-			if (idx >= 0) {
+			if (idx >= 0)
+			{
 				try
 				{
-					answer.ProducerSequenceId = Int32.Parse(text.Substring(idx + 1));
+					answer.ProducerSequenceId = ParseInt(text.Substring(idx + 1));
 					text = text.Substring(0, idx);
 				}
 				catch(Exception ex)
@@ -219,31 +245,30 @@ namespace Apache.NMS.ActiveMQ.Transport.Stomp
 			answer.ProducerId = ToProducerId(text);
 			return answer;
 		}
-	
+
 		public static string ToStomp(TransactionId id)
 		{
-			if (id is LocalTransactionId)
+			if(id is LocalTransactionId)
 			{
 				return ToStomp(id as LocalTransactionId);
 			}
+			
 			return id.ToString();
 		}
-		
+
 		public static string ToStomp(LocalTransactionId transactionId)
 		{
 			return transactionId.ConnectionId.Value + ":" + transactionId.Value;
 		}
-		
+
 		public static bool ToBool(string text, bool defaultValue)
 		{
-			if (text == null)
+			if(text == null)
 			{
 				return defaultValue;
 			}
-			else
-			{
-				return "true" == text || "TRUE" == text;
-			}
+
+			return (0 == string.Compare("true", text, true));
 		}
-    }
+	}
 }
