@@ -19,6 +19,7 @@ using System;
 using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
@@ -44,7 +45,7 @@ namespace Apache.NMS.ActiveMQ
         private bool closed = false;
         private bool closing = false;
         private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
-        
+
         public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
         {
             this.connection = connection;
@@ -223,7 +224,7 @@ namespace Apache.NMS.ActiveMQ
 
                 throw;
             }
-            
+
             // Registered with Connection so it can process Producer Acks.
             connection.addProducer(producerId, producer);
 
@@ -494,13 +495,13 @@ namespace Apache.NMS.ActiveMQ
         public void DoSend( ActiveMQMessage message, MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout )
         {
             ActiveMQMessage msg = message;
-            
+
             if(Transacted)
             {
                 DoStartTransaction();
                 msg.TransactionId = TransactionContext.TransactionId;
             }
-                        
+
             msg.RedeliveryCounter = 0;
             msg.BrokerPath = null;
 
@@ -508,25 +509,25 @@ namespace Apache.NMS.ActiveMQ
             {
                 msg = (ActiveMQMessage)msg.Clone();
             }
-            
+
             msg.OnSend();
             msg.ProducerId = msg.MessageId.ProducerId;
-            
-            if(sendTimeout.TotalMilliseconds <= 0 && !msg.ResponseRequired && !connection.AlwaysSyncSend && 
+
+            if(sendTimeout.TotalMilliseconds <= 0 && !msg.ResponseRequired && !connection.AlwaysSyncSend &&
                (!msg.Persistent || connection.AsyncSend || msg.TransactionId != null))
             {
                 this.connection.Oneway(msg);
-                
-                if(producerWindow != null) 
+
+                if(producerWindow != null)
                 {
-                    // Since we defer lots of the marshaling till we hit the wire, this 
+                    // Since we defer lots of the marshaling till we hit the wire, this
                     // might not provide and accurate size. We may change over to doing
-                    // more aggressive marshaling, to get more accurate sizes.. this is more 
+                    // more aggressive marshaling, to get more accurate sizes.. this is more
                     // important once users start using producer window flow control.
                     producerWindow.IncreaseUsage(msg.Size());
                 }
-            } 
-            else 
+            }
+            else
             {
                 if(sendTimeout.TotalMilliseconds > 0)
                 {
@@ -536,7 +537,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     this.connection.SyncRequest(msg);
                 }
-            }            
+            }
         }
 
         /// <summary>
