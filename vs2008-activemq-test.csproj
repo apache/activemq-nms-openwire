@@ -62,6 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\test\csharp\Commands\ActiveMQBytesMessageTest.cs" />
     <Compile Include="src\test\csharp\Commands\ActiveMQTextMessageTest.cs" />
     <Compile Include="src\test\csharp\Commands\CommandTest.cs">
       <SubType>Code</SubType>
