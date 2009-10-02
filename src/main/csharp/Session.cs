@@ -314,6 +314,16 @@ namespace Apache.NMS.ActiveMQ
             this.DoSend(command);
         }
 
+        public IQueueBrowser CreateBrowser(IQueue queue)
+        {
+            throw new NotSupportedException("Not Yet Implemented");
+        }
+
+        public IQueueBrowser CreateBrowser(IQueue queue, string selector)
+        {
+            throw new NotSupportedException("Not Yet Implemented");
+        }
+        
         public IQueue GetQueue(string name)
         {
             return new ActiveMQQueue(name);
