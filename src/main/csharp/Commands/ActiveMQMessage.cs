@@ -63,35 +63,35 @@ namespace Apache.NMS.ActiveMQ.Commands
 				Acknowledger(this);
 			}
 		}
-        
-        public virtual void ClearBody()
-        {
-            this.Content = null;
-            this.readOnlyMsgBody = false;
-        }
-        
-        public virtual void ClearProperties()
-        {
-            this.MarshalledProperties = null;
-            this.Properties.Clear();
-            this.readOnlyMsgProperties = false;
-        }
-        
-        protected void FailIfReadOnlyBody()
-        {
-            if(ReadOnlyBody == true)
-            {
-                throw new MessageNotWriteableException("Message is in Read-Only mode.");
-            }
-        }
 
-        protected void FailIfWriteOnlyBody()
-        {
-            if( ReadOnlyBody == false )
-            {
-                throw new MessageNotReadableException("Message is in Write-Only mode.");
-            }
-        }
+		public virtual void ClearBody()
+		{
+			this.Content = null;
+			this.readOnlyMsgBody = false;
+		}
+
+		public virtual void ClearProperties()
+		{
+			this.MarshalledProperties = null;
+			this.Properties.Clear();
+			this.readOnlyMsgProperties = false;
+		}
+
+		protected void FailIfReadOnlyBody()
+		{
+			if(ReadOnlyBody == true)
+			{
+				throw new MessageNotWriteableException("Message is in Read-Only mode.");
+			}
+		}
+
+		protected void FailIfWriteOnlyBody()
+		{
+			if( ReadOnlyBody == false )
+			{
+				throw new MessageNotReadableException("Message is in Write-Only mode.");
+			}
+		}
 
 		#region Properties
 
