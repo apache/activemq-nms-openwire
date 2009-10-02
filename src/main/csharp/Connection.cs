@@ -572,6 +572,9 @@ namespace Apache.NMS.ActiveMQ
 			// This is a bit of a hack since we should really be sending the entire dispatch to
 			// the Consumer.
 			dispatch.Message.Destination = dispatch.Destination;
+            dispatch.Message.ReadOnlyBody = true;
+            dispatch.Message.ReadOnlyProperties = true;
+            dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
 
 			lock(sessions.SyncRoot)
 			{
