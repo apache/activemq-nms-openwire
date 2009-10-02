@@ -143,7 +143,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "]";
         }
 
-        public int Size()
+        public virtual int Size()
         {
             int size = DEFAULT_MINIMUM_MESSAGE_SIZE;
 
@@ -159,7 +159,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             return size;
         }
 
-        public void OnSend()
+        public virtual void OnSend()
         {
             this.ReadOnlyProperties = true;
             this.ReadOnlyBody = true;
