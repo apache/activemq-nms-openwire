@@ -23,482 +23,482 @@ using System.IO;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    public class ActiveMQBytesMessage : ActiveMQMessage, IBytesMessage
-    {
-        public const byte ID_ACTIVEMQBYTESMESSAGE = 24;
-        
-        private EndianBinaryReader dataIn = null;
-        private EndianBinaryWriter dataOut = null;
-        private MemoryStream outputBuffer = null;
-        
-        // Need this later when we add compression to store true content length.
-        private long length = 0;
+	public class ActiveMQBytesMessage : ActiveMQMessage, IBytesMessage
+	{
+		public const byte ID_ACTIVEMQBYTESMESSAGE = 24;
 
-        public override byte GetDataStructureType()
-        {
-            return ID_ACTIVEMQBYTESMESSAGE;
-        }
+		private EndianBinaryReader dataIn = null;
+		private EndianBinaryWriter dataOut = null;
+		private MemoryStream outputBuffer = null;
 
-        public override Object Clone()
-        {
-            StoreContent();
-            return base.Clone();
-        }
+		// Need this later when we add compression to store true content length.
+		private long length = 0;
 
-        public override void OnSend()
-        {
-            base.OnSend();
-            StoreContent();                         
-        }
-        
-        public override void ClearBody()
-        {
-            base.ClearBody();
-            this.outputBuffer = null;
-            this.dataIn = null;
-            this.dataOut = null;
-            this.length = 0;
-        }
-        
-        public long BodyLength
-        { 
-            get
-            {
-                InitializeReading();
-                return this.length;
-            }
-        }
-        
-        public byte ReadByte()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadByte();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-        
-        public void WriteByte( byte value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }            
-        }
-        
-        public bool ReadBoolean()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadBoolean();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
+		public override byte GetDataStructureType()
+		{
+			return ID_ACTIVEMQBYTESMESSAGE;
+		}
 
-        public void WriteBoolean( bool value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
-        
-        public char ReadChar()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadChar();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-   
-        public void WriteChar( char value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
-       
-        public short ReadInt16()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadInt16();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-        
-        public void WriteInt16( short value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
-                
-        public int ReadInt32()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadInt32();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-            
-        public void WriteInt32( int value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
-                 
-        public long ReadInt64()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadInt64();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-                
-        public void WriteInt64( long value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
-              
-        public float ReadSingle()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadSingle();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
+		public override Object Clone()
+		{
+			StoreContent();
+			return base.Clone();
+		}
 
-        public void WriteSingle( float value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
+		public override void OnSend()
+		{
+			base.OnSend();
+			StoreContent();
+		}
 
-        public double ReadDouble()
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.ReadDouble();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-               
-        public void WriteDouble( double value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }            
-             
-        public int ReadBytes( byte[] value )
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.Read( value, 0, value.Length );
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-                   
-        public int ReadBytes( byte[] value, int length )
-        {
-            InitializeReading();
-            try
-            {
-                return dataIn.Read( value, 0, length );
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }           
-        }
-              
-        public void WriteBytes( byte[] value )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value, 0, value.Length );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
-       
-        public void WriteBytes( byte[] value, int offset, int length )
-        {
-            InitializeWriting();
-            try
-            {
-                dataOut.Write( value, offset, length );
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }     
-        }
+		public override void ClearBody()
+		{
+			base.ClearBody();
+			this.outputBuffer = null;
+			this.dataIn = null;
+			this.dataOut = null;
+			this.length = 0;
+		}
 
-        public string ReadString()
-        {
-            InitializeReading();
-            try
-            {
-                // JMS, CMS and NMS all encode the String using a 16 bit size header.
-                return dataIn.ReadString16();
-            }
-            catch(EndOfStreamException e)
-            {
-                throw NMSExceptionSupport.createMessageEOFException(e);
-            }
-            catch(IOException e)
-            {
-                throw NMSExceptionSupport.createMessageFormatException(e);
-            }
-        }
-         
-        public void WriteString( string value )
-        {
-            InitializeWriting();
-            try
-            {
-                // JMS, CMS and NMS all encode the String using a 16 bit size header.
-                dataOut.WriteString16(value);
-            }
-            catch(Exception e)
-            {
-                throw NMSExceptionSupport.create(e);
-            }   
-        }
-        
-        public void WriteObject( System.Object value )
-        {
-            InitializeWriting();
-            if( value is System.Byte )
-            {
-                this.dataOut.Write( (byte) value );
-            }
-            else if( value is Char )
-            {
-                this.dataOut.Write( (char) value );
-            }
-            else if( value is Boolean )
-            {
-                this.dataOut.Write( (bool) value );
-            }
-            else if( value is Int16 )
-            {
-                this.dataOut.Write( (short) value );
-            }
-            else if( value is Int32 )
-            {
-                this.dataOut.Write( (int) value );
-            }
-            else if( value is Int64 )
-            {
-                this.dataOut.Write( (long) value );
-            }
-            else if( value is Single )
-            {
-                this.dataOut.Write( (float) value );
-            }
-            else if( value is Double )
-            {
-                this.dataOut.Write( (double) value );
-            }
-            else if( value is byte[] )
-            {
-                this.dataOut.Write( (byte[]) value );
-            }
-            else if( value is String )
-            {
-                this.dataOut.WriteString16( (string) value );
-            }
-            else
-            {
-                throw new MessageFormatException("Cannot write non-primitive type:" + value.GetType());
-            }
-        }
-        
-        public void Reset()
-        {
-            StoreContent();
-            this.dataIn = null;
-            this.dataOut = null;
-            this.outputBuffer = null;
-            this.ReadOnlyBody = true;        
-        }
-        
-        private void InitializeReading() 
-        {
-            FailIfWriteOnlyBody();
-            if(this.dataIn == null)
-            {
-                if(this.Content != null)
-                {
-                    this.length = this.Content.Length;
-                }
-                
-                // TODO - Add support for Message Compression.
-                MemoryStream bytesIn = new MemoryStream(this.Content, false);
-                dataIn = new EndianBinaryReader(bytesIn);
-            }
-        }
-        
-        private void InitializeWriting()
-        {
-            FailIfReadOnlyBody();
-            if(this.dataOut == null) 
-            {
-                // TODO - Add support for Message Compression.
-                this.outputBuffer = new MemoryStream();
-                this.dataOut = new EndianBinaryWriter(outputBuffer);
-            }
-        }
-        
-        private void StoreContent()
-        {
-            if( dataOut != null)
-            {
-                dataOut.Close();
-                // TODO - Add support for Message Compression.
+		public long BodyLength
+		{
+			get
+			{
+				InitializeReading();
+				return this.length;
+			}
+		}
 
-                this.Content = outputBuffer.ToArray();
-                this.dataOut = null;
-                this.outputBuffer = null;
-            }
-        }
-            
-    }
+		public byte ReadByte()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadByte();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteByte( byte value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public bool ReadBoolean()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadBoolean();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteBoolean( bool value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public char ReadChar()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadChar();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteChar( char value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public short ReadInt16()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadInt16();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteInt16( short value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public int ReadInt32()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadInt32();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteInt32( int value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public long ReadInt64()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadInt64();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteInt64( long value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public float ReadSingle()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadSingle();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteSingle( float value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public double ReadDouble()
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.ReadDouble();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteDouble( double value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public int ReadBytes( byte[] value )
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.Read( value, 0, value.Length );
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public int ReadBytes( byte[] value, int length )
+		{
+			InitializeReading();
+			try
+			{
+				return dataIn.Read( value, 0, length );
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteBytes( byte[] value )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value, 0, value.Length );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public void WriteBytes( byte[] value, int offset, int length )
+		{
+			InitializeWriting();
+			try
+			{
+				dataOut.Write( value, offset, length );
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public string ReadString()
+		{
+			InitializeReading();
+			try
+			{
+				// JMS, CMS and NMS all encode the String using a 16 bit size header.
+				return dataIn.ReadString16();
+			}
+			catch(EndOfStreamException e)
+			{
+				throw NMSExceptionSupport.createMessageEOFException(e);
+			}
+			catch(IOException e)
+			{
+				throw NMSExceptionSupport.createMessageFormatException(e);
+			}
+		}
+
+		public void WriteString( string value )
+		{
+			InitializeWriting();
+			try
+			{
+				// JMS, CMS and NMS all encode the String using a 16 bit size header.
+				dataOut.WriteString16(value);
+			}
+			catch(Exception e)
+			{
+				throw NMSExceptionSupport.create(e);
+			}
+		}
+
+		public void WriteObject( System.Object value )
+		{
+			InitializeWriting();
+			if( value is System.Byte )
+			{
+				this.dataOut.Write( (byte) value );
+			}
+			else if( value is Char )
+			{
+				this.dataOut.Write( (char) value );
+			}
+			else if( value is Boolean )
+			{
+				this.dataOut.Write( (bool) value );
+			}
+			else if( value is Int16 )
+			{
+				this.dataOut.Write( (short) value );
+			}
+			else if( value is Int32 )
+			{
+				this.dataOut.Write( (int) value );
+			}
+			else if( value is Int64 )
+			{
+				this.dataOut.Write( (long) value );
+			}
+			else if( value is Single )
+			{
+				this.dataOut.Write( (float) value );
+			}
+			else if( value is Double )
+			{
+				this.dataOut.Write( (double) value );
+			}
+			else if( value is byte[] )
+			{
+				this.dataOut.Write( (byte[]) value );
+			}
+			else if( value is String )
+			{
+				this.dataOut.WriteString16( (string) value );
+			}
+			else
+			{
+				throw new MessageFormatException("Cannot write non-primitive type:" + value.GetType());
+			}
+		}
+
+		public void Reset()
+		{
+			StoreContent();
+			this.dataIn = null;
+			this.dataOut = null;
+			this.outputBuffer = null;
+			this.ReadOnlyBody = true;
+		}
+
+		private void InitializeReading()
+		{
+			FailIfWriteOnlyBody();
+			if(this.dataIn == null)
+			{
+				if(this.Content != null)
+				{
+					this.length = this.Content.Length;
+				}
+
+				// TODO - Add support for Message Compression.
+				MemoryStream bytesIn = new MemoryStream(this.Content, false);
+				dataIn = new EndianBinaryReader(bytesIn);
+			}
+		}
+
+		private void InitializeWriting()
+		{
+			FailIfReadOnlyBody();
+			if(this.dataOut == null)
+			{
+				// TODO - Add support for Message Compression.
+				this.outputBuffer = new MemoryStream();
+				this.dataOut = new EndianBinaryWriter(outputBuffer);
+			}
+		}
+
+		private void StoreContent()
+		{
+			if( dataOut != null)
+			{
+				dataOut.Close();
+				// TODO - Add support for Message Compression.
+
+				this.Content = outputBuffer.ToArray();
+				this.dataOut = null;
+				this.outputBuffer = null;
+			}
+		}
+
+	}
 }
 

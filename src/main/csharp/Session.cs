@@ -399,7 +399,12 @@ namespace Apache.NMS.ActiveMQ
             return answer;
         }
 
-        public IObjectMessage CreateObjectMessage(object body)
+		public IStreamMessage CreateStreamMessage()
+		{
+			return new ActiveMQStreamMessage();
+		}
+		
+		public IObjectMessage CreateObjectMessage(object body)
         {
             ActiveMQObjectMessage answer = new ActiveMQObjectMessage();
             answer.Body = body;

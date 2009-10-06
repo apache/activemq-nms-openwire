@@ -271,7 +271,12 @@ namespace Apache.NMS.ActiveMQ
             return session.CreateBytesMessage(body);
         }
 
-        public void OnProducerAck(ProducerAck ack)
+		public IStreamMessage CreateStreamMessage()
+		{
+			return session.CreateStreamMessage();
+		}
+
+		public void OnProducerAck(ProducerAck ack)
         {
             Tracer.Debug("Received ProducerAck for Message of Size = {" + ack.Size + "}" );
 
