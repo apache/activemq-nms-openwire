@@ -100,9 +100,6 @@
 			<include name="${build.bin.dir}/${project.name}.dll" />
 			<include name="${build.bin.dir}/${project.name}.pdb" />
 			<include name="${build.bin.dir}/${project.name}.dll.mdb" />
-			<include name="nmsprovider-activemq.config" />
-			<include name="nmsprovider-tcp.config" />
-			<include name="nmsprovider-stomp.config" />
 		</fileset>
 
 		<fileset id="deploy.filenames">
