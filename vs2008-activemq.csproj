@@ -291,6 +291,7 @@
     <Compile Include="src\main\csharp\ConnectionFactory.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\ConnectionMetaData.cs" />
     <Compile Include="src\main\csharp\ConsumerClosedException.cs">
       <SubType>Code</SubType>
       <CustomToolNamespace>T</CustomToolNamespace>
