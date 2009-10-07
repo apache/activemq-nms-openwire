@@ -21,90 +21,90 @@ using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ
 {
-    /// <summary>
-    /// Implements the Connection Meta-Data feature for Apache.NMS.ActiveMQ
-    /// </summary>
-    public class ConnectionMetaData : IConnectionMetaData
-    {
-        private int nmsMajorVersion;
-        private int nmsMinorVersion;
+	/// <summary>
+	/// Implements the Connection Meta-Data feature for Apache.NMS.ActiveMQ
+	/// </summary>
+	public class ConnectionMetaData : IConnectionMetaData
+	{
+		private int nmsMajorVersion;
+		private int nmsMinorVersion;
 
-        private string nmsProviderName;
-        private string nmsVersion;
+		private string nmsProviderName;
+		private string nmsVersion;
 
-        private int providerMajorVersion;
-        private int providerMinorVersion;
-        private string providerVersion;        
+		private int providerMajorVersion;
+		private int providerMinorVersion;
+		private string providerVersion;
 
-        private string[] nmsxProperties;
+		private string[] nmsxProperties;
 
-        public ConnectionMetaData()
-        {
-            Assembly self = Assembly.GetExecutingAssembly();
-            AssemblyName asmName = self.GetName();
+		public ConnectionMetaData()
+		{
+			Assembly self = Assembly.GetExecutingAssembly();
+			AssemblyName asmName = self.GetName();
 
-            this.nmsProviderName = asmName.Name;
-            this.providerMajorVersion = asmName.Version.Major;
-            this.providerMinorVersion = asmName.Version.Minor;
-            this.providerVersion = asmName.Version.ToString();
+			this.nmsProviderName = asmName.Name;
+			this.providerMajorVersion = asmName.Version.Major;
+			this.providerMinorVersion = asmName.Version.Minor;
+			this.providerVersion = asmName.Version.ToString();
 
-            this.nmsxProperties = 
-                new String[]{ "NMSXGroupID", "NMSXGroupSeq", "NMSXDeliveryCount", "NMSXProducerTXID" };
-            
-            foreach( AssemblyName name in self.GetReferencedAssemblies() )
-            {
-                if( name.Name == "Apache.NMS" )
-                {
-                    this.nmsMajorVersion = name.Version.Major;
-                    this.nmsMinorVersion = name.Version.Minor;
-                    this.nmsVersion = name.Version.ToString();
-                    
-                    return;
-                }
-            }
-            
-            throw new NMSException("Could not find a reference to the Apache.NMS Assembly.");
-        }
-        
-        public int NMSMajorVersion
-        { 
-            get{ return this.nmsMajorVersion; }
-        }
-        
-        public int NMSMinorVersion
-        { 
-            get{ return this.nmsMinorVersion; } 
-        }
-        
-        public string NMSProviderName
-        { 
-            get{ return this.nmsProviderName; } 
-        }
-        
-        public string NMSVersion
-        { 
-            get{ return this.nmsVersion; } 
-        }
-        
-        public string[] NMSXPropertyNames
-        { 
-            get{ return this.nmsxProperties; }
-        }
-        
-        public int ProviderMajorVersion
-        { 
-            get{ return this.providerMajorVersion; }
-        }
+			this.nmsxProperties =
+				new String[]{ "NMSXGroupID", "NMSXGroupSeq", "NMSXDeliveryCount", "NMSXProducerTXID" };
 
-        public int ProviderMinorVersion
-        { 
-            get{ return this.providerMinorVersion; }
-        }
+			foreach(AssemblyName name in self.GetReferencedAssemblies())
+			{
+				if(0 == string.Compare(name.Name, "Apache.NMS", true))
+				{
+					this.nmsMajorVersion = name.Version.Major;
+					this.nmsMinorVersion = name.Version.Minor;
+					this.nmsVersion = name.Version.ToString();
 
-        public string ProviderVersion
-        {
-            get{ return this.providerVersion; }
-        }
-        
-    }
+					return;
+				}
+			}
+
+			throw new NMSException("Could not find a reference to the Apache.NMS Assembly.");
+		}
+
+		public int NMSMajorVersion
+		{
+			get{ return this.nmsMajorVersion; }
+		}
+
+		public int NMSMinorVersion
+		{
+			get{ return this.nmsMinorVersion; }
+		}
+
+		public string NMSProviderName
+		{
+			get{ return this.nmsProviderName; }
+		}
+
+		public string NMSVersion
+		{
+			get{ return this.nmsVersion; }
+		}
+
+		public string[] NMSXPropertyNames
+		{
+			get{ return this.nmsxProperties; }
+		}
+
+		public int ProviderMajorVersion
+		{
+			get{ return this.providerMajorVersion; }
+		}
+
+		public int ProviderMinorVersion
+		{
+			get{ return this.providerMinorVersion; }
+		}
+
+		public string ProviderVersion
+		{
+			get{ return this.providerVersion; }
+		}
+
+	}
 }
