@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -10,6 +9,8 @@
     <RootNamespace>Apache.NMS.ActiveMQ.Test</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ.Test</AssemblyName>
     <WarningLevel>4</WarningLevel>
+    <StartupObject>
+    </StartupObject>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <OldToolsVersion>2.0</OldToolsVersion>
@@ -22,7 +23,6 @@
     <SccAuxPath>Svn</SccAuxPath>
     <SccProvider>SubversionScc</SccProvider>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,30 +30,30 @@
     <Optimize>false</Optimize>
     <OutputPath>build\net-2.0\debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;NET,NET_2_0</DefineConstants>
-    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>build\net-2.0\release\</OutputPath>
     <DefineConstants>TRACE;NET,NET_2_0</DefineConstants>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
-    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Apache.NMS, Version=1.2.0.1662, Culture=neutral, PublicKeyToken=82756feee3957618">
+    <Reference Include="Apache.NMS, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\Apache.NMS\net-2.0\Apache.NMS.dll</HintPath>
     </Reference>
-    <Reference Include="Apache.NMS.Test, Version=1.2.0.1662, Culture=neutral, PublicKeyToken=82756feee3957618">
+    <Reference Include="Apache.NMS.Test, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\Apache.NMS\net-2.0\Apache.NMS.Test.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77">
+    <Reference Include="nunit.framework, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\NUnit\net-2.0\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework.extensions, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77">
+    <Reference Include="nunit.framework.extensions, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\NUnit\net-2.0\nunit.framework.extensions.dll</HintPath>
     </Reference>
@@ -82,9 +82,6 @@
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportTest.cs" />
     <Compile Include="src\test\csharp\Util\MemoryUsageTest.cs" />
     <Compile Include="src\test\csharp\VirtualTopicTest.cs" />
-    <Compile Include="src\test\csharp\Commands\ActiveMQBytesMessageTest.cs" />
-    <Compile Include="src\test\csharp\Commands\ActiveMQStreamMessageTest.cs" />
-    <Compile Include="src\test\csharp\ConnectionMetaDataTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="nmsprovider-test.config">
