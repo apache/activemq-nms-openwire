@@ -38,9 +38,6 @@ namespace Apache.NMS.ActiveMQ
 		private WireFormatInfo brokerWireFormatInfo; // from broker
 		private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
-		/// <summary>
-		/// Private object used for synchronization, instead of public "this"
-		/// </summary>
 		private readonly object myLock = new object();
 		private bool asyncSend = false;
         private bool alwaysSyncSend = false;
@@ -54,6 +51,7 @@ namespace Apache.NMS.ActiveMQ
 		private int temporaryDestinationCounter = 0;
 		private int localTransactionCounter;
 		private readonly Atomic<bool> started = new Atomic<bool>(false);
+        private ConnectionMetaData metaData = null;
 		private bool disposed = false;
 
 		public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
@@ -163,6 +161,19 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return copyMessageOnSend; }
             set { copyMessageOnSend = value; }
+        }
+        
+        public IConnectionMetaData MetaData
+        {
+            get 
+            { 
+                if(this.metaData == null)
+                {
+                    this.metaData = new ConnectionMetaData();
+                }
+                
+                return this.metaData; 
+            }
         }
         
 		#endregion
