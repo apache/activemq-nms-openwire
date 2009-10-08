@@ -17,7 +17,9 @@
 
 using System;
 using System.IO;
+using Apache.NMS;
 using Apache.NMS.Util;
+using Apache.NMS.ActiveMQ.OpenWire;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -25,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 	{
 		public const byte ID_ACTIVEMQTEXTMESSAGE = 28;
 
-		private String text;
+		private String text = null;
 
 		public ActiveMQTextMessage()
 		{
@@ -36,14 +38,22 @@ namespace Apache.NMS.ActiveMQ.Commands
 			this.Text = text;
 		}
 
-		// TODO generate Equals method
-		// TODO generate GetHashCode method
-		// TODO generate ToString method
-
 		public override string ToString()
 		{
-			return base.ToString() + " Text=" + Text;
+            string text = this.Text;
+
+            if(text != null && text.Length > 63)
+            {
+                text = text.Substring(0, 45) + "..." + text.Substring(text.Length - 12);
+            }
+			return base.ToString() + " Text = " + (text ?? "null");
 		}
+
+        public override void ClearBody()
+        {
+            base.ClearBody();
+            this.text = null;
+        }
 
 		public override byte GetDataStructureType()
 		{
@@ -56,39 +66,70 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				if(text == null)
-				{
-					// now lets read the content
-					byte[] data = this.Content;
-					if(data != null)
-					{
-						MemoryStream stream = new MemoryStream(data);
-						EndianBinaryReader reader = new EndianBinaryReader(stream);
-						text = reader.ReadString32();
-					}
-				}
-				return text;
+                try
+                {
+    				if(this.text == null && this.Content != null)
+    				{
+                        // TODO - Handle Compression
+    					MemoryStream stream = new MemoryStream(this.Content);
+    					EndianBinaryReader reader = new EndianBinaryReader(stream);
+    					this.text = reader.ReadString32();
+                        this.Content = null;
+    				}
+    				return this.text;
+                }
+                catch(IOException ex)
+                {
+                    throw NMSExceptionSupport.create(ex);
+                }
 			}
 
 			set
 			{
+                FailIfReadOnlyBody();                
 				this.text = value;
-				byte[] data = null;
-				if(text != null)
-				{
-					// TODO lets make the evaluation of the Content lazy!
-
-					// Set initial size to the size of the string the UTF-8 encode could
-					// result in more if there are chars that encode to multibye values.
-					MemoryStream stream = new MemoryStream(text.Length);
-					EndianBinaryWriter writer = new EndianBinaryWriter(stream);
-					writer.WriteString32(text);
-					data = stream.GetBuffer();
-				}
-				this.Content = data;
-
+                this.Content = null;
 			}
 		}
+
+        public override void BeforeMarshall(OpenWireFormat wireFormat)
+        {
+            base.BeforeMarshall(wireFormat);
+
+            if(this.Content == null && text != null)
+            {
+                byte[] data = null;
+
+                // TODO - Deal with Compressoin.
+                
+                // Set initial size to the size of the string the UTF-8 encode could
+                // result in more if there are chars that encode to multibye values.
+                MemoryStream stream = new MemoryStream(text.Length);
+                EndianBinaryWriter writer = new EndianBinaryWriter(stream);
+                writer.WriteString32(text);
+                data = stream.GetBuffer();
+                
+                this.Content = data;
+                this.text = null;
+            }
+        }
+
+        public override int Size()
+        {
+            if(this.Content == null && text != null) 
+            {
+                int size = DEFAULT_MINIMUM_MESSAGE_SIZE;
+
+                if(MarshalledProperties != null) 
+                {
+                    size += MarshalledProperties.Length;
+                }
+                
+                return (size += this.text.Length * 2);
+            }
+
+            return base.Size();
+        }        
 	}
 }
 

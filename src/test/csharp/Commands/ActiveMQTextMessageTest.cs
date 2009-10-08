@@ -16,9 +16,12 @@
  */
 
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS;
+using Apache.NMS.Util;
 using NUnit.Framework;
 using System;
 using System.Text;
+using System.IO;
 
 namespace Apache.NMS.ActiveMQ.Test.Commands
 {
@@ -45,6 +48,153 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             message.Text = unicodeString;
             Assert.IsNotNull(message.Text);
             Assert.AreEqual(unicodeString, message.Text);
+        }
+
+        [Test]
+        public void TestShallowCopy()
+        {
+            ActiveMQTextMessage msg = new ActiveMQTextMessage();
+            string testString = "str";
+            msg.Text = testString;
+            Message copy = msg.Clone() as Message;
+            Assert.IsTrue(msg.Text == ((ActiveMQTextMessage) copy).Text);
+        }
+    
+        [Test]
+        public void TestSetText() 
+        {
+            ActiveMQTextMessage msg = new ActiveMQTextMessage();
+            string str = "testText";
+            msg.Text = str;
+            Assert.AreEqual(msg.Text, str);
+        }
+    
+        [Test]
+        public void TestGetBytes() 
+        {
+            ActiveMQTextMessage msg = new ActiveMQTextMessage();
+            String str = "testText";
+            msg.Text = str;
+            msg.BeforeMarshall(null);
+            
+            byte[] bytes = msg.Content;
+            msg = new ActiveMQTextMessage();
+            msg.Content = bytes;
+            
+            Assert.AreEqual(msg.Text, str);
+        }
+    
+        [Test]
+        public void TestClearBody()
+        {
+            ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
+            textMessage.Text = "string";
+            textMessage.ClearBody();
+            Assert.IsFalse(textMessage.ReadOnlyBody);
+            Assert.IsNull(textMessage.Text);
+            try
+            {
+                textMessage.Text = "String";
+                Assert.IsTrue(textMessage.Text.Length > 0);
+            }
+            catch(MessageNotWriteableException)
+            {
+                Assert.Fail("should be writeable");
+            }
+            catch(MessageNotReadableException)
+            {
+                Assert.Fail("should be readable");
+            }
+        }
+    
+        [Test]
+        public void TestReadOnlyBody() 
+        {
+            ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
+            textMessage.Text = "test";
+            textMessage.ReadOnlyBody = true;
+            try 
+            {
+                Assert.IsTrue(textMessage.Text.Length > 0);
+            } 
+            catch(MessageNotReadableException) 
+            {
+                Assert.Fail("should be readable");
+            }
+            try 
+            {
+                textMessage.Text = "test";
+                Assert.Fail("should throw exception");
+            } 
+            catch(MessageNotWriteableException) 
+            {
+            }
+        }
+    
+        [Test]
+        public void TtestWriteOnlyBody() 
+        { 
+            // should always be readable
+            ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
+            textMessage.ReadOnlyBody = false;
+            try 
+            {
+                textMessage.Text = "test";
+                Assert.IsTrue(textMessage.Text.Length > 0);
+            } 
+            catch(MessageNotReadableException) 
+            {
+                Assert.Fail("should be readable");
+            }
+            textMessage.ReadOnlyBody = true;
+            try 
+            {
+                Assert.IsTrue(textMessage.Text.Length > 0);
+                textMessage.Text = "test";
+                Assert.Fail("should throw exception");
+            } 
+            catch(MessageNotReadableException)
+            {
+                Assert.Fail("should be readable");
+            } 
+            catch(MessageNotWriteableException) 
+            {
+            }
+        }
+        
+        [Test]
+        public void TestShortText() 
+        {
+            string shortText = "Content";
+            ActiveMQTextMessage shortMessage = new ActiveMQTextMessage();
+            SetContent(shortMessage, shortText);
+            Assert.IsTrue(shortMessage.ToString().Contains("Text = " + shortText));
+            Assert.IsTrue(shortMessage.Text == shortText);
+            
+            string longText = "Very very very very veeeeeeery loooooooooooooooooooooooooooooooooong text";
+            string longExpectedText = "Very very very very veeeeeeery looooooooooooo...ooooong text";
+            ActiveMQTextMessage longMessage = new ActiveMQTextMessage();
+            SetContent(longMessage, longText);
+            Assert.IsTrue(longMessage.ToString().Contains("Text = " + longExpectedText));
+            Assert.IsTrue(longMessage.Text == longText);         
+        }
+        
+        [Test]
+        public void TestNullText() 
+        {
+            ActiveMQTextMessage nullMessage = new ActiveMQTextMessage();
+            SetContent(nullMessage, null);
+            Assert.IsNull(nullMessage.Text);
+            Assert.IsTrue(nullMessage.ToString().Contains("Text = null"));
+        }
+        
+        protected void SetContent(Message message, String text)
+        {
+            MemoryStream mstream = new MemoryStream();
+            EndianBinaryWriter dataOut = new EndianBinaryWriter(mstream);
+            dataOut.WriteString32(text);
+            dataOut.Close();
+            message.Content = mstream.ToArray();
         }
     }
 }
