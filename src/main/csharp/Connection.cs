@@ -432,31 +432,31 @@ namespace Apache.NMS.ActiveMQ
 
 		public void DisposeOf(DataStructure objectId)
 		{
-			RemoveInfo command = new RemoveInfo();
-			command.ObjectId = objectId;
-			if(asyncClose)
+			try
 			{
-				Tracer.Info("Asynchronously disposing of Connection.");
-				if(connected)
+				RemoveInfo command = new RemoveInfo();
+				command.ObjectId = objectId;
+				if(asyncClose)
 				{
-					command.ResponseRequired = false;
-					transport.Oneway(command);
+					Tracer.Info("Asynchronously disposing of Connection.");
+					if(connected)
+					{
+						command.ResponseRequired = false;
+						transport.Oneway(command);
+					}
 				}
-			}
-			else
-			{
-				// Ensure that the object is disposed to avoid potential race-conditions
-				// of trying to re-create the same object in the broker faster than
-				// the broker can dispose of the object.  Allow up to 5 seconds to process.
-				try
+				else
 				{
+					// Ensure that the object is disposed to avoid potential race-conditions
+					// of trying to re-create the same object in the broker faster than
+					// the broker can dispose of the object.  Allow up to 5 seconds to process.
 					Tracer.Info("Synchronously disposing of Connection.");
 					SyncRequest(command, TimeSpan.FromSeconds(5));
 				}
-				catch // (BrokerException)
-				{
-					// Ignore exceptions while shutting down.
-				}
+			}
+			catch // (BrokerException)
+			{
+				// Ignore exceptions while shutting down.
 			}
 		}
 
