@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\test\csharp\Commands\ActiveMQBytesMessageTest.cs" />
+    <Compile Include="src\test\csharp\Commands\ActiveMQMessageTest.cs" />
     <Compile Include="src\test\csharp\Commands\ActiveMQStreamMessageTest.cs" />
     <Compile Include="src\test\csharp\Commands\ActiveMQTextMessageTest.cs" />
     <Compile Include="src\test\csharp\Commands\CommandTest.cs">
