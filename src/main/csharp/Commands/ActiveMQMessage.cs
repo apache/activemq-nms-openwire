@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 	{
 		public const byte ID_ACTIVEMQMESSAGE = 23;
 
-		private MessagePropertyHelper propertyHelper;
+		private MessagePropertyIntercepter propertyHelper;
 		private PrimitiveMap properties;
 
 		public event AcknowledgeHandler Acknowledger;
@@ -47,11 +47,42 @@ namespace Apache.NMS.ActiveMQ.Commands
 			Timestamp = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
 		}
 
-		public override byte GetDataStructureType()
+        public override int GetHashCode()
+        {            
+            MessageId id = this.MessageId;
+
+            if(id != null)
+            {
+                return id.GetHashCode();
+            }
+            else
+            {
+                return base.GetHashCode();
+            }
+        }
+
+        public override byte GetDataStructureType()
 		{
 			return ID_ACTIVEMQMESSAGE;
 		}
 
+        public override bool Equals(object that)
+        {
+            if(that is ActiveMQMessage)
+            {
+                return Equals((ActiveMQMessage) that);
+            }
+            return false;
+        }
+
+        public virtual bool Equals(ActiveMQMessage that)
+        {
+            MessageId oMsg = that.MessageId;
+            MessageId thisMsg = this.MessageId;
+            
+            return thisMsg != null && oMsg != null && oMsg.Equals(thisMsg);
+        }
+        
 		public void Acknowledge()
 		{
 			if(null == Acknowledger)
@@ -67,14 +98,14 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public virtual void ClearBody()
 		{
 			this.Content = null;
-			this.readOnlyMsgBody = false;
+			this.ReadOnlyBody = false;
 		}
 
 		public virtual void ClearProperties()
 		{
 			this.MarshalledProperties = null;
 			this.Properties.Clear();
-			this.readOnlyMsgProperties = false;
+			this.ReadOnlyProperties = false;
 		}
 
 		protected void FailIfReadOnlyBody()
@@ -93,6 +124,20 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
+        public override bool ReadOnlyProperties
+        {
+            get{ return base.ReadOnlyProperties; }
+            
+            set
+            {
+                if(this.propertyHelper != null)
+                {
+                    this.propertyHelper.ReadOnly = value;
+                }
+                base.ReadOnlyProperties = value;
+            }
+        }
+        
 		#region Properties
 
 		public IPrimitiveMap Properties
@@ -102,7 +147,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 				if(null == properties)
 				{
 					properties = PrimitiveMap.Unmarshal(MarshalledProperties);
-					propertyHelper = new MessagePropertyHelper(this, properties);
+					propertyHelper = new MessagePropertyIntercepter(this, properties, this.ReadOnlyProperties);
 				}
 
 				return propertyHelper;
@@ -168,6 +213,29 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 				return String.Empty;
 			}
+
+            set
+            {
+                if(value != null) 
+                {
+                    try 
+                    {
+                        MessageId id = new MessageId(value);
+                        this.MessageId = id;
+                    } 
+                    catch(FormatException) 
+                    {
+                        // we must be some foreign JMS provider or strange user-supplied
+                        // String so lets set the IDs to be 1
+                        MessageId id = new MessageId();
+                        this.MessageId = id;
+                    }
+                } 
+                else
+                {
+                    this.MessageId = null;
+                }
+            }
 		}
 
 		/// <summary>

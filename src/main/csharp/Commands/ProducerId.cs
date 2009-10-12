@@ -50,6 +50,17 @@ namespace Apache.NMS.ActiveMQ.Commands
             this.value = consumerId;
         }
 
+        public ProducerId(string producerKey)
+        {
+            // Parse off the producerId
+            int p = producerKey.LastIndexOf(":");
+            if(p >= 0)
+            {
+                value = Int64.Parse(producerKey.Substring(p + 1));
+                producerKey = producerKey.Substring(0, p);
+            }
+        }
+
         ///
         /// <summery>
         ///  Get the unique identifier that this object and its own

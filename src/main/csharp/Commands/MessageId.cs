@@ -37,6 +37,23 @@ namespace Apache.NMS.ActiveMQ.Commands
         long producerSequenceId;
         long brokerSequenceId;
 
+        private string key = null;
+
+        public MessageId() : base()
+        {
+        }
+
+        public MessageId(ProducerId producerId, long producerSequenceId) : base()
+        {
+            this.producerId = producerId;
+            this.producerSequenceId = producerSequenceId;
+        }
+
+        public MessageId(string value) : base()
+        {
+            this.SetValue(value);
+        }
+
         ///
         /// <summery>
         ///  Get the unique identifier that this object and its own
@@ -56,11 +73,29 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "ProducerId=" + ProducerId + 
-                "ProducerSequenceId=" + ProducerSequenceId + 
-                "BrokerSequenceId=" + BrokerSequenceId + 
-                "]";
+            if(key == null) 
+            {
+                key = producerId.ToString() + ":" + producerSequenceId;
+            }
+            
+            return key;
+        }
+
+        /// <summary>
+        /// Sets the value as a String
+        /// </summary>
+        public void SetValue(string messageKey)
+        {
+            this.key = messageKey;
+
+            // Parse off the sequenceId
+            int p = messageKey.LastIndexOf(":");
+            if(p >= 0)
+            {
+                producerSequenceId = Int64.Parse(messageKey.Substring(p + 1));
+                messageKey = messageKey.Substring(0, p);
+            }
+            producerId = new ProducerId(messageKey);
         }
 
         public ProducerId ProducerId

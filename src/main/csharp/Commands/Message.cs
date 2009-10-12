@@ -65,8 +65,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         long brokerInTime;
         long brokerOutTime;
 
-        protected bool readOnlyMsgProperties;
-        protected bool readOnlyMsgBody;
+        private bool readOnlyMsgProperties;
+        private bool readOnlyMsgBody;
 
         public const int DEFAULT_MINIMUM_MESSAGE_SIZE = 1024;
 
@@ -339,16 +339,16 @@ namespace Apache.NMS.ActiveMQ.Commands
             set { this.brokerOutTime = value; }
         }
 
-        public bool ReadOnlyProperties
+        public virtual bool ReadOnlyProperties
         {
-            get { return readOnlyMsgProperties; }
-            set { readOnlyMsgProperties = value; }
+            get { return this.readOnlyMsgProperties; }
+            set { this.readOnlyMsgProperties = value; }
         }
 
-        public bool ReadOnlyBody
+        public virtual bool ReadOnlyBody
         {
-            get { return readOnlyMsgBody; }
-            set { readOnlyMsgBody = value; }
+            get { return this.readOnlyMsgBody; }
+            set { this.readOnlyMsgBody = value; }
         }
 
         ///
