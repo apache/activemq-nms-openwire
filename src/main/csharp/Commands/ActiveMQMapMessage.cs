@@ -25,13 +25,39 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public const byte ID_ACTIVEMQMAPMESSAGE = 25;
 
 		private PrimitiveMap body;
-
+        private PrimitiveMapInterceptor typeConverter;
 
 		public override byte GetDataStructureType()
 		{
 			return ID_ACTIVEMQMAPMESSAGE;
 		}
 
+        public override void ClearBody()
+        {
+            this.body = null;
+            this.typeConverter = null;
+            base.ClearBody();
+        }
+
+        public override bool ReadOnlyBody 
+        {
+            get 
+            {
+                return base.ReadOnlyBody;
+            }
+            
+            set 
+            {
+                if(this.typeConverter != null)
+                {
+                    this.typeConverter.ReadOnly = true;
+                }
+                
+                base.ReadOnlyBody = value;
+            }
+        }
+
+        
 		public IPrimitiveMap Body
 		{
 			get
@@ -39,8 +65,10 @@ namespace Apache.NMS.ActiveMQ.Commands
 				if(body == null)
 				{
 					body = PrimitiveMap.Unmarshal(Content);
+                    typeConverter = new PrimitiveMapInterceptor(this, body);
 				}
-				return body;
+				
+                return typeConverter;
 			}
 		}
 
