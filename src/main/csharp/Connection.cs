@@ -297,6 +297,7 @@ namespace Apache.NMS.ActiveMQ
 						transport.Oneway(shutdowninfo);
 					}
 
+                    Tracer.Info("Disposing of the Transport.");
 					transport.Dispose();
 				}
 				catch(Exception ex)
@@ -606,6 +607,7 @@ namespace Apache.NMS.ActiveMQ
 				{
 					if(connected)
 					{
+                        Tracer.Info("Returning KeepAliveInfo Response.");
 						info.ResponseRequired = false;
 						transport.Oneway(info);
 					}
@@ -622,7 +624,7 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void OnException(ITransport sender, Exception exception)
 		{
-			if(ExceptionListener != null)
+			if(ExceptionListener != null && !this.closing)
 			{
 				try
 				{
