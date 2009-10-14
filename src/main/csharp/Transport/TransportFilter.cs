@@ -37,6 +37,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 			this.next = next;
 			this.next.Command = new CommandHandler(OnCommand);
 			this.next.Exception = new ExceptionHandler(OnException);
+            this.next.Interrupted = new InterruptedHandler(OnInterrupted);
+            this.next.Resumed = new ResumedHandler(OnResumed);
 		}
 
 		~TransportFilter()
@@ -54,6 +56,22 @@ namespace Apache.NMS.ActiveMQ.Transport
 			this.exceptionHandler(sender, command);
 		}
 
+        protected virtual void OnInterrupted(ITransport sender)
+        {
+            if(this.interruptedHandler != null)
+            {
+                this.interruptedHandler(sender);
+            }
+        }
+
+        protected virtual void OnResumed(ITransport sender)
+        {
+            if(this.resumedHandler != null)
+            {
+                this.resumedHandler(sender);
+            }
+        }
+        
 		/// <summary>
 		/// Method Oneway
 		/// </summary>
