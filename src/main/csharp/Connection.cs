@@ -72,6 +72,8 @@ namespace Apache.NMS.ActiveMQ
 		}
 
 		public event ExceptionListener ExceptionListener;
+        public event ConnectionInterruptedListener ConnectionInterruptedListener;
+        public event ConnectionResumedListener ConnectionResumedListener;
 
 		#region Properties
 
@@ -640,11 +642,33 @@ namespace Apache.NMS.ActiveMQ
 		protected void OnTransportInterrupted(ITransport sender)
 		{
 			Tracer.Debug("Transport has been Interrupted.");
+
+            if(this.ConnectionInterruptedListener != null && !this.closing )
+            {
+                try
+                {
+                    this.ConnectionInterruptedListener();
+                }
+                catch
+                {
+                }                    
+            }
 		}
 
 		protected void OnTransportResumed(ITransport sender)
 		{
 			Tracer.Debug("Transport has resumed normal operation.");
+
+            if(this.ConnectionResumedListener != null && !this.closing )
+            {
+                try
+                {
+                    this.ConnectionResumedListener();
+                }
+                catch
+                {
+                }                    
+            }            
 		}
 
 		internal void OnSessionException(Session sender, Exception exception)
