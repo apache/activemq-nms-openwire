@@ -80,7 +80,7 @@ namespace Apache.NMS.ActiveMQ
                 info.Type = (int) TransactionType.Rollback;
                 info.ResponseRequired = false;
                 transactionId = null;
-                session.Connection.Oneway(info);
+                session.Connection.SyncRequest(info);
             }
             
             foreach (ISynchronization synchronization in synchronizations)
@@ -105,7 +105,7 @@ namespace Apache.NMS.ActiveMQ
                 info.Type = (int) TransactionType.CommitOnePhase;
                 info.ResponseRequired = false;
                 transactionId = null;
-                session.Connection.Oneway(info);
+                session.Connection.SyncRequest(info);
             }
             
             foreach (ISynchronization synchronization in synchronizations)
