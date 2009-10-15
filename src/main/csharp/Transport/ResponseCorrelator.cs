@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading;
 using System.Collections;
 
 using Apache.NMS.ActiveMQ.Commands;
@@ -30,8 +31,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 	public class ResponseCorrelator : TransportFilter
 	{
 		private readonly IDictionary requestMap = Hashtable.Synchronized(new Hashtable());
-		private readonly Object mutex = new Object();
-		private short nextCommandId;
+		private int nextCommandId;
 
 		public ResponseCorrelator(ITransport next) : base(next)
 		{
@@ -55,12 +55,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 			requestMap.Clear();
 		}
 
-		short GetNextCommandId()
+		int GetNextCommandId()
 		{
-			lock(mutex)
-			{
-				return ++nextCommandId;
-			}
+            return Interlocked.Increment(ref nextCommandId);
 		}
 
 		public override void Oneway(Command command)
