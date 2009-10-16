@@ -80,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                 }
                 catch(IOException ex)
                 {
-                    throw NMSExceptionSupport.create(ex);
+                    throw NMSExceptionSupport.Create(ex);
                 }
 			}
 

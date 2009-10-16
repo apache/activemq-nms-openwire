@@ -78,11 +78,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -95,7 +95,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -108,11 +108,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -125,7 +125,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -138,11 +138,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -155,7 +155,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -168,11 +168,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -185,7 +185,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -198,11 +198,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -215,7 +215,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -228,11 +228,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -245,7 +245,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -258,11 +258,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -275,7 +275,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -288,11 +288,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -305,7 +305,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -318,11 +318,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -335,11 +335,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -352,7 +352,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -365,7 +365,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
@@ -379,11 +379,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(EndOfStreamException e)
 			{
-				throw NMSExceptionSupport.createMessageEOFException(e);
+				throw NMSExceptionSupport.CreateMessageEOFException(e);
 			}
 			catch(IOException e)
 			{
-				throw NMSExceptionSupport.createMessageFormatException(e);
+				throw NMSExceptionSupport.CreateMessageFormatException(e);
 			}
 		}
 
@@ -397,7 +397,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			catch(Exception e)
 			{
-				throw NMSExceptionSupport.create(e);
+				throw NMSExceptionSupport.Create(e);
 			}
 		}
 
