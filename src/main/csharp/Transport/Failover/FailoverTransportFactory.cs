@@ -54,7 +54,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		{
 			StringDictionary options = compositData.Parameters;
 			FailoverTransport transport = CreateTransport(options);
-			transport.add(compositData.Components);
+			transport.Add(compositData.Components);
 			return transport;
 		}
 

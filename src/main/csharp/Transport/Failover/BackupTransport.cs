@@ -20,81 +20,81 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport.Failover
 {
-	class BackupTransport
-	{
-		private FailoverTransport failoverTransport;
-		private ITransport transport;
-		private Uri uri;
-		private bool disposed;
+    class BackupTransport
+    {
+        private FailoverTransport failoverTransport;
+        private ITransport transport;
+        private Uri uri;
+        private bool disposed;
 
-		public BackupTransport(FailoverTransport ft)
-		{
-			this.failoverTransport = ft;
-		}
+        public BackupTransport(FailoverTransport ft)
+        {
+            this.failoverTransport = ft;
+        }
 
-		public void onCommand(ITransport t, Command c)
-		{
-		}
+        public void OnCommand(ITransport t, Command c)
+        {
+        }
 
-		public void onException(ITransport t, Exception error)
-		{
-			this.disposed = true;
-			if(failoverTransport != null)
-			{
-				this.failoverTransport.Reconnect();
-			}
-		}
+        public void OnException(ITransport t, Exception error)
+        {
+            this.disposed = true;
+            if(failoverTransport != null)
+            {
+                this.failoverTransport.Reconnect();
+            }
+        }
 
-		public ITransport Transport
-		{
-			get
-			{
-				return transport;
-			}
-			set
-			{
-				transport = value;
-			}
-		}
+        public ITransport Transport
+        {
+            get
+            {
+                return transport;
+            }
+            set
+            {
+                transport = value;
+            }
+        }
 
-		public Uri Uri
-		{
-			get
-			{
-				return uri;
-			}
-			set
-			{
-				uri = value;
-			}
-		}
+        public Uri Uri
+        {
+            get
+            {
+                return uri;
+            }
+            set
+            {
+                uri = value;
+            }
+        }
 
-		public bool Disposed
-		{
-			get
-			{
-				return disposed || (transport != null && transport.IsDisposed);
-			}
-			set
-			{
-				disposed = value;
-			}
-		}
+        public bool Disposed
+        {
+            get
+            {
+                return disposed || (transport != null && transport.IsDisposed);
+            }
+            set
+            {
+                disposed = value;
+            }
+        }
 
-		public int hashCode()
-		{
-			return uri != null ? uri.GetHashCode() : -1;
-		}
+        public int hashCode()
+        {
+            return uri != null ? uri.GetHashCode() : -1;
+        }
 
-		public bool equals(Object obj)
-		{
-			if(obj is BackupTransport)
-			{
-				BackupTransport other = obj as BackupTransport;
-				return uri == null && other.uri == null ||
-					(uri != null && other.uri != null && uri.Equals(other.uri));
-			}
-			return false;
-		}
-	}
+        public bool equals(Object obj)
+        {
+            if(obj is BackupTransport)
+            {
+                BackupTransport other = obj as BackupTransport;
+                return uri == null && other.uri == null ||
+                    (uri != null && other.uri != null && uri.Equals(other.uri));
+            }
+            return false;
+        }
+    }
 }
