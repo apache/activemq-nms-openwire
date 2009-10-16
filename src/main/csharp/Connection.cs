@@ -411,26 +411,49 @@ namespace Apache.NMS.ActiveMQ
 
 		public Response SyncRequest(Command command)
 		{
-			return SyncRequest(command, this.RequestTimeout);
+            try
+            {
+                return SyncRequest(command, this.RequestTimeout);
+            }
+            catch(Exception ex)
+            {
+                throw NMSExceptionSupport.Create(ex);
+            }
 		}
 
 		public Response SyncRequest(Command command, TimeSpan requestTimeout)
 		{
 			CheckConnected();
-			Response response = transport.Request(command, requestTimeout);
-			if(response is ExceptionResponse)
-			{
-				ExceptionResponse exceptionResponse = (ExceptionResponse) response;
-				BrokerError brokerError = exceptionResponse.Exception;
-				throw new BrokerException(brokerError);
-			}
-			return response;
+
+            try
+            {
+    			Response response = transport.Request(command, requestTimeout);
+    			if(response is ExceptionResponse)
+    			{
+    				ExceptionResponse exceptionResponse = (ExceptionResponse) response;
+    				BrokerError brokerError = exceptionResponse.Exception;
+    				throw new BrokerException(brokerError);
+    			}
+    			return response;
+            }
+            catch(Exception ex)
+            {
+                throw NMSExceptionSupport.Create(ex);
+            }
 		}
 
 		public void Oneway(Command command)
 		{
 			CheckConnected();
-			transport.Oneway(command);
+
+            try
+            {
+                transport.Oneway(command);
+            }
+            catch(Exception ex)
+            {
+                throw NMSExceptionSupport.Create(ex);                
+            }
 		}
 
 		public void DisposeOf(DataStructure objectId)

@@ -114,37 +114,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		{
 			lock(myLock)
 			{
-				try
+				if(closed.Value)
 				{
-					if(closed.Value)
-					{
-						throw new InvalidOperationException("Error writing to broker.  Transport connection is closed.");
-					}
-
-					if(command is ShutdownInfo)
-					{
-						seenShutdown = true;
-					}
-
-					Wireformat.Marshal(command, socketWriter);
-					//jdg socketWriter.Flush();
+					throw new InvalidOperationException("Error writing to broker.  Transport connection is closed.");
 				}
-				catch(Exception ex)
+
+				if(command is ShutdownInfo)
 				{
-					if(command.ResponseRequired)
-					{
-						// Make sure that something higher up doesn't get blocked.
-						// Respond with an exception.
-						ExceptionResponse er = new ExceptionResponse();
-						BrokerError error = new BrokerError();
-
-						error.Message = "Transport connection error: " + ex.Message;
-						error.ExceptionClass = ex.ToString();
-						er.Exception = error;
-						er.CorrelationId = command.CommandId;
-						commandHandler(this, er);
-					}
+					seenShutdown = true;
 				}
+
+				Wireformat.Marshal(command, socketWriter);
 			}
 		}
 

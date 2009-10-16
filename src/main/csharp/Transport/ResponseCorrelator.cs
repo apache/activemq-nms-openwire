@@ -55,7 +55,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 			requestMap.Clear();
 		}
 
-		int GetNextCommandId()
+		internal int GetNextCommandId()
 		{
             return Interlocked.Increment(ref nextCommandId);
 		}
@@ -80,7 +80,6 @@ namespace Apache.NMS.ActiveMQ.Transport
 			requestMap[commandId] = future;
 			next.Oneway(command);
 			return future;
-
 		}
 
 		public override Response Request(Command command, TimeSpan timeout)
