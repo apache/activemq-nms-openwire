@@ -21,8 +21,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 {
 	public interface ICompositeTransport : ITransport
 	{
-		void add(Uri[] uris);
-		void remove(Uri[] uris);
+		void Add(Uri[] uris);
+		void Remove(Uri[] uris);
 	}
 }
 
