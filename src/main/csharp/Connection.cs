@@ -71,9 +71,22 @@ namespace Apache.NMS.ActiveMQ
 			Dispose(false);
 		}
 
+		/// <summary>
+		/// A delegate that can receive transport level exceptions.
+		/// </summary>
 		public event ExceptionListener ExceptionListener;
-        public event ConnectionInterruptedListener ConnectionInterruptedListener;
-        public event ConnectionResumedListener ConnectionResumedListener;
+
+		/// <summary>
+		/// An asynchronous listener that is notified when a Fault tolerant connection
+		/// has been interrupted.
+		/// </summary>
+		public event ConnectionInterruptedListener ConnectionInterruptedListener;
+
+		/// <summary>
+		/// An asynchronous listener that is notified when a Fault tolerant connection
+		/// has been resumed.
+		/// </summary>
+		public event ConnectionResumedListener ConnectionResumedListener;
 
 		#region Properties
 
