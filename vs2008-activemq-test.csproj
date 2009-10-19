@@ -82,6 +82,7 @@
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportTest.cs" />
     <Compile Include="src\test\csharp\Util\MemoryUsageTest.cs" />
+    <Compile Include="src\test\csharp\Util\MessageDispatchChannelTest.cs" />
     <Compile Include="src\test\csharp\VirtualTopicTest.cs" />
   </ItemGroup>
   <ItemGroup>
