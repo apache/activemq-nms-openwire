@@ -19,6 +19,7 @@ using System;
 using System.Collections;
 
 using Apache.NMS.ActiveMQ.State;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -163,6 +164,11 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             this.ReadOnlyProperties = true;
             this.ReadOnlyBody = true;
+        }
+
+        public bool IsExpired()
+        {
+            return this.expiration == 0 ? false : DateTime.UtcNow > DateUtils.ToDateTimeUtc(this.expiration);
         }
 
         public ProducerId ProducerId
