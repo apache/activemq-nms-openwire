@@ -22,6 +22,6 @@ namespace Apache.NMS.ActiveMQ.Threads
 	/// </summary>
 	public interface Task
 	{
-		bool iterate();
+		bool Iterate();
 	}
 }

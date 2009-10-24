@@ -37,6 +37,11 @@ namespace Apache.NMS.ActiveMQ
         }
 
         #region Properties
+
+        public object SyncRoot
+        {
+            get{ return this.mutex; }
+        }
         
         public bool Closed
         {
@@ -129,13 +134,13 @@ namespace Apache.NMS.ActiveMQ
 
         public MessageDispatch Dequeue(TimeSpan timeout)
         {
+            Tracer.Debug("Dequeuing message or return null after timeout: " + timeout.ToString());
             lock(this.mutex)
             {
                 // Wait until the channel is ready to deliver messages.
-                while( timeout != TimeSpan.Zero && !Closed && ( Empty || !Running ) )
+                if( timeout != TimeSpan.Zero && !Closed && ( Empty || !Running ) )
                 {
                     Monitor.Wait(this.mutex, timeout);
-                    break;
                 }
         
                 if( Closed || !Running || Empty ) 

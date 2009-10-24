@@ -30,13 +30,13 @@ namespace Apache.NMS.ActiveMQ.Threads
 		private bool iterating;
 		private volatile System.Threading.Thread runningThread;
 
-		public void run(Object o)
+		public void Run(Object o)
 		{
 			PooledTaskRunner p = o as PooledTaskRunner;
 			p.runningThread = System.Threading.Thread.CurrentThread;
 			try
 			{
-				p.runTask();
+				p.RunTask();
 			}
 			finally
 			{
@@ -51,13 +51,13 @@ namespace Apache.NMS.ActiveMQ.Threads
 			this._shutdown = false;
 			this.iterating = false;
 			this.queued = true;
-			ThreadPool.QueueUserWorkItem(new WaitCallback(run), this);
+			ThreadPool.QueueUserWorkItem(new WaitCallback(Run), this);
 		}
 
 		/// <summary>
 		/// We Expect MANY wakeup calls on the same TaskRunner.
 		/// </summary>
-		public void wakeup()
+		public void Wakeup()
 		{
 			lock(runable)
 			{
@@ -82,7 +82,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 				// iterating.
 				if(!iterating)
 				{
-					ThreadPool.QueueUserWorkItem(new WaitCallback(run), this);
+					ThreadPool.QueueUserWorkItem(new WaitCallback(Run), this);
 				}
 			}
 		}
@@ -91,7 +91,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 		/// shut down the task
 		/// </summary>
 		/// <param name="timeout"></param>
-		public void shutdown(int timeout)
+		public void Shutdown(TimeSpan timeout)
 		{
 			lock(runable)
 			{
@@ -110,14 +110,13 @@ namespace Apache.NMS.ActiveMQ.Threads
 			}
 		}
 
-		public void shutdown()
+		public void Shutdown()
 		{
-			shutdown(0);
+			Shutdown(new TimeSpan(Timeout.Infinite));
 		}
 
-		void runTask()
+		internal void RunTask()
 		{
-
 			lock(runable)
 			{
 				queued = false;
@@ -136,7 +135,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 			{
 				for(int i = 0; i < maxIterationsPerRun; i++)
 				{
-					if(!task.iterate())
+					if(!task.Iterate())
 					{
 						done = true;
 						break;
@@ -163,7 +162,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 
 						if(queued)
 						{
-							ThreadPool.QueueUserWorkItem(new WaitCallback(run), this);
+							ThreadPool.QueueUserWorkItem(new WaitCallback(Run), this);
 						}
 					}
 				}

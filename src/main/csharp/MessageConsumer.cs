@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 using System;
+using System.Threading;
+using System.Collections;
+using System.Collections.Generic;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
 using Apache.NMS.Util;
@@ -25,37 +28,50 @@ namespace Apache.NMS.ActiveMQ
 	{
 		DeliveredAck = 0, // Message delivered but not consumed
 		PoisonAck = 1, // Message could not be processed due to poison pill but discard anyway
-		ConsumedAck = 2 // Message consumed, discard
+		ConsumedAck = 2, // Message consumed, discard
+        RedeliveredAck = 3, // Message has been Redelivered and is not yet poisoned.
+        IndividualAck = 4 // Only the given message is to be treated as consumed.
 	}
-
 
 	/// <summary>
 	/// An object capable of receiving messages from some destination
 	/// </summary>
-	public class MessageConsumer : IMessageConsumer
+	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
-		private readonly AcknowledgementMode acknowledgementMode;
-		private bool closed = false;
-		private object closedLock = new object();
-		private readonly Dispatcher dispatcher = new Dispatcher();
-		private readonly ConsumerInfo info;
+        private object closedLock = new object();
+
+        private readonly MessageDispatchChannel unconsumedMessages = new MessageDispatchChannel();
+        private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
+        private readonly ConsumerInfo info;
+        private Session session;
+
+        private MessageAck pendingAck = null;
+
+        private Atomic<bool> started = new Atomic<bool>();
+        private Atomic<bool> deliveringAcks = new Atomic<bool>();
+
+        private bool closed = false;
 		private int maximumRedeliveryCount = 10;
 		private int redeliveryTimeout = 500;
-		private Session session;
-		private Session ackSession;
 		protected bool disposed = false;
+        private long lastDeliveredSequenceId = 0;
+        private int deliveredCounter = 0;
+        private int additionalWindowSize = 0;
+        private long redeliveryDelay = 0;
+        private int dispatchedCount = 0;
+        private volatile bool synchronizationRegistered = false;
+        private bool clearDispatchList = false;
 
+        private const int DEFAULT_REDELIVERY_DELAY = 0;
+        private const int DEFAULT_MAX_REDELIVERIES = 5;
+
+        private event MessageListener listener;
+        
 		// Constructor internal to prevent clients from creating an instance.
-		internal MessageConsumer(Session session, ConsumerInfo info,
-								 AcknowledgementMode acknowledgementMode)
+		internal MessageConsumer(Session session, ConsumerInfo info)
 		{
 			this.session = session;
 			this.info = info;
-			this.acknowledgementMode = acknowledgementMode;
-			if(AcknowledgementMode.AutoAcknowledge == acknowledgementMode)
-			{
-				this.ackSession = (Session) session.Connection.CreateSession(acknowledgementMode);
-			}
 		}
 
 		~MessageConsumer()
@@ -63,11 +79,13 @@ namespace Apache.NMS.ActiveMQ
 			Dispose(false);
 		}
 
-		internal Dispatcher Dispatcher
-		{
-			get { return this.dispatcher; }
-		}
+        #region Property Accessors
 
+        public long LastDeliveredSequenceId
+        {
+            get{ return this.lastDeliveredSequenceId; }
+        }
+        
 		public ConsumerId ConsumerId
 		{
 			get { return info.ConsumerId; }
@@ -85,35 +103,103 @@ namespace Apache.NMS.ActiveMQ
 			set { redeliveryTimeout = value; }
 		}
 
+        public int PrefetchSize
+        {
+            get { return this.info.PrefetchSize; }
+        }
+
+        #endregion
+
 		#region IMessageConsumer Members
 
 		public event MessageListener Listener
 		{
 			add
 			{
+                CheckClosed();
+
+                if(this.PrefetchSize == 0)
+                {
+                    throw new NMSException("Cannot set Asynchronous Listener on a Consumer with a zero Prefetch size");
+                }
+
+                bool wasStarted = this.session.Started;
+
+                if(wasStarted == true)
+                {
+                    this.session.Stop();
+                }
+                
 				listener += value;
-				session.RegisterConsumerDispatcher(dispatcher);
+                this.session.Redispatch(this.unconsumedMessages);
+
+                if(wasStarted == true)
+                {
+                    this.session.Start();
+                }
 			}
 			remove { listener -= value; }
 		}
 
-
 		public IMessage Receive()
 		{
-			SendPullRequest(0);
-			return SetupAcknowledge(dispatcher.Dequeue());
+            CheckClosed();
+            CheckMessageListener();
+    
+            SendPullRequest(0);
+            MessageDispatch dispatch = this.Dequeue(TimeSpan.FromMilliseconds(-1));
+            
+            if(dispatch == null)
+            {
+                return null;
+            }
+    
+            BeforeMessageIsConsumed(dispatch);
+            AfterMessageIsConsumed(dispatch, false);
+    
+            return CreateActiveMQMessage(dispatch);
 		}
 
-		public IMessage Receive(System.TimeSpan timeout)
+		public IMessage Receive(TimeSpan timeout)
 		{
-			SendPullRequest((long) timeout.TotalMilliseconds);
-			return SetupAcknowledge(dispatcher.Dequeue(timeout));
+            CheckClosed();
+            CheckMessageListener();
+    
+            SendPullRequest((long)timeout.TotalMilliseconds);
+            MessageDispatch dispatch = this.Dequeue(timeout);
+            
+            if(dispatch == null)
+            {
+                return null;
+            }
+
+            Tracer.Debug("Receive got new MessageDispatch: " + dispatch);
+    
+            BeforeMessageIsConsumed(dispatch);
+            AfterMessageIsConsumed(dispatch, false);
+
+            Tracer.Debug("Creating new message and returning.");
+            
+            return CreateActiveMQMessage(dispatch);
 		}
 
 		public IMessage ReceiveNoWait()
 		{
-			SendPullRequest(-1);
-			return SetupAcknowledge(dispatcher.DequeueNoWait());
+            CheckClosed();
+            CheckMessageListener();
+    
+            SendPullRequest(-1);
+            MessageDispatch dispatch = this.Dequeue(TimeSpan.Zero);
+            
+            if(dispatch == null)
+            {
+                return null;
+            }
+    
+            BeforeMessageIsConsumed(dispatch);
+            AfterMessageIsConsumed(dispatch, false);
+    
+            return CreateActiveMQMessage(dispatch);
 		}
 
 		public void Dispose()
@@ -136,8 +222,8 @@ namespace Apache.NMS.ActiveMQ
 
 			try
 			{
-				Close();
-			}
+                Close();
+            }
 			catch
 			{
 				// Ignore network errors.
@@ -148,117 +234,62 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Close()
 		{
-			lock(closedLock)
-			{
-				if(closed)
-				{
-					return;
-				}
-
-				try
-				{
-					// wake up any pending dequeue() call on the dispatcher
-					dispatcher.Close();
-					session.DisposeOf(info.ConsumerId);
-
-					if(ackSession != null)
-					{
-						ackSession.Close();
-					}
-				}
-				catch(Exception ex)
-				{
-					Tracer.ErrorFormat("Error during consumer close: {0}", ex);
-				}
-
-				session = null;
-				ackSession = null;
-				closed = true;
-			}
+            if(!this.unconsumedMessages.Closed)
+            {
+                if(this.session.IsTransacted && this.session.TransactionContext.InTransaction) 
+                {
+                    this.session.TransactionContext.AddSynchronization(new ConsumerCloseSynchronization(this));
+                } 
+                else
+                {
+                    this.DoClose();
+                } 
+            }
 		}
+
+        internal void DoClose()
+        {
+            lock(this.closedLock)
+            {
+                if(!this.unconsumedMessages.Closed)
+                {                    
+                    // Do we have any acks we need to send out before closing?
+                    // Ack any delivered messages now.
+                    if(!this.session.IsTransacted) 
+                    {
+                        DeliverAcks();
+                        if(this.IsAutoAcknowledgeBatch)
+                        {
+                            Acknowledge();
+                        }
+                    }
+                    
+                    if(!this.session.IsTransacted)
+                    {
+                        lock(this.dispatchedMessages)
+                        {
+                            dispatchedMessages.Clear();
+                        }
+                    }
+                    
+                    this.unconsumedMessages.Close();
+                    this.session.DisposeOf(this.info.ConsumerId, this.lastDeliveredSequenceId);
+
+                    RemoveInfo removeCommand = new RemoveInfo();
+                    removeCommand.ObjectId = this.info.ConsumerId;
+                    removeCommand.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
+                    
+                    this.session.Connection.Oneway(removeCommand);
+                    this.session = null;
+                }
+            }            
+        }
 
 		#endregion
 
-		private event MessageListener listener;
-
-		public void RedeliverRolledBackMessages()
-		{
-			dispatcher.RedeliverRolledBackMessages();
-		}
-
-		/// <summary>
-		/// Method Dispatch
-		/// </summary>
-		/// <param name="message">An ActiveMQMessage</param>
-		public void Dispatch(ActiveMQMessage message)
-		{
-			if(AcknowledgementMode.AutoAcknowledge == this.acknowledgementMode)
-			{
-				MessageAck ack = CreateMessageAck(message);
-				Tracer.Debug("Sending AutoAck: " + ack);
-				message.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
-
-				lock(closedLock)
-				{
-					if(closed)
-					{
-						throw new ConnectionClosedException();
-					}
-
-					ackSession.Connection.Oneway(ack);
-				}
-			}
-
-			dispatcher.Enqueue(message);
-		}
-
-		/// <summary>
-		/// Dispatch any pending messages to the asynchronous listener
-		/// </summary>
-		internal void DispatchAsyncMessages()
-		{
-			while(listener != null)
-			{
-				IMessage message = dispatcher.DequeueNoWait();
-				if(message == null)
-				{
-					break;
-				}
-
-				message = SetupAcknowledge(message);
-				// invoke listener. Exceptions caught by the dispatcher thread
-				listener(message);
-			}
-		}
-
-		protected IMessage SetupAcknowledge(IMessage message)
-		{
-			if(null == message)
-			{
-				return null;
-			}
-
-			if(message is ActiveMQMessage)
-			{
-				ActiveMQMessage activeMessage = (ActiveMQMessage) message;
-
-				if(AcknowledgementMode.ClientAcknowledge == acknowledgementMode)
-				{
-					activeMessage.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
-				}
-				else if(AcknowledgementMode.AutoAcknowledge != acknowledgementMode)
-				{
-					activeMessage.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
-					DoClientAcknowledge(activeMessage);
-				}
-			}
-
-			return message;
-		}
-
 		protected void SendPullRequest(long timeout)
 		{
-			if(this.info.PrefetchSize == 0 && this.dispatcher.isEmpty())
+			if(this.info.PrefetchSize == 0 && this.unconsumedMessages.Empty)
 			{
 				MessagePull messagePull = new MessagePull();
 				messagePull.ConsumerId = this.info.ConsumerId;
@@ -279,97 +310,702 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
+        protected void DoIndividualAcknowledge(ActiveMQMessage message)
+        {
+            // TODO
+        }
+
 		protected void DoNothingAcknowledge(ActiveMQMessage message)
 		{
 		}
 
 		protected void DoClientAcknowledge(ActiveMQMessage message)
 		{
-			MessageAck ack = CreateMessageAck(message);
-			Tracer.Debug("Sending Ack: " + ack);
-			lock(closedLock)
-			{
-				if(closed)
-				{
-					throw new ConnectionClosedException();
-				}
-
-				session.Connection.Oneway(ack);
-			}
+            this.CheckClosed();
+			Tracer.Debug("Sending Client Ack:");
+            this.Acknowledge();
 		}
 
-		protected virtual MessageAck CreateMessageAck(Message message)
-		{
-			MessageAck ack = new MessageAck();
-			ack.AckType = (int) AckType.ConsumedAck;
-			ack.ConsumerId = info.ConsumerId;
-			ack.Destination = message.Destination;
-			ack.FirstMessageId = message.MessageId;
-			ack.LastMessageId = message.MessageId;
-			ack.MessageCount = 1;
-			ack.ResponseRequired = false;
-			
-			if(session.Transacted)
-			{
-				session.DoStartTransaction();
-				ack.TransactionId = session.TransactionContext.TransactionId;
-				session.TransactionContext.AddSynchronization(
-						new MessageConsumerSynchronization(this, message));
-			}
-			return ack;
-		}
+        public void Start()
+        {
+            if(this.unconsumedMessages.Closed)
+            {
+                return;
+            }
 
-		public void AfterRollback(ActiveMQMessage message)
-		{
-			// lets redeliver the message again
-			message.RedeliveryCounter += 1;
-			if(message.RedeliveryCounter > MaximumRedeliveryCount)
-			{
-				// lets send back a poisoned pill
-				MessageAck ack = new MessageAck();
-				ack.AckType = (int) AckType.PoisonAck;
-				ack.ConsumerId = info.ConsumerId;
-				ack.Destination = message.Destination;
-				ack.FirstMessageId = message.MessageId;
-				ack.LastMessageId = message.MessageId;
-				ack.MessageCount = 1;
-				session.Connection.Oneway(ack);
-			}
-			else
-			{
-				dispatcher.Redeliver(message);
-			}
-		}
-	}
+            this.started.Value = true;
+            this.unconsumedMessages.Start();
+            this.session.Executor.Wakeup();
+        }
+    
+        public void Stop()
+        {
+            this.started.Value = false;
+            this.unconsumedMessages.Stop();
+        }
 
+        public void ClearMessagesInProgress()
+        {
+            // we are called from inside the transport reconnection logic
+            // which involves us clearing all the connections' consumers
+            // dispatch lists and clearing them
+            // so rather than trying to grab a mutex (which could be already
+            // owned by the message listener calling the send) we will just set
+            // a flag so that the list can be cleared as soon as the
+            // dispatch thread is ready to flush the dispatch list
+            this.clearDispatchList = true;
+        }
 
-	// TODO maybe there's a cleaner way of creating stateful delegates to make this code neater
-	internal class MessageConsumerSynchronization : ISynchronization
-	{
-		private readonly MessageConsumer consumer;
-		private readonly Message message;
+        public void DeliverAcks()
+        {
+            MessageAck ack = null;
+            
+            if(this.deliveringAcks.CompareAndSet(false, true))
+            {
+                if(this.IsAutoAcknowledgeEach)
+                {
+                    lock(this.dispatchedMessages)
+                    {
+                        ack = MakeAckForAllDeliveredMessages(AckType.DeliveredAck);
+                        if(ack != null) 
+                        {
+                            this.dispatchedMessages.Clear();
+                        } 
+                        else
+                        {
+                            ack = this.pendingAck;
+                            this.pendingAck = null;
+                        }
+                    }
+                } 
+                else if(pendingAck != null && pendingAck.AckType == (byte)AckType.ConsumedAck) 
+                {
+                    ack = pendingAck;
+                    pendingAck = null;
+                }
+                
+                if(ack != null)
+                {
+                    MessageAck ackToSend = ack;
+                    
+                    try
+                    {
+                        this.session.Connection.Oneway(ackToSend);
+                    }
+                    catch(Exception e)
+                    {
+                        Tracer.DebugFormat("{0} : Failed to send ack, {1}", this.info.ConsumerId, e);
+                    }
+                } 
+                else
+                {
+                    this.deliveringAcks.Value = false;
+                }
+            }
+        }
 
-		public MessageConsumerSynchronization(MessageConsumer consumer, Message message)
-		{
-			this.message = message;
-			this.consumer = consumer;
-		}
+        public void Dispatch(MessageDispatch dispatch)
+        {
+            MessageListener listener = this.listener;
+            
+            try 
+            {
+                lock(this.unconsumedMessages.SyncRoot) 
+                {
+                    if(this.clearDispatchList)
+                    {
+                        // we are reconnecting so lets flush the in progress messages
+                        this.clearDispatchList = false;
+                        this.unconsumedMessages.Clear();
+                        
+                        if(this.pendingAck != null && this.pendingAck.AckType == (byte)AckType.DeliveredAck) 
+                        {
+                            // on resumption a pending delivered ack will be out of sync with
+                            // re-deliveries.
+                            Tracer.Debug("removing pending delivered ack on transport interupt: " + pendingAck);
+                            this.pendingAck = null;
+                        }
+                    }
+                    
+                    if(!this.unconsumedMessages.Closed) 
+                    {
+                        if(listener != null && this.unconsumedMessages.Running)
+                        {
+                            ActiveMQMessage message = CreateActiveMQMessage(dispatch);
+                            
+                            this.BeforeMessageIsConsumed(dispatch);
+                            
+                            try
+                            {
+                                bool expired = message.IsExpired();
+                                
+                                if(!expired)
+                                {
+                                    listener(message);
+                                }
+                                
+                                this.AfterMessageIsConsumed(dispatch, expired);
+                            } 
+                            catch(Exception e) 
+                            {
+                                if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || this.session.IsIndividualAcknowledge)
+                                {
+                                    // Redeliver the message
+                                } 
+                                else
+                                {
+                                    // Transacted or Client ack: Deliver the next message.
+                                    this.AfterMessageIsConsumed(dispatch, false);
+                                }
 
-		#region ISynchronization Members
+                                Tracer.Error(this.info.ConsumerId + " Exception while processing message: " + e);
+                            }
+                        } 
+                        else 
+                        {
+                            this.unconsumedMessages.Enqueue(dispatch);
+                        }
+                    }
+                }
+                
+                if(++dispatchedCount % 1000 == 0) 
+                {
+                    dispatchedCount = 0;
+                    Thread.Sleep(1);
+                }
+            } 
+            catch(Exception e) 
+            {
+                this.session.Connection.OnSessionException(this.session, e);
+            }
+        }
 
-		public void BeforeCommit()
-		{
-		}
+        public bool Iterate()
+        {
+            if(this.listener != null) 
+            {
+                MessageDispatch dispatch = this.unconsumedMessages.DequeueNoWait();
+                if(dispatch != null) 
+                {
+                    try 
+                    {
+                        ActiveMQMessage message = CreateActiveMQMessage(dispatch);
+                        BeforeMessageIsConsumed(dispatch);
+                        listener(message);
+                        AfterMessageIsConsumed(dispatch, false);
+                    } 
+                    catch(NMSException e) 
+                    {
+                        this.session.Connection.OnSessionException(this.session, e);
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            return false;
+        }
 
-		public void AfterCommit()
-		{
-		}
+        /// <summary>
+        /// Used to get an enqueued message from the unconsumedMessages list. The
+        /// amount of time this method blocks is based on the timeout value.  if
+        /// timeout == Timeout.Infinite then it blocks until a message is received. 
+        /// if timeout == 0 then it it tries to not block at all, it returns a 
+        /// message if it is available if timeout > 0 then it blocks up to timeout 
+        /// amount of time.  Expired messages will consumed by this method.
+        /// </summary>
+        /// <param name="timeout">
+        /// A <see cref="System.Int64"/>
+        /// </param>
+        /// <returns>
+        /// A <see cref="MessageDispatch"/>
+        /// </returns>
+        private MessageDispatch Dequeue(TimeSpan timeout) 
+        {
+            DateTime deadline = DateTime.Now;
+            
+            if(timeout > TimeSpan.Zero)
+            {
+                deadline = DateTime.Now + timeout;
+            }
+            
+            while(true) 
+            {
+                MessageDispatch dispatch = this.unconsumedMessages.Dequeue(timeout);
+                
+                if(dispatch == null)
+                {
+                    if(timeout > TimeSpan.Zero && !this.unconsumedMessages.Closed) 
+                    {
+                        timeout = deadline < DateTime.Now ? TimeSpan.Zero : deadline - DateTime.Now;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                } 
+                else if(dispatch.Message == null) 
+                {
+                    return null;
+                } 
+                else if(dispatch.Message.IsExpired())
+                {
+                    Tracer.DebugFormat("{0} received expired message: {1}", info.ConsumerId, dispatch);
+                    
+                    BeforeMessageIsConsumed(dispatch);
+                    AfterMessageIsConsumed(dispatch, true);
+                    
+                    if(timeout > TimeSpan.Zero && !this.unconsumedMessages.Closed) 
+                    {
+                        timeout = deadline < DateTime.Now ? TimeSpan.Zero : deadline - DateTime.Now;
+                    }
+                } 
+                else 
+                {
+                    Tracer.DebugFormat("{0} received message: {1}", info.ConsumerId, dispatch);
+                    return dispatch;
+                }
+            }
+        }
 
-		public void AfterRollback()
-		{
-			consumer.AfterRollback((ActiveMQMessage) message);
-		}
+        public void BeforeMessageIsConsumed(MessageDispatch dispatch)
+        {
+            this.lastDeliveredSequenceId = dispatch.Message.MessageId.BrokerSequenceId;
+            
+            if(!IsAutoAcknowledgeBatch)
+            {
+                lock(this.dispatchedMessages) 
+                {
+                    this.dispatchedMessages.AddFirst(dispatch);
+                }
+                
+                if(this.session.IsTransacted) 
+                {
+                    this.AckLater(dispatch, AckType.DeliveredAck);
+                }
+            }            
+        }
+        
+        public void AfterMessageIsConsumed(MessageDispatch dispatch, bool expired)
+        {
+            if(this.unconsumedMessages.Closed) 
+            {
+                return;
+            }
+            
+            if(expired == true) 
+            {
+                lock(this.dispatchedMessages)
+                {
+                    this.dispatchedMessages.Remove(dispatch);
+                }
+                
+                AckLater(dispatch, AckType.DeliveredAck);
+            }
+            else
+            {
+                if(this.session.IsTransacted)
+                {
+                    // Do nothing.
+                }
+                else if(this.IsAutoAcknowledgeEach)
+                {
+                    if(this.deliveringAcks.CompareAndSet(false, true)) 
+                    {
+                        lock(this.dispatchedMessages) 
+                        {
+                            if(this.dispatchedMessages.Count != 0)
+                            {
+                                MessageAck ack = MakeAckForAllDeliveredMessages(AckType.ConsumedAck);
+                                if(ack !=null) 
+                                {
+                                    this.dispatchedMessages.Clear();
+                                    this.session.Connection.Oneway(ack);
+                                }
+                            }
+                        }
+                        this.deliveringAcks.Value = false;
+                    }
+                } 
+                else if(this.IsAutoAcknowledgeBatch)
+                {
+                    AckLater(dispatch, AckType.ConsumedAck);
+                }
+                else if(this.session.IsClientAcknowledge || this.session.IsIndividualAcknowledge) 
+                {
+                    AckLater(dispatch, AckType.DeliveredAck);
+                } 
+                else 
+                {
+                    throw new NMSException("Invalid session state.");
+                }
+            }            
+        }
 
-		#endregion
-	}
+        private MessageAck MakeAckForAllDeliveredMessages(AckType type)
+        {
+            lock(this.dispatchedMessages)
+            {
+                if(this.dispatchedMessages.Count == 0)
+                {
+                    return null;
+                }
+                    
+                MessageDispatch dispatch = this.dispatchedMessages.First.Value;
+                MessageAck ack = new MessageAck();
+                
+                ack.AckType = (byte)type;
+                ack.ConsumerId = this.info.ConsumerId;
+                ack.Destination = dispatch.Destination;
+                ack.LastMessageId = dispatch.Message.MessageId;
+                ack.MessageCount = this.dispatchedMessages.Count;
+                ack.FirstMessageId = this.dispatchedMessages.Last.Value.Message.MessageId;
+                
+                return ack;
+            }
+        }
+
+        private void AckLater(MessageDispatch dispatch, AckType type)
+        {
+            // Don't acknowledge now, but we may need to let the broker know the
+            // consumer got the message to expand the pre-fetch window
+            if(this.session.IsTransacted)
+            {
+                this.session.DoStartTransaction();
+                
+                if(!synchronizationRegistered) 
+                {
+                    this.synchronizationRegistered = true;
+                    this.session.TransactionContext.AddSynchronization(new MessageConsumerSynchronization(this));
+                }
+            }
+
+            this.deliveredCounter++;
+            
+            MessageAck oldPendingAck = pendingAck;
+            
+            pendingAck = new MessageAck();
+            pendingAck.AckType = (byte)type;
+            pendingAck.ConsumerId = this.info.ConsumerId;
+            pendingAck.Destination = dispatch.Destination;
+            pendingAck.LastMessageId = dispatch.Message.MessageId;
+            pendingAck.MessageCount = deliveredCounter;
+
+            if(this.session.IsTransacted && this.session.TransactionContext.InTransaction)
+            {
+                pendingAck.TransactionId = this.session.TransactionContext.TransactionId;
+            }
+            
+            if(oldPendingAck == null) 
+            {
+                pendingAck.FirstMessageId = pendingAck.LastMessageId;
+            } 
+            else if(oldPendingAck.AckType == pendingAck.AckType)
+            {
+                pendingAck.FirstMessageId = oldPendingAck.FirstMessageId;
+            } 
+            else 
+            {
+                Tracer.Debug("AckLater: Old Ack was not the same Ack type.");
+
+                // old pending ack being superseded by ack of another type, if is is not a delivered
+                // ack and hence important, send it now so it is not lost.
+                if(oldPendingAck.AckType != (byte)AckType.DeliveredAck) 
+                {
+                    Tracer.Debug("Sending old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+                    this.session.Connection.Oneway(oldPendingAck);
+                } 
+                else
+                {
+                    Tracer.Debug("dropping old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+                }
+            }
+            
+            if((0.5 * this.info.PrefetchSize) <= (this.deliveredCounter - this.additionalWindowSize)) 
+            {
+                this.session.Connection.Oneway(pendingAck);
+                this.pendingAck = null;
+                this.deliveredCounter = 0;
+                this.additionalWindowSize = 0;
+            }
+        }
+
+        private void Acknowledge()
+        {
+            lock(this.dispatchedMessages)
+            {
+                // Acknowledge all messages so far.
+                MessageAck ack = MakeAckForAllDeliveredMessages(AckType.ConsumedAck);
+                
+                if(ack == null)
+                {
+                    return; // no msgs
+                }
+                
+                if(this.session.IsTransacted)
+                {
+                    this.session.DoStartTransaction();
+                    ack.TransactionId = this.session.TransactionContext.TransactionId;
+                }
+                
+                this.session.Connection.Oneway(ack);
+                this.pendingAck = null;
+                
+                // Adjust the counters
+                this.deliveredCounter = Math.Max(0, this.deliveredCounter - this.dispatchedMessages.Count);
+                this.additionalWindowSize = Math.Max(0, this.additionalWindowSize - this.dispatchedMessages.Count);
+                
+                if(!this.session.IsTransacted) 
+                {
+                    this.dispatchedMessages.Clear();
+                } 
+            }            
+        }        
+
+        private void Acknowledge(MessageDispatch dispatch)
+        {
+            MessageAck ack = new MessageAck();
+
+            ack.AckType = (byte)AckType.IndividualAck;
+            ack.ConsumerId = this.info.ConsumerId;
+            ack.Destination = dispatch.Destination;
+            ack.LastMessageId = dispatch.Message.MessageId;
+            ack.MessageCount = 1;            
+
+            this.session.Connection.Oneway(ack);
+            lock(this.dispatchedMessages)
+            {
+                this.dispatchedMessages.Remove(dispatch);
+            }
+        }
+        
+        private void Commit()
+        {
+            lock(this.dispatchedMessages)
+            {
+                this.dispatchedMessages.Clear();
+            }
+            
+            this.redeliveryDelay = 0;
+        }
+
+        private void Rollback()
+        {
+            lock(this.unconsumedMessages.SyncRoot)
+            {
+                lock(this.dispatchedMessages)
+                {
+                    if(this.dispatchedMessages.Count == 0)
+                    {
+                        return;
+                    }
+        
+                    // Only increase the redelivery delay after the first redelivery..
+                    MessageDispatch lastMd = this.dispatchedMessages.First.Value;
+                    int currentRedeliveryCount = lastMd.Message.RedeliveryCounter;
+                    
+                    if(currentRedeliveryCount > 0) 
+                    {
+                        redeliveryDelay = 1000;
+                        //redeliveryDelay = redeliveryPolicy.getRedeliveryDelay(redeliveryDelay);
+                    }
+                    
+                    MessageId firstMsgId = this.dispatchedMessages.Last.Value.Message.MessageId;
+        
+                    //if(redeliveryPolicy.getMaximumRedeliveries() != RedeliveryPolicy.NO_MAXIMUM_REDELIVERIES
+                    //    && lastMd.getMessage().getRedeliveryCounter() > redeliveryPolicy.getMaximumRedeliveries()) {
+                    if(lastMd.Message.RedeliveryCounter > MessageConsumer.DEFAULT_MAX_REDELIVERIES)
+                    {
+                        // We need to NACK the messages so that they get sent to the
+                        // DLQ.
+                        // Acknowledge the last message.
+                        
+                        MessageAck ack = new MessageAck();
+
+                        ack.AckType = (byte)AckType.PoisonAck;
+                        ack.ConsumerId = this.info.ConsumerId;
+                        ack.Destination = lastMd.Destination;
+                        ack.LastMessageId = lastMd.Message.MessageId;
+                        ack.MessageCount = this.dispatchedMessages.Count;                                    
+                        ack.FirstMessageId = firstMsgId;
+
+                        this.session.Connection.Oneway(ack);
+                        
+                        // Adjust the window size.
+                        additionalWindowSize = Math.Max(0, this.additionalWindowSize - this.dispatchedMessages.Count);
+                        
+                        //redeliveryDelay = 0;                        
+                    } 
+                    else
+                    {                        
+                        // only redelivery_ack after first delivery
+                        if(currentRedeliveryCount > 0)
+                        {
+                            MessageAck ack = new MessageAck();
+                            
+                            ack.AckType = (byte)AckType.RedeliveredAck;
+                            ack.ConsumerId = this.info.ConsumerId;
+                            ack.Destination = lastMd.Destination;
+                            ack.LastMessageId = lastMd.Message.MessageId;
+                            ack.MessageCount = this.dispatchedMessages.Count;                                    
+                            ack.FirstMessageId = firstMsgId;
+                            
+                            this.session.Connection.Oneway(ack);
+                        }
+        
+                        // stop the delivery of messages.
+                        this.unconsumedMessages.Stop();
+
+                        foreach(MessageDispatch dispatch in this.dispatchedMessages)
+                        {
+                            this.unconsumedMessages.EnqueueFirst(dispatch);
+                        }
+        
+                        if(redeliveryDelay > 0 && !this.unconsumedMessages.Closed)
+                        {
+                            DateTime deadline = DateTime.Now.AddMilliseconds(redeliveryDelay);
+                            ThreadPool.QueueUserWorkItem(this.RollbackHelper, deadline);
+                        } else {
+                            Start();
+                        }
+                    }
+                    
+                    this.deliveredCounter -= this.dispatchedMessages.Count;
+                    this.dispatchedMessages.Clear();
+                }
+            }
+
+            // Only redispatch if there's an async listener otherwise a synchronous
+            // consumer will pull them from the local queue.
+            if(this.listener != null) 
+            {
+                this.session.Redispatch(this.unconsumedMessages);
+            }
+        }
+        
+        private void RollbackHelper(Object arg)
+        {
+            try
+            {
+                TimeSpan waitTime = (DateTime) arg - DateTime.Now;
+
+                if(waitTime.CompareTo(TimeSpan.Zero) > 0)
+                {
+                    Thread.Sleep(waitTime);
+                }
+                
+                this.Start();
+            }            
+            catch(Exception e)
+            {
+                this.session.Connection.OnSessionException(this.session, e);
+            }
+        }
+
+        private ActiveMQMessage CreateActiveMQMessage(MessageDispatch dispatch) 
+        {
+            ActiveMQMessage message = dispatch.Message.Clone() as ActiveMQMessage;
+            
+            if(this.session.IsClientAcknowledge)
+            {
+                message.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
+            }
+            else if(this.session.IsIndividualAcknowledge)
+            {
+                message.Acknowledger += new AcknowledgeHandler(DoIndividualAcknowledge);
+            }
+            else
+            {
+                message.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);                
+            }
+            
+            return message;
+        }
+        
+        private void CheckClosed()
+        {
+            if(this.unconsumedMessages.Closed)
+            {
+                throw new NMSException("The Consumer has been Closed");
+            }
+        }
+
+        private void CheckMessageListener()
+        {
+            if(this.listener != null)
+            {
+                throw new NMSException("Cannot set Async listeners on Consumers with a prefetch limit of zero");
+            }
+        }
+
+        private bool IsAutoAcknowledgeEach
+        {
+            get 
+            { 
+                return this.session.IsAutoAcknowledge ||
+                       (this.session.IsDupsOkAcknowledge && this.info.Destination.IsQueue); 
+            }
+        }
+    
+        private bool IsAutoAcknowledgeBatch 
+        {
+            get { return this.session.IsDupsOkAcknowledge && !this.info.Destination.IsQueue; }
+        }
+
+        #region Nested ISyncronization Types
+        
+        class MessageConsumerSynchronization : ISynchronization
+        {
+            private readonly MessageConsumer consumer;
+    
+            public MessageConsumerSynchronization(MessageConsumer consumer)
+            {
+                this.consumer = consumer;
+            }
+    
+            public void BeforeEnd()
+            {
+                this.consumer.Acknowledge();
+                this.consumer.synchronizationRegistered = false;
+            }
+    
+            public void AfterCommit()
+            {
+                this.consumer.Commit();
+                this.consumer.synchronizationRegistered = false;
+            }
+    
+            public void AfterRollback()
+            {
+                this.consumer.Rollback();
+                this.consumer.synchronizationRegistered = false;
+            }
+        }
+    
+        class ConsumerCloseSynchronization : ISynchronization
+        {
+            private readonly MessageConsumer consumer;
+    
+            public ConsumerCloseSynchronization(MessageConsumer consumer)
+            {
+                this.consumer = consumer;
+            }
+    
+            public void BeforeEnd()
+            {
+            }
+    
+            public void AfterCommit()
+            {
+                this.consumer.DoClose();
+            }
+    
+            public void AfterRollback()
+            {
+                this.consumer.DoClose();
+            }
+        }
+
+        #endregion
+    }
 }

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System;
 
 namespace Apache.NMS.ActiveMQ.Threads
 {
@@ -23,8 +24,8 @@ namespace Apache.NMS.ActiveMQ.Threads
 	/// </summary>
 	public interface TaskRunner
 	{
-		void wakeup();
-		void shutdown();
-		void shutdown(int timeout);
+		void Wakeup();
+		void Shutdown();
+		void Shutdown(TimeSpan timeout);
 	}
 }

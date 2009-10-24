@@ -70,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
                 this.parent = parent;
             }
             
-            public bool iterate()
+            public bool Iterate()
             {   
                 Command command = null;
                 
@@ -173,7 +173,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
                 }
             }
             
-            this.asyncResponseTask.wakeup();
+            this.asyncResponseTask.Wakeup();
             
             // Send the Command to the Outgoing Command Snoop Hook.
             if( this.OutgoingCommand != null ) {
@@ -240,7 +240,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
                 this.receiveQueue.Enqueue(command);
             }
             
-            this.asyncResponseTask.wakeup();
+            this.asyncResponseTask.Wakeup();
         }
 
         public Object Narrow(Type type)

@@ -39,6 +39,11 @@ namespace Apache.NMS.ActiveMQ
 		{
             this.session = session;
         }
+
+        public bool InTransaction
+        {
+            get{ return this.transactionId != null; }
+        }
         
         public TransactionId TransactionId
         {
@@ -53,67 +58,100 @@ namespace Apache.NMS.ActiveMQ
             synchronizations.Add(synchronization);
         }
         
+        public void RemoveSynchronization(ISynchronization synchronization)
+        {
+            synchronizations.Remove(synchronization);
+        }
         
         public void Begin()
         {
-            if (transactionId == null)
+            if(!InTransaction)
             {
-                transactionId = session.Connection.CreateLocalTransactionId();
+                this.transactionId = this.session.Connection.CreateLocalTransactionId();
                 
                 TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = session.Connection.ConnectionId;
+                info.ConnectionId = this.session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.Begin;
-                info.ResponseRequired = false;
-                session.Connection.Oneway(info);
+                
+                this.session.Connection.Oneway(info);
             }
         }
         
-        
         public void Rollback()
         {
-            if (transactionId != null)
+            if(!InTransaction)
             {
-                TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = session.Connection.ConnectionId;
-                info.TransactionId = transactionId;
-                info.Type = (int) TransactionType.Rollback;
-                info.ResponseRequired = false;
-                transactionId = null;
-                session.Connection.SyncRequest(info);
+                throw new NMSException("Invliad State: Not Currently in a Transaction");
             }
+
+            this.BeforeEnd();
+
+            TransactionInfo info = new TransactionInfo();
+            info.ConnectionId = this.session.Connection.ConnectionId;
+            info.TransactionId = transactionId;
+            info.Type = (int) TransactionType.Rollback;
             
-            foreach (ISynchronization synchronization in synchronizations)
-			{
-                synchronization.AfterRollback();
-            }
-            synchronizations.Clear();
+            this.transactionId = null;
+            this.session.Connection.SyncRequest(info);
+
+            this.AfterRollback();
+            this.synchronizations.Clear();
         }
         
         public void Commit()
         {
-            foreach (ISynchronization synchronization in synchronizations)
-			{
-                synchronization.BeforeCommit();
-            }
-            
-            if (transactionId != null)
+            if(!InTransaction)
             {
-                TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = session.Connection.ConnectionId;
-                info.TransactionId = transactionId;
-                info.Type = (int) TransactionType.CommitOnePhase;
-                info.ResponseRequired = false;
-                transactionId = null;
-                session.Connection.SyncRequest(info);
+                throw new NMSException("Invliad State: Not Currently in a Transaction");
             }
+
+            this.BeforeEnd();
             
-            foreach (ISynchronization synchronization in synchronizations)
-			{
-                synchronization.AfterCommit();
-            }
-            synchronizations.Clear();
+            TransactionInfo info = new TransactionInfo();
+            info.ConnectionId = this.session.Connection.ConnectionId;
+            info.TransactionId = transactionId;
+            info.Type = (int) TransactionType.CommitOnePhase;
+            
+            this.transactionId = null;
+            this.session.Connection.SyncRequest(info);
+            
+            this.AfterCommit();
+            this.synchronizations.Clear();
         }
+
+        internal void BeforeEnd()
+        {
+            lock(this.synchronizations.SyncRoot)
+            {
+                foreach(ISynchronization synchronization in this.synchronizations)
+                {
+                    synchronization.BeforeEnd();
+                }
+            }
+        }
+
+        internal void AfterCommit()
+        {
+            lock(this.synchronizations.SyncRoot)
+            {
+                foreach(ISynchronization synchronization in this.synchronizations)
+                {
+                    synchronization.AfterCommit();
+                }
+            }
+        }
+
+        internal void AfterRollback()
+        {
+            lock(this.synchronizations.SyncRoot)
+            {
+                foreach(ISynchronization synchronization in this.synchronizations)
+                {
+                    synchronization.AfterRollback();
+                }
+            }
+        }        
     }
 }
 

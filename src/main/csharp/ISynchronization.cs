@@ -20,9 +20,9 @@ namespace Apache.NMS.ActiveMQ
 	public interface ISynchronization
     {
         /// <summary>
-        /// Called before a commit
+        /// Called before a commit or rollback is applied.
         /// </summary>
-        void BeforeCommit();
+        void BeforeEnd();
         
         /// <summary>
         /// Called after a commit

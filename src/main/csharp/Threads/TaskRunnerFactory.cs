@@ -36,20 +36,20 @@ namespace Apache.NMS.ActiveMQ.Threads
 
 		public TaskRunnerFactory()
 		{
-			initTaskRunnerFactory("ActiveMQ Task", ThreadPriority.Normal, true, 1000, false);
+			InitTaskRunnerFactory("ActiveMQ Task", ThreadPriority.Normal, true, 1000, false);
 		}
 
 		public TaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun)
 		{
-			initTaskRunnerFactory(name, priority, daemon, maxIterationsPerRun, false);
+			InitTaskRunnerFactory(name, priority, daemon, maxIterationsPerRun, false);
 		}
 
 		public TaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun, bool dedicatedTaskRunner)
 		{
-			initTaskRunnerFactory(name, priority, daemon, maxIterationsPerRun, dedicatedTaskRunner);
+			InitTaskRunnerFactory(name, priority, daemon, maxIterationsPerRun, dedicatedTaskRunner);
 		}
 
-		public void initTaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun, bool dedicatedTaskRunner)
+		public void InitTaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun, bool dedicatedTaskRunner)
 		{
 			this.name = name;
 			this.priority = priority;
@@ -60,7 +60,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 			// using a thread pool to run tasks and use a DedicatedTaskRunner instead.
 		}
 
-		public void shutdown()
+		public void Shutdown()
 		{
 		}
 

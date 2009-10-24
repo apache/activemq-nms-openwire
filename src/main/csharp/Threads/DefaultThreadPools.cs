@@ -19,30 +19,6 @@ namespace Apache.NMS.ActiveMQ.Threads
 {
 	public class DefaultThreadPools
 	{
-		/*
-		 * Java's execution model is different enough that I have left out
-		 * the Executure concept in this implementation. This must be
-		 * reviewed to see what is appropriate for the future.
-		 * -Allan Schrum
-		private static Executor DEFAULT_POOL = null;
-		static {
-		DEFAULT_POOL = new ScheduledThreadPoolExecutor(5, new ThreadFactory()
-						{
-							public Thread newThread(Runnable runnable)
-							{
-								Thread thread = new Thread(runnable, "ActiveMQ Default Thread Pool Thread");
-								thread.setDaemon(true);
-								return thread;
-							}
-						});
-		}    
-
-		public static Executor DefaultPool
-		{
-			get { return DEFAULT_POOL; }
-		}
-		*/
-
 		private static TaskRunnerFactory DEFAULT_TASK_RUNNER_FACTORY = new TaskRunnerFactory();
 
 		private DefaultThreadPools()

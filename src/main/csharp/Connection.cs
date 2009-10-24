@@ -38,6 +38,7 @@ namespace Apache.NMS.ActiveMQ
         private WireFormatInfo brokerWireFormatInfo; // from broker
         private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
+        private readonly IDictionary dispatchers = Hashtable.Synchronized(new Hashtable());
         private readonly object myLock = new object();
         private bool asyncSend = false;
         private bool alwaysSyncSend = false;
@@ -183,6 +184,57 @@ namespace Apache.NMS.ActiveMQ
             get { return this.metaData ?? (this.metaData = new ConnectionMetaData()); }
         }
 
+        public Uri BrokerUri
+        {
+            get { return brokerUri; }
+        }
+
+        public ITransport ITransport
+        {
+            get { return transport; }
+            set { this.transport = value; }
+        }
+
+        public TimeSpan RequestTimeout
+        {
+            get { return this.requestTimeout; }
+            set { this.requestTimeout = value; }
+        }
+
+        public AcknowledgementMode AcknowledgementMode
+        {
+            get { return acknowledgementMode; }
+            set { this.acknowledgementMode = value; }
+        }
+
+        public string ClientId
+        {
+            get { return info.ClientId; }
+            set
+            {
+                if(connected)
+                {
+                    throw new NMSException("You cannot change the ClientId once the Connection is connected");
+                }
+                info.ClientId = value;
+            }
+        }
+
+        public ConnectionId ConnectionId
+        {
+            get { return info.ConnectionId; }
+        }
+
+        public BrokerInfo BrokerInfo
+        {
+            get { return brokerInfo; }
+        }
+
+        public WireFormatInfo BrokerWireFormat
+        {
+            get { return brokerWireFormatInfo; }
+        }
+        
         #endregion
 
         /// <summary>
@@ -198,7 +250,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     foreach(Session session in sessions)
                     {
-                        session.StartAsyncDelivery();
+                        session.Start();
                     }
                 }
             }
@@ -226,7 +278,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     foreach(Session session in sessions)
                     {
-                        session.StopAsyncDelivery();
+                        session.Stop();
                     }
                 }
             }
@@ -255,7 +307,7 @@ namespace Apache.NMS.ActiveMQ
 
             if(IsStarted)
             {
-                session.StartAsyncDelivery();
+                session.Start();
             }
 
             sessions.Add(session);
@@ -264,14 +316,22 @@ namespace Apache.NMS.ActiveMQ
 
         public void RemoveSession(Session session)
         {
-            DisposeOf(session.SessionId);
-
             if(!this.closing)
             {
                 sessions.Remove(session);
             }
         }
 
+        public void addDispatcher( ConsumerId id, IDispatcher dispatcher )
+        {
+            this.dispatchers.Add( id, dispatcher );
+        }
+
+        public void removeDispatcher( ConsumerId id )
+        {
+            this.dispatchers.Remove( id );
+        }
+        
         public void addProducer( ProducerId id, MessageProducer producer )
         {
             this.producers.Add( id, producer );
@@ -299,7 +359,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         foreach(Session session in sessions)
                         {
-                            session.Close();
+                            session.DoClose();
                         }
                     }
                     sessions.Clear();
@@ -308,7 +368,6 @@ namespace Apache.NMS.ActiveMQ
                     {
                         DisposeOf(ConnectionId);
                         ShutdownInfo shutdowninfo = new ShutdownInfo();
-                        shutdowninfo.ResponseRequired = false;
                         transport.Oneway(shutdowninfo);
                     }
 
@@ -360,59 +419,6 @@ namespace Apache.NMS.ActiveMQ
             }
 
             disposed = true;
-        }
-
-        // Properties
-
-        public Uri BrokerUri
-        {
-            get { return brokerUri; }
-        }
-
-        public ITransport ITransport
-        {
-            get { return transport; }
-            set { this.transport = value; }
-        }
-
-        public TimeSpan RequestTimeout
-        {
-            get { return this.requestTimeout; }
-            set { this.requestTimeout = value; }
-        }
-
-        public AcknowledgementMode AcknowledgementMode
-        {
-            get { return acknowledgementMode; }
-            set { this.acknowledgementMode = value; }
-        }
-
-        public string ClientId
-        {
-            get { return info.ClientId; }
-            set
-            {
-                if(connected)
-                {
-                    throw new NMSException("You cannot change the ClientId once the Connection is connected");
-                }
-                info.ClientId = value;
-            }
-        }
-
-        public ConnectionId ConnectionId
-        {
-            get { return info.ConnectionId; }
-        }
-
-        public BrokerInfo BrokerInfo
-        {
-            get { return brokerInfo; }
-        }
-
-        public WireFormatInfo BrokerWireFormat
-        {
-            get { return brokerWireFormatInfo; }
         }
 
         // Implementation methods
@@ -469,7 +475,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void DisposeOf(DataStructure objectId)
+        private void DisposeOf(DataStructure objectId)
         {
             try
             {
@@ -480,7 +486,6 @@ namespace Apache.NMS.ActiveMQ
                     Tracer.Info("Asynchronously disposing of Connection.");
                     if(connected)
                     {
-                        command.ResponseRequired = false;
                         transport.Oneway(command);
                     }
                 }
@@ -497,25 +502,6 @@ namespace Apache.NMS.ActiveMQ
             {
                 // Ignore exceptions while shutting down.
             }
-        }
-
-        /// <summary>
-        /// Creates a new temporary destination name
-        /// </summary>
-        public String CreateTemporaryDestinationName()
-        {
-            return info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter);
-        }
-
-        /// <summary>
-        /// Creates a new local transaction ID
-        /// </summary>
-        public LocalTransactionId CreateLocalTransactionId()
-        {
-            LocalTransactionId id = new LocalTransactionId();
-            id.ConnectionId = ConnectionId;
-            id.Value = Interlocked.Increment(ref localTransactionCounter);
-            return id;
         }
 
         protected void CheckConnected()
@@ -607,33 +593,23 @@ namespace Apache.NMS.ActiveMQ
 
         protected void DispatchMessage(MessageDispatch dispatch)
         {
-            bool dispatched = false;
-
-            // Override the Message's Destination with the one from the Dispatch since in the
-            // case of a virtual Topic the correct destination ack is the one from the Dispatch.
-            // This is a bit of a hack since we should really be sending the entire dispatch to
-            // the Consumer.
-            dispatch.Message.Destination = dispatch.Destination;
-            dispatch.Message.ReadOnlyBody = true;
-            dispatch.Message.ReadOnlyProperties = true;
-            dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
-
-            lock(sessions.SyncRoot)
+            lock(dispatchers.SyncRoot)
             {
-                foreach(Session session in sessions)
+                if(dispatchers.Contains(dispatch.ConsumerId))
                 {
-                    if(session.DispatchMessage(dispatch.ConsumerId, dispatch.Message))
-                    {
-                        dispatched = true;
-                        break;
-                    }
+                    IDispatcher dispatcher = (IDispatcher) dispatchers[dispatch.ConsumerId];
+
+                    dispatch.Message.ReadOnlyBody = true;
+                    dispatch.Message.ReadOnlyProperties = true;
+                    dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
+
+                    dispatcher.Dispatch(dispatch);
+
+                    return;
                 }
             }
 
-            if(!dispatched)
-            {
-                Tracer.Error("No such consumer active: " + dispatch.ConsumerId);
-            }
+            Tracer.Error("No such consumer active: " + dispatch.ConsumerId);
         }
 
         protected void OnKeepAliveCommand(ITransport commandTransport, KeepAliveInfo info)
@@ -676,6 +652,11 @@ namespace Apache.NMS.ActiveMQ
         protected void OnTransportInterrupted(ITransport sender)
         {
             Tracer.Debug("Transport has been Interrupted.");
+
+            foreach(Session session in this.sessions)
+            {
+                session.ClearMessagesInProgress();
+            }
 
             if(this.ConnectionInterruptedListener != null && !this.closing )
             {
@@ -720,6 +701,25 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        /// <summary>
+        /// Creates a new temporary destination name
+        /// </summary>
+        public String CreateTemporaryDestinationName()
+        {
+            return info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter);
+        }
+
+        /// <summary>
+        /// Creates a new local transaction ID
+        /// </summary>
+        public LocalTransactionId CreateLocalTransactionId()
+        {
+            LocalTransactionId id = new LocalTransactionId();
+            id.ConnectionId = ConnectionId;
+            id.Value = Interlocked.Increment(ref localTransactionCounter);
+            return id;
+        }
+        
         protected SessionInfo CreateSessionInfo(AcknowledgementMode sessionAcknowledgementMode)
         {
             SessionInfo answer = new SessionInfo();

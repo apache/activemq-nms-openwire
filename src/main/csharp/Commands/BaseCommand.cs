@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ.Commands
     public abstract class BaseCommand : BaseDataStructure, Command, ICloneable
     {
         private int commandId;
-        private bool responseRequired;
+        private bool responseRequired = false;
 
         public int CommandId
         {

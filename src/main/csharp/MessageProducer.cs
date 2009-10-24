@@ -101,6 +101,23 @@ namespace Apache.NMS.ActiveMQ
                     return;
                 }
 
+                DoClose();
+                RemoveInfo removeInfo = new RemoveInfo();
+                removeInfo.ObjectId = this.info.ProducerId;
+                this.session.Connection.Oneway(removeInfo);
+                this.session = null;
+            }
+        }
+
+        internal void DoClose()
+        {
+            lock(closedLock)
+            {
+                if(closed)
+                {
+                    return;
+                }
+
                 try
                 {
                     session.DisposeOf(info.ProducerId);
@@ -115,9 +132,8 @@ namespace Apache.NMS.ActiveMQ
                     this.usage.Stop();
                 }
 
-                session = null;
                 closed = true;
-            }
+            }            
         }
 
         public void Send(IMessage message)

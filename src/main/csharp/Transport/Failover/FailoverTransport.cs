@@ -100,7 +100,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 parent = p;
             }
 
-            public bool iterate()
+            public bool Iterate()
             {
                 bool result = false;
                 bool buildBackup = true;
@@ -129,7 +129,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     result = true;
                     try
                     {
-                        parent.reconnectTask.wakeup();
+                        parent.reconnectTask.Wakeup();
                     }
                     catch(ThreadInterruptedException)
                     {
@@ -365,7 +365,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     connected = false;
                     if(reconnectOk)
                     {
-                        reconnectTask.wakeup();
+                        reconnectTask.Wakeup();
                     }
                 }
 
@@ -440,7 +440,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
             if(reconnectTask != null)
             {
-                reconnectTask.shutdown();
+                reconnectTask.Shutdown();
             }
 
             if(transportToStop != null)
@@ -636,6 +636,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     catch(Exception e)
                     {
                         Tracer.DebugFormat("Send Oneway attempt: {0} failed: Message = {1}", i, e.Message);
+                        Tracer.DebugFormat("Failed Message Was: {0}", command);
                         HandleTransportFailure(e);
                     }
                 }
@@ -721,7 +722,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     Tracer.Debug("Waking up reconnect task");
                     try
                     {
-                        reconnectTask.wakeup();
+                        reconnectTask.Wakeup();
                     }
                     catch(ThreadInterruptedException)
                     {
