@@ -43,12 +43,8 @@ namespace Apache.NMS.ActiveMQ.Threads
             this.task = task;
 
             this.theThread = new Thread(Run);
+            this.theThread.IsBackground = true;
             this.theThread.Start();
-        }
-
-        ~DedicatedTaskRunner()
-        {
-            this.Shutdown();
         }
 
         public void Shutdown(TimeSpan timeout)
@@ -62,16 +58,16 @@ namespace Apache.NMS.ActiveMQ.Threads
 
                 // Wait till the thread stops ( no need to wait if shutdown
                 // is called from thread that is shutting down)
-                if(!this.terminated) 
+                if(Thread.CurrentThread != this.theThread && !this.terminated) 
                 {
                     Monitor.Wait(this.mutex, timeout);
                 }
-            }            
+            }
         }
 
         public void Shutdown()
         {
-            this.Shutdown(new TimeSpan(Timeout.Infinite));
+            this.Shutdown(TimeSpan.FromMilliseconds(-1));
         }
 
         public void Wakeup()
@@ -101,6 +97,7 @@ namespace Apache.NMS.ActiveMQ.Threads
                         
                         if(this.shutdown)
                         {
+                            
                             return;
                         }
                     }
@@ -126,13 +123,15 @@ namespace Apache.NMS.ActiveMQ.Threads
             catch
             {
             }
-        
-            // Make sure we notify any waiting threads that thread
-            // has terminated.
-            lock(this.mutex)
-            {
-                this.terminated = true;
-                Monitor.PulseAll(this.mutex);
+            finally
+            {        
+                // Make sure we notify any waiting threads that thread
+                // has terminated.
+                lock(this.mutex)
+                {
+                    this.terminated = true;
+                    Monitor.PulseAll(this.mutex);
+                }
             }
         }
     }
