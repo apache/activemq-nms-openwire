@@ -85,20 +85,20 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
             DedicatedTaskRunner simpleTaskRunner = new DedicatedTaskRunner(simpleTask);
 
             simpleTaskRunner.Wakeup();
-            Thread.Sleep( 250 );
+            Thread.Sleep( 500 );
             Assert.IsTrue( simpleTask.Count >= 1 );
             simpleTaskRunner.Wakeup();
-            Thread.Sleep( 250 );
+            Thread.Sleep( 500 );
             Assert.IsTrue( simpleTask.Count >= 2 );
         
             InfiniteCountingTask infiniteTask = new InfiniteCountingTask();
             Assert.IsTrue( infiniteTask.Count == 0 );
             DedicatedTaskRunner infiniteTaskRunner = new DedicatedTaskRunner(infiniteTask);
-            Thread.Sleep( 250 );
+            Thread.Sleep( 500 );
             Assert.IsTrue( infiniteTask.Count != 0 );
             infiniteTaskRunner.Shutdown();
             uint count = infiniteTask.Count;
-            Thread.Sleep( 250 );
+            Thread.Sleep( 500 );
             Assert.IsTrue( infiniteTask.Count == count );
         
         }
