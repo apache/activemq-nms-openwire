@@ -68,6 +68,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 IMessageProducer producer = senderSession.CreateProducer(senderQueue);
     
                 IMessage msg = senderSession.CreateTextMessage("test");
+                producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
                 producer.Send(msg);
                 Thread.Sleep(500);
 
@@ -109,6 +110,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 IMessageProducer producer = senderSession.CreateProducer(senderQueue);
     
                 IMessage msg = senderSession.CreateTextMessage("test");
+                producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
                 producer.Send(msg);
                 Thread.Sleep(500);
     
@@ -153,6 +155,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 ActiveMQQueue senderQueue = new ActiveMQQueue("TEST.QUEUE2");
     
                 IMessageProducer producer = senderSession.CreateProducer(senderQueue);
+                producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
     
                 IMessage msg = senderSession.CreateTextMessage("test");
                 producer.Send(msg);
@@ -211,7 +214,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 ActiveMQQueue senderQueue = new ActiveMQQueue("TEST.QUEUE6");
     
                 IMessageProducer producer = senderSession.CreateProducer(senderQueue);
-    
+                producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+
                 IMessage msg = senderSession.CreateTextMessage("test");
                 producer.Send(msg);
                 Thread.Sleep(500);
@@ -265,6 +269,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 ActiveMQQueue senderQueue = new ActiveMQQueue("TEST.QUEUE3");
     
                 IMessageProducer producer = senderSession.CreateProducer(senderQueue);
+                producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
     
                 IMessage msg = senderSession.CreateTextMessage("test");
                 producer.Send(msg);
@@ -317,6 +322,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 ActiveMQQueue senderQueue = new ActiveMQQueue("TEST.QUEUE4");
     
                 IMessageProducer producer = senderSession.CreateProducer(senderQueue);
+                producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
     
                 IMessage msg = senderSession.CreateTextMessage("test");
                 producer.Send(msg);
