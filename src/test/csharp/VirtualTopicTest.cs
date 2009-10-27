@@ -16,6 +16,7 @@
  */
 
 using Apache.NMS.Util;
+using Apache.NMS.ActiveMQ;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
 using System.Threading;
@@ -90,6 +91,18 @@ namespace Apache.NMS.Test
 							session.Commit();
 						}
 					}
+
+                    // Give the Broker some time to remove the subscriptions.
+                    Thread.Sleep(2000);
+
+                    try
+                    {
+                        ((Session) session).DeleteDestination(session.GetQueue(CONSUMER_A_DESTINATION_NAME));
+                        ((Session) session).DeleteDestination(session.GetQueue(CONSUMER_B_DESTINATION_NAME));
+                    }
+                    catch
+                    {
+                    }
 				}
 			}
 		}
@@ -144,7 +157,19 @@ namespace Apache.NMS.Test
 							Thread.Sleep(250);
 						}
 					}
-				}
+                    
+                    // Give the Broker some time to remove the subscriptions.
+                    Thread.Sleep(2000);
+
+                    try
+                    {
+                        ((Session) session).DeleteDestination(session.GetQueue(CONSUMER_A_DESTINATION_NAME));
+                        ((Session) session).DeleteDestination(session.GetQueue(CONSUMER_B_DESTINATION_NAME));
+				    }
+                    catch
+                    {
+                    }
+                }
 			}
 		}
 
