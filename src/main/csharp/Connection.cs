@@ -599,10 +599,15 @@ namespace Apache.NMS.ActiveMQ
                 {
                     IDispatcher dispatcher = (IDispatcher) dispatchers[dispatch.ConsumerId];
 
-                    dispatch.Message.ReadOnlyBody = true;
-                    dispatch.Message.ReadOnlyProperties = true;
-                    dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
-
+                    // Can be null when a consumer has sent a MessagePull and there was
+                    // no available message at the broker to dispatch.  
+                    if(dispatch.Message != null)
+                    {
+                        dispatch.Message.ReadOnlyBody = true;
+                        dispatch.Message.ReadOnlyProperties = true;
+                        dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
+                    }
+                    
                     dispatcher.Dispatch(dispatch);
 
                     return;

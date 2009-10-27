@@ -165,8 +165,17 @@ namespace Apache.NMS.ActiveMQ
             CheckClosed();
             CheckMessageListener();
     
+            MessageDispatch dispatch = null;
             SendPullRequest((long)timeout.TotalMilliseconds);
-            MessageDispatch dispatch = this.Dequeue(timeout);
+            
+            if(this.PrefetchSize == 0)
+            {
+                dispatch = this.Dequeue(TimeSpan.FromMilliseconds(-1));
+            }
+            else
+            {
+                dispatch = this.Dequeue(timeout);
+            }
             
             if(dispatch == null)
             {
@@ -183,9 +192,18 @@ namespace Apache.NMS.ActiveMQ
 		{
             CheckClosed();
             CheckMessageListener();
-    
+
+            MessageDispatch dispatch = null;
             SendPullRequest(-1);
-            MessageDispatch dispatch = this.Dequeue(TimeSpan.Zero);
+            
+            if(this.PrefetchSize == 0)
+            {
+                dispatch = this.Dequeue(TimeSpan.FromMilliseconds(-1));
+            }
+            else
+            {
+                dispatch = this.Dequeue(TimeSpan.Zero);
+            }
             
             if(dispatch == null)
             {
@@ -702,8 +720,6 @@ namespace Apache.NMS.ActiveMQ
             } 
             else 
             {
-                Tracer.Debug("AckLater: Old Ack was not the same Ack type.");
-
                 // old pending ack being superseded by ack of another type, if is is not a delivered
                 // ack and hence important, send it now so it is not lost.
                 if(oldPendingAck.AckType != (byte)AckType.DeliveredAck) 
