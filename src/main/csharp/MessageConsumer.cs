@@ -172,13 +172,9 @@ namespace Apache.NMS.ActiveMQ
             {
                 return null;
             }
-
-            Tracer.Debug("Receive got new MessageDispatch: " + dispatch);
     
             BeforeMessageIsConsumed(dispatch);
             AfterMessageIsConsumed(dispatch, false);
-
-            Tracer.Debug("Creating new message and returning.");
             
             return CreateActiveMQMessage(dispatch);
 		}
