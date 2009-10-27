@@ -166,6 +166,11 @@ namespace Apache.NMS.ActiveMQ.Commands
             this.ReadOnlyBody = true;
         }
 
+        public virtual void OnMessageRollback()
+        {
+            this.redeliveryCounter++;
+        }
+
         public bool IsExpired()
         {
             return this.expiration == 0 ? false : DateTime.UtcNow > DateUtils.ToDateTimeUtc(this.expiration);

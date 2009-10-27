@@ -823,6 +823,12 @@ namespace Apache.NMS.ActiveMQ
                     }
                     
                     MessageId firstMsgId = this.dispatchedMessages.Last.Value.Message.MessageId;
+
+                    foreach(MessageDispatch dispatch in this.dispatchedMessages)
+                    {
+                        // Allow the message to update its internal to reflect a Rollback.
+                        dispatch.Message.OnMessageRollback();
+                    }
         
                     //if(redeliveryPolicy.getMaximumRedeliveries() != RedeliveryPolicy.NO_MAXIMUM_REDELIVERIES
                     //    && lastMd.getMessage().getRedeliveryCounter() > redeliveryPolicy.getMaximumRedeliveries()) {
