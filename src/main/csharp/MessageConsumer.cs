@@ -38,8 +38,6 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
-        private object closedLock = new object();
-
         private readonly MessageDispatchChannel unconsumedMessages = new MessageDispatchChannel();
         private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
         private readonly ConsumerInfo info;
@@ -50,7 +48,6 @@ namespace Apache.NMS.ActiveMQ
         private Atomic<bool> started = new Atomic<bool>();
         private Atomic<bool> deliveringAcks = new Atomic<bool>();
 
-        private bool closed = false;
 		private int maximumRedeliveryCount = 10;
 		private int redeliveryTimeout = 500;
 		protected bool disposed = false;
@@ -263,40 +260,37 @@ namespace Apache.NMS.ActiveMQ
 
         internal void DoClose()
         {
-            lock(this.closedLock)
-            {
-                if(!this.unconsumedMessages.Closed)
-                {                    
-                    // Do we have any acks we need to send out before closing?
-                    // Ack any delivered messages now.
-                    if(!this.session.IsTransacted) 
+            if(!this.unconsumedMessages.Closed)
+            {                    
+                // Do we have any acks we need to send out before closing?
+                // Ack any delivered messages now.
+                if(!this.session.IsTransacted) 
+                {
+                    DeliverAcks();
+                    if(this.IsAutoAcknowledgeBatch)
                     {
-                        DeliverAcks();
-                        if(this.IsAutoAcknowledgeBatch)
-                        {
-                            Acknowledge();
-                        }
+                        Acknowledge();
                     }
-                    
-                    if(!this.session.IsTransacted)
-                    {
-                        lock(this.dispatchedMessages)
-                        {
-                            dispatchedMessages.Clear();
-                        }
-                    }
-                    
-                    this.unconsumedMessages.Close();
-                    this.session.DisposeOf(this.info.ConsumerId, this.lastDeliveredSequenceId);
-
-                    RemoveInfo removeCommand = new RemoveInfo();
-                    removeCommand.ObjectId = this.info.ConsumerId;
-                    removeCommand.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
-                    
-                    this.session.Connection.Oneway(removeCommand);
-                    this.session = null;
                 }
-            }            
+                
+                if(!this.session.IsTransacted)
+                {
+                    lock(this.dispatchedMessages)
+                    {
+                        dispatchedMessages.Clear();
+                    }
+                }
+                
+                this.unconsumedMessages.Close();
+                this.session.DisposeOf(this.info.ConsumerId, this.lastDeliveredSequenceId);
+
+                RemoveInfo removeCommand = new RemoveInfo();
+                removeCommand.ObjectId = this.info.ConsumerId;
+                removeCommand.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
+                
+                this.session.Connection.Oneway(removeCommand);
+                this.session = null;
+            }
         }
 
 		#endregion
@@ -312,15 +306,7 @@ namespace Apache.NMS.ActiveMQ
 				messagePull.ResponseRequired = false;
 
 				Tracer.Debug("Sending MessagePull: " + messagePull);
-				lock(closedLock)
-				{
-					if(closed)
-					{
-						throw new ConnectionClosedException();
-					}
-
-					session.Connection.Oneway(messagePull);
-				}
+			    session.Connection.Oneway(messagePull);
 			}
 		}
 

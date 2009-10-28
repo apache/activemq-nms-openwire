@@ -28,14 +28,10 @@ namespace Apache.NMS.ActiveMQ
     public class MessageDispatchChannel
     {
         private readonly Mutex mutex = new Mutex();
-        private Atomic<bool> closed = new Atomic<bool>();
-        private Atomic<bool> running = new Atomic<bool>();
+        private bool closed;
+        private bool running;
         private LinkedList<MessageDispatch> channel = new LinkedList<MessageDispatch>();
         
-        public MessageDispatchChannel()
-        {
-        }
-
         #region Properties
 
         public object SyncRoot
@@ -45,14 +41,40 @@ namespace Apache.NMS.ActiveMQ
         
         public bool Closed
         {
-            get{ return this.closed.Value; }
-            set{ this.closed.Value = value; }
+            get 
+            {
+                lock(this.mutex)
+                {
+                    return this.closed; 
+                }
+            }
+            
+            set 
+            {
+                lock(this.mutex)
+                {
+                    this.closed = value;
+                }
+            }
         }
 
         public bool Running
         {
-            get{ return this.running.Value; }
-            set{ this.running.Value = value; }
+            get
+            {
+                lock(this.mutex)
+                {
+                    return this.running;
+                }
+            }
+            
+            set
+            {
+                lock(this.mutex)
+                {
+                    this.running = value;
+                }
+            }
         }
 
         public bool Empty
@@ -85,7 +107,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(!Closed)
                 {
-                    this.running.Value = true;
+                    this.running = true;
                     Monitor.PulseAll(this.mutex);
                 }
             }
@@ -95,7 +117,7 @@ namespace Apache.NMS.ActiveMQ
         {
             lock(mutex)
             {
-                this.running.Value = false;
+                this.running = false;
                 Monitor.PulseAll(this.mutex);
             }
         }
@@ -106,8 +128,8 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(!Closed)
                 {
-                    this.running.Value = false;
-                    this.closed.Value = true;
+                    this.running = false;
+                    this.closed = true;
                 }          
 
                 Monitor.PulseAll(this.mutex);
