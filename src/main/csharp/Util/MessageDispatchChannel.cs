@@ -134,7 +134,6 @@ namespace Apache.NMS.ActiveMQ
 
         public MessageDispatch Dequeue(TimeSpan timeout)
         {
-            Tracer.Debug("Dequeuing message or return null after timeout: " + timeout.ToString());
             lock(this.mutex)
             {
                 // Wait until the channel is ready to deliver messages.
