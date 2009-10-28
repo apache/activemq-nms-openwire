@@ -72,6 +72,7 @@
     </Compile>
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
     <Compile Include="src\test\csharp\ConnectionMetaDataTest.cs" />
+    <Compile Include="src\test\csharp\ExclusiveConsumerTest.cs" />
     <Compile Include="src\test\csharp\NMSConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\BooleanStreamTest.cs">
       <SubType>Code</SubType>
@@ -86,6 +87,7 @@
     <Compile Include="src\test\csharp\Util\MemoryUsageTest.cs" />
     <Compile Include="src\test\csharp\Util\MessageDispatchChannelTest.cs" />
     <Compile Include="src\test\csharp\VirtualTopicTest.cs" />
+    <Compile Include="src\test\csharp\ZeroPrefetchConsumerTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="nmsprovider-test.config">
