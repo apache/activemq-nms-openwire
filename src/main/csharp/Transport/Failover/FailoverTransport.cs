@@ -992,7 +992,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         catch(Exception e)
                         {
                             Failure = e;
-                            Tracer.DebugFormat("Connect attempt failed.  Reason: {1}", e.Message);
+                            Tracer.DebugFormat("Connect attempt failed.  Reason: {0}", e.Message);
                         }
                     }
 
