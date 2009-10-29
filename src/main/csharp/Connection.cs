@@ -314,7 +314,7 @@ namespace Apache.NMS.ActiveMQ
             return session;
         }
 
-        public void RemoveSession(Session session)
+        internal void RemoveSession(Session session)
         {
             if(!this.closing)
             {
@@ -322,22 +322,22 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void addDispatcher( ConsumerId id, IDispatcher dispatcher )
+        internal void addDispatcher( ConsumerId id, IDispatcher dispatcher )
         {
             this.dispatchers.Add( id, dispatcher );
         }
 
-        public void removeDispatcher( ConsumerId id )
+        internal void removeDispatcher( ConsumerId id )
         {
             this.dispatchers.Remove( id );
         }
         
-        public void addProducer( ProducerId id, MessageProducer producer )
+        internal void addProducer( ProducerId id, MessageProducer producer )
         {
             this.producers.Add( id, producer );
         }
 
-        public void removeProducer( ProducerId id )
+        internal void removeProducer( ProducerId id )
         {
             this.producers.Remove( id );
         }

@@ -189,7 +189,7 @@ namespace Apache.NMS.ActiveMQ
 
         public bool IsIndividualAcknowledge
         {
-            get { return false; }
+            get { return this.acknowledgementMode == AcknowledgementMode.IndividualAcknowledge; }
         }
 
         public bool IsTransacted
@@ -756,7 +756,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void Redispatch(MessageDispatchChannel channel)
+        internal void Redispatch(MessageDispatchChannel channel)
         {
             MessageDispatch[] messages = channel.RemoveAll();
             System.Array.Reverse(messages);
@@ -775,7 +775,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void ClearMessagesInProgress() 
+        internal void ClearMessagesInProgress() 
         {        
             if( this.executor != null ) {
                 this.executor.ClearMessagesInProgress();
@@ -789,15 +789,15 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
         }
-        
-        public void DeliverAcks() 
-        {        
+
+        internal void Acknowledge()
+        {
             lock(this.consumers.SyncRoot)
             {
                 foreach(MessageConsumer consumer in this.consumers)
                 {
-                    consumer.DeliverAcks();
-                }
+                    consumer.Acknowledge();
+                }                
             }
         }
         

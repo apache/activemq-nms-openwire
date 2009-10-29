@@ -312,9 +312,34 @@ namespace Apache.NMS.ActiveMQ
 
         protected void DoIndividualAcknowledge(ActiveMQMessage message)
         {
-            // TODO
-        }
+            MessageDispatch dispatch = null;
+            
+            lock(this.dispatchedMessages)
+            {
+                foreach(MessageDispatch originalDispatch in this.dispatchedMessages)
+                {
+                    if(originalDispatch.Message.MessageId.Equals(message.MessageId))
+                    {
+                        dispatch = originalDispatch;
+                        this.dispatchedMessages.Remove(originalDispatch);
+                        break;
+                    }
 
+                    return;
+                }
+            }
+
+            MessageAck ack = new MessageAck();
+
+            ack.AckType = (byte)AckType.IndividualAck;
+            ack.ConsumerId = this.info.ConsumerId;
+            ack.Destination = dispatch.Destination;
+            ack.LastMessageId = dispatch.Message.MessageId;
+            ack.MessageCount = 1;            
+
+            this.session.Connection.Oneway(ack);            
+        }
+                
 		protected void DoNothingAcknowledge(ActiveMQMessage message)
 		{
 		}
@@ -728,7 +753,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void Acknowledge()
+        internal void Acknowledge()
         {
             lock(this.dispatchedMessages)
             {
@@ -760,23 +785,6 @@ namespace Apache.NMS.ActiveMQ
             }            
         }        
 
-        private void Acknowledge(MessageDispatch dispatch)
-        {
-            MessageAck ack = new MessageAck();
-
-            ack.AckType = (byte)AckType.IndividualAck;
-            ack.ConsumerId = this.info.ConsumerId;
-            ack.Destination = dispatch.Destination;
-            ack.LastMessageId = dispatch.Message.MessageId;
-            ack.MessageCount = 1;            
-
-            this.session.Connection.Oneway(ack);
-            lock(this.dispatchedMessages)
-            {
-                this.dispatchedMessages.Remove(dispatch);
-            }
-        }
-        
         private void Commit()
         {
             lock(this.dispatchedMessages)
