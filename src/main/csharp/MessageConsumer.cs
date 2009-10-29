@@ -63,12 +63,15 @@ namespace Apache.NMS.ActiveMQ
         private const int DEFAULT_MAX_REDELIVERIES = 5;
 
         private event MessageListener listener;
+
+        private IRedeliveryPolicy redeliveryPolicy;
         
 		// Constructor internal to prevent clients from creating an instance.
 		internal MessageConsumer(Session session, ConsumerInfo info)
 		{
 			this.session = session;
 			this.info = info;
+            this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
 		}
 
 		~MessageConsumer()
@@ -103,6 +106,12 @@ namespace Apache.NMS.ActiveMQ
         public int PrefetchSize
         {
             get { return this.info.PrefetchSize; }
+        }
+
+        public IRedeliveryPolicy RedeliveryPolicy
+        {
+            get { return this.redeliveryPolicy; }
+            set { this.redeliveryPolicy = value; }
         }
 
         #endregion
@@ -812,8 +821,7 @@ namespace Apache.NMS.ActiveMQ
                     
                     if(currentRedeliveryCount > 0) 
                     {
-                        redeliveryDelay = 1000;
-                        //redeliveryDelay = redeliveryPolicy.getRedeliveryDelay(redeliveryDelay);
+                        redeliveryDelay = this.redeliveryPolicy.RedeliveryDelay(currentRedeliveryCount);
                     }
                     
                     MessageId firstMsgId = this.dispatchedMessages.Last.Value.Message.MessageId;
@@ -824,14 +832,10 @@ namespace Apache.NMS.ActiveMQ
                         dispatch.Message.OnMessageRollback();
                     }
         
-                    //if(redeliveryPolicy.getMaximumRedeliveries() != RedeliveryPolicy.NO_MAXIMUM_REDELIVERIES
-                    //    && lastMd.getMessage().getRedeliveryCounter() > redeliveryPolicy.getMaximumRedeliveries()) {
-                    if(lastMd.Message.RedeliveryCounter > MessageConsumer.DEFAULT_MAX_REDELIVERIES)
+                    if(this.redeliveryPolicy.MaximumRedeliveries >= 0 &&
+                       lastMd.Message.RedeliveryCounter > this.redeliveryPolicy.MaximumRedeliveries)
                     {
-                        // We need to NACK the messages so that they get sent to the
-                        // DLQ.
-                        // Acknowledge the last message.
-                        
+                        // We need to NACK the messages so that they get sent to the DLQ.
                         MessageAck ack = new MessageAck();
 
                         ack.AckType = (byte)AckType.PoisonAck;
@@ -846,11 +850,11 @@ namespace Apache.NMS.ActiveMQ
                         // Adjust the window size.
                         additionalWindowSize = Math.Max(0, this.additionalWindowSize - this.dispatchedMessages.Count);
                         
-                        //redeliveryDelay = 0;                        
+                        this.redeliveryDelay = 0;
                     } 
                     else
                     {                        
-                        // only redelivery_ack after first delivery
+                        // We only send a RedeliveryAck after the first redelivery
                         if(currentRedeliveryCount > 0)
                         {
                             MessageAck ack = new MessageAck();
@@ -877,7 +881,9 @@ namespace Apache.NMS.ActiveMQ
                         {
                             DateTime deadline = DateTime.Now.AddMilliseconds(redeliveryDelay);
                             ThreadPool.QueueUserWorkItem(this.RollbackHelper, deadline);
-                        } else {
+                        } 
+                        else 
+                        {
                             Start();
                         }
                     }

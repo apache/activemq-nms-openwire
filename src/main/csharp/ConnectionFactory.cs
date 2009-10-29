@@ -18,7 +18,9 @@
 using System;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS;
 using Apache.NMS.Util;
+using Apache.NMS.Policies;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -35,6 +37,7 @@ namespace Apache.NMS.ActiveMQ
 		private string connectionUserName;
 		private string connectionPassword;
 		private string clientId;
+        private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
 
 		static ConnectionFactory()
 		{
@@ -99,6 +102,7 @@ namespace Apache.NMS.ActiveMQ
 			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
+            connection.RedeliveryPolicy = this.RedeliveryPolicy;
 			connection.ITransport.Start();
 			return connection;
 		}
@@ -131,6 +135,18 @@ namespace Apache.NMS.ActiveMQ
 			get { return clientId; }
 			set { clientId = value; }
 		}
+
+        public IRedeliveryPolicy RedeliveryPolicy
+        {
+            get { return this.redeliveryPolicy; }
+            set 
+            {
+                if(value != null)
+                {
+                    this.redeliveryPolicy = value; 
+                }
+            }
+        }
 
 		public event ExceptionListener OnException
 		{

@@ -20,6 +20,7 @@ using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
@@ -54,6 +55,7 @@ namespace Apache.NMS.ActiveMQ
         private readonly Atomic<bool> started = new Atomic<bool>(false);
         private ConnectionMetaData metaData = null;
         private bool disposed = false;
+        private IRedeliveryPolicy redeliveryPolicy;
 
         public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
         {
@@ -233,6 +235,12 @@ namespace Apache.NMS.ActiveMQ
         public WireFormatInfo BrokerWireFormat
         {
             get { return brokerWireFormatInfo; }
+        }
+
+        public IRedeliveryPolicy RedeliveryPolicy
+        {
+            get { return this.redeliveryPolicy; }
+            set { this.redeliveryPolicy = value; }
         }
         
         #endregion
