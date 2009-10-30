@@ -863,6 +863,7 @@
     <Compile Include="src\main\csharp\OpenWire\V5\TransactionInfoMarshaller.cs" />
     <Compile Include="src\main\csharp\OpenWire\V5\WireFormatInfoMarshaller.cs" />
     <Compile Include="src\main\csharp\OpenWire\V5\XATransactionIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\PrefetchPolicy.cs" />
     <Compile Include="src\main\csharp\Session.cs">
       <SubType>Code</SubType>
     </Compile>
