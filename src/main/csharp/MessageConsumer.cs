@@ -357,7 +357,7 @@ namespace Apache.NMS.ActiveMQ
 		{
             this.CheckClosed();
 			Tracer.Debug("Sending Client Ack:");
-            this.Acknowledge();
+            this.session.Acknowledge();
 		}
 
         public void Start()
