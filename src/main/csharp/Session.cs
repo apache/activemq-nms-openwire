@@ -41,8 +41,6 @@ namespace Apache.NMS.ActiveMQ
         private TransactionContext transactionContext;
         private Connection connection;
 
-        private int prefetchSize;
-        private int maximumPendingMessageLimit;
         private bool dispatchAsync;
         private bool exclusive;
         private bool retroactive;
@@ -65,7 +63,6 @@ namespace Apache.NMS.ActiveMQ
             this.info = info;
             this.acknowledgementMode = acknowledgementMode;
             this.requestTimeout = connection.RequestTimeout;
-            this.PrefetchSize = 1000;
 
             if(acknowledgementMode == AcknowledgementMode.Transactional)
             {
@@ -88,8 +85,7 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public int PrefetchSize
         {
-            get{ return this.prefetchSize; }
-            set{ this.prefetchSize = value; }
+            set{ this.connection.PrefetchPolicy.SetAll(value); }
         }
 
         /// <summary>
@@ -100,8 +96,7 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public int MaximumPendingMessageLimit
         {
-            get{ return this.maximumPendingMessageLimit; }
-            set{ this.maximumPendingMessageLimit = value; }
+            set{ this.connection.PrefetchPolicy.MaximumPendingMessageLimit = value; }
         }
 
         /// <summary>
@@ -428,6 +423,7 @@ namespace Apache.NMS.ActiveMQ
             ConsumerId consumerId = command.ConsumerId;
             command.SubscriptionName = name;
             command.NoLocal = noLocal;
+            command.PrefetchSize = this.connection.PrefetchPolicy.DurableTopicPrefetch;
             MessageConsumer consumer = null;
 
             // Registered with Connection before we register at the broker.
@@ -687,13 +683,21 @@ namespace Apache.NMS.ActiveMQ
             answer.ConsumerId = id;
             answer.Destination = ActiveMQDestination.Transform(destination);
             answer.Selector = selector;
-            answer.PrefetchSize = this.PrefetchSize;
             answer.Priority = this.Priority;
             answer.Exclusive = this.Exclusive;
             answer.DispatchAsync = this.DispatchAsync;
             answer.Retroactive = this.Retroactive;
-            answer.MaximumPendingMessageLimit = this.MaximumPendingMessageLimit;
+            answer.MaximumPendingMessageLimit = this.connection.PrefetchPolicy.MaximumPendingMessageLimit;
 
+            if(destination is ITopic || destination is ITemporaryTopic)
+            {
+                answer.PrefetchSize = this.connection.PrefetchPolicy.TopicPrefetch;
+            }
+            else if(destination is IQueue || destination is ITemporaryQueue)
+            {
+                answer.PrefetchSize = this.connection.PrefetchPolicy.QueuePrefetch;
+            }
+            
             // If the destination contained a URI query, then use it to set public properties
             // on the ConsumerInfo
             ActiveMQDestination amqDestination = destination as ActiveMQDestination;

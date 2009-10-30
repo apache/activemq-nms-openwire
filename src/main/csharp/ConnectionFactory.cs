@@ -37,7 +37,9 @@ namespace Apache.NMS.ActiveMQ
 		private string connectionUserName;
 		private string connectionPassword;
 		private string clientId;
+        
         private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
+        private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
 
 		static ConnectionFactory()
 		{
@@ -102,7 +104,9 @@ namespace Apache.NMS.ActiveMQ
 			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
-            connection.RedeliveryPolicy = this.RedeliveryPolicy;
+            connection.RedeliveryPolicy = this.redeliveryPolicy;
+            connection.PrefetchPolicy = this.prefetchPolicy;
+            
 			connection.ITransport.Start();
 			return connection;
 		}

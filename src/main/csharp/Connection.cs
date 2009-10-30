@@ -56,6 +56,7 @@ namespace Apache.NMS.ActiveMQ
         private ConnectionMetaData metaData = null;
         private bool disposed = false;
         private IRedeliveryPolicy redeliveryPolicy;
+        private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
 
         public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
         {
@@ -241,6 +242,12 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return this.redeliveryPolicy; }
             set { this.redeliveryPolicy = value; }
+        }
+
+        public PrefetchPolicy PrefetchPolicy
+        {
+            get { return this.prefetchPolicy; }
+            set { this.prefetchPolicy = value; }
         }
         
         #endregion
