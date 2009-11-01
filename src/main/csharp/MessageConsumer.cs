@@ -819,10 +819,7 @@ namespace Apache.NMS.ActiveMQ
                     MessageDispatch lastMd = this.dispatchedMessages.First.Value;
                     int currentRedeliveryCount = lastMd.Message.RedeliveryCounter;
                     
-                    if(currentRedeliveryCount > 0) 
-                    {
-                        redeliveryDelay = this.redeliveryPolicy.RedeliveryDelay(currentRedeliveryCount);
-                    }
+                    redeliveryDelay = this.redeliveryPolicy.RedeliveryDelay(currentRedeliveryCount);
                     
                     MessageId firstMsgId = this.dispatchedMessages.Last.Value.Message.MessageId;
 

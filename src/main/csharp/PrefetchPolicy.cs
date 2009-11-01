@@ -24,7 +24,7 @@ namespace Apache.NMS.ActiveMQ
     /// Class used to define the various limits that should be used for the Prefetch
     /// limit on destination based on the type of Destination in use.
     /// </summary>
-    public class PrefetchPolicy
+    public class PrefetchPolicy : ICloneable
     {
         public const int MAX_PREFETCH_SIZE = Int16.MaxValue - 1;
         public const int DEFAULT_QUEUE_PREFETCH = 1000;
@@ -87,6 +87,11 @@ namespace Apache.NMS.ActiveMQ
         private int RestrictToMaximum(int value)
         {
             return System.Math.Min(value, MAX_PREFETCH_SIZE);
+        }
+
+        public Object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }

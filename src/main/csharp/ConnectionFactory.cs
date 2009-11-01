@@ -104,8 +104,8 @@ namespace Apache.NMS.ActiveMQ
 			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
-            connection.RedeliveryPolicy = this.redeliveryPolicy;
-            connection.PrefetchPolicy = this.prefetchPolicy;
+            connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
+            connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
             
 			connection.ITransport.Start();
 			return connection;
