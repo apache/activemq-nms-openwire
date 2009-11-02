@@ -238,7 +238,10 @@ namespace Apache.NMS.ActiveMQ
             get { return brokerWireFormatInfo; }
         }
 
-        public IRedeliveryPolicy RedeliveryPolicy
+		/// <summary>
+		/// Get/or set the redelivery policy for this connection.
+		/// </summary>
+		public IRedeliveryPolicy RedeliveryPolicy
         {
             get { return this.redeliveryPolicy; }
             set { this.redeliveryPolicy = value; }
