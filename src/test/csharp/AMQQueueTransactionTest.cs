@@ -36,7 +36,7 @@ namespace Apache.NMS.Test
             get { return false; }
         }
 
-        protected override String ClientId
+        protected override String TestClientId
         {
             get { return CLIENT_ID; }
         }
@@ -50,6 +50,6 @@ namespace Apache.NMS.Test
         {
             get { return "AMQQueueTransactionTestDestination"; }
         }
-        
+
     }
 }

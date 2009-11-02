@@ -38,7 +38,7 @@ namespace Apache.NMS.Test
             get { return true; }
         }
 
-        protected override String ClientId
+        protected override String TestClientId
         {
             get { return CLIENT_ID; }
         }
@@ -52,6 +52,6 @@ namespace Apache.NMS.Test
         {
             get { return DESTINATION_NAME; }
         }
-        
+
     }
 }

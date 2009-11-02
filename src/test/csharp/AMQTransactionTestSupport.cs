@@ -37,10 +37,10 @@ namespace Apache.NMS.Test
         private IMessageConsumer consumer;
         private IMessageProducer producer;
         private IDestination destination;
-        
+
         private int batchCount = 10;
         private int batchSize = 20;
-    
+
         // for message listener test
         private LinkedList<IMessage> unackMessages = new LinkedList<IMessage>();
         private LinkedList<IMessage> ackMessages = new LinkedList<IMessage>();
@@ -67,7 +67,7 @@ namespace Apache.NMS.Test
 
             this.unackMessages.Clear();
             this.ackMessages.Clear();
-            
+
             base.TearDown();
         }
 
@@ -76,7 +76,7 @@ namespace Apache.NMS.Test
             get;
         }
 
-        protected abstract String ClientId
+        protected abstract String TestClientId
         {
             get;
         }
@@ -90,7 +90,7 @@ namespace Apache.NMS.Test
         {
             get;
         }
-        
+
         public override IConnection CreateConnection()
         {
             return this.connectionFactory.CreateConnection();
@@ -99,113 +99,113 @@ namespace Apache.NMS.Test
         protected void BeginTx()
         {
         }
-    
+
         protected void CommitTx()
         {
             session.Commit();
         }
-    
+
         protected void RollbackTx()
         {
             session.Rollback();
         }
 
         [Test]
-        public void TestSendReceiveTransactedBatches() 
-        {            
+        public void TestSendReceiveTransactedBatches()
+        {
             ITextMessage message = session.CreateTextMessage("Batch IMessage");
-            
-            for(int j = 0; j < batchCount; j++) 
-            {    
+
+            for(int j = 0; j < batchCount; j++)
+            {
                 BeginTx();
-                
-                for(int i = 0; i < batchSize; i++) 
+
+                for(int i = 0; i < batchSize; i++)
                 {
                     producer.Send(message);
                 }
-                
+
                 CommitTx();
-                
+
                 BeginTx();
-                for(int i = 0; i < batchSize; i++) 
+                for(int i = 0; i < batchSize; i++)
                 {
                     message = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(5000));
                     Assert.IsNotNull(message, "Received only " + i + " messages in batch " + j);
                     Assert.AreEqual("Batch IMessage", message.Text);
                 }
-    
+
                 CommitTx();
             }
         }
-    
+
         [Test]
         public void TestSendRollback()
-        {                        
+        {
             IMessage[] outbound = new IMessage[]
             {session.CreateTextMessage("First IMessage"), session.CreateTextMessage("Second IMessage")};
-    
+
             // sends a message
             BeginTx();
             producer.Send(outbound[0]);
             CommitTx();
-    
+
             // sends a message that gets rollbacked
             BeginTx();
             producer.Send(session.CreateTextMessage("I'm going to get rolled back."));
             RollbackTx();
-    
+
             // sends a message
             BeginTx();
             producer.Send(outbound[1]);
             CommitTx();
-    
+
             // receives the first message
             BeginTx();
             LinkedList<IMessage> messages = new LinkedList<IMessage>();
             IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             messages.AddLast(message);
-    
+
             // receives the second message
             message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
             messages.AddLast(message);
-    
+
             // validates that the rollbacked was not consumed
             CommitTx();
             IMessage[] inbound = new IMessage[messages.Count];
             messages.CopyTo(inbound, 0);
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
-    
+
         [Test]
-        public void TestSendSessionClose() 
+        public void TestSendSessionClose()
         {
             IMessage[] outbound = new IMessage[] {
-                session.CreateTextMessage("First IMessage"), 
+                session.CreateTextMessage("First IMessage"),
                 session.CreateTextMessage("Second IMessage")};
-    
+
             // sends a message
             BeginTx();
             producer.Send(outbound[0]);
             CommitTx();
-    
+
             // sends a message that gets rollbacked
             BeginTx();
             producer.Send(session.CreateTextMessage("I'm going to get rolled back."));
             consumer.Close();
-    
+
             ReconnectSession();
-    
+
             // sends a message
             producer.Send(outbound[1]);
             CommitTx();
-    
+
             // receives the first message
             LinkedList<IMessage> messages = new LinkedList<IMessage>();
             BeginTx();
             IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(message);
             messages.AddLast(message);
-    
+
             // receives the second message
             message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
             Assert.IsNotNull(message);
@@ -219,42 +219,42 @@ namespace Apache.NMS.Test
         }
 
         [Test]
-        public void TestSendSessionAndConnectionClose() 
+        public void TestSendSessionAndConnectionClose()
         {
             IMessage[] outbound = new IMessage[] {
-                session.CreateTextMessage("First IMessage"), 
+                session.CreateTextMessage("First IMessage"),
                 session.CreateTextMessage("Second IMessage")};
-    
+
             // sends a message
             BeginTx();
             producer.Send(outbound[0]);
             CommitTx();
-    
+
             // sends a message that gets rollbacked
             BeginTx();
             producer.Send(session.CreateTextMessage("I'm going to get rolled back."));
             consumer.Close();
             session.Close();
-    
+
             Reconnect();
-    
+
             // sends a message
             BeginTx();
             producer.Send(outbound[1]);
             CommitTx();
-    
+
             // receives the first message
             LinkedList<IMessage> messages = new LinkedList<IMessage>();
             BeginTx();
             IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(message);
             messages.AddLast(message);
-    
+
             // receives the second message
             message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
             Assert.IsNotNull(message);
             messages.AddLast(message);
-    
+
             // validates that the rollbacked was not consumed
             CommitTx();
             IMessage[] inbound = new IMessage[messages.Count];
@@ -266,13 +266,13 @@ namespace Apache.NMS.Test
         public void TestReceiveRollback()
         {
             IMessage[] outbound = new IMessage[] {
-                session.CreateTextMessage("First IMessage"), 
+                session.CreateTextMessage("First IMessage"),
                 session.CreateTextMessage("Second IMessage")};
 
             // lets consume any outstanding messages from prev test runs
             BeginTx();
             bool needCommit = false;
-            while(consumer.ReceiveNoWait() != null) 
+            while(consumer.ReceiveNoWait() != null)
             {
                 needCommit = true;
             }
@@ -281,13 +281,13 @@ namespace Apache.NMS.Test
             {
                 CommitTx();
             }
-            
+
             // sent both messages
             BeginTx();
             producer.Send(outbound[0]);
             producer.Send(outbound[1]);
             CommitTx();
-    
+
             LinkedList<IMessage> messages = new LinkedList<IMessage>();
             BeginTx();
             IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
@@ -295,14 +295,14 @@ namespace Apache.NMS.Test
             messages.AddLast(message);
             AssertEquals(outbound[0], message);
             CommitTx();
-    
+
             // Rollback so we can get that last message again.
             BeginTx();
             message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(message);
             AssertEquals(outbound[1], message);
             RollbackTx();
-    
+
             // Consume again.. the prev message should
             // get redelivered.
             BeginTx();
@@ -310,23 +310,23 @@ namespace Apache.NMS.Test
             Assert.IsNotNull(message, "Should have re-received the message again!");
             messages.AddLast(message);
             CommitTx();
-    
+
             IMessage[] inbound = new IMessage[messages.Count];
             messages.CopyTo(inbound, 0);
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
         [Test]
-        public void TestReceiveTwoThenRollback() 
-        {            
+        public void TestReceiveTwoThenRollback()
+        {
             IMessage[] outbound = new IMessage[] {
-                session.CreateTextMessage("First IMessage"), 
+                session.CreateTextMessage("First IMessage"),
                 session.CreateTextMessage("Second IMessage")};
 
             // lets consume any outstanding messages from prev test runs
             BeginTx();
             bool needCommit = false;
-            while(consumer.ReceiveNoWait() != null) 
+            while(consumer.ReceiveNoWait() != null)
             {
                 needCommit = true;
             }
@@ -335,22 +335,22 @@ namespace Apache.NMS.Test
             {
                 CommitTx();
             }
-            
+
             BeginTx();
             producer.Send(outbound[0]);
             producer.Send(outbound[1]);
             CommitTx();
-        
+
             LinkedList<IMessage> messages = new LinkedList<IMessage>();
             BeginTx();
             IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             AssertEquals(outbound[0], message);
-    
+
             message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(message);
             AssertEquals(outbound[1], message);
             RollbackTx();
-    
+
             // Consume again.. the prev message should
             // get redelivered.
             BeginTx();
@@ -362,63 +362,63 @@ namespace Apache.NMS.Test
             Assert.IsNotNull(message, "Should have re-received the first message again!");
             messages.AddLast(message);
             AssertEquals(outbound[1], message);
-    
+
             Assert.IsNull(consumer.ReceiveNoWait());
             CommitTx();
-    
+
             IMessage[] inbound = new IMessage[messages.Count];
             messages.CopyTo(inbound, 0);
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
-    
+
         [Test]
         public void TestSendReceiveWithPrefetchOne() {
             SetPrefetchToOne();
             ReconnectSession();
 
             IMessage[] outbound = new IMessage[] {
-                session.CreateTextMessage("First IMessage"), 
-                session.CreateTextMessage("Second IMessage"), 
+                session.CreateTextMessage("First IMessage"),
+                session.CreateTextMessage("Second IMessage"),
                 session.CreateTextMessage("Third IMessage"),
                 session.CreateTextMessage("Fourth IMessage")};
-    
+
             BeginTx();
-            for(int i = 0; i < outbound.Length; i++) 
+            for(int i = 0; i < outbound.Length; i++)
             {
                 // sends a message
                 producer.Send(outbound[i]);
             }
             CommitTx();
-    
+
             // receives the first message
             BeginTx();
-            
-            for(int i = 0; i < outbound.Length; i++) 
+
+            for(int i = 0; i < outbound.Length; i++)
             {
                 IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(message);
             }
-    
+
             // validates that the rollbacked was not consumed
             CommitTx();
         }
-    
+
         [Test]
-        public void TestReceiveTwoThenRollbackManyTimes() 
+        public void TestReceiveTwoThenRollbackManyTimes()
         {
             for(int i = 0; i < 5; i++)
             {
                 TestReceiveTwoThenRollback();
             }
         }
-    
+
         [Test]
         public void TestSendRollbackWithPrefetchOfOne()
         {
             SetPrefetchToOne();
             TestSendRollback();
         }
-    
+
         [Test]
         public void TestReceiveRollbackWithPrefetchOfOne()
         {
@@ -427,16 +427,16 @@ namespace Apache.NMS.Test
         }
 
         [Test]
-        public void TestCloseConsumerBeforeCommit() 
-        {            
+        public void TestCloseConsumerBeforeCommit()
+        {
             ITextMessage[] outbound = new ITextMessage[] {
-                session.CreateTextMessage("First IMessage"), 
+                session.CreateTextMessage("First IMessage"),
                 session.CreateTextMessage("Second IMessage")};
 
             // lets consume any outstanding messages from prev test runs
             BeginTx();
             bool needCommit = false;
-            while(consumer.ReceiveNoWait() != null) 
+            while(consumer.ReceiveNoWait() != null)
             {
                 needCommit = true;
             }
@@ -445,13 +445,13 @@ namespace Apache.NMS.Test
             {
                 CommitTx();
             }
-            
+
             // sends the messages
             BeginTx();
             producer.Send(outbound[0]);
             producer.Send(outbound[1]);
             CommitTx();
-    
+
             BeginTx();
             ITextMessage message = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.AreEqual(outbound[0].Text, message.Text);
@@ -459,17 +459,17 @@ namespace Apache.NMS.Test
             // received message to Rollback.
             consumer.Close();
             CommitTx();
-    
+
             // Create a new consumer
             consumer = CreateMessageConsumer();
-    
+
             BeginTx();
             message = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(message);
             Assert.AreEqual(outbound[1].Text, message.Text);
             CommitTx();
         }
-    
+
         protected void Reconnect()
         {
             if(this.connection != null)
@@ -478,26 +478,21 @@ namespace Apache.NMS.Test
                 this.connection.Close();
                 this.connection = null;
             }
-            
-            this.session = null;
-            this.connection = this.connectionFactory.CreateConnection();
 
-            if(this.ClientId != null)
-            {
-                connection.ClientId = this.ClientId;
-            }
-            
+            this.session = null;
+            this.connection = CreateConnection(this.TestClientId);
+
             ReconnectSession();
             this.connection.Start();
         }
-    
+
         protected void ReconnectSession()
         {
-            if(this.session != null) 
+            if(this.session != null)
             {
                 this.session.Close();
             }
-    
+
             this.session = this.connection.CreateSession(AcknowledgementMode.Transactional);
 
             if( this.Topic == true )
@@ -508,11 +503,11 @@ namespace Apache.NMS.Test
             {
                 this.destination = this.session.GetQueue(this.DestinationName);
             }
-            
+
             this.producer = this.session.CreateProducer(destination);
             this.consumer = CreateMessageConsumer();
         }
-        
+
         protected IMessageConsumer CreateMessageConsumer()
         {
             if(this.Subscription != null)
@@ -525,94 +520,94 @@ namespace Apache.NMS.Test
             }
         }
 
-        protected void SetPrefetchToOne() 
+        protected void SetPrefetchToOne()
         {
             GetPrefetchPolicy().SetAll(1);
         }
-    
-        protected PrefetchPolicy GetPrefetchPolicy() 
+
+        protected PrefetchPolicy GetPrefetchPolicy()
         {
             return ((Connection) connection).PrefetchPolicy;
         }
-    
+
         [Test]
-        public void TestMessageListener() 
+        public void TestMessageListener()
         {
             // Send messages
-            for(int i = 0; i < MESSAGE_COUNT; i++) 
+            for(int i = 0; i < MESSAGE_COUNT; i++)
             {
                 producer.Send(session.CreateTextMessage(MESSAGE_TEXT + i));
             }
-            
+
             CommitTx();
             consumer.Listener += new MessageListener(OnMessage);
-            
+
             // wait receive
             WaitReceiveUnack();
             Assert.AreEqual(unackMessages.Count, MESSAGE_COUNT);
-            
+
             // resend phase
             WaitReceiveAck();
             Assert.AreEqual(ackMessages.Count, MESSAGE_COUNT);
-            
+
             // should no longer re-receive
             consumer.Listener -= new MessageListener(OnMessage);
             Assert.IsNull(consumer.Receive(TimeSpan.FromMilliseconds(500)));
             Reconnect();
         }
-    
-        public void OnMessage(IMessage message) 
+
+        public void OnMessage(IMessage message)
         {
-            if(!resendPhase) 
+            if(!resendPhase)
             {
                 unackMessages.AddLast(message);
-                if(unackMessages.Count == MESSAGE_COUNT) 
+                if(unackMessages.Count == MESSAGE_COUNT)
                 {
-                    try 
+                    try
                     {
                         RollbackTx();
                         resendPhase = true;
-                    } 
-                    catch 
+                    }
+                    catch
                     {
                     }
                 }
-            } 
-            else 
+            }
+            else
             {
                 ackMessages.AddLast(message);
-                if(ackMessages.Count == MESSAGE_COUNT) 
+                if(ackMessages.Count == MESSAGE_COUNT)
                 {
-                    try 
+                    try
                     {
                         CommitTx();
-                    } 
-                    catch 
+                    }
+                    catch
                     {
                     }
                 }
             }
         }
-    
-        private void WaitReceiveUnack() 
+
+        private void WaitReceiveUnack()
         {
             for(int i = 0; i < 100 && !resendPhase; i++)
             {
                 Thread.Sleep(100);
             }
-            
+
             Assert.IsTrue(resendPhase);
         }
-    
+
         private void WaitReceiveAck()
         {
             for(int i = 0; i < 100 && ackMessages.Count < MESSAGE_COUNT; i++)
             {
                 Thread.Sleep(100);
             }
-            
+
             Assert.IsFalse(ackMessages.Count < MESSAGE_COUNT);
         }
-        
+
     }
 }
