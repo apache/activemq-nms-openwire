@@ -104,8 +104,8 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public virtual void ClearProperties()
 		{
 			this.MarshalledProperties = null;
-			this.Properties.Clear();
 			this.ReadOnlyProperties = false;
+			this.Properties.Clear();
 		}
 
 		protected void FailIfReadOnlyBody()
