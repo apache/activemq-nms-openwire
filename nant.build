@@ -36,6 +36,9 @@
 	<property name="Apache.NMS.Test.pdb" value="${basedir}/lib/Apache.NMS/${current.build.framework}/Apache.NMS.Test.pdb" dynamic="true" />
 	<property name="NUnit.Projectfile" value="Apache.NMS.ActiveMQ.Test.nunit" />
 
+	<!-- Skip certain frameworks, since ActiveMQ OpenWire is not supported on those platforms. -->
+	<property name="build.netcf-2.0.skip" value="true" />
+
 	<target name="vendor-init" description="Initializes Vendor library from local repository.">
 		<!--
 		   Vendor specific info.  The prefix of 'vendor.apache.org' is taken from the property
@@ -102,19 +105,6 @@
 			<include name="${build.bin.dir}/${project.name}.dll.mdb" />
 		</fileset>
 
-		<fileset id="deploy.filenames">
-			<include name="LICENSE.txt" />
-			<include name="NOTICE.txt" />
-			<include name="${build.bin.dir}/${project.name}.dll" />
-			<include name="${build.bin.dir}/${project.name}.pdb" />
-			<include name="${build.bin.dir}/${project.name}.dll.mdb" />
-			<include name="${build.bin.dir}/${project.name}.xml" />
-			<include name="${build.bin.dir}/${project.name}.Test.dll" />
-			<include name="${build.bin.dir}/${project.name}.Test.pdb" />
-			<include name="${build.bin.dir}/${project.name}.Test.dll.mdb" />
-			<include name="${build.bin.dir}/${project.name}.Test.xml" />
-			<include name="${build.bin.dir}/nmsprovider-*.config" />
-		</fileset>
 	</target>
 
 	<target name="default" depends="download-vendor-all, install-all" />
