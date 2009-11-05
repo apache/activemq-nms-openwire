@@ -74,6 +74,7 @@
     <Compile Include="src\test\csharp\Commands\CommandTest.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\test\csharp\Commands\MessageCompressionTest.cs" />
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
     <Compile Include="src\test\csharp\ConnectionMetaDataTest.cs" />
     <Compile Include="src\test\csharp\ExclusiveConsumerTest.cs" />
