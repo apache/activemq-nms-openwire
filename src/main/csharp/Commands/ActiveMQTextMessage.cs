@@ -17,6 +17,7 @@
 
 using System;
 using System.IO;
+using System.IO.Compression;
 using Apache.NMS;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.OpenWire;
@@ -70,8 +71,13 @@ namespace Apache.NMS.ActiveMQ.Commands
                 {
     				if(this.text == null && this.Content != null)
     				{
-                        // TODO - Handle Compression
-    					MemoryStream stream = new MemoryStream(this.Content);
+    					Stream stream = new MemoryStream(this.Content);
+
+                        if(this.Connection != null && this.Compressed == true)
+                        {
+                            stream = new DeflateStream(stream, CompressionMode.Decompress);
+                        }
+                        
     					EndianBinaryReader reader = new EndianBinaryReader(stream);
     					this.text = reader.ReadString32();
                         this.Content = null;
@@ -99,15 +105,23 @@ namespace Apache.NMS.ActiveMQ.Commands
             if(this.Content == null && text != null)
             {
                 byte[] data = null;
-
-                // TODO - Deal with Compressoin.
                 
                 // Set initial size to the size of the string the UTF-8 encode could
                 // result in more if there are chars that encode to multibye values.
-                MemoryStream stream = new MemoryStream(text.Length);
-                EndianBinaryWriter writer = new EndianBinaryWriter(stream);
+                MemoryStream buffer = new MemoryStream(text.Length);
+                Stream target = buffer;
+				
+                if(this.Connection != null && this.Connection.UseCompression)
+                {
+                    target = new DeflateStream(target, CompressionMode.Compress);
+					
+					this.Compressed = true;
+                }
+                
+                EndianBinaryWriter writer = new EndianBinaryWriter(target);
                 writer.WriteString32(text);
-                data = stream.GetBuffer();
+                target.Close();
+                data = buffer.ToArray();
                 
                 this.Content = data;
                 this.text = null;

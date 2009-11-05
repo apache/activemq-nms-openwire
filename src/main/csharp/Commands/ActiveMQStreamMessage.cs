@@ -17,6 +17,7 @@
 
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Collections;
 using Apache.NMS;
 using Apache.NMS.Util;
@@ -882,9 +883,15 @@ namespace Apache.NMS.ActiveMQ.Commands
 			FailIfWriteOnlyBody();
 			if(this.dataIn == null)
 			{
-				// TODO - Add support for Message Compression.
 				this.byteBuffer = new MemoryStream(this.Content, false);
-				dataIn = new EndianBinaryReader(byteBuffer);
+
+                Stream target = this.byteBuffer;
+                if(this.Connection != null && this.Compressed == true)
+                {
+                    target = new DeflateStream(this.byteBuffer, CompressionMode.Decompress);
+                }
+                
+				this.dataIn = new EndianBinaryReader(target);
 			}
 		}
 
@@ -893,9 +900,17 @@ namespace Apache.NMS.ActiveMQ.Commands
 			FailIfReadOnlyBody();
 			if(this.dataOut == null)
 			{
-				// TODO - Add support for Message Compression.
-				this.byteBuffer = new MemoryStream();
-				this.dataOut = new EndianBinaryWriter(byteBuffer);
+                this.byteBuffer = new MemoryStream();
+
+                Stream target = this.byteBuffer;
+                if(this.Connection != null && this.Connection.UseCompression)
+                {
+                    target = new DeflateStream(this.byteBuffer, CompressionMode.Compress);
+					
+					this.Compressed = true;
+                }
+
+				this.dataOut = new EndianBinaryWriter(target);
 			}
 		}
 
@@ -904,7 +919,6 @@ namespace Apache.NMS.ActiveMQ.Commands
 			if( dataOut != null)
 			{
 				dataOut.Close();
-				// TODO - Add support for Message Compression.
 
 				this.Content = byteBuffer.ToArray();
 				this.dataOut = null;

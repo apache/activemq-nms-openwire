@@ -514,48 +514,48 @@ namespace Apache.NMS.ActiveMQ
         public IMessage CreateMessage()
         {
             ActiveMQMessage answer = new ActiveMQMessage();
-            return answer;
+            return ConfigureMessage(answer) as IMessage;
         }
 
         public ITextMessage CreateTextMessage()
         {
             ActiveMQTextMessage answer = new ActiveMQTextMessage();
-            return answer;
+            return ConfigureMessage(answer) as ITextMessage;
         }
 
         public ITextMessage CreateTextMessage(string text)
         {
             ActiveMQTextMessage answer = new ActiveMQTextMessage(text);
-            return answer;
+            return ConfigureMessage(answer) as ITextMessage;
         }
 
         public IMapMessage CreateMapMessage()
         {
-            return new ActiveMQMapMessage();
+            return ConfigureMessage(new ActiveMQMapMessage()) as IMapMessage;
         }
 
         public IBytesMessage CreateBytesMessage()
         {
-            return new ActiveMQBytesMessage();
+            return ConfigureMessage(new ActiveMQBytesMessage()) as IBytesMessage;
         }
 
         public IBytesMessage CreateBytesMessage(byte[] body)
         {
             ActiveMQBytesMessage answer = new ActiveMQBytesMessage();
             answer.Content = body;
-            return answer;
+            return ConfigureMessage(answer) as IBytesMessage;
         }
 
 		public IStreamMessage CreateStreamMessage()
 		{
-			return new ActiveMQStreamMessage();
+			return ConfigureMessage(new ActiveMQStreamMessage()) as IStreamMessage;
 		}
 		
 		public IObjectMessage CreateObjectMessage(object body)
         {
             ActiveMQObjectMessage answer = new ActiveMQObjectMessage();
             answer.Body = body;
-            return answer;
+            return ConfigureMessage(answer) as IObjectMessage;
         }
 
         public void Commit()
@@ -803,6 +803,32 @@ namespace Apache.NMS.ActiveMQ
                     consumer.Acknowledge();
                 }                
             }
+        }
+
+        private ActiveMQMessage ConfigureMessage(ActiveMQMessage message)
+        {
+            message.Connection = this.connection;
+
+            if(this.IsTransacted)
+            {
+                // Allows Acknowledge to be called in a transaction with no effect per JMS Spec.
+                message.Acknowledger += new AcknowledgeHandler(DoNothingAcknowledge);
+            }
+
+            return message;
+        }
+
+        /// <summary>
+        /// Prevents message from throwing an exception if a client calls Acknoweldge on
+        /// a message that is part of a transaction either being produced or consumed.  The
+        /// JMS Spec indicates that users should be able to call Acknowledge with no effect
+        /// if the message is in a transaction.
+        /// </summary>
+        /// <param name="message">
+        /// A <see cref="ActiveMQMessage"/>
+        /// </param>
+        private void DoNothingAcknowledge(ActiveMQMessage message)
+        {
         }
         
     }

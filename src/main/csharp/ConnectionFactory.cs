@@ -37,6 +37,7 @@ namespace Apache.NMS.ActiveMQ
 		private string connectionUserName;
 		private string connectionPassword;
 		private string clientId;
+        private bool useCompression;
         
         private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
@@ -97,15 +98,18 @@ namespace Apache.NMS.ActiveMQ
 			ITransport transport = TransportFactory.CreateTransport(uri);
 			Connection connection = new Connection(uri, transport, info);
 
+            // Set the Factory level configuration to the Connection, this can be overriden by
+            // the params on the Connection URI so we do this before applying the params.
+            connection.UseCompression = this.useCompression;
+            connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
+            connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
+            
 			// Set properties on connection using parameters prefixed with "connection."
 			// Since this could be a composite Uri, assume the connection-specific parameters
 			// are associated with the outer-most specification of the composite Uri. What's nice
 			// is that this works with simple Uri as well.
 			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
-
-            connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
-            connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
             
 			connection.ITransport.Start();
 			return connection;
@@ -139,6 +143,12 @@ namespace Apache.NMS.ActiveMQ
 			get { return clientId; }
 			set { clientId = value; }
 		}
+
+        public bool UseCompression
+        {
+            get { return this.useCompression; }
+            set { this.useCompression = value; }
+        }
 
         public IRedeliveryPolicy RedeliveryPolicy
         {

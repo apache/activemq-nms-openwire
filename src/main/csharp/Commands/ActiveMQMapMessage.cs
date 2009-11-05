@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+using System;
+using System.IO;
+using System.IO.Compression;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.OpenWire;
 
@@ -62,13 +65,29 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				if(body == null)
-				{
-					body = PrimitiveMap.Unmarshal(Content);
-                    typeConverter = new PrimitiveMapInterceptor(this, body);
+				if(this.body == null)
+				{					
+					if(this.Content != null && this.Content.Length > 0)
+					{
+	                    MemoryStream buffer = new MemoryStream(this.Content);
+						Stream source = buffer;
+
+						if(this.Connection != null && this.Compressed)
+						{
+	                    	source = new DeflateStream(source, CompressionMode.Decompress);
+						}
+
+						this.body = PrimitiveMap.Unmarshal(source);
+					}
+					else
+					{
+						this.body = new PrimitiveMap();
+					}
+
+	                this.typeConverter = new PrimitiveMapInterceptor(this, this.body);
 				}
-				
-                return typeConverter;
+
+                return this.typeConverter;
 			}
 		}
 
@@ -80,7 +99,20 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 			else
 			{
-				Content = body.Marshal();
+				MemoryStream buffer = new MemoryStream();
+				Stream target = buffer;
+
+                if(this.Connection != null && this.Connection.UseCompression)
+                {
+                    target = new DeflateStream(target, CompressionMode.Compress);
+					
+					this.Compressed = true;
+                }
+                
+				this.body.Marshal(target);
+				target.Close();
+                
+				this.Content = buffer.ToArray();
 			}
 
 			Tracer.Debug("BeforeMarshalling, content is: " + Content);

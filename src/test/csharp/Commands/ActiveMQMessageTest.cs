@@ -445,7 +445,6 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             ActiveMQBytesMessage message = new ActiveMQBytesMessage();
             message.ClearBody();
             Assert.IsFalse(message.ReadOnlyBody);
-            Assert.IsNull(message.Content);
         }
     
         [Test]

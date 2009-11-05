@@ -30,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 		private MessagePropertyIntercepter propertyHelper;
 		private PrimitiveMap properties;
+		private Connection connection;
 
 		public event AcknowledgeHandler Acknowledger;
 
@@ -38,11 +39,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 			return (ActiveMQMessage) message;
 		}
 
-		// TODO generate Equals method
-		// TODO generate GetHashCode method
-
-		public ActiveMQMessage()
-			: base()
+		public ActiveMQMessage() : base()
 		{
 			Timestamp = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
 		}
@@ -97,8 +94,8 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 		public virtual void ClearBody()
 		{
-			this.Content = null;
 			this.ReadOnlyBody = false;
+			this.Content = null;
 		}
 
 		public virtual void ClearProperties()
@@ -158,6 +155,12 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get { return Destination; }
 			set { this.Destination = ActiveMQDestination.Transform(value); }
+		}
+		
+		public Connection Connection
+		{
+			get { return this.connection; }
+			set { this.connection = value; }
 		}
 
 		/// <summary>

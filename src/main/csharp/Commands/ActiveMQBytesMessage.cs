@@ -20,6 +20,7 @@ using Apache.NMS.Util;
 using System;
 using System.Collections;
 using System.IO;
+using System.IO.Compression;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -30,9 +31,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		private EndianBinaryReader dataIn = null;
 		private EndianBinaryWriter dataOut = null;
 		private MemoryStream outputBuffer = null;
-
-		// Need this later when we add compression to store true content length.
-		private long length = 0;
+		private int length = 0;
 
 		public override byte GetDataStructureType()
 		{
@@ -450,6 +449,27 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
+        public new byte[] Content
+        {
+            get
+            {
+				byte[] buffer = null;
+                InitializeReading();
+				if(this.length != 0)
+				{
+                	buffer = new byte[this.length];
+                	this.dataIn.Read(buffer, 0, buffer.Length);
+				}
+				return buffer;
+            }
+
+            set
+            {
+                InitializeWriting();
+                this.dataOut.Write(value, 0, value.Length);
+            }
+        }
+
 		public void Reset()
 		{
 			StoreContent();
@@ -464,14 +484,28 @@ namespace Apache.NMS.ActiveMQ.Commands
 			FailIfWriteOnlyBody();
 			if(this.dataIn == null)
 			{
-				if(this.Content != null)
+                byte[] data = base.Content;
+                
+				if(base.Content == null)
 				{
-					this.length = this.Content.Length;
+					data = new byte[0];
 				}
-
-				// TODO - Add support for Message Compression.
-				MemoryStream bytesIn = new MemoryStream(this.Content, false);
-				dataIn = new EndianBinaryReader(bytesIn);
+                
+                Stream target = new MemoryStream(data, false);
+                
+                if(this.Connection != null && this.Compressed == true)
+                {
+                    EndianBinaryReader reader = new EndianBinaryReader(target);
+                    this.length = reader.ReadInt32();
+                    
+                    target = new DeflateStream(target, CompressionMode.Decompress);
+                }
+                else
+                {
+                    this.length = data.Length;
+                }
+                
+				this.dataIn = new EndianBinaryReader(target);
 			}
 		}
 
@@ -480,25 +514,138 @@ namespace Apache.NMS.ActiveMQ.Commands
 			FailIfReadOnlyBody();
 			if(this.dataOut == null)
 			{
-				// TODO - Add support for Message Compression.
 				this.outputBuffer = new MemoryStream();
-				this.dataOut = new EndianBinaryWriter(outputBuffer);
+                Stream target = this.outputBuffer;
+
+                if(this.Connection != null && this.Connection.UseCompression)
+                {
+                    this.length = 0;
+					this.Compressed = true;
+
+                    target = new DeflateStream(target, CompressionMode.Compress);
+                    target = new LengthTrackerStream(target, this);
+                }
+                
+				this.dataOut = new EndianBinaryWriter(target);
 			}
 		}
 
 		private void StoreContent()
 		{
-			if( dataOut != null)
+			if(this.dataOut != null)
 			{
-				dataOut.Close();
-				// TODO - Add support for Message Compression.
+                if(this.Compressed == true)
+                {
+                    MemoryStream final = new MemoryStream();
+                    EndianBinaryWriter writer = new EndianBinaryWriter(final);                    
 
-				this.Content = outputBuffer.ToArray();
+                    this.dataOut.Close();
+                    byte[] compressed = this.outputBuffer.ToArray();
+
+                    writer.Write(this.length);
+                    writer.Write(compressed, 0, compressed.Length);
+                    writer.Close();
+                    
+                    base.Content = final.ToArray();
+                }
+                else
+                {
+                    this.dataOut.Close();
+                    base.Content = outputBuffer.ToArray();
+                }
+
 				this.dataOut = null;
 				this.outputBuffer = null;
 			}
 		}
 
+        /// <summary>
+        /// Used when the message compression is enabled to track how many bytes
+        /// the EndianBinaryWriter actually writes to the stream before compression
+        /// so that the receiving client can read off the real bodylength from the
+        /// Message before the data is actually read.
+        /// </summary>
+        private class LengthTrackerStream : Stream
+        {
+            private ActiveMQBytesMessage parent;
+            private Stream sink;
+
+            public LengthTrackerStream(Stream sink, ActiveMQBytesMessage parent) : base()
+            {
+                this.sink = sink;
+                this.parent = parent;
+            }
+
+            public override void Close()
+            {
+                this.sink.Close();
+                base.Close();
+            }
+
+            public override long Position
+            {
+                get { return this.sink.Position; }
+                set { this.sink.Position = value; }
+            }
+            
+            public override long Length
+            {
+                get { return this.sink.Length; }
+            }
+            
+            public override bool CanSeek
+            { 
+                get { return this.sink.CanSeek; } 
+            }
+            
+            public override bool CanRead 
+            { 
+                get { return this.sink.CanRead; } 
+            }
+
+            public override bool CanWrite
+            {
+                get { return this.sink.CanWrite; }
+            }
+
+            public override int ReadByte()
+            {
+                return this.sink.ReadByte();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return this.sink.Read(buffer, offset, count);
+            }
+            
+            public override void WriteByte(byte value)
+            {
+                this.parent.length++;
+                this.sink.WriteByte(value);
+            }
+            
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                this.parent.length += count;
+                this.sink.Write(buffer, offset, count);
+            }
+
+            public override void Flush()
+            {
+                this.sink.Flush();
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                return this.sink.Seek(offset, origin);
+            }
+
+            public override void SetLength(long value)
+            {
+                this.sink.SetLength(value);
+            }
+        }
+        
 	}
 }
 

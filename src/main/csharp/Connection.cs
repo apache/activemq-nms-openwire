@@ -44,6 +44,7 @@ namespace Apache.NMS.ActiveMQ
         private bool asyncSend = false;
         private bool alwaysSyncSend = false;
         private bool asyncClose = true;
+        private bool useCompression = false;
         private bool copyMessageOnSend = true;
         private int producerWindowSize = 0;
         private bool connected = false;
@@ -180,6 +181,19 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return copyMessageOnSend; }
             set { copyMessageOnSend = value; }
+        }
+
+        /// <summary>
+        /// Enable or Disable the use of Compression on Message bodies.  When enabled all
+        /// messages have their body compressed using the Deflate compression algorithm.
+        /// The recipient of the message must support the use of message compression as well
+        /// otherwise the receiving client will receive a message whose body appears in the
+        /// compressed form.
+        /// </summary>
+        public bool UseCompression
+        {
+            get { return this.useCompression; }
+            set { this.useCompression = value; }
         }
 
         public IConnectionMetaData MetaData

@@ -30,9 +30,24 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
 		{
 			ActiveMQBytesMessage message = new ActiveMQBytesMessage();
 			
-			Assert.IsNull( message.Content );
+			// Test that a BytesMessage is created in WriteOnly mode.
+			try
+			{
+				byte[] content = message.Content;
+				content.SetValue(0, 0);
+				Assert.Fail("Should have thrown an exception");
+			}
+			catch
+			{
+			}
+			
 			Assert.IsTrue( !message.ReadOnlyBody );
 			Assert.IsTrue( !message.ReadOnlyProperties );
+			
+			message.Reset();
+			
+			Assert.IsNull( message.Content );
+			Assert.IsTrue( message.ReadOnlyBody );
 		}
 
 		[Test]

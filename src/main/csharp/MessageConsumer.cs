@@ -584,7 +584,7 @@ namespace Apache.NMS.ActiveMQ
                 } 
                 else if(dispatch.Message.IsExpired())
                 {
-                    Tracer.DebugFormat("{0} received expired message: {1}", info.ConsumerId, dispatch);
+                    Tracer.DebugFormat("{0} received expired message: {1}", info.ConsumerId, dispatch.Message.MessageId);
                     
                     BeforeMessageIsConsumed(dispatch);
                     AfterMessageIsConsumed(dispatch, true);
@@ -596,7 +596,6 @@ namespace Apache.NMS.ActiveMQ
                 } 
                 else 
                 {
-                    Tracer.DebugFormat("{0} received message: {1}", info.ConsumerId, dispatch);
                     return dispatch;
                 }
             }
@@ -920,6 +919,8 @@ namespace Apache.NMS.ActiveMQ
         private ActiveMQMessage CreateActiveMQMessage(MessageDispatch dispatch) 
         {
             ActiveMQMessage message = dispatch.Message.Clone() as ActiveMQMessage;
+			
+			message.Connection = this.session.Connection;
             
             if(this.session.IsClientAcknowledge)
             {
