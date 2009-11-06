@@ -912,7 +912,10 @@ namespace Apache.NMS.ActiveMQ
             }            
             catch(Exception e)
             {
-                this.session.Connection.OnSessionException(this.session, e);
+				if(!this.unconsumedMessages.Closed)
+				{	
+                	this.session.Connection.OnSessionException(this.session, e);
+				}
             }
         }
 
