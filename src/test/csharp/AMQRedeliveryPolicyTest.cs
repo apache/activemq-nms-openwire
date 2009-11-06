@@ -154,6 +154,12 @@ namespace Apache.NMS.Test
                 IMessageConsumer consumer = session.CreateConsumer(destination);
                 IMessageConsumer dlqConsumer = session.CreateConsumer(new ActiveMQQueue("ActiveMQ.DLQ"));
         
+				// Purge any messages already in the DLQ.
+				while(dlqConsumer.ReceiveNoWait() != null)
+				{
+					session.Commit();
+				}
+				
                 // Send the messages
                 producer.Send(session.CreateTextMessage("1st"));
                 producer.Send(session.CreateTextMessage("2nd"));
