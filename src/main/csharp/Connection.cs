@@ -252,10 +252,10 @@ namespace Apache.NMS.ActiveMQ
             get { return brokerWireFormatInfo; }
         }
 
-		/// <summary>
-		/// Get/or set the redelivery policy for this connection.
-		/// </summary>
-		public IRedeliveryPolicy RedeliveryPolicy
+        /// <summary>
+        /// Get/or set the redelivery policy for this connection.
+        /// </summary>
+        public IRedeliveryPolicy RedeliveryPolicy
         {
             get { return this.redeliveryPolicy; }
             set { this.redeliveryPolicy = value; }
@@ -266,7 +266,7 @@ namespace Apache.NMS.ActiveMQ
             get { return this.prefetchPolicy; }
             set { this.prefetchPolicy = value; }
         }
-        
+
         #endregion
 
         /// <summary>
@@ -363,7 +363,7 @@ namespace Apache.NMS.ActiveMQ
         {
             this.dispatchers.Remove( id );
         }
-        
+
         internal void addProducer( ProducerId id, MessageProducer producer )
         {
             this.producers.Add( id, producer );
@@ -520,6 +520,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         transport.Oneway(command);
                     }
+                    Tracer.Info("Oneway command sent to broker.");
                 }
                 else
                 {
@@ -528,6 +529,7 @@ namespace Apache.NMS.ActiveMQ
                     // the broker can dispose of the object.  Allow up to 5 seconds to process.
                     Tracer.Info("Synchronously disposing of Connection.");
                     SyncRequest(command, TimeSpan.FromSeconds(5));
+                    Tracer.Info("Synchronously closed Connection.");
                 }
             }
             catch // (BrokerException)
@@ -632,14 +634,14 @@ namespace Apache.NMS.ActiveMQ
                     IDispatcher dispatcher = (IDispatcher) dispatchers[dispatch.ConsumerId];
 
                     // Can be null when a consumer has sent a MessagePull and there was
-                    // no available message at the broker to dispatch.  
+                    // no available message at the broker to dispatch.
                     if(dispatch.Message != null)
                     {
                         dispatch.Message.ReadOnlyBody = true;
                         dispatch.Message.ReadOnlyProperties = true;
                         dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
                     }
-                    
+
                     dispatcher.Dispatch(dispatch);
 
                     return;
@@ -756,7 +758,7 @@ namespace Apache.NMS.ActiveMQ
             id.Value = Interlocked.Increment(ref localTransactionCounter);
             return id;
         }
-        
+
         protected SessionInfo CreateSessionInfo(AcknowledgementMode sessionAcknowledgementMode)
         {
             SessionInfo answer = new SessionInfo();
