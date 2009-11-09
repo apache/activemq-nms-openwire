@@ -20,6 +20,7 @@ using System;
 using System.Text;
 using System.Collections;
 using Apache.NMS.ActiveMQ.Commands;
+using System.Globalization;
 
 namespace Apache.NMS.ActiveMQ.Test.Commands
 {    
@@ -237,8 +238,8 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             Byte byteValue = Byte.Parse("1");
             byte[] bytesValue = new byte[3];
             Char charValue = (Char) 'a';
-            Double doubleValue = Double.Parse("1.5");
-            Single floatValue = Single.Parse("1.5");
+			Double doubleValue = Double.Parse("1.5", CultureInfo.InvariantCulture);
+			Single floatValue = Single.Parse("1.5", CultureInfo.InvariantCulture);
             Int32 intValue = Int32.Parse("1");
             Int64 longValue = Int64.Parse("1");
             Int16 shortValue = Int16.Parse("1");

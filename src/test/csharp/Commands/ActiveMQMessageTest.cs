@@ -731,11 +731,12 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
         {
             ActiveMQMessage msg = new ActiveMQMessage();
             String propertyName = "property";
-            msg.Properties.SetFloat(propertyName, (float)1.5);
-            Assert.AreEqual((float)msg.Properties[propertyName], 1.5, 0);
-            Assert.AreEqual(msg.Properties.GetFloat(propertyName), 1.5, 0);
-            Assert.AreEqual(msg.Properties.GetDouble(propertyName), 1.5, 0);
-            Assert.AreEqual(msg.Properties.GetString(propertyName), "1.5");
+			float floatValue = (float)1.5;
+			msg.Properties.SetFloat(propertyName, floatValue);
+			Assert.AreEqual((float)msg.Properties[propertyName], floatValue, 0);
+			Assert.AreEqual(msg.Properties.GetFloat(propertyName), floatValue, 0);
+			Assert.AreEqual(msg.Properties.GetDouble(propertyName), floatValue, 0);
+			Assert.AreEqual(msg.Properties.GetString(propertyName), floatValue.ToString());
             
             try
             {
@@ -788,10 +789,11 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
         {
             ActiveMQMessage msg = new ActiveMQMessage();
             String propertyName = "property";
-            msg.Properties.SetDouble(propertyName, 1.5);
-            Assert.AreEqual((double)msg.Properties[propertyName], 1.5, 0);
-            Assert.AreEqual(msg.Properties.GetDouble(propertyName), 1.5, 0);
-            Assert.AreEqual(msg.Properties.GetString(propertyName), "1.5");
+			Double doubleValue = 1.5;
+            msg.Properties.SetDouble(propertyName, doubleValue);
+			Assert.AreEqual((double)msg.Properties[propertyName], doubleValue, 0);
+			Assert.AreEqual(msg.Properties.GetDouble(propertyName), doubleValue, 0);
+			Assert.AreEqual(msg.Properties.GetString(propertyName), doubleValue.ToString());
             
             try 
             {
@@ -865,8 +867,9 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             Assert.AreEqual(msg.Properties.GetShort(propertyName), 1);
             Assert.AreEqual(msg.Properties.GetInt(propertyName), 1);
             Assert.AreEqual(msg.Properties.GetLong(propertyName), 1);
-    
-            stringValue = "1.5";
+
+			Double doubleValue = 1.5;
+			stringValue = doubleValue.ToString();
             msg.Properties.SetString(propertyName, stringValue);
             Assert.AreEqual(msg.Properties.GetFloat(propertyName), 1.5, 0);
             Assert.AreEqual(msg.Properties.GetDouble(propertyName), 1.5, 0);
