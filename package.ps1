@@ -16,7 +16,7 @@
 $pkgname = "Apache.NMS.ActiveMQ"
 $pkgver = "1.2.0"
 $configurations = "release", "debug"
-$frameworks = "mono-2.0", "net-2.0", "net-3.5", "netcf-2.0"
+$frameworks = "mono-2.0", "net-2.0", "net-3.5"
 
 write-progress "Creating package directory." "Initializing..."
 if(!(test-path package))
