@@ -51,7 +51,12 @@
 		<property name="vendor.apache.org.name" value="Apache.NMS" />
 		<property name="vendor.apache.org.group" value="org.apache.activemq" />
 		<property name="vendor.apache.org.version" value="1.2.0" />
-		<property name="vendor.apache.org.filenames" value="Apache.NMS.dll,Apache.NMS.pdb,Apache.NMS.dll.mdb,Apache.NMS.Test.dll,Apache.NMS.Test.pdb,Apache.NMS.Test.dll.mdb" />
+		<if test="${current.build.framework == 'mono-2.0'}">
+			<property name="vendor.apache.org.filenames" value="Apache.NMS.dll,Apache.NMS.dll.mdb,Apache.NMS.Test.dll,Apache.NMS.Test.dll.mdb" />
+		</if>
+		<if test="${not (current.build.framework == 'mono-2.0')}">
+			<property name="vendor.apache.org.filenames" value="Apache.NMS.dll,Apache.NMS.pdb,Apache.NMS.Test.dll,Apache.NMS.Test.pdb" />
+		</if>
 
 		<!-- Property grouping for 'vendor.nunit.org' -->
 		<property name="vendor.nunit.org.name" value="NUnit" />
