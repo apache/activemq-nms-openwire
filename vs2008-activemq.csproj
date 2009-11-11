@@ -274,6 +274,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\main\csharp\CommonAssemblyInfo.cs" />
+    <Compile Include="src\main\csharp\CompressionPolicy.cs" />
     <Compile Include="src\main\csharp\Connection.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -291,6 +292,7 @@
     <Compile Include="src\main\csharp\DestinationFilter.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\ICompressionPolicy.cs" />
     <Compile Include="src\main\csharp\IDispatcher.cs" />
     <Compile Include="src\main\csharp\IOException.cs" />
     <Compile Include="src\main\csharp\ISynchronization.cs">
