@@ -74,7 +74,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 						if(this.Connection != null && this.Compressed)
 						{
-	                    	source = new DeflateStream(source, CompressionMode.Decompress);
+                            source = this.Connection.CompressionPolicy.CreateDecompressionStream(source);
 						}
 
 						this.body = PrimitiveMap.Unmarshal(source);
@@ -104,8 +104,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 
                 if(this.Connection != null && this.Connection.UseCompression)
                 {
-                    target = new DeflateStream(target, CompressionMode.Compress);
-					
+                    target = this.Connection.CompressionPolicy.CreateCompressionStream(target);
 					this.Compressed = true;
                 }
                 

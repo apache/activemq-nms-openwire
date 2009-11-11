@@ -75,7 +75,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 
                         if(this.Connection != null && this.Compressed == true)
                         {
-                            stream = new DeflateStream(stream, CompressionMode.Decompress);
+                            stream = this.Connection.CompressionPolicy.CreateDecompressionStream(stream);                            
                         }
                         
     					EndianBinaryReader reader = new EndianBinaryReader(stream);
@@ -113,8 +113,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 				
                 if(this.Connection != null && this.Connection.UseCompression)
                 {
-                    target = new DeflateStream(target, CompressionMode.Compress);
-					
+                    target = this.Connection.CompressionPolicy.CreateCompressionStream(target);                            
 					this.Compressed = true;
                 }
                 

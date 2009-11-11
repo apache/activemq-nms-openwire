@@ -498,7 +498,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                     EndianBinaryReader reader = new EndianBinaryReader(target);
                     this.length = reader.ReadInt32();
                     
-                    target = new DeflateStream(target, CompressionMode.Decompress);
+                    target = this.Connection.CompressionPolicy.CreateDecompressionStream(target);
                 }
                 else
                 {
@@ -522,7 +522,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                     this.length = 0;
 					this.Compressed = true;
 
-                    target = new DeflateStream(target, CompressionMode.Compress);
+                    target = this.Connection.CompressionPolicy.CreateCompressionStream(target);                    
                     target = new LengthTrackerStream(target, this);
                 }
                 

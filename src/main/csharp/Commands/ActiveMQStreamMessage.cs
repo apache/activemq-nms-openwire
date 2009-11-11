@@ -888,7 +888,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                 Stream target = this.byteBuffer;
                 if(this.Connection != null && this.Compressed == true)
                 {
-                    target = new DeflateStream(this.byteBuffer, CompressionMode.Decompress);
+                    target = this.Connection.CompressionPolicy.CreateDecompressionStream(target);
                 }
                 
 				this.dataIn = new EndianBinaryReader(target);
@@ -901,12 +901,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 			if(this.dataOut == null)
 			{
                 this.byteBuffer = new MemoryStream();
-
                 Stream target = this.byteBuffer;
+                
                 if(this.Connection != null && this.Connection.UseCompression)
                 {
-                    target = new DeflateStream(this.byteBuffer, CompressionMode.Compress);
-					
+                    target = this.Connection.CompressionPolicy.CreateCompressionStream(target);
 					this.Compressed = true;
                 }
 

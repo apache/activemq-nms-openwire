@@ -58,6 +58,7 @@ namespace Apache.NMS.ActiveMQ
         private bool disposed = false;
         private IRedeliveryPolicy redeliveryPolicy;
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
+        private ICompressionPolicy compressionPolicy = new CompressionPolicy();
 
         public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
         {
@@ -265,6 +266,12 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return this.prefetchPolicy; }
             set { this.prefetchPolicy = value; }
+        }
+
+        public ICompressionPolicy CompressionPolicy
+        {
+            get { return this.compressionPolicy; }
+            set { this.compressionPolicy = value; }
         }
 
         #endregion

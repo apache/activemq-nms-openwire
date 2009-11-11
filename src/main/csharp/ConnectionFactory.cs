@@ -41,6 +41,7 @@ namespace Apache.NMS.ActiveMQ
         
         private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
+        private ICompressionPolicy compressionPolicy = new CompressionPolicy();
 
 		static ConnectionFactory()
 		{
@@ -103,6 +104,7 @@ namespace Apache.NMS.ActiveMQ
             connection.UseCompression = this.useCompression;
             connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
             connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
+            connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;
             
 			// Set properties on connection using parameters prefixed with "connection."
 			// Since this could be a composite Uri, assume the connection-specific parameters
@@ -161,6 +163,18 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
         }
+
+        public ICompressionPolicy CompressionPolicy
+        {
+            get { return this.compressionPolicy; }
+            set 
+            {
+                if(value != null)
+                {
+                    this.compressionPolicy = value; 
+                }
+            }
+        }        
 
 		public event ExceptionListener OnException
 		{
