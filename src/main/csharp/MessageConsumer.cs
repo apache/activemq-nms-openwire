@@ -271,6 +271,8 @@ namespace Apache.NMS.ActiveMQ
 		{
 			if(!this.unconsumedMessages.Closed)
 			{
+                Tracer.Debug("Closing down the Consumer");
+                
 				// Do we have any acks we need to send out before closing?
 				// Ack any delivered messages now.
 				if(!this.session.IsTransacted)
@@ -299,7 +301,9 @@ namespace Apache.NMS.ActiveMQ
 
 				this.session.Connection.Oneway(removeCommand);
 				this.session = null;
-			}
+
+                Tracer.Debug("Consumer instnace Closed.");
+            }
 		}
 
 		#endregion
@@ -314,7 +318,11 @@ namespace Apache.NMS.ActiveMQ
 				messagePull.Timeout = timeout;
 				messagePull.ResponseRequired = false;
 
-				Tracer.Debug("Sending MessagePull: " + messagePull);
+                if(Tracer.IsDebugEnabled)
+                {                    
+				    Tracer.Debug("Sending MessagePull: " + messagePull);
+                }
+                
 				session.Connection.Oneway(messagePull);
 			}
 		}
@@ -456,7 +464,10 @@ namespace Apache.NMS.ActiveMQ
 						{
 							// on resumption a pending delivered ack will be out of sync with
 							// re-deliveries.
-							Tracer.Debug("removing pending delivered ack on transport interupt: " + pendingAck);
+                            if(Tracer.IsDebugEnabled)
+                            {
+							    Tracer.Debug("removing pending delivered ack on transport interupt: " + pendingAck);
+                            }
 							this.pendingAck = null;
 						}
 					}
@@ -766,12 +777,19 @@ namespace Apache.NMS.ActiveMQ
 				// ack and hence important, send it now so it is not lost.
 				if(oldPendingAck.AckType != (byte) AckType.DeliveredAck)
 				{
-					Tracer.Debug("Sending old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
-					this.session.Connection.Oneway(oldPendingAck);
+                    if(Tracer.IsDebugEnabled)
+                    {
+					    Tracer.Debug("Sending old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+                    }
+
+                    this.session.Connection.Oneway(oldPendingAck);
 				}
 				else
 				{
-					Tracer.Debug("dropping old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+                    if(Tracer.IsDebugEnabled)
+                    {
+					    Tracer.Debug("dropping old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+                    }
 				}
 			}
 

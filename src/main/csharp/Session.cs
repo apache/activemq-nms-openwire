@@ -247,7 +247,9 @@ namespace Apache.NMS.ActiveMQ
 
                 try
                 {
+                    Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId.ToString());
                     DoClose();
+                    Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId.ToString());
                 }
                 catch(Exception ex)
                 {
@@ -767,6 +769,10 @@ namespace Apache.NMS.ActiveMQ
 
             foreach(MessageDispatch message in messages)
             {
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.DebugFormat("Resending Message Dispatch: ", message.ToString());
+                }
                 this.executor.ExecuteFirst(message);
             }
         }
@@ -775,6 +781,10 @@ namespace Apache.NMS.ActiveMQ
         {
             if(this.executor != null)
             {
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.DebugFormat("Send Message Dispatch: ", dispatch.ToString());
+                }
                 this.executor.Execute(dispatch);
             }
         }
