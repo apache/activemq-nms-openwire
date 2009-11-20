@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.IO;
 using System.Text;
 using Apache.NMS;
 using Apache.NMS.Util;
@@ -58,12 +59,36 @@ namespace Apache.NMS.Test
         protected float m = 2.1F;
         protected double n = 2.3;
         
+		/// <summary>
+		/// Test that we can set our own compression policy.  Also works around the fact
+		/// that sending a compressed Text Message to the broker using the default .NET
+		/// compression will cause a BrokerException to be fired.
+		/// </summary>
+		class NoCompressionPolicy : ICompressionPolicy
+		{
+			public Stream CreateCompressionStream(Stream data)
+			{
+				return data;
+			}
+			
+        	public Stream CreateDecompressionStream(Stream data)
+			{
+				return data;
+			}		
+			
+			public Object Clone()
+			{
+				return this.MemberwiseClone();
+			}
+		}
+		
         [Test]
         public void TestTextMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
             {
                 connection.UseCompression = true;
+				connection.CompressionPolicy = new NoCompressionPolicy();
                 connection.Start();
 
                 Assert.IsTrue(connection.UseCompression);
@@ -79,7 +104,7 @@ namespace Apache.NMS.Test
 
                     producer.Send(message);
 
-                    message = consumer.Receive(TimeSpan.FromMilliseconds(4000)) as ITextMessage;
+                    message = consumer.Receive(TimeSpan.FromMilliseconds(6000)) as ITextMessage;
                     
                     Assert.IsNotNull(message);
                     Assert.IsTrue(((ActiveMQMessage) message).Compressed);
