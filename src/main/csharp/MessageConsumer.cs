@@ -700,7 +700,17 @@ namespace Apache.NMS.ActiveMQ
 				}
 				else if(this.session.IsClientAcknowledge || this.session.IsIndividualAcknowledge)
 				{
-					AckLater(dispatch, AckType.DeliveredAck);
+					bool messageAckedByConsumer = false;
+					
+					lock(this.dispatchedMessages)
+					{
+						messageAckedByConsumer = this.dispatchedMessages.Contains(dispatch);
+					}
+					
+					if(messageAckedByConsumer)
+					{					
+						AckLater(dispatch, AckType.DeliveredAck);
+					}
 				}
 				else
 				{
