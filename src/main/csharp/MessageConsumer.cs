@@ -341,9 +341,13 @@ namespace Apache.NMS.ActiveMQ
 						this.dispatchedMessages.Remove(originalDispatch);
 						break;
 					}
-
-					return;
 				}
+			}
+			
+			if(dispatch == null) 
+			{
+				Tracer.DebugFormat("Attempt to Ack MessageId[{0}] failed because the original dispatch is not in the Dispatch List", message.MessageId);
+				return;
 			}
 
 			MessageAck ack = new MessageAck();
@@ -354,6 +358,7 @@ namespace Apache.NMS.ActiveMQ
 			ack.LastMessageId = dispatch.Message.MessageId;
 			ack.MessageCount = 1;
 
+			Tracer.Debug("Sending Individual Ack for MessageId: " + ack.LastMessageId.ToString());
 			this.session.Connection.Oneway(ack);
 		}
 
