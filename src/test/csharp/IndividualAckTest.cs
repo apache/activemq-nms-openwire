@@ -139,5 +139,49 @@ namespace Apache.NMS.Test
             session.Close();
         }
         
+        [Test]
+	    public void TestIndividualAcknowledgeMultiMessages_AcknowledgeFirstTest()
+		{
+            ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
+	
+            // Push 2 messages to queue
+            ITemporaryQueue queue = session.CreateTemporaryQueue();
+            IMessageProducer producer = session.CreateProducer(queue);
+
+            ITextMessage msg = session.CreateTextMessage("test 1");
+            producer.Send(msg, MsgDeliveryMode.Persistent, MsgPriority.Normal, TimeSpan.MinValue);            
+			msg = session.CreateTextMessage("test 2");		
+            producer.Send(msg, MsgDeliveryMode.Persistent, MsgPriority.Normal, TimeSpan.MinValue);
+            producer.Close();
+
+            IMessageConsumer consumer = session.CreateConsumer(queue);
+			
+            // Read the first message
+            ITextMessage fetchedMessage1 = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
+            Assert.IsNotNull(fetchedMessage1);
+            Assert.AreEqual("test 1", fetchedMessage1.Text);
+            
+			// Read the second message
+			ITextMessage fetchedMessage2 = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
+            Assert.IsNotNull(fetchedMessage2);
+            Assert.AreEqual("test 2", fetchedMessage2.Text);
+
+            // Acknowledge first message
+            fetchedMessage1.Acknowledge();
+
+            consumer.Close();
+
+            // Read first message a second time
+            consumer = session.CreateConsumer(queue);
+            fetchedMessage1 = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
+            Assert.IsNotNull(fetchedMessage1);
+            Assert.AreEqual("test 2", fetchedMessage1.Text);
+
+            // Try to read second message a second time
+            fetchedMessage2 = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
+            Assert.IsNull(fetchedMessage2);
+            consumer.Close();
+	    }
+		
     }
 }
