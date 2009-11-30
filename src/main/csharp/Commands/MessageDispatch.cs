@@ -91,6 +91,48 @@ namespace Apache.NMS.ActiveMQ.Commands
             set { this.redeliveryCounter = value; }
         }
 
+        public override int GetHashCode()
+        {
+            int answer = 0;
+
+            answer = (answer * 37) + HashCode(ConsumerId);
+            answer = (answer * 37) + HashCode(Destination);
+            answer = (answer * 37) + HashCode(Message);
+            answer = (answer * 37) + HashCode(RedeliveryCounter);
+
+            return answer;
+        }
+
+        public override bool Equals(object that)
+        {
+            if(that is MessageDispatch)
+            {
+                return Equals((MessageDispatch) that);
+            }
+            return false;
+        }
+
+        public virtual bool Equals(MessageDispatch that)
+        {
+            if(!Equals(this.ConsumerId, that.ConsumerId))
+            {
+                return false;
+            }
+            if(!Equals(this.Destination, that.Destination))
+            {
+                return false;
+            }
+            if(!Equals(this.Message, that.Message))
+            {
+                return false;
+            }
+            if(!Equals(this.RedeliveryCounter, that.RedeliveryCounter))
+            {
+                return false;
+            }
+
+            return true;
+        }
         ///
         /// <summery>
         ///  Return an answer of true to the isMessageDispatch() query.

@@ -182,6 +182,84 @@ namespace Apache.NMS.Test
             Assert.IsNull(fetchedMessage2);
             consumer.Close();
 	    }
+
+        [Test]
+        public void TestManyMessageAckedAfterMessageConsumption()
+        {
+            int messageCount = 20;
+            IMessage msg;
+
+            ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
+            ITemporaryQueue queue = session.CreateTemporaryQueue();
+            IMessageProducer producer = session.CreateProducer(queue);
+            for(int i = 0; i < messageCount; i++)
+            {
+                msg = session.CreateTextMessage("msg" + i);
+                producer.Send(msg);
+            }
+
+            // Consume the message...
+            IMessageConsumer consumer = session.CreateConsumer(queue);
+            for(int i = 0; i < messageCount; i++)
+            {
+                msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+                Assert.IsNotNull(msg);
+                msg.Acknowledge();
+            }
+            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+            Assert.IsNull(msg);
+
+            // Reset the session.
+            session.Close();
+            session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
+
+            // Attempt to Consume the message...
+            consumer = session.CreateConsumer(queue);
+            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+            Assert.IsNull(msg);
+            session.Close();
+        }
 		
+        [Test]
+        public void TestManyMessageAckedAfterAllConsumption()
+        {
+            int messageCount = 20;
+            IMessage msg;
+
+            ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
+            ITemporaryQueue queue = session.CreateTemporaryQueue();
+            IMessageProducer producer = session.CreateProducer(queue);
+            for(int i = 0; i < messageCount; i++)
+            {
+                msg = session.CreateTextMessage("msg" + i);
+                producer.Send(msg);
+            }
+
+            // Consume the message...
+            IMessageConsumer consumer = session.CreateConsumer(queue);
+            IMessage[] consumedMessages = new IMessage[messageCount];
+            for(int i = 0; i < messageCount; i++)
+            {
+                msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+                Assert.IsNotNull(msg);
+                consumedMessages[i] = msg;
+            }
+            for(int i = 0; i < messageCount; i++)
+            {
+                consumedMessages[i].Acknowledge();
+            }
+            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+            Assert.IsNull(msg);
+
+            // Reset the session.
+            session.Close();
+            session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
+
+            // Attempt to Consume the message...
+            consumer = session.CreateConsumer(queue);
+            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+            Assert.IsNull(msg);
+            session.Close();
+        }
     }
 }
