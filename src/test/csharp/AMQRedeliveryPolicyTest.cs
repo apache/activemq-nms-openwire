@@ -27,11 +27,11 @@ using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.Test
 {
-    [TestFixture]    
+    [TestFixture]
     public class AMQRedeliveryPolicyTest : NMSTestSupport
     {
         private const string DESTINATION_NAME = "RedeliveryPolicyTestDest";
-        
+
         [Test]
         public void TestExponentialRedeliveryPolicyDelaysDeliveryOnRollback()
         {
@@ -42,39 +42,39 @@ namespace Apache.NMS.Test
                 policy.BackOffMultiplier = 2;
                 policy.UseExponentialBackOff = true;
                 policy.UseCollisionAvoidance = false;
-                
+
                 connection.Start();
                 ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
                 IDestination destination = session.CreateTemporaryQueue();
                 IMessageProducer producer = session.CreateProducer(destination);
-                
+
                 IMessageConsumer consumer = session.CreateConsumer(destination);
-        
+
                 // Send the messages
                 producer.Send(session.CreateTextMessage("1st"));
                 producer.Send(session.CreateTextMessage("2nd"));
                 session.Commit();
-                
+
                 ITextMessage m;
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-        
+
                 // No delay on first Rollback..
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(100));
                 Assert.IsNotNull(m);
                 session.Rollback();
-                
+
                 // Show subsequent re-delivery delay is incrementing.
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(100));
                 Assert.IsNull(m);
-                
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(700));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-                
+
                 // Show re-delivery delay is incrementing exponentially
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(100));
                 Assert.IsNull(m);
@@ -82,8 +82,8 @@ namespace Apache.NMS.Test
                 Assert.IsNull(m);
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(700));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
-            }            
+                Assert.AreEqual("1st", m.Text);
+            }
         }
 
         [Test]
@@ -94,38 +94,38 @@ namespace Apache.NMS.Test
                 IRedeliveryPolicy policy = connection.RedeliveryPolicy;
                 policy.InitialRedeliveryDelay = 500;
                 policy.UseExponentialBackOff = false;
-                
+
                 connection.Start();
                 ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
                 IDestination destination = session.CreateTemporaryQueue();
-                
+
                 IMessageProducer producer = session.CreateProducer(destination);
                 IMessageConsumer consumer = session.CreateConsumer(destination);
-        
+
                 // Send the messages
                 producer.Send(session.CreateTextMessage("1st"));
                 producer.Send(session.CreateTextMessage("2nd"));
                 session.Commit();
-                
+
                 ITextMessage m;
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-        
+
                 // No delay on first Rollback..
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(100));
                 Assert.IsNotNull(m);
                 session.Rollback();
-                
+
                 // Show subsequent re-delivery delay is incrementing.
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(100));
                 Assert.IsNull(m);
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(700));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-                
+
                 // The message gets redelivered after 500 ms every time since
                 // we are not using exponential backoff.
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(100));
@@ -135,68 +135,70 @@ namespace Apache.NMS.Test
                 Assert.AreEqual("1st", m.Text);
             }
         }
-    
+
         [Test]
-        public void TestDLQHandling() 
+        public void TestDLQHandling()
         {
             using(Connection connection = (Connection) CreateConnection())
-            {            
+            {
                 IRedeliveryPolicy policy = connection.RedeliveryPolicy;
                 policy.InitialRedeliveryDelay = 100;
                 policy.UseExponentialBackOff = false;
                 policy.MaximumRedeliveries = 2;
-                
+
                 connection.Start();
                 ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
                 IDestination destination = session.CreateTemporaryQueue();
                 IMessageProducer producer = session.CreateProducer(destination);
-                
+
+                session.DeleteDestination(new ActiveMQQueue("ActiveMQ.DLQ"));
+
                 IMessageConsumer consumer = session.CreateConsumer(destination);
                 IMessageConsumer dlqConsumer = session.CreateConsumer(new ActiveMQQueue("ActiveMQ.DLQ"));
-        
-				// Purge any messages already in the DLQ.
-				while(dlqConsumer.ReceiveNoWait() != null)
-				{
-					session.Commit();
-				}
-				
+
+                // Purge any messages already in the DLQ.
+                while(dlqConsumer.ReceiveNoWait() != null)
+                {
+                    session.Commit();
+                }
+
                 // Send the messages
                 producer.Send(session.CreateTextMessage("1st"));
                 producer.Send(session.CreateTextMessage("2nd"));
                 session.Commit();
-                
+
                 ITextMessage m;
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-        
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-        
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-                
-                // The last Rollback should cause the 1st message to get sent to the DLQ 
+
+                // The last Rollback should cause the 1st message to get sent to the DLQ
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("2nd", m.Text);        
+                Assert.AreEqual("2nd", m.Text);
                 session.Commit();
-                
+
                 // We should be able to get the message off the DLQ now.
                 m = (ITextMessage)dlqConsumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Commit();
             }
         }
 
         [Test]
-        public void TestInfiniteMaximumNumberOfRedeliveries() 
+        public void TestInfiniteMaximumNumberOfRedeliveries()
         {
             using(Connection connection = (Connection) CreateConnection())
             {
@@ -205,61 +207,61 @@ namespace Apache.NMS.Test
                 policy.UseExponentialBackOff = false;
                 // let's set the maximum redeliveries to no maximum (ie. infinite)
                 policy.MaximumRedeliveries = -1;
-                
+
                 connection.Start();
                 ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
                 IDestination destination = session.CreateTemporaryQueue();
                 IMessageProducer producer = session.CreateProducer(destination);
-                
+
                 IMessageConsumer consumer = session.CreateConsumer(destination);
-                
+
                 // Send the messages
                 producer.Send(session.CreateTextMessage("1st"));
                 producer.Send(session.CreateTextMessage("2nd"));
                 session.Commit();
-                   
+
                 ITextMessage m;
-         
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-                
+
                 //we should be able to get the 1st message redelivered until a session.Commit is called
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
-                session.Rollback();           
-                
+                Assert.AreEqual("1st", m.Text);
+                session.Rollback();
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
-                session.Rollback();  
-                
+                Assert.AreEqual("1st", m.Text);
+                session.Rollback();
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
-                session.Rollback();  
-                
+                Assert.AreEqual("1st", m.Text);
+                session.Rollback();
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
-                session.Rollback();  
-                
+                Assert.AreEqual("1st", m.Text);
+                session.Rollback();
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
-                session.Commit();  
-                
+                Assert.AreEqual("1st", m.Text);
+                session.Commit();
+
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("2nd", m.Text);        
+                Assert.AreEqual("2nd", m.Text);
                 session.Commit();
             }
         }
 
         [Test]
-        public void TestZeroMaximumNumberOfRedeliveries() 
+        public void TestZeroMaximumNumberOfRedeliveries()
         {
             using(Connection connection = (Connection) CreateConnection())
             {
@@ -268,32 +270,32 @@ namespace Apache.NMS.Test
                 policy.UseExponentialBackOff = false;
                 //let's set the maximum redeliveries to 0
                 policy.MaximumRedeliveries = 0;
-              
+
                 connection.Start();
                 ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
                 IDestination destination = session.CreateTemporaryQueue();
                 IMessageProducer producer = session.CreateProducer(destination);
-                
+
                 IMessageConsumer consumer = session.CreateConsumer(destination);
-                
+
                 // Send the messages
                 producer.Send(session.CreateTextMessage("1st"));
                 producer.Send(session.CreateTextMessage("2nd"));
                 session.Commit();
-                
+
                 ITextMessage m;
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("1st", m.Text);        
+                Assert.AreEqual("1st", m.Text);
                 session.Rollback();
-                
+
                 //the 1st  message should not be redelivered since maximumRedeliveries is set to 0
                 m = (ITextMessage)consumer.Receive(TimeSpan.FromMilliseconds(1000));
                 Assert.IsNotNull(m);
-                Assert.AreEqual("2nd", m.Text);        
+                Assert.AreEqual("2nd", m.Text);
                 session.Commit();
             }
-        }    
-        
+        }
+
     }
 }
