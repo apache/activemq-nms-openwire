@@ -48,7 +48,6 @@ namespace Apache.NMS.ActiveMQ
 		private Atomic<bool> started = new Atomic<bool>();
 		private Atomic<bool> deliveringAcks = new Atomic<bool>();
 
-		private int maximumRedeliveryCount = 10;
 		private int redeliveryTimeout = 500;
 		protected bool disposed = false;
 		private long lastDeliveredSequenceId = 0;
@@ -89,12 +88,6 @@ namespace Apache.NMS.ActiveMQ
 		public ConsumerId ConsumerId
 		{
 			get { return info.ConsumerId; }
-		}
-
-		public int MaximumRedeliveryCount
-		{
-			get { return maximumRedeliveryCount; }
-			set { maximumRedeliveryCount = value; }
 		}
 
 		public int RedeliveryTimeout
