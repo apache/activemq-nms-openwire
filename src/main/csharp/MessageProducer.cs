@@ -171,10 +171,25 @@ namespace Apache.NMS.ActiveMQ
                 throw new Apache.NMS.InvalidDestinationException();
             }
 
+            ActiveMQDestination dest = null;
+
+            if(destination == this.info.Destination)
+            {
+                dest = destination as ActiveMQDestination;
+            }
+            else if(info.Destination == null)
+            {
+                dest = ActiveMQDestination.Transform(destination);
+            }
+            else
+            {
+                throw new NotSupportedException("This producer can only send messages to: " + this.info.Destination.PhysicalName);
+            }
+
             ActiveMQMessage activeMessage = (ActiveMQMessage) message;
 
             activeMessage.ProducerId = info.ProducerId;
-            activeMessage.FromDestination = destination;
+            activeMessage.Destination = dest;
             activeMessage.NMSDeliveryMode = deliveryMode;
             activeMessage.NMSPriority = priority;
 
