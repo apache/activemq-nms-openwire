@@ -112,7 +112,9 @@ namespace Apache.NMS.ActiveMQ
 			// is that this works with simple Uri as well.
 			URISupport.CompositeData c = URISupport.parseComposite(uri);
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
-            
+
+            URISupport.SetProperties(connection.PrefetchPolicy, c.Parameters, "nms.PrefetchPolicy.");
+
 			connection.ITransport.Start();
 			return connection;
 		}
