@@ -256,7 +256,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 					_tightEncodingEnabled = this.tightEncodingEnabled;
 				}
 
-				Tracer.Debug("Parsing type: " + dataType + " with: " + dsm);
 				Object data = dsm.CreateObject();
 
 				if(_tightEncodingEnabled)
