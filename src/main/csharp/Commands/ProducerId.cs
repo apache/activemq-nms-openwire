@@ -80,11 +80,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "ConnectionId=" + ConnectionId + 
-                "Value=" + Value + 
-                "SessionId=" + SessionId + 
-                "]";
+            return this.connectionId + ":" + this.sessionId + ":" + this.value;
         }
 
         public SessionId ParentId

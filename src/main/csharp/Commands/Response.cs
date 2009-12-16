@@ -56,8 +56,10 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "CorrelationId=" + CorrelationId + 
+            return GetType().Name + "[ " + 
+                "commandId = " + this.CommandId + " " + 
+                "responseRequired = " + this.ResponseRequired + " " + 
+                "CorrelationId = " + CorrelationId + " " + 
                 "]";
         }
 

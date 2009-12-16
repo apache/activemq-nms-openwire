@@ -61,13 +61,15 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "Close=" + Close + 
-                "ConsumerId=" + ConsumerId + 
-                "Prefetch=" + Prefetch + 
-                "Flush=" + Flush + 
-                "Start=" + Start + 
-                "Stop=" + Stop + 
+            return GetType().Name + "[ " + 
+                "commandId = " + this.CommandId + " " + 
+                "responseRequired = " + this.ResponseRequired + " " + 
+                "Close = " + Close + " " + 
+                "ConsumerId = " + ConsumerId + " " + 
+                "Prefetch = " + Prefetch + " " + 
+                "Flush = " + Flush + " " + 
+                "Start = " + Start + " " + 
+                "Stop = " + Stop + " " + 
                 "]";
         }
 

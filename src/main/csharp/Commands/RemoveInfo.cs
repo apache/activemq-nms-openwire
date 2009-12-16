@@ -57,9 +57,11 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "ObjectId=" + ObjectId + 
-                "LastDeliveredSequenceId=" + LastDeliveredSequenceId + 
+            return GetType().Name + "[ " + 
+                "commandId = " + this.CommandId + " " + 
+                "responseRequired = " + this.ResponseRequired + " " + 
+                "ObjectId = " + ObjectId + " " + 
+                "LastDeliveredSequenceId = " + LastDeliveredSequenceId + " " + 
                 "]";
         }
 

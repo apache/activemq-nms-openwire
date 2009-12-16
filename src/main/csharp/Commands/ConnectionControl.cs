@@ -60,12 +60,14 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "Close=" + Close + 
-                "Exit=" + Exit + 
-                "FaultTolerant=" + FaultTolerant + 
-                "Resume=" + Resume + 
-                "Suspend=" + Suspend + 
+            return GetType().Name + "[ " + 
+                "commandId = " + this.CommandId + " " + 
+                "responseRequired = " + this.ResponseRequired + " " + 
+                "Close = " + Close + " " + 
+                "Exit = " + Exit + " " + 
+                "FaultTolerant = " + FaultTolerant + " " + 
+                "Resume = " + Resume + " " + 
+                "Suspend = " + Suspend + " " + 
                 "]";
         }
 
