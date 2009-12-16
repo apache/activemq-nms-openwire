@@ -56,10 +56,10 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "FormatId=" + FormatId + 
-                "GlobalTransactionId=" + GlobalTransactionId + 
-                "BranchQualifier=" + BranchQualifier + 
+            return GetType().Name + "[ " + 
+                "FormatId = " + FormatId + " " + 
+                "GlobalTransactionId = " + GlobalTransactionId + " " + 
+                "BranchQualifier = " + BranchQualifier + " " + 
                 "]";
         }
 

@@ -59,13 +59,13 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "Destination=" + Destination + 
-                "MessageId=" + MessageId + 
-                "MessageSequenceId=" + MessageSequenceId + 
-                "SubscritionName=" + SubscritionName + 
-                "ClientId=" + ClientId + 
-                "TransactionId=" + TransactionId + 
+            return GetType().Name + "[ " + 
+                "Destination = " + Destination + " " + 
+                "MessageId = " + MessageId + " " + 
+                "MessageSequenceId = " + MessageSequenceId + " " + 
+                "SubscritionName = " + SubscritionName + " " + 
+                "ClientId = " + ClientId + " " + 
+                "TransactionId = " + TransactionId + " " + 
                 "]";
         }
 

@@ -54,8 +54,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "Exception=" + Exception + 
+            return GetType().Name + "[ " + 
+                "Exception = " + Exception + " " + 
                 "]";
         }
 

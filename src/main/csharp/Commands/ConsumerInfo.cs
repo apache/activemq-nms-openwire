@@ -73,25 +73,27 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "ConsumerId=" + ConsumerId + 
-                "Browser=" + Browser + 
-                "Destination=" + Destination + 
-                "PrefetchSize=" + PrefetchSize + 
-                "MaximumPendingMessageLimit=" + MaximumPendingMessageLimit + 
-                "DispatchAsync=" + DispatchAsync + 
-                "Selector=" + Selector + 
-                "SubscriptionName=" + SubscriptionName + 
-                "NoLocal=" + NoLocal + 
-                "Exclusive=" + Exclusive + 
-                "Retroactive=" + Retroactive + 
-                "Priority=" + Priority + 
-                "BrokerPath=" + BrokerPath + 
-                "AdditionalPredicate=" + AdditionalPredicate + 
-                "NetworkSubscription=" + NetworkSubscription + 
-                "OptimizedAcknowledge=" + OptimizedAcknowledge + 
-                "NoRangeAcks=" + NoRangeAcks + 
-                "NetworkConsumerPath=" + NetworkConsumerPath + 
+            return GetType().Name + "[ " + 
+                "commandId = " + this.CommandId + " " + 
+                "responseRequired = " + this.ResponseRequired + " " + 
+                "ConsumerId = " + ConsumerId + " " + 
+                "Browser = " + Browser + " " + 
+                "Destination = " + Destination + " " + 
+                "PrefetchSize = " + PrefetchSize + " " + 
+                "MaximumPendingMessageLimit = " + MaximumPendingMessageLimit + " " + 
+                "DispatchAsync = " + DispatchAsync + " " + 
+                "Selector = " + Selector + " " + 
+                "SubscriptionName = " + SubscriptionName + " " + 
+                "NoLocal = " + NoLocal + " " + 
+                "Exclusive = " + Exclusive + " " + 
+                "Retroactive = " + Retroactive + " " + 
+                "Priority = " + Priority + " " + 
+                "BrokerPath = " + BrokerPath + " " + 
+                "AdditionalPredicate = " + AdditionalPredicate + " " + 
+                "NetworkSubscription = " + NetworkSubscription + " " + 
+                "OptimizedAcknowledge = " + OptimizedAcknowledge + " " + 
+                "NoRangeAcks = " + NoRangeAcks + " " + 
+                "NetworkConsumerPath = " + NetworkConsumerPath + " " + 
                 "]";
         }
 

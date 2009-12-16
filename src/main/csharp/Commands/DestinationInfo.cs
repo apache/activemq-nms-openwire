@@ -62,12 +62,14 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "ConnectionId=" + ConnectionId + 
-                "Destination=" + Destination + 
-                "OperationType=" + OperationType + 
-                "Timeout=" + Timeout + 
-                "BrokerPath=" + BrokerPath + 
+            return GetType().Name + "[ " + 
+                "commandId = " + this.CommandId + " " + 
+                "responseRequired = " + this.ResponseRequired + " " + 
+                "ConnectionId = " + ConnectionId + " " + 
+                "Destination = " + Destination + " " + 
+                "OperationType = " + OperationType + " " + 
+                "Timeout = " + Timeout + " " + 
+                "BrokerPath = " + BrokerPath + " " + 
                 "]";
         }
 

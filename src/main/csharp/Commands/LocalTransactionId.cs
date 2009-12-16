@@ -55,10 +55,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "Value=" + Value + 
-                "ConnectionId=" + ConnectionId + 
-                "]";
+            return this.connectionId + ":" + this.value;
         }
 
         public long Value

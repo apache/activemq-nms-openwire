@@ -55,9 +55,9 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "NetworkTTL=" + NetworkTTL + 
-                "NetworkBrokerId=" + NetworkBrokerId + 
+            return GetType().Name + "[ " + 
+                "NetworkTTL = " + NetworkTTL + " " + 
+                "NetworkBrokerId = " + NetworkBrokerId + " " + 
                 "]";
         }
 

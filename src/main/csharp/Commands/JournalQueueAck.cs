@@ -55,9 +55,9 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[" + 
-                "Destination=" + Destination + 
-                "MessageAck=" + MessageAck + 
+            return GetType().Name + "[ " + 
+                "Destination = " + Destination + " " + 
+                "MessageAck = " + MessageAck + " " + 
                 "]";
         }
 
