@@ -70,5 +70,55 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(connection);
 			}
 		}
-	}
+
+        [Test]
+        public void TestURIForPrefetchHandling()
+        {
+            string uri1 = "activemq:tcp://${activemqhost}:61616" +
+                          "?nms.PrefetchPolicy.queuePrefetch=1" +
+                          "&nms.PrefetchPolicy.queueBrowserPrefetch=2" +
+                          "&nms.PrefetchPolicy.topicPrefetch=3" +
+                          "&nms.PrefetchPolicy.durableTopicPrefetch=4" +
+                          "&nms.PrefetchPolicy.maximumPendingMessageLimit=5";
+
+            string uri2 = "activemq:tcp://${activemqhost}:61616" +
+                          "?nms.PrefetchPolicy.queuePrefetch=112" +
+                          "&nms.PrefetchPolicy.queueBrowserPrefetch=212" +
+                          "&nms.PrefetchPolicy.topicPrefetch=312" +
+                          "&nms.PrefetchPolicy.durableTopicPrefetch=412" +
+                          "&nms.PrefetchPolicy.maximumPendingMessageLimit=512";
+
+            NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri1));
+
+            Assert.IsNotNull(factory);
+            Assert.IsNotNull(factory.ConnectionFactory);
+            using(IConnection connection = factory.CreateConnection("", ""))
+            {
+                Assert.IsNotNull(connection);
+
+                Connection amqConnection = connection as Connection;
+                Assert.AreEqual(1, amqConnection.PrefetchPolicy.QueuePrefetch);
+                Assert.AreEqual(2, amqConnection.PrefetchPolicy.QueueBrowserPrefetch);
+                Assert.AreEqual(3, amqConnection.PrefetchPolicy.TopicPrefetch);
+                Assert.AreEqual(4, amqConnection.PrefetchPolicy.DurableTopicPrefetch);
+                Assert.AreEqual(5, amqConnection.PrefetchPolicy.MaximumPendingMessageLimit);
+            }
+
+            factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri2));
+
+            Assert.IsNotNull(factory);
+            Assert.IsNotNull(factory.ConnectionFactory);
+            using(IConnection connection = factory.CreateConnection("", ""))
+            {
+                Assert.IsNotNull(connection);
+
+                Connection amqConnection = connection as Connection;
+                Assert.AreEqual(112, amqConnection.PrefetchPolicy.QueuePrefetch);
+                Assert.AreEqual(212, amqConnection.PrefetchPolicy.QueueBrowserPrefetch);
+                Assert.AreEqual(312, amqConnection.PrefetchPolicy.TopicPrefetch);
+                Assert.AreEqual(412, amqConnection.PrefetchPolicy.DurableTopicPrefetch);
+                Assert.AreEqual(512, amqConnection.PrefetchPolicy.MaximumPendingMessageLimit);
+            }
+        }
+    }
 }
