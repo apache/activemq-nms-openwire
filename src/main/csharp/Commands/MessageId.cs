@@ -75,7 +75,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             if(key == null) 
             {
-                key = producerId.ToString() + ":" + producerSequenceId;
+                key = producerId.ToString() + ":" + producerSequenceId + ":" + brokerSequenceId;
             }
             
             return key;
