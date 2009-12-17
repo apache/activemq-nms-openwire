@@ -57,10 +57,9 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "commandId = " + this.CommandId + " " + 
-                "responseRequired = " + this.ResponseRequired + " " + 
-                "Command = " + Command + " " + 
-                "]";
+                "commandId = " + this.CommandId + ", " + 
+                "responseRequired = " + this.ResponseRequired + ", " + 
+                "Command = " + Command + " ]";
         }
 
         public string Command

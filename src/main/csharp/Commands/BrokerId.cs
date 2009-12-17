@@ -55,8 +55,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "Value = " + Value + " " + 
-                "]";
+                "Value = " + Value + " ]";
         }
 
         public string Value

@@ -64,17 +64,16 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "commandId = " + this.CommandId + " " + 
-                "responseRequired = " + this.ResponseRequired + " " + 
-                "ConnectionId = " + ConnectionId + " " + 
-                "ClientId = " + ClientId + " " + 
-                "Password = " + Password + " " + 
-                "UserName = " + UserName + " " + 
-                "BrokerPath = " + BrokerPath + " " + 
-                "BrokerMasterConnector = " + BrokerMasterConnector + " " + 
-                "Manageable = " + Manageable + " " + 
-                "ClientMaster = " + ClientMaster + " " + 
-                "]";
+                "commandId = " + this.CommandId + ", " + 
+                "responseRequired = " + this.ResponseRequired + ", " + 
+                "ConnectionId = " + ConnectionId + ", " + 
+                "ClientId = " + ClientId + ", " + 
+                "Password = " + Password + ", " + 
+                "UserName = " + UserName + ", " + 
+                "BrokerPath = " + BrokerPath + ", " + 
+                "BrokerMasterConnector = " + BrokerMasterConnector + ", " + 
+                "Manageable = " + Manageable + ", " + 
+                "ClientMaster = " + ClientMaster + " ]";
         }
 
         public ConnectionId ConnectionId

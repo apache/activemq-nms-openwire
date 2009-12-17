@@ -57,10 +57,9 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "TransactionId = " + TransactionId + " " + 
-                "Type = " + Type + " " + 
-                "WasPrepared = " + WasPrepared + " " + 
-                "]";
+                "TransactionId = " + TransactionId + ", " + 
+                "Type = " + Type + ", " + 
+                "WasPrepared = " + WasPrepared + " ]";
         }
 
         public TransactionId TransactionId

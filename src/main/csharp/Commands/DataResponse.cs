@@ -55,8 +55,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "Data = " + Data + " " + 
-                "]";
+                "Data = " + Data + " ]";
         }
 
         public DataStructure Data

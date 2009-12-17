@@ -63,16 +63,15 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "commandId = " + this.CommandId + " " + 
-                "responseRequired = " + this.ResponseRequired + " " + 
-                "Destination = " + Destination + " " + 
-                "TransactionId = " + TransactionId + " " + 
-                "ConsumerId = " + ConsumerId + " " + 
-                "AckType = " + AckType + " " + 
-                "FirstMessageId = " + FirstMessageId + " " + 
-                "LastMessageId = " + LastMessageId + " " + 
-                "MessageCount = " + MessageCount + " " + 
-                "]";
+                "commandId = " + this.CommandId + ", " + 
+                "responseRequired = " + this.ResponseRequired + ", " + 
+                "Destination = " + Destination + ", " + 
+                "TransactionId = " + TransactionId + ", " + 
+                "ConsumerId = " + ConsumerId + ", " + 
+                "AckType = " + AckType + ", " + 
+                "FirstMessageId = " + FirstMessageId + ", " + 
+                "LastMessageId = " + LastMessageId + ", " + 
+                "MessageCount = " + MessageCount + " ]";
         }
 
         public ActiveMQDestination Destination
