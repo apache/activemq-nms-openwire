@@ -114,6 +114,7 @@ namespace Apache.NMS.ActiveMQ
 			URISupport.SetProperties(connection, c.Parameters, "connection.");
 
             URISupport.SetProperties(connection.PrefetchPolicy, c.Parameters, "nms.PrefetchPolicy.");
+            URISupport.SetProperties(connection.RedeliveryPolicy, c.Parameters, "nms.RedeliveryPolicy.");
 
 			connection.ITransport.Start();
 			return connection;
