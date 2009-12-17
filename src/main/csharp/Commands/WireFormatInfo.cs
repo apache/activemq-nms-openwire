@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+using System.Text;
 using Apache.NMS.ActiveMQ.State;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.OpenWire;
@@ -47,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public override string ToString()
 		{
 			return GetType().Name + "["
-					+ " Magic=" + Magic
+					+ " Magic=" + ASCIIEncoding.ASCII.GetString(magic)
 					+ " Version=" + Version
 					+ " MarshalledProperties=" + Properties.ToString()
 					+ " ]";
