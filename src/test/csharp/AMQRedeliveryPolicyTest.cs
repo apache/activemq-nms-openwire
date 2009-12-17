@@ -297,5 +297,56 @@ namespace Apache.NMS.Test
             }
         }
 
+        [Test]
+        public void TestURIForRedeliverPolicyHandling()
+        {
+            string uri1 = "activemq:tcp://${activemqhost}:61616" +
+                          "?nms.RedeliveryPolicy.BackOffMultiplier=10" +
+                          "&nms.RedeliveryPolicy.InitialRedeliveryDelay=2000" +
+                          "&nms.RedeliveryPolicy.UseExponentialBackOff=true" +
+                          "&nms.RedeliveryPolicy.UseCollisionAvoidance=true" +
+                          "&nms.RedeliveryPolicy.CollisionAvoidancePercent=20";
+
+            string uri2 = "activemq:tcp://${activemqhost}:61616" +
+                          "?nms.RedeliveryPolicy.backOffMultiplier=50" +
+                          "&nms.RedeliveryPolicy.initialRedeliveryDelay=4000" +
+                          "&nms.RedeliveryPolicy.useExponentialBackOff=false" +
+                          "&nms.RedeliveryPolicy.useCollisionAvoidance=false" +
+                          "&nms.RedeliveryPolicy.collisionAvoidancePercent=10";
+
+            NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri1));
+
+            Assert.IsNotNull(factory);
+            Assert.IsNotNull(factory.ConnectionFactory);
+            using(IConnection connection = factory.CreateConnection("", ""))
+            {
+                Assert.IsNotNull(connection);
+
+                Connection amqConnection = connection as Connection;
+
+                Assert.AreEqual(10, amqConnection.RedeliveryPolicy.BackOffMultiplier);
+                Assert.AreEqual(2000, amqConnection.RedeliveryPolicy.InitialRedeliveryDelay);
+                Assert.AreEqual(true, amqConnection.RedeliveryPolicy.UseExponentialBackOff);
+                Assert.AreEqual(true, amqConnection.RedeliveryPolicy.UseCollisionAvoidance);
+                Assert.AreEqual(20, amqConnection.RedeliveryPolicy.CollisionAvoidancePercent);
+            }
+
+            factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri2));
+
+            Assert.IsNotNull(factory);
+            Assert.IsNotNull(factory.ConnectionFactory);
+            using(IConnection connection = factory.CreateConnection("", ""))
+            {
+                Assert.IsNotNull(connection);
+
+                Connection amqConnection = connection as Connection;
+                Assert.AreEqual(50, amqConnection.RedeliveryPolicy.BackOffMultiplier);
+                Assert.AreEqual(4000, amqConnection.RedeliveryPolicy.InitialRedeliveryDelay);
+                Assert.AreEqual(false, amqConnection.RedeliveryPolicy.UseExponentialBackOff);
+                Assert.AreEqual(false, amqConnection.RedeliveryPolicy.UseCollisionAvoidance);
+                Assert.AreEqual(10, amqConnection.RedeliveryPolicy.CollisionAvoidancePercent);
+            }
+        }
+
     }
 }
