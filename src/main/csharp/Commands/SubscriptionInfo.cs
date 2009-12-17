@@ -59,12 +59,11 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "ClientId = " + ClientId + " " + 
-                "Destination = " + Destination + " " + 
-                "Selector = " + Selector + " " + 
-                "SubcriptionName = " + SubcriptionName + " " + 
-                "SubscribedDestination = " + SubscribedDestination + " " + 
-                "]";
+                "ClientId = " + ClientId + ", " + 
+                "Destination = " + Destination + ", " + 
+                "Selector = " + Selector + ", " + 
+                "SubcriptionName = " + SubcriptionName + ", " + 
+                "SubscribedDestination = " + SubscribedDestination + " ]";
         }
 
         public string ClientId

@@ -68,21 +68,20 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "commandId = " + this.CommandId + " " + 
-                "responseRequired = " + this.ResponseRequired + " " + 
-                "BrokerId = " + BrokerId + " " + 
-                "BrokerURL = " + BrokerURL + " " + 
-                "PeerBrokerInfos = " + PeerBrokerInfos + " " + 
-                "BrokerName = " + BrokerName + " " + 
-                "SlaveBroker = " + SlaveBroker + " " + 
-                "MasterBroker = " + MasterBroker + " " + 
-                "FaultTolerantConfiguration = " + FaultTolerantConfiguration + " " + 
-                "DuplexConnection = " + DuplexConnection + " " + 
-                "NetworkConnection = " + NetworkConnection + " " + 
-                "ConnectionId = " + ConnectionId + " " + 
-                "BrokerUploadUrl = " + BrokerUploadUrl + " " + 
-                "NetworkProperties = " + NetworkProperties + " " + 
-                "]";
+                "commandId = " + this.CommandId + ", " + 
+                "responseRequired = " + this.ResponseRequired + ", " + 
+                "BrokerId = " + BrokerId + ", " + 
+                "BrokerURL = " + BrokerURL + ", " + 
+                "PeerBrokerInfos = " + PeerBrokerInfos + ", " + 
+                "BrokerName = " + BrokerName + ", " + 
+                "SlaveBroker = " + SlaveBroker + ", " + 
+                "MasterBroker = " + MasterBroker + ", " + 
+                "FaultTolerantConfiguration = " + FaultTolerantConfiguration + ", " + 
+                "DuplexConnection = " + DuplexConnection + ", " + 
+                "NetworkConnection = " + NetworkConnection + ", " + 
+                "ConnectionId = " + ConnectionId + ", " + 
+                "BrokerUploadUrl = " + BrokerUploadUrl + ", " + 
+                "NetworkProperties = " + NetworkProperties + " ]";
         }
 
         public BrokerId BrokerId

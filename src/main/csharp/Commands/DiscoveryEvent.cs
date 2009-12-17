@@ -56,9 +56,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "ServiceName = " + ServiceName + " " + 
-                "BrokerName = " + BrokerName + " " + 
-                "]";
+                "ServiceName = " + ServiceName + ", " + 
+                "BrokerName = " + BrokerName + " ]";
         }
 
         public string ServiceName

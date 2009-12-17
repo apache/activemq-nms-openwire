@@ -58,11 +58,10 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "commandId = " + this.CommandId + " " + 
-                "responseRequired = " + this.ResponseRequired + " " + 
-                "Exception = " + Exception + " " + 
-                "ConnectionId = " + ConnectionId + " " + 
-                "]";
+                "commandId = " + this.CommandId + ", " + 
+                "responseRequired = " + this.ResponseRequired + ", " + 
+                "Exception = " + Exception + ", " + 
+                "ConnectionId = " + ConnectionId + " ]";
         }
 
         public BrokerError Exception
