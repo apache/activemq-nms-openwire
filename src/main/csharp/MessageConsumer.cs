@@ -279,7 +279,7 @@ namespace Apache.NMS.ActiveMQ
 
 				if(!this.session.IsTransacted)
 				{
-					lock(this.dispatchedMessages)
+                    lock(this.dispatchedMessages)
 					{
 						dispatchedMessages.Clear();
 					}
@@ -288,7 +288,7 @@ namespace Apache.NMS.ActiveMQ
 				this.unconsumedMessages.Close();
 				this.session.DisposeOf(this.info.ConsumerId, this.lastDeliveredSequenceId);
 
-				RemoveInfo removeCommand = new RemoveInfo();
+                RemoveInfo removeCommand = new RemoveInfo();
 				removeCommand.ObjectId = this.info.ConsumerId;
 				removeCommand.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
 
@@ -352,7 +352,7 @@ namespace Apache.NMS.ActiveMQ
 			ack.MessageCount = 1;
 
 			Tracer.Debug("Sending Individual Ack for MessageId: " + ack.LastMessageId.ToString());
-			this.session.Connection.Oneway(ack);
+			this.session.SendAck(ack);
 		}
 
 		protected void DoNothingAcknowledge(ActiveMQMessage message)
@@ -430,7 +430,7 @@ namespace Apache.NMS.ActiveMQ
 
 					try
 					{
-						this.session.Connection.Oneway(ackToSend);
+						this.session.SendAck(ackToSend);
 					}
 					catch(Exception e)
 					{
@@ -685,7 +685,7 @@ namespace Apache.NMS.ActiveMQ
 								if(ack != null)
 								{
 									this.dispatchedMessages.Clear();
-									this.session.Connection.Oneway(ack);
+									this.session.SendAck(ack);
 								}
 							}
 						}
@@ -828,7 +828,7 @@ namespace Apache.NMS.ActiveMQ
 					ack.TransactionId = this.session.TransactionContext.TransactionId;
 				}
 
-				this.session.Connection.Oneway(ack);
+				this.session.SendAck(ack);
 				this.pendingAck = null;
 
 				// Adjust the counters
@@ -890,7 +890,7 @@ namespace Apache.NMS.ActiveMQ
 						ack.MessageCount = this.dispatchedMessages.Count;
 						ack.FirstMessageId = firstMsgId;
 
-						this.session.Connection.Oneway(ack);
+						this.session.SendAck(ack);
 
 						// Adjust the window size.
 						additionalWindowSize = Math.Max(0, this.additionalWindowSize - this.dispatchedMessages.Count);
@@ -911,7 +911,7 @@ namespace Apache.NMS.ActiveMQ
 							ack.MessageCount = this.dispatchedMessages.Count;
 							ack.FirstMessageId = firstMsgId;
 
-							this.session.Connection.Oneway(ack);
+							this.session.SendAck(ack);
 						}
 
 						// stop the delivery of messages.

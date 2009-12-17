@@ -38,7 +38,7 @@ namespace Apache.NMS.ActiveMQ
         private MsgDeliveryMode msgDeliveryMode = NMSConstants.defaultDeliveryMode;
         private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
         private TimeSpan msgTimeToLive = NMSConstants.defaultTimeToLive;
-        private MsgPriority msgPriority = NMSConstants.defaultPriority;
+        private MsgPriority msgPriority = NMSConstants.defaultPriority - 1;
         private bool disableMessageID = false;
         private bool disableMessageTimestamp = false;
         protected bool disposed = false;
@@ -133,7 +133,7 @@ namespace Apache.NMS.ActiveMQ
                 }
 
                 closed = true;
-            }            
+            }
         }
 
         public void Send(IMessage message)
@@ -302,12 +302,12 @@ namespace Apache.NMS.ActiveMQ
             return session.CreateBytesMessage(body);
         }
 
-		public IStreamMessage CreateStreamMessage()
-		{
-			return session.CreateStreamMessage();
-		}
+        public IStreamMessage CreateStreamMessage()
+        {
+            return session.CreateStreamMessage();
+        }
 
-		public void OnProducerAck(ProducerAck ack)
+        public void OnProducerAck(ProducerAck ack)
         {
             Tracer.Debug("Received ProducerAck for Message of Size = {" + ack.Size + "}" );
 

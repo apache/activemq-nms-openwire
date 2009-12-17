@@ -75,6 +75,11 @@ namespace Apache.NMS.ActiveMQ
                 info.Type = (int) TransactionType.Begin;
                 
                 this.session.Connection.Oneway(info);
+
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Begin:" + this.transactionId.ToString());
+                }
             }
         }
         
@@ -86,6 +91,13 @@ namespace Apache.NMS.ActiveMQ
             }
 
             this.BeforeEnd();
+
+            if(Tracer.IsDebugEnabled)
+            {
+                Tracer.Debug("Rollback: "  + this.transactionId +
+                             " syncCount: " +
+                             (synchronizations != null ? synchronizations.Count : 0));
+            }
 
             TransactionInfo info = new TransactionInfo();
             info.ConnectionId = this.session.Connection.ConnectionId;
@@ -107,7 +119,14 @@ namespace Apache.NMS.ActiveMQ
             }
 
             this.BeforeEnd();
-            
+
+            if(Tracer.IsDebugEnabled)
+            {
+                Tracer.Debug("Commit: "  + this.transactionId +
+                             " syncCount: " +
+                             (synchronizations != null ? synchronizations.Count : 0));
+            }
+
             TransactionInfo info = new TransactionInfo();
             info.ConnectionId = this.session.Connection.ConnectionId;
             info.TransactionId = transactionId;

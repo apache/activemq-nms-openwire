@@ -33,10 +33,10 @@ namespace Apache.NMS.ActiveMQ
         /// Private object used for synchronization, instead of public "this"
         /// </summary>
         private readonly object myLock = new object();
-        
+
         private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
-        
+
         private SessionExecutor executor;
         private TransactionContext transactionContext;
         private Connection connection;
@@ -44,8 +44,8 @@ namespace Apache.NMS.ActiveMQ
         private bool dispatchAsync;
         private bool exclusive;
         private bool retroactive;
-        private byte priority;
-        
+        private byte priority = 4;
+
         private readonly SessionInfo info;
         private int consumerCounter;
         private int producerCounter;
@@ -57,12 +57,13 @@ namespace Apache.NMS.ActiveMQ
         private TimeSpan requestTimeout = Apache.NMS.NMSConstants.defaultRequestTimeout;
         private AcknowledgementMode acknowledgementMode;
 
-        public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode)
+        public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode, bool dispatchAsync)
         {
             this.connection = connection;
             this.info = info;
             this.acknowledgementMode = acknowledgementMode;
             this.requestTimeout = connection.RequestTimeout;
+            this.dispatchAsync = dispatchAsync;
 
             if(acknowledgementMode == AcknowledgementMode.Transactional)
             {
@@ -201,9 +202,9 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return Interlocked.Increment(ref this.nextDeliveryId); }
         }
-        
+
         #endregion
-        
+
         #region ISession Members
 
         public void Dispose()
@@ -284,7 +285,7 @@ namespace Apache.NMS.ActiveMQ
 
                     // Stop all message deliveries from this Session
                     Stop();
-                    
+
                     lock(consumers.SyncRoot)
                     {
                         foreach(MessageConsumer consumer in consumers.Values)
@@ -315,8 +316,8 @@ namespace Apache.NMS.ActiveMQ
                         catch
                         {
                         }
-                    }                    
-                    
+                    }
+
                     Connection.RemoveSession(this);
                 }
                 catch(Exception ex)
@@ -328,9 +329,9 @@ namespace Apache.NMS.ActiveMQ
                     this.closed = true;
                     this.closing = false;
                 }
-            }            
+            }
         }
-        
+
         public IMessageProducer CreateProducer()
         {
             return CreateProducer(null);
@@ -400,7 +401,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     consumer.Start();
                 }
-                
+
                 return consumer;
             }
             catch(Exception)
@@ -430,7 +431,7 @@ namespace Apache.NMS.ActiveMQ
 
             // Registered with Connection before we register at the broker.
             connection.addDispatcher(consumerId, this);
-            
+
             try
             {
                 consumer = new MessageConsumer(this, command);
@@ -441,7 +442,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     consumer.Start();
                 }
-                
+
                 this.connection.SyncRequest(command);
             }
             catch(Exception)
@@ -475,7 +476,7 @@ namespace Apache.NMS.ActiveMQ
         {
             throw new NotSupportedException("Not Yet Implemented");
         }
-        
+
         public IQueue GetQueue(string name)
         {
             return new ActiveMQQueue(name);
@@ -548,12 +549,12 @@ namespace Apache.NMS.ActiveMQ
             return ConfigureMessage(answer) as IBytesMessage;
         }
 
-		public IStreamMessage CreateStreamMessage()
-		{
-			return ConfigureMessage(new ActiveMQStreamMessage()) as IStreamMessage;
-		}
-		
-		public IObjectMessage CreateObjectMessage(object body)
+        public IStreamMessage CreateStreamMessage()
+        {
+            return ConfigureMessage(new ActiveMQStreamMessage()) as IStreamMessage;
+        }
+
+        public IObjectMessage CreateObjectMessage(object body)
         {
             ActiveMQObjectMessage answer = new ActiveMQObjectMessage();
             answer.Body = body;
@@ -568,7 +569,7 @@ namespace Apache.NMS.ActiveMQ
                         "You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
                         + this.AcknowledgementMode);
             }
-            
+
             this.TransactionContext.Commit();
         }
 
@@ -580,7 +581,7 @@ namespace Apache.NMS.ActiveMQ
                         "You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
                         + this.AcknowledgementMode);
             }
-            
+
             this.TransactionContext.Rollback();
         }
 
@@ -659,7 +660,7 @@ namespace Apache.NMS.ActiveMQ
         {
             connection.removeDispatcher(objectId);
             this.lastDeliveredSequenceId = Math.Min(this.lastDeliveredSequenceId, lastDeliveredSequenceId);
-            
+
             if(!this.closing)
             {
                 consumers.Remove(objectId);
@@ -699,7 +700,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 answer.PrefetchSize = this.connection.PrefetchPolicy.QueuePrefetch;
             }
-            
+
             // If the destination contained a URI query, then use it to set public properties
             // on the ConsumerInfo
             ActiveMQDestination amqDestination = destination as ActiveMQDestination;
@@ -747,11 +748,11 @@ namespace Apache.NMS.ActiveMQ
             {
                 consumer.Start();
             }
-            
+
             if(this.executor != null)
             {
                 this.executor.Start();
-            }            
+            }
         }
 
         public bool Started
@@ -769,32 +770,24 @@ namespace Apache.NMS.ActiveMQ
 
             foreach(MessageDispatch message in messages)
             {
-                if(Tracer.IsDebugEnabled)
-                {
-                    Tracer.DebugFormat("Resending Message Dispatch: ", message.ToString());
-                }
                 this.executor.ExecuteFirst(message);
             }
         }
-        
+
         public void Dispatch(MessageDispatch dispatch)
         {
             if(this.executor != null)
             {
-                if(Tracer.IsDebugEnabled)
-                {
-                    Tracer.DebugFormat("Send Message Dispatch: ", dispatch.ToString());
-                }
                 this.executor.Execute(dispatch);
             }
         }
 
-        internal void ClearMessagesInProgress() 
-        {        
+        internal void ClearMessagesInProgress()
+        {
             if( this.executor != null ) {
                 this.executor.ClearMessagesInProgress();
             }
-        
+
             lock(this.consumers.SyncRoot)
             {
                 foreach(MessageConsumer consumer in this.consumers)
@@ -811,7 +804,7 @@ namespace Apache.NMS.ActiveMQ
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
                     consumer.Acknowledge();
-                }                
+                }
             }
         }
 
@@ -828,6 +821,23 @@ namespace Apache.NMS.ActiveMQ
             return message;
         }
 
+        internal void SendAck(MessageAck ack)
+        {
+            this.SendAck(ack, false);
+        }
+
+        internal void SendAck(MessageAck ack, bool lazy)
+        {
+            if(lazy || connection.SendAcksAsync || this.IsTransacted )
+            {
+                this.connection.Oneway(ack);
+            }
+            else
+            {
+                this.connection.SyncRequest(ack);
+            }
+        }
+
         /// <summary>
         /// Prevents message from throwing an exception if a client calls Acknoweldge on
         /// a message that is part of a transaction either being produced or consumed.  The
@@ -840,6 +850,6 @@ namespace Apache.NMS.ActiveMQ
         private void DoNothingAcknowledge(ActiveMQMessage message)
         {
         }
-        
+
     }
 }

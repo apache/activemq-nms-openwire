@@ -46,6 +46,8 @@ namespace Apache.NMS.ActiveMQ
         private bool asyncClose = true;
         private bool useCompression = false;
         private bool copyMessageOnSend = true;
+        private bool sendAcksAsync = false;
+        private bool dispatchAsync = true;
         private int producerWindowSize = 0;
         private bool connected = false;
         private bool closed = false;
@@ -136,6 +138,17 @@ namespace Apache.NMS.ActiveMQ
         }
 
         /// <summary>
+        /// This property indicates whether or not async sends are used for
+        /// message acknowledgement messages.  Sending Acks async can improve
+        /// performance but may decrease reliability.
+        /// </summary>
+        public bool SendAcksAsync
+        {
+            get { return sendAcksAsync; }
+            set { sendAcksAsync = value; }
+        }
+
+        /// <summary>
         /// This property sets the acknowledgment mode for the connection.
         /// The URI parameter connection.ackmode can be set to a string value
         /// that maps to the enumeration value.
@@ -223,6 +236,15 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return acknowledgementMode; }
             set { this.acknowledgementMode = value; }
+        }
+
+        /// <summary>
+        /// synchronously or asynchronously by the broker.
+        /// </summary>
+        public bool DispatchAsync
+        {
+            get { return this.dispatchAsync; }
+            set { this.dispatchAsync = value; }
         }
 
         public string ClientId
@@ -338,7 +360,7 @@ namespace Apache.NMS.ActiveMQ
         {
             SessionInfo info = CreateSessionInfo(sessionAcknowledgementMode);
             SyncRequest(info, this.RequestTimeout);
-            Session session = new Session(this, info, sessionAcknowledgementMode);
+            Session session = new Session(this, info, sessionAcknowledgementMode, this.dispatchAsync);
 
             // Set properties on session using parameters prefixed with "session."
             URISupport.CompositeData c = URISupport.parseComposite(this.brokerUri);
