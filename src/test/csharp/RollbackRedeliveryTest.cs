@@ -214,6 +214,97 @@ namespace Apache.NMS.Test
 	    }
 
         [Test]
+        public void TestMessageRedelivedMaxRedeliveriesTimesSingleSession()
+        {
+            connection.RedeliveryPolicy.MaximumRedeliveries = 15;
+            connection.RedeliveryPolicy.UseCollisionAvoidance = false;
+            connection.RedeliveryPolicy.UseExponentialBackOff = false;
+
+            connection.Start();
+
+            PopulateDestination(1, destinationName);
+
+            // Consume messages and Rollback transactions
+            {
+                int received = 0;
+                ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
+                IDestination destination = session.GetQueue(destinationName);
+
+                IMessageConsumer consumer = session.CreateConsumer(destination);
+                ITextMessage msg = null;
+
+                while(received <= connection.RedeliveryPolicy.MaximumRedeliveries)
+                {
+                    msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000000));
+                    Assert.IsNotNull(msg);
+
+                    if(received > 0)
+                    {
+                        Assert.IsTrue(msg.NMSRedelivered);
+                        Assert.AreEqual(received, msg.Properties.GetLong("NMSXDeliveryCount") - 1);
+                    }
+
+                    Interlocked.Increment(ref received);
+
+                    session.Rollback();
+                }
+
+                msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000));
+                Assert.IsNull(msg);
+
+                session.Close();
+            }
+        }
+
+        [Test]
+        public void TestMessageRedelivedMaxRedeliveriesTimesMultipleSessions()
+        {
+            connection.RedeliveryPolicy.MaximumRedeliveries = 15;
+            connection.RedeliveryPolicy.UseCollisionAvoidance = false;
+            connection.RedeliveryPolicy.UseExponentialBackOff = false;
+
+            connection.Start();
+
+            PopulateDestination(1, destinationName);
+
+            // Consume messages and Rollback transactions
+            {
+                int received = 0;
+
+                ISession session = null;
+                IDestination destination = null;
+                IMessageConsumer consumer = null;
+                ITextMessage msg = null;
+
+                while(received <= connection.RedeliveryPolicy.MaximumRedeliveries)
+                {
+                    session = connection.CreateSession(AcknowledgementMode.Transactional);
+                    destination = session.GetQueue(destinationName);
+                    consumer = session.CreateConsumer(destination);
+                    msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000000));
+                    Assert.IsNotNull(msg);
+
+                    if(received > 0)
+                    {
+                        Assert.IsTrue(msg.NMSRedelivered);
+                        Assert.AreEqual(received, msg.Properties.GetLong("NMSXDeliveryCount") - 1);
+                    }
+
+                    Interlocked.Increment(ref received);
+
+                    session.Rollback();
+                    session.Close();
+                }
+
+                session = connection.CreateSession(AcknowledgementMode.Transactional);
+                destination = session.GetQueue(destinationName);
+                consumer = session.CreateConsumer(destination);
+                msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000));
+                Assert.IsNull(msg);
+            }
+        }
+
+        [Test]
         public void TestValidateRedeliveryCountOnRollback()
         {
             const int numMessages = 1;
