@@ -86,6 +86,7 @@
     </Compile>
     <Compile Include="src\test\csharp\OpenWire\MaxInactivityDurationTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\PrefetchSizeZeroTest.cs" />
+    <Compile Include="src\test\csharp\RollbackRedeliveryTest.cs" />
     <Compile Include="src\test\csharp\StompHelperTest.cs" />
     <Compile Include="src\test\csharp\Threads\DedicatedTaskRunnerTest.cs" />
     <Compile Include="src\test\csharp\Transport\failover\FailoverTransportTest.cs" />
