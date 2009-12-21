@@ -47,12 +47,30 @@ namespace Apache.NMS.ActiveMQ.Transport
         private ReadChecker readChecker;
 
         private long readCheckTime;
+        public long ReadCheckTime
+        {
+            get { return this.readCheckTime; }
+            set { this.readCheckTime = value; }
+        }
+
         private long writeCheckTime;
+        public long WriteCheckTime
+        {
+            get { return this.writeCheckTime; }
+            set { this.writeCheckTime = value; }
+        }
+
         private long initialDelayTime;
+        public long InitialDelayTime
+        {
+            get { return this.initialDelayTime; }
+            set { this.initialDelayTime = value; }
+        }
 
         private Atomic<bool> keepAliveResponseRequired = new Atomic<bool>(false);
         public bool KeepAliveResponseRequired
         {
+            get { return this.keepAliveResponseRequired.Value; }
             set { keepAliveResponseRequired.Value = value; }
         }
 
@@ -76,11 +94,12 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// </summary>
         public void WriteCheck()
         {
-            if (inWrite.Value)
+            if(inWrite.Value)
             {
                 return;
             }
-            if (!commandSent.Value)
+
+            if(!commandSent.Value)
             {
                 Tracer.Debug("No Message sent since last write check. Sending a KeepAliveInfo");
                 ThreadPool.QueueUserWorkItem(new WaitCallback(SendKeepAlive));
@@ -89,12 +108,13 @@ namespace Apache.NMS.ActiveMQ.Transport
             {
                 Tracer.Debug("Message sent since last write check. Resetting flag");
             }
+
             commandSent.Value = false;
         }
 
         private void SendKeepAlive(object state)
         {
-            if (monitorStarted.Value)
+            if(monitorStarted.Value)
             {
                 try
                 {
@@ -102,7 +122,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                     info.ResponseRequired = keepAliveResponseRequired.Value;
                     Oneway(info);
                 }
-                catch (IOException exception)
+                catch(IOException exception)
                 {
                     OnException(this, exception);
                 }
@@ -113,19 +133,20 @@ namespace Apache.NMS.ActiveMQ.Transport
         #region ReadCheck Related
         public void ReadCheck()
         {
-            if (inRead.Value)
+            if(inRead.Value)
             {
                 Tracer.Debug("A receive is in progress");
                 return;
             }
-            if (!commandReceived.Value)
+
+            if(!commandReceived.Value)
             {
                 Tracer.Debug("No message received since last read check! Sending an InactivityException!");
                 ThreadPool.QueueUserWorkItem(new WaitCallback(SendInactivityException));
             }
             else
             {
-                commandReceived.Value = true;
+                commandReceived.Value = false;
             }
         }
 
@@ -158,32 +179,32 @@ namespace Apache.NMS.ActiveMQ.Transport
             inRead.Value = true;
             try
             {
-                if (command is KeepAliveInfo)
+                if(command is KeepAliveInfo)
                 {
                     KeepAliveInfo info = command as KeepAliveInfo;
-                    if (info.ResponseRequired)
+                    if(info.ResponseRequired)
                     {
                         try
                         {
                             info.ResponseRequired = false;
                             Oneway(info);
                         }
-                        catch (IOException ex)
+                        catch(IOException ex)
                         {
                             OnException(this, ex);
                         }
                     }
                 }
-                else if (command is WireFormatInfo)
+                else if(command is WireFormatInfo)
                 {
-                    lock (monitor)
+                    lock(monitor)
                     {
                         remoteWireFormatInfo = command as WireFormatInfo;
                         try
                         {
                             StartMonitorThreads();
                         }
-                        catch (IOException ex)
+                        catch(IOException ex)
                         {
                             OnException(this, ex);
                         }
@@ -203,18 +224,18 @@ namespace Apache.NMS.ActiveMQ.Transport
             //synchronize this method - its not synchronized
             //further down the transport stack and gets called by more 
             //than one thread  by this class
-            lock (inWrite)
+            lock(inWrite)
             {
                 inWrite.Value = true;
                 try
                 {
-                    if (failed.Value)
+                    if(failed.Value)
                     {
                         throw new IOException("Channel was inactive for too long: " + next.RemoteAddress.ToString());
                     }
-                    if (command is WireFormatInfo)
+                    if(command is WireFormatInfo)
                     {
-                        lock (monitor)
+                        lock(monitor)
                         {
                             localWireFormatInfo = command as WireFormatInfo;
                             StartMonitorThreads();
@@ -232,7 +253,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         protected override void OnException(ITransport sender, Exception command)
         {
-            if (failed.CompareAndSet(false, true))
+            if(failed.CompareAndSet(false, true))
             {
                 Tracer.Debug("Exception received in the Inactivity Monitor: " + command.ToString());
                 StopMonitorThreads();
@@ -242,17 +263,17 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         private void StartMonitorThreads()
         {
-            lock (monitor)
+            lock(monitor)
             {
-                if (monitorStarted.Value)
+                if(monitorStarted.Value)
                 {
                     return;
                 }
-                if (localWireFormatInfo == null)
+                if(localWireFormatInfo == null)
                 {
                     return;
                 }
-                if (remoteWireFormatInfo == null)
+                if(remoteWireFormatInfo == null)
                 {
                     return;
                 }
@@ -266,7 +287,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                         localWireFormatInfo.MaxInactivityDurationInitialDelay,
                         remoteWireFormatInfo.MaxInactivityDurationInitialDelay);
 
-                if (readCheckTime > 0)
+                if(readCheckTime > 0)
                 {
                     monitorStarted.Value = true;
                     writeChecker = new WriteChecker(this);
@@ -292,9 +313,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         private void StopMonitorThreads()
         {
-            lock (monitor)
+            lock(monitor)
             {
-                if (monitorStarted.CompareAndSet(true, false))
+                if(monitorStarted.CompareAndSet(true, false))
                 {
                     readCheckTimer.Dispose();
                     writeCheckTimer.Dispose();
@@ -309,12 +330,14 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         public WriteChecker(InactivityMonitor parent)
         {
-            if (parent == null)
+            if(parent == null)
             {
                 throw new NullReferenceException("WriteChecker created with a NULL parent.");
             }
+
             this.parent = parent;
         }
+
         public void Check(object state)
         {
             this.parent.WriteCheck();
@@ -328,17 +351,18 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         public ReadChecker(InactivityMonitor parent)
         {
-            if (parent == null)
+            if(parent == null)
             {
                 throw new NullReferenceException("ReadChecker created with a null parent");
             }
             this.parent = parent;
         }
+
         public void Check(object state)
         {
             long now = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
             long elapsed = now - lastRunTime;
-            if (!parent.AllowReadCheck(elapsed))
+            if(!parent.AllowReadCheck(elapsed))
             {
                 return;
             }
