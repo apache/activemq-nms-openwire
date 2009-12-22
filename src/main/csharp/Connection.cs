@@ -18,6 +18,7 @@
 using System;
 using System.Collections;
 using System.Threading;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS;
@@ -30,17 +31,10 @@ namespace Apache.NMS.ActiveMQ
     /// </summary>
     public class Connection : IConnection
     {
-        private readonly Uri brokerUri;
-        private ITransport transport;
-        private readonly ConnectionInfo info;
+        private static readonly IdGenerator CONNECTION_ID_GENERATOR = new IdGenerator();
+
+        // Uri configurable options.
         private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
-        private TimeSpan requestTimeout;
-        private BrokerInfo brokerInfo; // from broker
-        private WireFormatInfo brokerWireFormatInfo; // from broker
-        private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
-        private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
-        private readonly IDictionary dispatchers = Hashtable.Synchronized(new Hashtable());
-        private readonly object myLock = new object();
         private bool asyncSend = false;
         private bool alwaysSyncSend = false;
         private bool asyncClose = true;
@@ -49,6 +43,18 @@ namespace Apache.NMS.ActiveMQ
         private bool sendAcksAsync = false;
         private bool dispatchAsync = true;
         private int producerWindowSize = 0;
+
+        private bool userSpecifiedClientID;
+        private readonly Uri brokerUri;
+        private ITransport transport;
+        private ConnectionInfo info;
+        private TimeSpan requestTimeout;
+        private BrokerInfo brokerInfo; // from broker
+        private WireFormatInfo brokerWireFormatInfo; // from broker
+        private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
+        private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
+        private readonly IDictionary dispatchers = Hashtable.Synchronized(new Hashtable());
+        private readonly object myLock = new object();
         private bool connected = false;
         private bool closed = false;
         private bool closing = false;
@@ -61,17 +67,25 @@ namespace Apache.NMS.ActiveMQ
         private IRedeliveryPolicy redeliveryPolicy;
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
+        private IdGenerator clientIdGenerator;
 
-        public Connection(Uri connectionUri, ITransport transport, ConnectionInfo info)
+        public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
         {
             this.brokerUri = connectionUri;
-            this.info = info;
             this.requestTimeout = transport.RequestTimeout;
+            this.clientIdGenerator = clientIdGenerator;
+
             this.transport = transport;
             this.transport.Command = new CommandHandler(OnCommand);
             this.transport.Exception = new ExceptionHandler(OnException);
             this.transport.Interrupted = new InterruptedHandler(OnTransportInterrupted);
             this.transport.Resumed = new ResumedHandler(OnTransportResumed);
+
+            ConnectionId id = new ConnectionId();
+            id.Value = CONNECTION_ID_GENERATOR.GenerateId();
+
+            this.info = new ConnectionInfo();
+            this.info.ConnectionId = id;
         }
 
         ~Connection()
@@ -97,6 +111,18 @@ namespace Apache.NMS.ActiveMQ
         public event ConnectionResumedListener ConnectionResumedListener;
 
         #region Properties
+
+        public String UserName
+        {
+            get { return this.info.UserName; }
+            set { this.info.UserName = value; }
+        }
+
+        public String Password
+        {
+            get { return this.info.Password; }
+            set { this.info.Password = value; }
+        }
 
         /// <summary>
         /// This property indicates what version of the Protocol we are using to
@@ -252,11 +278,26 @@ namespace Apache.NMS.ActiveMQ
             get { return info.ClientId; }
             set
             {
-                if(connected)
+                if(this.connected)
                 {
                     throw new NMSException("You cannot change the ClientId once the Connection is connected");
                 }
-                info.ClientId = value;
+
+                this.info.ClientId = value;
+                this.userSpecifiedClientID = true;
+                CheckConnected();
+            }
+        }
+
+        /// <summary>
+        /// The Default Client Id used if the ClientId property is not set explicity.
+        /// </summary>
+        public string DefaultClientId
+        {
+            set
+            {
+                this.info.ClientId = value;
+                this.userSpecifiedClientID = true;
             }
         }
 
@@ -576,6 +617,11 @@ namespace Apache.NMS.ActiveMQ
 
             if(!connected)
             {
+                if(!this.userSpecifiedClientID)
+                {
+                    this.info.ClientId = this.clientIdGenerator.GenerateId();
+                }
+
                 connected = true;
                 // now lets send the connection and see if we get an ack/nak
                 if(null == SyncRequest(info))
@@ -788,7 +834,7 @@ namespace Apache.NMS.ActiveMQ
             return id;
         }
 
-        protected SessionInfo CreateSessionInfo(AcknowledgementMode sessionAcknowledgementMode)
+        private SessionInfo CreateSessionInfo(AcknowledgementMode sessionAcknowledgementMode)
         {
             SessionInfo answer = new SessionInfo();
             SessionId sessionId = new SessionId();

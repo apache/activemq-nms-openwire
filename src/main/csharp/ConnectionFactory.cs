@@ -16,6 +16,7 @@
  */
 
 using System;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS;
@@ -36,9 +37,19 @@ namespace Apache.NMS.ActiveMQ
 		private Uri brokerUri;
 		private string connectionUserName;
 		private string connectionPassword;
-		private string clientId;
+        private string clientId;
+        private string clientIdPrefix;
+        private IdGenerator clientIdGenerator;
+
         private bool useCompression;
-        
+        private bool copyMessageOnSend = true;
+        private bool dispatchAsync=true;
+        private bool asyncSend;
+        private bool asyncClose;
+        private bool alwaysSyncSend;
+        private bool sendAcksAsync=true;
+        private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
+
         private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
@@ -79,8 +90,8 @@ namespace Apache.NMS.ActiveMQ
 
 		public ConnectionFactory(Uri brokerUri, string clientID)
 		{
-			this.brokerUri = brokerUri;
-			this.clientId = clientID;
+			this.BrokerUri = brokerUri;
+			this.ClientId = clientID;
 		}
 
 		public IConnection CreateConnection()
@@ -90,37 +101,60 @@ namespace Apache.NMS.ActiveMQ
 
 		public IConnection CreateConnection(string userName, string password)
 		{
-			// Strip off the activemq prefix, if it exists.
-			Uri uri = new Uri(URISupport.stripPrefix(brokerUri.OriginalString, "activemq:"));
+            Connection connection = null;
 
-			Tracer.InfoFormat("Connecting to: {0}", uri.ToString());
+            try
+            {
+    			// Strip off the activemq prefix, if it exists.
+    			Uri uri = new Uri(URISupport.stripPrefix(brokerUri.OriginalString, "activemq:"));
+    
+    			Tracer.InfoFormat("Connecting to: {0}", uri.ToString());
+    
+                ITransport transport = TransportFactory.CreateTransport(uri);
+    
+                connection = new Connection(uri, transport, this.ClientIdGenerator);
+    
+                ConfigureConnection(connection);
+    
+                connection.UserName = this.connectionUserName;
+                connection.Password = this.connectionPassword;
+    
+                if(this.clientId != null)
+                {
+                    connection.DefaultClientId = this.clientId;
+                }
+    
+    			connection.ITransport.Start();
+    
+    			return connection;
+            }
+            catch(NMSException e)
+            {
+                try
+                {
+                    connection.Close();
+                }
+                catch
+                {
+                }
 
-			ConnectionInfo info = CreateConnectionInfo(userName, password);
-			ITransport transport = TransportFactory.CreateTransport(uri);
-			Connection connection = new Connection(uri, transport, info);
+                throw e;
+            }
+            catch(Exception e)
+            {
+                try
+                {
+                    connection.Close();
+                }
+                catch
+                {
+                }
 
-            // Set the Factory level configuration to the Connection, this can be overriden by
-            // the params on the Connection URI so we do this before applying the params.
-            connection.UseCompression = this.useCompression;
-            connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
-            connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
-            connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;
-            
-			// Set properties on connection using parameters prefixed with "connection."
-			// Since this could be a composite Uri, assume the connection-specific parameters
-			// are associated with the outer-most specification of the composite Uri. What's nice
-			// is that this works with simple Uri as well.
-			URISupport.CompositeData c = URISupport.parseComposite(uri);
-			URISupport.SetProperties(connection, c.Parameters, "connection.");
-
-            URISupport.SetProperties(connection.PrefetchPolicy, c.Parameters, "nms.PrefetchPolicy.");
-            URISupport.SetProperties(connection.RedeliveryPolicy, c.Parameters, "nms.RedeliveryPolicy.");
-
-			connection.ITransport.Start();
-			return connection;
+                throw NMSExceptionSupport.Create("Could not connect to broker URL: " + this.brokerUri + ". Reason: " + e.Message, e);
+            }
 		}
 
-		// Properties
+        #region ConnectionFactory Properties
 
 		/// <summary>
 		/// Get/or set the broker Uri.
@@ -128,7 +162,17 @@ namespace Apache.NMS.ActiveMQ
 		public Uri BrokerUri
 		{
 			get { return brokerUri; }
-			set { brokerUri = value; }
+			set
+            {
+                brokerUri = value;
+
+                Uri uri = new Uri(URISupport.stripPrefix(brokerUri.OriginalString, "activemq:"));
+
+                URISupport.CompositeData c = URISupport.parseComposite(uri);
+                URISupport.SetProperties(this, c.Parameters, "connection.");
+                URISupport.SetProperties(this.PrefetchPolicy, c.Parameters, "nms.PrefetchPolicy.");
+                URISupport.SetProperties(this.RedeliveryPolicy, c.Parameters, "nms.RedeliveryPolicy.");
+            }
 		}
 
 		public string UserName
@@ -149,10 +193,69 @@ namespace Apache.NMS.ActiveMQ
 			set { clientId = value; }
 		}
 
+        public string ClientIdPrefix
+        {
+            get { return clientIdPrefix; }
+            set { clientIdPrefix = value; }
+        }
+
         public bool UseCompression
         {
             get { return this.useCompression; }
             set { this.useCompression = value; }
+        }
+
+        public bool CopyMessageOnSend
+        {
+            get { return copyMessageOnSend; }
+            set { copyMessageOnSend = value; }
+        }
+
+        public bool AlwaysSyncSend
+        {
+            get { return alwaysSyncSend; }
+            set { alwaysSyncSend = value; }
+        }
+
+        public bool AsyncClose
+        {
+            get { return asyncClose; }
+            set { asyncClose = value; }
+        }
+
+        public bool SendAcksAsync
+        {
+            get { return sendAcksAsync; }
+            set { sendAcksAsync = value; }
+        }
+
+        public bool AsyncSend
+        {
+            get { return asyncSend; }
+            set { asyncSend = value; }
+        }
+
+        public bool DispatchAsync
+        {
+            get { return this.dispatchAsync; }
+            set { this.dispatchAsync = value; }
+        }
+
+        public string AckMode
+        {
+            set { this.acknowledgementMode = NMSConvert.ToAcknowledgementMode(value); }
+        }
+
+        public AcknowledgementMode AcknowledgementMode
+        {
+            get { return acknowledgementMode; }
+            set { this.acknowledgementMode = value; }
+        }
+
+        public PrefetchPolicy PrefetchPolicy
+        {
+            get { return this.prefetchPolicy; }
+            set { this.prefetchPolicy = value; }
         }
 
         public IRedeliveryPolicy RedeliveryPolicy
@@ -177,7 +280,31 @@ namespace Apache.NMS.ActiveMQ
                     this.compressionPolicy = value; 
                 }
             }
-        }        
+        }
+
+        public IdGenerator ClientIdGenerator
+        {
+            set { this.clientIdGenerator = value; }
+            get
+            {
+                lock(this)
+                {
+                    if(this.clientIdGenerator == null)
+                    {
+                        if(this.clientIdPrefix != null)
+                        {
+                            this.clientIdGenerator = new IdGenerator(this.clientIdPrefix);
+                        }
+                        else
+                        {
+                            this.clientIdGenerator = new IdGenerator();
+                        }
+                    }
+
+                    return this.clientIdGenerator;
+                }
+            }
+        }
 
 		public event ExceptionListener OnException
 		{
@@ -191,24 +318,22 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		protected virtual ConnectionInfo CreateConnectionInfo(string userName, string password)
-		{
-			ConnectionInfo answer = new ConnectionInfo();
-			ConnectionId connectionId = new ConnectionId();
-			connectionId.Value = CreateNewGuid();
+        #endregion
 
-			answer.ConnectionId = connectionId;
-			answer.UserName = userName;
-			answer.Password = password;
-			answer.ClientId = clientId ?? CreateNewGuid();
-
-			return answer;
-		}
-
-		protected static string CreateNewGuid()
-		{
-			return Guid.NewGuid().ToString();
-		}
+        protected virtual void ConfigureConnection(Connection connection)
+        {
+            connection.AsyncClose = this.AsyncClose;
+            connection.AsyncSend = this.AsyncSend;
+            connection.CopyMessageOnSend = this.CopyMessageOnSend;
+            connection.AlwaysSyncSend = this.AlwaysSyncSend;
+            connection.DispatchAsync = this.DispatchAsync;
+            connection.SendAcksAsync = this.SendAcksAsync;
+            connection.AcknowledgementMode = this.acknowledgementMode;
+            connection.UseCompression = this.useCompression;
+            connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
+            connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
+            connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;
+        }
 
 		protected static void ExceptionHandler(Exception ex)
 		{
