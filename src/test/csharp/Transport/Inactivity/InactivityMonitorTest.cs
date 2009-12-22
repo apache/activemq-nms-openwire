@@ -14,7 +14,7 @@
 //  * See the License for the specific language governing permissions and
 //  * limitations under the License.
 //  */
-// 
+//
 
 using System;
 using System.Threading;
@@ -30,7 +30,7 @@ using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]
+    //[TestFixture]
     public class InactivityMonitorTest
     {
         private List<Command> received;
@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ.Test
             received.Add( command );
         }
 
-        [SetUp]
+        //[SetUp]
         public void SetUp()
         {
             this.received = new List<Command>();
@@ -68,7 +68,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.localWireFormatInfo.TightEncodingEnabled = false;
         }
 
-        [Test]
+        //[Test]
         public void TestCreate()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
@@ -80,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( monitor.IsDisposed == false );
         }
 
-        [Test]
+        //[Test]
         public void TestReadTimeout()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
@@ -101,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( this.exceptions.Count > 0 );
         }
 
-        [Test]
+        //[Test]
         public void TestWriteMessageFail()
         {
             this.transport.FailOnKeepAliveInfoSends = true ;
@@ -128,7 +128,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( this.exceptions.Count > 0 );
         }
 
-        [Test]
+        //[Test]
         public void TestNonFailureSendCase()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
