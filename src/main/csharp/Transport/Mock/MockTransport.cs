@@ -44,6 +44,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         private bool failOnReceiveMessage = false;
         private int numReceivedMessagesBeforeFail = 0;
         private int numReceivedMessages = 0;
+        private bool failOnKeepAliveInfoSends = false;
+        private int numSentKeepAliveInfosBeforeFail = 0;
+        private int numSentKeppAliveInfos = 0;
         private int nextCommandId = 0;
         private CommandHandler commandHandler;
         private CommandHandler outgoingCommandHandler;
@@ -150,16 +153,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         public void Oneway(Command command)
         {
             Tracer.Debug("MockTransport sending oneway Command: " + command.ToString() );
-            
+
             if( command.IsMessage ) {
                 this.numSentMessages++;
-    
+
                 if( this.failOnSendMessage && this.numSentMessages > this.numSentMessagesBeforeFail ) {
                     Tracer.Debug("MockTransport Oneway send, failing as per configuration." );
                     throw new IOException( "Failed to Send Message.");
                 }
             }
-    
+
+            if( command.IsKeepAliveInfo ) {
+                this.numSentKeppAliveInfos++;
+
+                if( this.failOnKeepAliveInfoSends && this.numSentKeppAliveInfos > this.numSentKeepAliveInfosBeforeFail ) {
+                    Tracer.Debug("MockTransport Oneway send, failing as per configuration." );
+                    throw new IOException( "Failed to Send Message.");
+                }
+            }
+            
             // Process and send any new Commands back.
 
             // Let the Response Builder give us the Commands to send to the Client App.
@@ -324,18 +336,36 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			get { return failOnReceiveMessage; }
 			set { failOnReceiveMessage = value; }
 		}
-		
+
 		public int NumReceivedMessagesBeforeFail
 		{
 			get { return numReceivedMessagesBeforeFail; }
-			set { numReceivedMessagesBeforeFail = value; }			
+			set { numReceivedMessagesBeforeFail = value; }
 		}
-		
+
 		public int NumReceivedMessages
 		{
 			get { return numReceivedMessages; }
 			set { numReceivedMessages = value; }
 		}
+
+        public bool FailOnKeepAliveInfoSends
+        {
+            get { return failOnKeepAliveInfoSends; }
+            set { failOnKeepAliveInfoSends = value; }
+        }
+
+        public int NumSentKeepAliveInfosBeforeFail
+        {
+            get { return numSentKeepAliveInfosBeforeFail; }
+            set { numSentKeepAliveInfosBeforeFail = value; }
+        }
+
+        public int NumSentKeppAliveInfos
+        {
+            get { return numSentKeppAliveInfos; }
+            set { numSentKeppAliveInfos = value; }
+        }
 
         public bool IsFaultTolerant
         {

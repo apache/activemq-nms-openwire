@@ -899,6 +899,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\main\csharp\Transport\ICompositeTransport.cs" />
+    <Compile Include="src\main\csharp\Transport\InactivityMonitor.cs" />
     <Compile Include="src\main\csharp\Transport\ITransport.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -935,6 +936,7 @@
     <Compile Include="src\main\csharp\Transport\WireFormatNegotiator.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Util\IdGenerator.cs" />
     <Compile Include="src\main\csharp\Util\MemoryUsage.cs" />
     <Compile Include="src\main\csharp\Util\MessageDispatchChannel.cs" />
   </ItemGroup>
