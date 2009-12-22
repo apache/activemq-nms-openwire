@@ -936,6 +936,7 @@
     <Compile Include="src\main\csharp\Transport\WireFormatNegotiator.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Util\IdGenerator.cs" />
     <Compile Include="src\main\csharp\Util\MemoryUsage.cs" />
     <Compile Include="src\main\csharp\Util\MessageDispatchChannel.cs" />
   </ItemGroup>
