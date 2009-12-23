@@ -22,6 +22,15 @@ namespace Apache.NMS.ActiveMQ.Threads
 	/// </summary>
 	public interface Task
 	{
+		/// <summary>
+		/// Performs some portion of the work that this Task object is
+		/// assigned to complete.  When the task is entirely finished this
+		/// method should return false. 
+		/// </summary>
+		/// <returns>
+		/// A <see cref="System.Boolean"/> this indicates if this Task should 
+		/// be run again.
+		/// </returns>
 		bool Iterate();
 	}
 }

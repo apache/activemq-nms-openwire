@@ -21,6 +21,7 @@ using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using Apache.NMS;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Mock;
 using Apache.NMS.ActiveMQ.Commands;
@@ -30,7 +31,7 @@ using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    //[TestFixture]
+    [TestFixture]
     public class InactivityMonitorTest
     {
         private List<Command> received;
@@ -50,7 +51,7 @@ namespace Apache.NMS.ActiveMQ.Test
             received.Add( command );
         }
 
-        //[SetUp]
+        [SetUp]
         public void SetUp()
         {
             this.received = new List<Command>();
@@ -68,7 +69,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.localWireFormatInfo.TightEncodingEnabled = false;
         }
 
-        //[Test]
+        [Test]
         public void TestCreate()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
@@ -80,12 +81,13 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( monitor.IsDisposed == false );
         }
 
-        //[Test]
+        [Test]
         public void TestReadTimeout()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
 
             monitor.Exception += new ExceptionHandler(OnException);
+            monitor.Command += new CommandHandler(OnCommand);
 
             // Send the local one for the monitor to record.
             monitor.Oneway( this.localWireFormatInfo );
@@ -101,7 +103,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( this.exceptions.Count > 0 );
         }
 
-        //[Test]
+        [Test]
         public void TestWriteMessageFail()
         {
             this.transport.FailOnKeepAliveInfoSends = true ;
@@ -110,6 +112,8 @@ namespace Apache.NMS.ActiveMQ.Test
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
 
             monitor.Exception += new ExceptionHandler(OnException);
+            monitor.Command += new CommandHandler(OnCommand);
+            monitor.Start();
 
             // Send the local one for the monitor to record.
             monitor.Oneway( this.localWireFormatInfo );
@@ -119,21 +123,29 @@ namespace Apache.NMS.ActiveMQ.Test
             ActiveMQMessage message = new ActiveMQMessage();
             this.transport.InjectCommand( message );
 
+            Thread.Sleep( 2000 );
+
             // Should not have timed out on Read yet.
             Assert.IsTrue( this.exceptions.Count == 0 );
 
-            Thread.Sleep( 8000 );
+            for(int ix = 0; ix < 4; ix++)
+            {
+                this.transport.InjectCommand( message );
+                Thread.Sleep( 2000 );
+            }
 
             // Channel should have been inactive for to long.
             Assert.IsTrue( this.exceptions.Count > 0 );
         }
 
-        //[Test]
+        [Test]
         public void TestNonFailureSendCase()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
 
             monitor.Exception += new ExceptionHandler(OnException);
+            monitor.Command += new CommandHandler(OnCommand);
+            monitor.Start();
 
             // Send the local one for the monitor to record.
             monitor.Oneway( this.localWireFormatInfo );
