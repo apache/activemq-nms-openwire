@@ -93,7 +93,23 @@ namespace Apache.NMS.ActiveMQ.Transport
             : base(next)
         {
             Tracer.Debug("Creating Inactivity Monitor");
-            Console.WriteLine("Creating Inactivity Monitor");
+        }
+
+        ~InactivityMonitor()
+        {
+            Dispose(false);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if(disposing)
+            {
+                // get rid of unmanaged stuff
+            }
+
+            StopMonitorThreads();
+
+            base.Dispose(disposing);
         }
 
         #region WriteCheck Related
@@ -102,11 +118,8 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// </summary>
         public void WriteCheck(object state)
         {
-            Console.WriteLine("Entered WriteCheck");
-
             if(this.inWrite.Value || this.failed.Value)
             {
-                Console.WriteLine("In write or already failed.");
                 return;
             }
 
@@ -130,13 +143,11 @@ namespace Apache.NMS.ActiveMQ.Transport
         #region ReadCheck Related
         public void ReadCheck(object state)
         {
-            Console.WriteLine("Entered ReadCheck");
             DateTime now = DateTime.Now;
             TimeSpan elapsed = now - this.lastReadCheckTime;
 
             if(!AllowReadCheck(elapsed))
             {
-                Console.WriteLine("A read check is not yet allowed.");
                 return;
             }
 
@@ -145,7 +156,6 @@ namespace Apache.NMS.ActiveMQ.Transport
             if(this.inRead.Value || this.failed.Value)
             {
                 Tracer.Debug("A receive is in progress or already failed.");
-                Console.WriteLine("A receive is in progress");
                 return;
             }
 
