@@ -47,7 +47,7 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
             {
                 get { return count; }
             }
-        
+
             public bool IsPending
             {
                 get { return count != goal; }
@@ -55,7 +55,6 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
 
             public bool Iterate()
             {
-                Console.WriteLine(name + ": Running iteration " + count );
                 return !( ++count == goal );
             }
         }
@@ -63,9 +62,9 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
         [Test]
         public void TestCompositeTaskRunner()
         {
-        
+
             int attempts = 0;
-        
+
             CompositeTaskRunner runner = new CompositeTaskRunner();
 
             CountingTask task1 = new CountingTask("task1", 100);
@@ -75,7 +74,7 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
             runner.AddTask( task2 );
 
             runner.Wakeup();
-        
+
             while( attempts++ != 10 )
             {
                 Thread.Sleep( 1000 );
@@ -85,7 +84,7 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
                     break;
                 }
             }
-        
+
             Assert.IsTrue(task1.Count == 100);
             Assert.IsTrue(task2.Count == 200);
 
