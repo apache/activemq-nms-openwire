@@ -345,11 +345,13 @@ namespace Apache.NMS.ActiveMQ.Transport
                 {
                     AutoResetEvent shutdownEvent = new AutoResetEvent(false);
 
+                    // Attempt to wait for the Timers to shutdown, but don't wait
+                    // forever, if they don't shutdown after two seconds, just quit.
                     this.readCheckTimer.Dispose(shutdownEvent);
-                    shutdownEvent.WaitOne();
+                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
                     this.writeCheckTimer.Dispose(shutdownEvent);
-                    shutdownEvent.WaitOne();
-
+                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
+                    
 					this.asyncTasks.Shutdown();
                     this.asyncTasks = null;
                     this.asyncWriteTask = null;
