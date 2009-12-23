@@ -379,7 +379,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
         public Uri RemoteAddress
         {
-            get{ return null; }
+            get{ return new Uri("mock://mock"); }
         }
         
         #endregion

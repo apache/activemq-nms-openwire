@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.Util;
 
@@ -38,13 +39,19 @@ namespace Apache.NMS.ActiveMQ.Transport
         private Atomic<bool> inRead = new Atomic<bool>(false);
         private Atomic<bool> inWrite = new Atomic<bool>(false);
 
+		private CompositeTaskRunner asyncTasks;
+        private AsyncSignalReadErrorkTask asyncErrorTask;
+        private AsyncWriteTask asyncWriteTask;
+		
         private Mutex monitor = new Mutex();
 
         private Timer readCheckTimer;
         private Timer writeCheckTimer;
 
-        private WriteChecker writeChecker;
-        private ReadChecker readChecker;
+        private DateTime lastReadCheckTime;
+
+        //private WriteChecker writeChecker;
+        //private ReadChecker readChecker;
 
         private long readCheckTime;
         public long ReadCheckTime
@@ -88,13 +95,30 @@ namespace Apache.NMS.ActiveMQ.Transport
             Tracer.Debug("Creating Inactivity Monitor");
         }
 
+        ~InactivityMonitor()
+        {
+            Dispose(false);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if(disposing)
+            {
+                // get rid of unmanaged stuff
+            }
+
+            StopMonitorThreads();
+
+            base.Dispose(disposing);
+        }
+
         #region WriteCheck Related
         /// <summary>
         /// Check the write to the broker
         /// </summary>
-        public void WriteCheck()
+        public void WriteCheck(object state)
         {
-            if(inWrite.Value)
+            if(this.inWrite.Value || this.failed.Value)
             {
                 return;
             }
@@ -102,7 +126,8 @@ namespace Apache.NMS.ActiveMQ.Transport
             if(!commandSent.Value)
             {
                 Tracer.Debug("No Message sent since last write check. Sending a KeepAliveInfo");
-                ThreadPool.QueueUserWorkItem(new WaitCallback(SendKeepAlive));
+                this.asyncWriteTask.IsPending = true;
+                this.asyncTasks.Wakeup();
             }
             else
             {
@@ -111,48 +136,37 @@ namespace Apache.NMS.ActiveMQ.Transport
 
             commandSent.Value = false;
         }
-
-        private void SendKeepAlive(object state)
-        {
-            if(monitorStarted.Value)
-            {
-                try
-                {
-                    KeepAliveInfo info = new KeepAliveInfo();
-                    info.ResponseRequired = keepAliveResponseRequired.Value;
-                    Oneway(info);
-                }
-                catch(IOException exception)
-                {
-                    OnException(this, exception);
-                }
-            }
-        }
         #endregion
 
         #region ReadCheck Related
-        public void ReadCheck()
+        public void ReadCheck(object state)
         {
-            if(inRead.Value)
+            DateTime now = DateTime.Now;
+            TimeSpan elapsed = now - this.lastReadCheckTime;
+
+            if(!AllowReadCheck(elapsed))
             {
-                Tracer.Debug("A receive is in progress");
+                return;
+            }
+
+            this.lastReadCheckTime = now;
+
+            if(this.inRead.Value || this.failed.Value)
+            {
+                Tracer.Debug("A receive is in progress or already failed.");
                 return;
             }
 
             if(!commandReceived.Value)
             {
                 Tracer.Debug("No message received since last read check! Sending an InactivityException!");
-                ThreadPool.QueueUserWorkItem(new WaitCallback(SendInactivityException));
+                this.asyncErrorTask.IsPending = true;
+                this.asyncTasks.Wakeup();
             }
             else
             {
                 commandReceived.Value = false;
             }
-        }
-
-        private void SendInactivityException(object state)
-        {
-            OnException(this, new IOException("Channel was inactive for too long."));
         }
 
         /// <summary>
@@ -161,9 +175,9 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// </summary>
         /// <param name="elapsed"></param>
         /// <returns></returns>
-        public bool AllowReadCheck(long elapsed)
+        public bool AllowReadCheck(TimeSpan elapsed)
         {
-            return (elapsed > (readCheckTime * 9 / 10));
+            return (elapsed.TotalMilliseconds > (readCheckTime * 9 / 10));
         }
         #endregion
 
@@ -269,10 +283,12 @@ namespace Apache.NMS.ActiveMQ.Transport
                 {
                     return;
                 }
+
                 if(localWireFormatInfo == null)
                 {
                     return;
                 }
+
                 if(remoteWireFormatInfo == null)
                 {
                     return;
@@ -287,22 +303,28 @@ namespace Apache.NMS.ActiveMQ.Transport
                         localWireFormatInfo.MaxInactivityDurationInitialDelay,
                         remoteWireFormatInfo.MaxInactivityDurationInitialDelay);
 
+                this.asyncTasks = new CompositeTaskRunner();
+
+                this.asyncErrorTask = new AsyncSignalReadErrorkTask(this, next.RemoteAddress);
+                this.asyncWriteTask = new AsyncWriteTask(this);
+
+                this.asyncTasks.AddTask(this.asyncErrorTask);
+                this.asyncTasks.AddTask(this.asyncWriteTask);
+
                 if(readCheckTime > 0)
                 {
                     monitorStarted.Value = true;
-                    writeChecker = new WriteChecker(this);
-                    readChecker = new ReadChecker(this);
 
                     writeCheckTime = readCheckTime > 3 ? readCheckTime / 3 : readCheckTime;
 
                     writeCheckTimer = new Timer(
-                        new TimerCallback(writeChecker.Check),
+                        new TimerCallback(WriteCheck),
                         null,
                         initialDelayTime,
                         writeCheckTime
                         );
                     readCheckTimer = new Timer(
-                        new TimerCallback(readChecker.Check),
+                        new TimerCallback(ReadCheck),
                         null,
                         initialDelayTime,
                         readCheckTime
@@ -317,59 +339,92 @@ namespace Apache.NMS.ActiveMQ.Transport
             {
                 if(monitorStarted.CompareAndSet(true, false))
                 {
-                    readCheckTimer.Dispose();
-                    writeCheckTimer.Dispose();
+                    AutoResetEvent shutdownEvent = new AutoResetEvent(false);
+
+                    // Attempt to wait for the Timers to shutdown, but don't wait
+                    // forever, if they don't shutdown after two seconds, just quit.
+                    this.readCheckTimer.Dispose(shutdownEvent);
+                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
+                    this.writeCheckTimer.Dispose(shutdownEvent);
+                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
+
+					this.asyncTasks.Shutdown();
+                    this.asyncTasks = null;
+                    this.asyncWriteTask = null;
+                    this.asyncErrorTask = null;
                 }
             }
         }
-    }
 
-    class WriteChecker
-    {
-        private readonly InactivityMonitor parent;
-
-        public WriteChecker(InactivityMonitor parent)
+        #region Async Tasks
+        // Task that fires when the TaskRunner is signaled by the ReadCheck Timer Task.
+        class AsyncSignalReadErrorkTask : CompositeTask
         {
-            if(parent == null)
+            private InactivityMonitor parent;
+            private Uri remote;
+            private Atomic<bool> pending = new Atomic<bool>(false);
+    
+            public AsyncSignalReadErrorkTask(InactivityMonitor parent, Uri remote)
             {
-                throw new NullReferenceException("WriteChecker created with a NULL parent.");
+                this.parent = parent;
+                this.remote = remote;
             }
 
-            this.parent = parent;
+            public bool IsPending
+            {
+                get { return this.pending.Value; }
+                set { this.pending.Value = value; }
+            }
+    
+            public bool Iterate()
+            {
+                if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
+                {
+                    IOException ex = new IOException("Channel was inactive for too long: " + remote);
+                    this.parent.OnException(parent, ex);
+                }
+    
+                return this.pending.Value;
+            }
         }
-
-        public void Check(object state)
+    
+        // Task that fires when the TaskRunner is signaled by the WriteCheck Timer Task.
+        class AsyncWriteTask : CompositeTask
         {
-            this.parent.WriteCheck();
+            private InactivityMonitor parent;
+            private Atomic<bool> pending = new Atomic<bool>(false);
+    
+            public AsyncWriteTask(InactivityMonitor parent)
+            {
+                this.parent = parent;
+            }
+    
+            public bool IsPending
+            {
+                get { return this.pending.Value; }
+                set { this.pending.Value = value; }
+            }
+    
+            public bool Iterate()
+            {
+                if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
+                {
+                    try
+                    {
+                        KeepAliveInfo info = new KeepAliveInfo();
+                        info.ResponseRequired = this.parent.keepAliveResponseRequired.Value;
+                        this.parent.Oneway(info);
+                    }
+                    catch(IOException e)
+                    {
+                        this.parent.OnException(parent, e);
+                    }
+                }
+    
+                return this.pending.Value;
+            }
         }
+        #endregion
     }
 
-    class ReadChecker
-    {
-        private readonly InactivityMonitor parent;
-        private long lastRunTime;
-
-        public ReadChecker(InactivityMonitor parent)
-        {
-            if(parent == null)
-            {
-                throw new NullReferenceException("ReadChecker created with a null parent");
-            }
-            this.parent = parent;
-        }
-
-        public void Check(object state)
-        {
-            long now = DateUtils.ToJavaTimeUtc(DateTime.UtcNow);
-            long elapsed = now - lastRunTime;
-            if(!parent.AllowReadCheck(elapsed))
-            {
-                return;
-            }
-            lastRunTime = now;
-
-            // Invoke the parent check routine.
-            this.parent.ReadCheck();
-        }
-    }
 }
