@@ -126,14 +126,12 @@ namespace Apache.NMS.ActiveMQ.Transport
             if(!commandSent.Value)
             {
                 Tracer.Debug("No Message sent since last write check. Sending a KeepAliveInfo");
-                Console.WriteLine("No Message sent since last write check. Sending a KeepAliveInfo");
                 this.asyncWriteTask.IsPending = true;
                 this.asyncTasks.Wakeup();
             }
             else
             {
                 Tracer.Debug("Message sent since last write check. Resetting flag");
-                Console.WriteLine("Message sent since last write check. Resetting flag");
             }
 
             commandSent.Value = false;
@@ -162,7 +160,6 @@ namespace Apache.NMS.ActiveMQ.Transport
             if(!commandReceived.Value)
             {
                 Tracer.Debug("No message received since last read check! Sending an InactivityException!");
-                Console.WriteLine("No message received since last read check! Sending an InactivityException!");
                 this.asyncErrorTask.IsPending = true;
                 this.asyncTasks.Wakeup();
             }
@@ -273,7 +270,6 @@ namespace Apache.NMS.ActiveMQ.Transport
             if(failed.CompareAndSet(false, true))
             {
                 Tracer.Debug("Exception received in the Inactivity Monitor: " + command.ToString());
-                Console.WriteLine("Exception received in the Inactivity Monitor: " + command.Message);
                 StopMonitorThreads();
                 base.OnException(sender, command);
             }
@@ -351,7 +347,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                     shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
                     this.writeCheckTimer.Dispose(shutdownEvent);
                     shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
-                    
+
 					this.asyncTasks.Shutdown();
                     this.asyncTasks = null;
                     this.asyncWriteTask = null;
@@ -384,7 +380,6 @@ namespace Apache.NMS.ActiveMQ.Transport
             {
                 if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
                 {
-                    Console.WriteLine("AsyncSignalReadErrorkTask - Sending Pending Read Error");
                     IOException ex = new IOException("Channel was inactive for too long: " + remote);
                     this.parent.OnException(parent, ex);
                 }
@@ -416,7 +411,6 @@ namespace Apache.NMS.ActiveMQ.Transport
                 {
                     try
                     {
-                        Console.WriteLine("AsyncWriteTask - Sending Pending KeepAlive");
                         KeepAliveInfo info = new KeepAliveInfo();
                         info.ResponseRequired = this.parent.keepAliveResponseRequired.Value;
                         this.parent.Oneway(info);
