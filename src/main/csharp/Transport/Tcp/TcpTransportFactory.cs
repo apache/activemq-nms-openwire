@@ -43,7 +43,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         /// <summary>
         /// Should the Inactivity Monitor be enabled on this Transport.
         /// </summary>
-        private bool useInactivityMonitor = false;
+        private bool useInactivityMonitor = true;
         public bool UseInactivityMonitor
         {
            get { return this.useInactivityMonitor; }
