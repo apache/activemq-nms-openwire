@@ -22,8 +22,8 @@
     <property name="basedir" value="${project::get-base-directory()}" />
     <property name="project.name" value="Apache.NMS.ActiveMQ" />
     <property name="project.group" value="org.apache.activemq" />
-    <property name="project.version" value="1.2.0" unless="${property::exists('project.version')}" />
-    <property name="project.release.type" value="GA" unless="${property::exists('project.release.type')}" />
+    <property name="project.version" value="1.2.1" unless="${property::exists('project.version')}" />
+    <property name="project.release.type" value="SNAPSHOT" unless="${property::exists('project.release.type')}" />
     <property name="project.short_description" value="Apache NMS for ActiveMQ Class Library" />
     <property name="project.description" value="Apache NMS for ActiveMQ Class Library (.Net Messaging Library Implementation): An implementation of the NMS API for ActiveMQ" />
 
@@ -50,7 +50,7 @@
         <!-- Property grouping for 'vendor.apache.org' -->
         <property name="vendor.apache.org.name" value="Apache.NMS" />
         <property name="vendor.apache.org.group" value="org.apache.activemq" />
-        <property name="vendor.apache.org.version" value="1.2.0" />
+        <property name="vendor.apache.org.version" value="1.2.1" />
         <if test="${current.build.framework == 'mono-2.0'}">
             <property name="vendor.apache.org.filenames" value="Apache.NMS.dll,Apache.NMS.dll.mdb,Apache.NMS.Test.dll,Apache.NMS.Test.dll.mdb" />
         </if>
