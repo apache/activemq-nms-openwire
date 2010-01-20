@@ -116,8 +116,8 @@ namespace Apache.NMS.ActiveMQ
     
                 ConfigureConnection(connection);
     
-                connection.UserName = this.connectionUserName;
-                connection.Password = this.connectionPassword;
+                connection.UserName = userName;
+                connection.Password = password;
     
                 if(this.clientId != null)
                 {
