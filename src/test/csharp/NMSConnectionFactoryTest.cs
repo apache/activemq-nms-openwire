@@ -16,8 +16,12 @@
  */
 
 using System;
+using System.Threading;
 using System.Net.Sockets;
 using Apache.NMS.Test;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Transport.Mock;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
 
@@ -26,6 +30,10 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class NMSConnectionFactoryTest
 	{
+        private static String username = "guest";
+        private static String password = "guest";
+        private ConnectionInfo info = null;
+
 		[RowTest]
 		[Row("tcp://${activemqhost}:61616")]
 		[Row("activemq:tcp://${activemqhost}:61616")]
@@ -70,6 +78,38 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(connection);
 			}
 		}
+
+        [Test]
+        public void TestConnectionSendsAuthenticationData()
+        {
+            NMSConnectionFactory factory = new NMSConnectionFactory("activemq:mock://localhost:61616");
+            Assert.IsNotNull(factory);
+            Assert.IsNotNull(factory.ConnectionFactory);
+            using(Connection connection = factory.CreateConnection(username, password) as Connection)
+            {
+                Assert.IsNotNull(connection);
+
+                MockTransport transport = (MockTransport) connection.ITransport.Narrow(typeof(MockTransport));
+
+                transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
+
+                connection.Start();
+
+                Thread.Sleep(1000);
+                
+                Assert.IsNotNull(this.info);
+                Assert.AreEqual(username, info.UserName);
+                Assert.AreEqual(password, info.Password);
+            }
+        }
+
+        public void OnOutgoingCommand(ITransport transport, Command command)
+        {
+            if(command.IsConnectionInfo)
+            {
+                this.info = command as ConnectionInfo;
+            }
+        }
 
         [Test]
         public void TestURIForPrefetchHandling()
