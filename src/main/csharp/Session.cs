@@ -54,6 +54,8 @@ namespace Apache.NMS.ActiveMQ
         private bool disposed = false;
         private bool closed = false;
         private bool closing = false;
+        private TimeSpan disposeStopTimeout = TimeSpan.FromMilliseconds(30000);
+        private TimeSpan closeStopTimeout = TimeSpan.FromMilliseconds(-1);
         private TimeSpan requestTimeout = Apache.NMS.NMSConstants.defaultRequestTimeout;
         private AcknowledgementMode acknowledgementMode;
 
@@ -203,6 +205,18 @@ namespace Apache.NMS.ActiveMQ
             get { return Interlocked.Increment(ref this.nextDeliveryId); }
         }
 
+        public long DisposeStopTimeout
+        {
+            get { return (long) this.disposeStopTimeout.TotalMilliseconds; }
+            set { this.disposeStopTimeout = TimeSpan.FromMilliseconds(value); }
+        }
+
+        public long CloseStopTimeout
+        {
+            get { return (long) this.closeStopTimeout.TotalMilliseconds; }
+            set { this.closeStopTimeout = TimeSpan.FromMilliseconds(value); }
+        }
+
         #endregion
 
         #region ISession Members
@@ -227,6 +241,9 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
+                // Force a Stop when we are Disposing vs a Normal Close.
+                this.executor.Stop(this.disposeStopTimeout);
+
                 Close();
             }
             catch
@@ -284,7 +301,7 @@ namespace Apache.NMS.ActiveMQ
                     this.closing = true;
 
                     // Stop all message deliveries from this Session
-                    Stop();
+                    this.executor.Stop(this.closeStopTimeout);
 
                     lock(consumers.SyncRoot)
                     {

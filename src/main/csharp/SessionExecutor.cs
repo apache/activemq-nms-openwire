@@ -109,6 +109,21 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        public void Stop(TimeSpan timeout)
+        {
+            if(messageQueue.Running)
+            {
+                messageQueue.Stop();
+                TaskRunner taskRunner = this.taskRunner;
+
+                if(taskRunner != null)
+                {
+                    this.taskRunner = null;
+                    taskRunner.ShutdownWithAbort(timeout);
+                }
+            }
+        }
+
         public void Close()
         {
             this.messageQueue.Close();
