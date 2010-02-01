@@ -83,6 +83,29 @@ namespace Apache.NMS.ActiveMQ.Threads
             this.Shutdown(TimeSpan.FromMilliseconds(-1));
         }
 
+        public void ShutdownWithAbort(TimeSpan timeout)
+        {
+            lock(mutex)
+            {
+                this.shutdown = true;
+                this.pending = true;
+
+                Monitor.PulseAll(this.mutex);
+
+                // Wait till the thread stops ( no need to wait if shutdown
+                // is called from thread that is shutting down)
+                if(Thread.CurrentThread != this.theThread && !this.terminated)
+                {
+                    Monitor.Wait(this.mutex, timeout);
+
+                    if(!this.terminated)
+                    {
+                        theThread.Abort();
+                    }
+                }
+            }
+        }
+
         public void Wakeup()
         {
             lock(mutex)
@@ -134,6 +157,7 @@ namespace Apache.NMS.ActiveMQ.Threads
             }
             catch
             {
+                Thread.ResetAbort();
             }
             finally
             {        

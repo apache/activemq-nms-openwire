@@ -110,6 +110,27 @@ namespace Apache.NMS.ActiveMQ.Threads
 			}
 		}
 
+        public void ShutdownWithAbort(TimeSpan timeout)
+        {
+            lock(runable)
+            {
+                _shutdown = true;
+
+                if(runningThread != System.Threading.Thread.CurrentThread)
+                {
+                    if(iterating)
+                    {
+                        System.Threading.Thread.Sleep(timeout);
+                    }
+
+                    if(iterating)
+                    {
+                        runningThread.Abort();
+                    }
+                }
+            }
+        }
+
 		public void Shutdown()
 		{
 			Shutdown(new TimeSpan(Timeout.Infinite));

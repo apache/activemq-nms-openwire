@@ -49,16 +49,16 @@ namespace Apache.NMS.ActiveMQ.Threads
 
         public void Shutdown(TimeSpan timeout)
         {
-            lock(mutex) 
+            lock(mutex)
             {
                 this.shutdown = true;
                 this.pending = true;
-                
+
                 Monitor.PulseAll(this.mutex);
 
                 // Wait till the thread stops ( no need to wait if shutdown
                 // is called from thread that is shutting down)
-                if(Thread.CurrentThread != this.theThread && !this.terminated) 
+                if(Thread.CurrentThread != this.theThread && !this.terminated)
                 {
                     Monitor.Wait(this.mutex, timeout);
                 }
@@ -68,6 +68,29 @@ namespace Apache.NMS.ActiveMQ.Threads
         public void Shutdown()
         {
             this.Shutdown(TimeSpan.FromMilliseconds(-1));
+        }
+
+        public void ShutdownWithAbort(TimeSpan timeout)
+        {
+            lock(mutex)
+            {
+                this.shutdown = true;
+                this.pending = true;
+
+                Monitor.PulseAll(this.mutex);
+
+                // Wait till the thread stops ( no need to wait if shutdown
+                // is called from thread that is shutting down)
+                if(Thread.CurrentThread != this.theThread && !this.terminated)
+                {
+                    Monitor.Wait(this.mutex, timeout);
+
+                    if(!this.terminated)
+                    {
+                        theThread.Abort();
+                    }
+                }
+            }
         }
 
         public void Wakeup()
@@ -97,7 +120,6 @@ namespace Apache.NMS.ActiveMQ.Threads
                         
                         if(this.shutdown)
                         {
-                            
                             return;
                         }
                     }
@@ -122,6 +144,8 @@ namespace Apache.NMS.ActiveMQ.Threads
             }
             catch
             {
+                // Prevent the ThreadAbortedException for propogating.
+                Thread.ResetAbort();
             }
             finally
             {        

@@ -24,8 +24,40 @@ namespace Apache.NMS.ActiveMQ.Threads
 	/// </summary>
 	public interface TaskRunner
 	{
+        /// <summary>
+        /// Wakeup the TaskRunner and have it check for any pending work that
+        /// needs to be completed.  If none is found it will go back to sleep
+        /// until another Wakeup call is made.
+        /// </summary>
 		void Wakeup();
+
+        /// <summary>
+        /// Attempt to Shutdown the TaskRunner, this method will wait indefinitely
+        /// for the TaskRunner to quite if the task runner is in a call to its Task's
+        /// run method and that never returns.
+        /// </summary>
 		void Shutdown();
+
+        /// <summary>
+        /// Performs a timed wait for the TaskRunner to shutdown.  If the TaskRunner
+        /// is in a call to its Task's run method and that does not return before the
+        /// timeout expires this method returns and the TaskRunner may remain in the
+        /// running state.
+        /// </summary>
+        /// <param name="timeout">
+        /// A <see cref="TimeSpan"/>
+        /// </param>
 		void Shutdown(TimeSpan timeout);
+
+        /// <summary>
+        /// Performs a timed wait for the TaskRunner to shutdown.  If the TaskRunner
+        /// is in a call to its Task's run method and that does not return before the
+        /// timeout expires this method sends an Abort to the Task thread and return.
+        /// </summary>
+        /// <param name="timeout">
+        /// A <see cref="TimeSpan"/>
+        /// </param>
+        void ShutdownWithAbort(TimeSpan timeout);
+
 	}
 }

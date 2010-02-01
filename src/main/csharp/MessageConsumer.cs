@@ -72,7 +72,7 @@ namespace Apache.NMS.ActiveMQ
 			this.info = info;
 			this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
 		}
-
+        
 		~MessageConsumer()
 		{
 			Dispose(false);
@@ -502,6 +502,11 @@ namespace Apache.NMS.ActiveMQ
 								}
 
 								Tracer.Error(this.info.ConsumerId + " Exception while processing message: " + e);
+
+                                // If aborted we stop the abort here and let normal processing resume.
+                                // This allows the session to shutdown normally and ack all messages
+                                // that have outstanding acks in this consumer.
+                                Thread.ResetAbort();
 							}
 						}
 						else
