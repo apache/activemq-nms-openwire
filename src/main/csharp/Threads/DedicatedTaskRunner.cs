@@ -142,10 +142,13 @@ namespace Apache.NMS.ActiveMQ.Threads
                     }
                 }
             }
-            catch
+            catch( ThreadAbortException )
             {
                 // Prevent the ThreadAbortedException for propogating.
                 Thread.ResetAbort();
+            }
+            catch
+            {
             }
             finally
             {        
