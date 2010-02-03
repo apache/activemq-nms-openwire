@@ -491,7 +491,7 @@ namespace Apache.NMS.ActiveMQ
 							}
 							catch(Exception e)
 							{
-								if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || this.session.IsIndividualAcknowledge)
+								if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || IsIndividualAcknowledge)
 								{
 									// Redeliver the message
 								}
@@ -704,7 +704,7 @@ namespace Apache.NMS.ActiveMQ
 				{
 					AckLater(dispatch, AckType.ConsumedAck);
 				}
-				else if(this.session.IsClientAcknowledge || this.session.IsIndividualAcknowledge)
+				else if(IsClientAcknowledge || IsIndividualAcknowledge)
 				{
 					bool messageAckedByConsumer = false;
 					
@@ -982,11 +982,11 @@ namespace Apache.NMS.ActiveMQ
 
 			message.Connection = this.session.Connection;
 
-			if(this.session.IsClientAcknowledge)
+			if(IsClientAcknowledge)
 			{
 				message.Acknowledger += new AcknowledgeHandler(DoClientAcknowledge);
 			}
-			else if(this.session.IsIndividualAcknowledge)
+			else if(IsIndividualAcknowledge)
 			{
 				message.Acknowledger += new AcknowledgeHandler(DoIndividualAcknowledge);
 			}
@@ -1026,6 +1026,16 @@ namespace Apache.NMS.ActiveMQ
 		private bool IsAutoAcknowledgeBatch
 		{
 			get { return this.session.IsDupsOkAcknowledge && !this.info.Destination.IsQueue; }
+		}
+
+		private bool IsIndividualAcknowledge
+		{
+			get { return this.session.IsIndividualAcknowledge; }
+		}
+
+		private bool IsClientAcknowledge
+		{
+			get { return this.session.IsClientAcknowledge; }
 		}
 
 		#region Nested ISyncronization Types
