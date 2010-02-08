@@ -155,9 +155,12 @@ namespace Apache.NMS.ActiveMQ.Threads
                     }
                 }
             }
-            catch
+            catch(ThreadAbortException)
             {
                 Thread.ResetAbort();
+            }
+            catch
+            {
             }
             finally
             {        
