@@ -38,6 +38,7 @@
 
 	<!-- Skip certain frameworks, since ActiveMQ OpenWire is not supported on those platforms. -->
 	<property name="build.netcf-2.0.skip" value="true" />
+	<property name="build.netcf-3.5.skip" value="true" />
 
 	<target name="vendor-init" description="Initializes Vendor library from local repository.">
 		<!--
