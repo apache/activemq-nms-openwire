@@ -14,78 +14,79 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ.Commands;
+
 using System;
 using System.IO;
 
-
 namespace Apache.NMS.ActiveMQ.Commands
 {
-    public struct StackTraceElement
-    {
-        public string ClassName;
-        public string FileName;
-        public string MethodName;
-        public int LineNumber;
-    }
+	public struct StackTraceElement
+	{
+		public string ClassName;
+		public string FileName;
+		public string MethodName;
+		public int LineNumber;
+	}
 
-    /// <summary>
-    /// Represents an exception on the broker
-    /// </summary>
-    public class BrokerError : BaseCommand
-    {
-        private string message;
-        private string exceptionClass;
-        private StackTraceElement[] stackTraceElements = {};
-        private BrokerError cause;
-        
-        public string Message
-        {
-            get { return message; }
-            set { message = value; }
-        }
-        
-        public string ExceptionClass
-        {
-            get { return exceptionClass; }
-            set { exceptionClass = value; }
-        }
-        
-        public StackTraceElement[] StackTraceElements
-        {
-            get { return stackTraceElements; }
-            set { stackTraceElements = value; }
-        }
-        
-        public BrokerError Cause
-        {
-            get { return cause; }
-            set { cause = value; }
-        }
-        
-        public String StackTrace
-        {
-            get {
-                StringWriter writer = new StringWriter();
-                PrintStackTrace(writer);
-                return writer.ToString();
-            }
-        }
-        
-        public void PrintStackTrace(TextWriter writer)
-        {
-            writer.WriteLine(exceptionClass + ": " + message);
-            for (int i = 0; i < stackTraceElements.Length; i++)
-            {
-                StackTraceElement element = stackTraceElements[i];
-                writer.WriteLine("    at " + element.ClassName + "." + element.MethodName + "(" + element.FileName + ":" + element.LineNumber + ")");
-            }
-            if (cause != null)
-            {
-                writer.WriteLine("Nested Exception:");
-                cause.PrintStackTrace(writer);
-            }
-        }
-    }
+	/// <summary>
+	/// Represents an exception on the broker
+	/// </summary>
+	[Serializable]
+	public class BrokerError : BaseCommand
+	{
+		private string message;
+		private string exceptionClass;
+		private StackTraceElement[] stackTraceElements = { };
+		private BrokerError cause;
+
+		public string Message
+		{
+			get { return message; }
+			set { message = value; }
+		}
+
+		public string ExceptionClass
+		{
+			get { return exceptionClass; }
+			set { exceptionClass = value; }
+		}
+
+		public StackTraceElement[] StackTraceElements
+		{
+			get { return stackTraceElements; }
+			set { stackTraceElements = value; }
+		}
+
+		public BrokerError Cause
+		{
+			get { return cause; }
+			set { cause = value; }
+		}
+
+		public String StackTrace
+		{
+			get
+			{
+				StringWriter writer = new StringWriter();
+				PrintStackTrace(writer);
+				return writer.ToString();
+			}
+		}
+
+		public void PrintStackTrace(TextWriter writer)
+		{
+			writer.WriteLine(exceptionClass + ": " + message);
+			for(int i = 0; i < stackTraceElements.Length; i++)
+			{
+				StackTraceElement element = stackTraceElements[i];
+				writer.WriteLine("    at " + element.ClassName + "." + element.MethodName + "(" + element.FileName + ":" + element.LineNumber + ")");
+			}
+
+			if(cause != null)
+			{
+				writer.WriteLine("Nested Exception:");
+				cause.PrintStackTrace(writer);
+			}
+		}
+	}
 }
-
