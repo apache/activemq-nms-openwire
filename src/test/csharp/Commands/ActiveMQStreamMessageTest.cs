@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using NUnit.Framework;
 using System;
 using System.Text;
 using Apache.NMS.ActiveMQ.Commands;
+using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test.Commands
 {	

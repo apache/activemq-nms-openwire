@@ -16,12 +16,9 @@
  */
 
 using System;
-using Apache.NMS;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Mock;
-using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {

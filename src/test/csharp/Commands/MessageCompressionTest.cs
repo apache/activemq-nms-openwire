@@ -17,13 +17,9 @@
 
 using System;
 using System.IO;
-using System.Text;
-using Apache.NMS;
-using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.Test
 {

@@ -16,9 +16,9 @@
 */
 
 using System.Text;
+using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.State;
 using Apache.NMS.Util;
-using Apache.NMS.ActiveMQ.OpenWire;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {

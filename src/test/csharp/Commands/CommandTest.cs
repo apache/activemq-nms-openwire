@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using System.Collections;
 using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
-using System.Collections;
-
 
 namespace Apache.NMS.ActiveMQ.Test.Commands
 {

@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-using Apache.NMS.Util;
+using System.Threading;
 using Apache.NMS.ActiveMQ;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
-using System.Threading;
 
 namespace Apache.NMS.Test
 {

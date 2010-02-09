@@ -17,11 +17,10 @@
 
 using System;
 using System.Threading;
-using System.Net.Sockets;
-using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Mock;
+using Apache.NMS.Test;
 using NUnit.Framework;
 using NUnit.Framework.Extensions;
 

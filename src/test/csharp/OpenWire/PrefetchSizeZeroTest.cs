@@ -16,11 +16,9 @@
  */
 
 using System;
-using NUnit.Framework;
-using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ;
-using NUnit.Framework.Extensions;
-using System.Threading;
+using Apache.NMS.Util;
+using NUnit.Framework;
 
 namespace Apache.NMS.Test
 {

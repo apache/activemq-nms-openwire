@@ -16,10 +16,9 @@
  */
 
 using System;
+using System.Threading;
 using Apache.NMS.Util;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
-using System.Threading;
 
 namespace Apache.NMS.Test
 {

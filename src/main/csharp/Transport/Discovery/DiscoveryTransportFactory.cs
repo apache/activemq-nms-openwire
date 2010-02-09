@@ -17,9 +17,9 @@
 
 using System;
 using System.Threading;
-using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Transport.Discovery.Multicast;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Discovery
 {

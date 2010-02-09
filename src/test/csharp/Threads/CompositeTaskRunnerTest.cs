@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-using System;
 using System.Threading;
-using NUnit.Framework;
 using Apache.NMS.ActiveMQ.Threads;
+using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test.Threads
 {

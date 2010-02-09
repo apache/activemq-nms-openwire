@@ -17,8 +17,8 @@
 
 using System;
 using System.Threading;
-using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport

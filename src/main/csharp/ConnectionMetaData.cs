@@ -17,7 +17,6 @@
 
 using System;
 using System.Reflection;
-using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ
 {

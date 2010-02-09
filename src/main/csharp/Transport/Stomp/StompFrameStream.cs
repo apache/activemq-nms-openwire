@@ -14,15 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using System.Reflection;
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.OpenWire.V1;
-using Apache.NMS.ActiveMQ.Transport;
-using Apache.NMS;
 using System;
-using System.Collections;
 using System.IO;
 using System.Text;
+using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport.Stomp
 {

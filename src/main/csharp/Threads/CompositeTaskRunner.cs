@@ -16,9 +16,8 @@
  */
 
 using System;
-using System.Threading;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Apache.NMS.ActiveMQ.Threads
 {

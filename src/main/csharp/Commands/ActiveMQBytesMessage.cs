@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-using Apache.NMS;
-using Apache.NMS.Util;
 using System;
-using System.Collections;
 using System.IO;
-using System.IO.Compression;
+using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {

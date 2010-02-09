@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-using Apache.NMS.ActiveMQ.Commands;
 using System;
 using System.Threading;
-using Apache.NMS;
+using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport

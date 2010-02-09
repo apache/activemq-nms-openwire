@@ -16,7 +16,6 @@
  */
 
 using System;
-
 using Apache.NMS.ActiveMQ.State;
 
 namespace Apache.NMS.ActiveMQ.Commands

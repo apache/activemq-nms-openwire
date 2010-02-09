@@ -16,13 +16,10 @@
  */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Threads;
-using Apache.NMS.Util;
 
 #if NETCF
 using ThreadInterruptedException = System.Exception;

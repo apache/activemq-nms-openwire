@@ -17,7 +17,6 @@
 using System;
 using System.Text;
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ.Transport.Stomp
 {

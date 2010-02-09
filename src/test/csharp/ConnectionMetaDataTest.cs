@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-using System;
-using System.Net.Sockets;
-using Apache.NMS.Test;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {

@@ -16,14 +16,10 @@
  */
 
 using System;
-using System.Threading;
 using System.Collections;
-
-using Apache.NMS.Test;
-using Apache.NMS.Util;
-using Apache.NMS.Policies;
+using System.Threading;
 using Apache.NMS.ActiveMQ;
-
+using Apache.NMS.Policies;
 using NUnit.Framework;
 
 namespace Apache.NMS.Test

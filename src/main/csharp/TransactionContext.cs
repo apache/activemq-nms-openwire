@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using Apache.NMS.ActiveMQ;
-using Apache.NMS.ActiveMQ.Commands;
 using System.Collections;
-
+using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -173,4 +171,3 @@ namespace Apache.NMS.ActiveMQ
         }        
     }
 }
-

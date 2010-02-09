@@ -16,16 +16,13 @@
  */
 
 using System;
-using System.Threading;
-using System.Collections;
 using System.Collections.Generic;
-using Apache.NMS;
-using Apache.NMS.ActiveMQ.Transport;
-using Apache.NMS.ActiveMQ.Transport.Mock;
-using Apache.NMS.ActiveMQ.Transport.Failover;
+using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Transport.Failover;
+using Apache.NMS.ActiveMQ.Transport.Mock;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {

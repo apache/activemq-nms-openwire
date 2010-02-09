@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using System;
-
 namespace Apache.NMS.ActiveMQ.Threads
 {
 	/// <summary>

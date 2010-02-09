@@ -17,7 +17,6 @@
 
 using System;
 
-
 //
 //  Marshalling code for Open Wire Format for ActiveMQTempDestination
 //

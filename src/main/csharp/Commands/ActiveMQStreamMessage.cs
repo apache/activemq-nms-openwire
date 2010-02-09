@@ -17,11 +17,7 @@
 
 using System;
 using System.IO;
-using System.IO.Compression;
-using System.Collections;
-using Apache.NMS;
 using Apache.NMS.Util;
-using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
