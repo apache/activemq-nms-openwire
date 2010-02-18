@@ -764,11 +764,19 @@ namespace Apache.NMS.ActiveMQ
 
         protected void OnTransportInterrupted(ITransport sender)
         {
-            Tracer.Debug("Transport has been Interrupted.");
+            Tracer.Debug("Connection: Transport has been Interrupted.");
 
             foreach(Session session in this.sessions)
             {
-                session.ClearMessagesInProgress();
+				try
+				{
+                	session.ClearMessagesInProgress();
+				}
+				catch(Exception ex)
+				{
+					Tracer.Warn("Exception while clearing messages: " + ex.Message);
+					Tracer.Warn(ex.StackTrace);
+				}
             }
 
             if(this.ConnectionInterruptedListener != null && !this.closing )
