@@ -807,7 +807,7 @@ namespace Apache.NMS.ActiveMQ
 
             lock(this.consumers.SyncRoot)
             {
-                foreach(MessageConsumer consumer in this.consumers)
+                foreach(MessageConsumer consumer in this.consumers.Values)
                 {
                     consumer.ClearMessagesInProgress();
                 }
