@@ -45,22 +45,22 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		private int cacheSize = 0;
 		private int minimumVersion = 1;
 
-		private WireFormatInfo preferedWireFormatInfo = new WireFormatInfo();
+		private WireFormatInfo preferredWireFormatInfo = new WireFormatInfo();
 		private ITransport transport;
 
 		public OpenWireFormat()
 		{
 			// See the following link for defaults: http://activemq.apache.org/configuring-wire-formats.html
 			// See also the following link for OpenWire format info: http://activemq.apache.org/openwire-version-2-specification.html
-			PreferedWireFormatInfo.CacheEnabled = false;
-			PreferedWireFormatInfo.StackTraceEnabled = false;
-			PreferedWireFormatInfo.TcpNoDelayEnabled = true;
-			PreferedWireFormatInfo.SizePrefixDisabled = false;
-			PreferedWireFormatInfo.TightEncodingEnabled = false;
-			PreferedWireFormatInfo.MaxInactivityDuration = 30000;
-			PreferedWireFormatInfo.MaxInactivityDurationInitialDelay = 10000;
-			PreferedWireFormatInfo.CacheSize = 0;
-			PreferedWireFormatInfo.Version = 5;
+			PreferredWireFormatInfo.CacheEnabled = false;
+			PreferredWireFormatInfo.StackTraceEnabled = false;
+			PreferredWireFormatInfo.TcpNoDelayEnabled = true;
+			PreferredWireFormatInfo.SizePrefixDisabled = false;
+			PreferredWireFormatInfo.TightEncodingEnabled = false;
+			PreferredWireFormatInfo.MaxInactivityDuration = 30000;
+			PreferredWireFormatInfo.MaxInactivityDurationInitialDelay = 10000;
+			PreferredWireFormatInfo.CacheSize = 0;
+			PreferredWireFormatInfo.Version = 5;
 
 			dataMarshallers = new BaseDataStreamMarshaller[256];
 			Version = 1;
@@ -133,10 +133,10 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			set { cacheSize = value; }
 		}
 
-		public WireFormatInfo PreferedWireFormatInfo
+		public WireFormatInfo PreferredWireFormatInfo
 		{
-			get { return preferedWireFormatInfo; }
-			set { preferedWireFormatInfo = value; }
+			get { return preferredWireFormatInfo; }
+			set { preferredWireFormatInfo = value; }
 		}
 
 		public void clearMarshallers()
@@ -431,12 +431,12 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 					throw new IOException("Remote wire format (" + info.Version + ") is lower than the minimum version required (" + minimumVersion + ")");
 				}
 
-				this.Version = Math.Min(PreferedWireFormatInfo.Version, info.Version);
-				this.cacheEnabled = info.CacheEnabled && PreferedWireFormatInfo.CacheEnabled;
-				this.stackTraceEnabled = info.StackTraceEnabled && PreferedWireFormatInfo.StackTraceEnabled;
-				this.tcpNoDelayEnabled = info.TcpNoDelayEnabled && PreferedWireFormatInfo.TcpNoDelayEnabled;
-				this.sizePrefixDisabled = info.SizePrefixDisabled && PreferedWireFormatInfo.SizePrefixDisabled;
-				this.tightEncodingEnabled = info.TightEncodingEnabled && PreferedWireFormatInfo.TightEncodingEnabled;
+				this.Version = Math.Min(PreferredWireFormatInfo.Version, info.Version);
+				this.cacheEnabled = info.CacheEnabled && PreferredWireFormatInfo.CacheEnabled;
+				this.stackTraceEnabled = info.StackTraceEnabled && PreferredWireFormatInfo.StackTraceEnabled;
+				this.tcpNoDelayEnabled = info.TcpNoDelayEnabled && PreferredWireFormatInfo.TcpNoDelayEnabled;
+				this.sizePrefixDisabled = info.SizePrefixDisabled && PreferredWireFormatInfo.SizePrefixDisabled;
+				this.tightEncodingEnabled = info.TightEncodingEnabled && PreferredWireFormatInfo.TightEncodingEnabled;
 				this.maxInactivityDuration = info.MaxInactivityDuration;
 				this.maxInactivityDurationInitialDelay = info.MaxInactivityDurationInitialDelay;
 				this.cacheSize = info.CacheSize;

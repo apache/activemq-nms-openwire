@@ -921,9 +921,6 @@
     <Compile Include="src\main\csharp\Transport\ResponseCorrelator.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="src\main\csharp\Transport\Stomp\StompFrameStream.cs" />
-    <Compile Include="src\main\csharp\Transport\Stomp\StompHelper.cs" />
-    <Compile Include="src\main\csharp\Transport\Stomp\StompWireFormat.cs" />
     <Compile Include="src\main\csharp\Transport\Tcp\TcpTransport.cs">
       <SubType>Code</SubType>
     </Compile>

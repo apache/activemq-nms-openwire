@@ -20,7 +20,6 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
 using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Transport.Stomp;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
@@ -93,13 +92,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { sendTimeout = value; }
         }
 
-        private string wireFormat = "OpenWire";
-        public string WireFormat
-        {
-            get { return wireFormat; }
-            set { wireFormat = value; }
-        }
-
         private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
         public int RequestTimeout
         {
@@ -134,7 +126,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             socket.SendTimeout = SendTimeout;
 #endif
 
-            IWireFormat wireformat = CreateWireFormat(map);
+			OpenWireFormat wireformat = new OpenWireFormat();
+			// Set wireformat. properties on the wireformat owned by the tcpTransport
+			URISupport.SetProperties(wireformat.PreferredWireFormatInfo, map, "wireFormat.");
             ITransport transport = new TcpTransport(location, socket, wireformat);
 
             wireformat.Transport = transport;
@@ -149,13 +143,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                transport = new InactivityMonitor(transport);
             }
 
-            if(wireformat is OpenWireFormat)
-            {
-                transport = new WireFormatNegotiator(transport, (OpenWireFormat) wireformat);
-            }
-
+            transport = new WireFormatNegotiator(transport, wireformat);
             transport.RequestTimeout = this.requestTimeout;
-
             if(setTransport != null)
             {
                 setTransport(transport, location);
@@ -357,33 +346,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
             Tracer.DebugFormat("Connected to {0}:{1} using {2} protocol.", host, port, ipaddress.AddressFamily.ToString());
             return socket;
-        }
-
-        protected IWireFormat CreateWireFormat(StringDictionary map)
-        {
-            object properties = null;
-            IWireFormat wireFormatItf = null;
-
-            if(String.Compare(this.wireFormat, "stomp", true) == 0)
-            {
-                wireFormatItf = new StompWireFormat();
-                properties = wireFormatItf;
-            }
-            else
-            {
-                OpenWireFormat openwireFormat = new OpenWireFormat();
-
-                wireFormatItf = openwireFormat;
-                properties = openwireFormat.PreferedWireFormatInfo;
-            }
-
-            if(null != properties)
-            {
-                // Set wireformat. properties on the wireformat owned by the tcpTransport
-                URISupport.SetProperties(properties, map, "wireFormat.");
-            }
-
-            return wireFormatItf;
         }
     }
 }

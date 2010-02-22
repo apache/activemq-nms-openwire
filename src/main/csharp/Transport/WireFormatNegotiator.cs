@@ -46,7 +46,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             {
                 try
                 {
-                    next.Oneway(wireFormat.PreferedWireFormatInfo);
+                    next.Oneway(wireFormat.PreferredWireFormatInfo);
                 }
                 finally
                 {

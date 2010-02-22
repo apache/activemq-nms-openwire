@@ -46,13 +46,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			set { useLogging = value; }
 		}
 
-		private string wireFormat = "OpenWire";
-		public string WireFormat
-		{
-			get { return wireFormat; }
-			set { wireFormat = value; }
-		}
-
 		private bool failOnReceiveMessage = false;
 		public bool FailOnReceiveMessage
 		{
@@ -110,12 +103,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 			// Set transport. properties on this (the factory)
 			URISupport.SetProperties(this, map, "transport.");
-
-			if(String.Compare(this.wireFormat, "stomp", true) != 0 &&
-			   String.Compare(this.wireFormat, "openwire", true) != 0)
-			{
-				throw new IOException("Unsupported WireFormat Supplied for MockTransport");
-			}
 
 			if(this.FailOnCreate == true)
 			{
