@@ -32,7 +32,7 @@ public class TestMain
     {
         // Example connection strings:
         //    activemq:tcp://activemqhost:61616
-        //    activemq:tcp://activemqhost:61613?transport.wireformat=stomp
+        //    stomp:tcp://activemqhost:61613
         //    ems:tcp://tibcohost:7222
         //    msmq://localhost
 
@@ -50,14 +50,25 @@ public class TestMain
              //
              // Hard coded destinations:
              //    IDestination destination = session.GetQueue("FOO.BAR");
+             //    Debug.Assert(destination is IQueue);
              //    IDestination destination = session.GetTopic("FOO.BAR");
+             //    Debug.Assert(destination is ITopic);
              //
              // Embedded destination type in the name:
              //    IDestination destination = SessionUtil.GetDestination(session, "queue://FOO.BAR");
+             //    Debug.Assert(destination is IQueue);
              //    IDestination destination = SessionUtil.GetDestination(session, "topic://FOO.BAR");
+             //    Debug.Assert(destination is ITopic);
              //
              // Defaults to queue if type is not specified:
              //    IDestination destination = SessionUtil.GetDestination(session, "FOO.BAR");
+             //    Debug.Assert(destination is IQueue);
+             //
+             // .NET 3.5 Supports Extension methods for a simplified syntax:
+             //    IDestination destination = session.GetDestination("queue://FOO.BAR");
+             //    Debug.Assert(destination is IQueue);
+             //    IDestination destination = session.GetDestination("topic://FOO.BAR");
+             //    Debug.Assert(destination is ITopic);
 
             IDestination destination = SessionUtil.GetDestination(session, "queue://FOO.BAR");
             Console.WriteLine("Using destination: " + destination);
@@ -66,6 +77,8 @@ public class TestMain
             using(IMessageConsumer consumer = session.CreateConsumer(destination))
             using(IMessageProducer producer = session.CreateProducer(destination))
             {
+                // Start the connection so that messages will be processed.
+                connection.Start();
                 producer.Persistent = true;
 
                 // Send a message
