@@ -29,8 +29,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 	/// </summary>
 	public class TcpTransport : ITransport
 	{
-		private readonly object myLock = new object();
-		private readonly Socket socket;
+		protected readonly object myLock = new object();
+		protected readonly Socket socket;
 		private IWireFormat wireformat;
 		private BinaryReader socketReader;
 		private BinaryWriter socketWriter;
@@ -55,10 +55,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			this.wireformat = wireformat;
 		}
 
-		~TcpTransport()
+		~TcpTransport() 
 		{
 			Dispose(false);
 		}
+		
+        protected virtual Stream CreateSocketStream()
+        {
+            return new NetworkStream(socket);
+        }
 
 		/// <summary>
 		/// Method Start
@@ -83,10 +88,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 					started = true;
 
-					// As reported in AMQ-988 it appears that NetworkStream is not thread safe
-					// so lets use an instance for each of the 2 streams
-					socketWriter = new EndianBinaryWriter(new NetworkStream(socket));
-					socketReader = new EndianBinaryReader(new NetworkStream(socket));
+                    // Initialize our Read and Writer instances.  Its not actually necessary
+                    // to have two distinct NetworkStream instances but for now the TcpTransport
+                    // will continue to do so for legacy reasons.
+                    socketWriter = new EndianBinaryWriter(CreateSocketStream());
+                    socketReader = new EndianBinaryReader(CreateSocketStream());
 
 					// now lets create the background read thread
 					readThread = new Thread(new ThreadStart(ReadLoop));

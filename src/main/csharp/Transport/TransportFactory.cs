@@ -82,7 +82,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 				case "tcp":
 					factory = new TcpTransportFactory();
 					break;
-				case "discovery":
+                case "ssl":
+                    factory = new SslTransportFactory();
+                    break;
+                case "discovery":
 					factory = new DiscoveryTransportFactory();
 					break;
 				case "failover":
