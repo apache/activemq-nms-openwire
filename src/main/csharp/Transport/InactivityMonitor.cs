@@ -39,10 +39,10 @@ namespace Apache.NMS.ActiveMQ.Transport
         private Atomic<bool> inRead = new Atomic<bool>(false);
         private Atomic<bool> inWrite = new Atomic<bool>(false);
 
-		private CompositeTaskRunner asyncTasks;
+        private CompositeTaskRunner asyncTasks;
         private AsyncSignalReadErrorkTask asyncErrorTask;
         private AsyncWriteTask asyncWriteTask;
-		
+
         private Mutex monitor = new Mutex();
 
         private Timer readCheckTimer;
@@ -236,7 +236,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         {
             // Disable inactivity monitoring while processing a command.
             //synchronize this method - its not synchronized
-            //further down the transport stack and gets called by more 
+            //further down the transport stack and gets called by more
             //than one thread  by this class
             lock(inWrite)
             {
@@ -344,11 +344,11 @@ namespace Apache.NMS.ActiveMQ.Transport
                     // Attempt to wait for the Timers to shutdown, but don't wait
                     // forever, if they don't shutdown after two seconds, just quit.
                     this.readCheckTimer.Dispose(shutdownEvent);
-                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
+                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000), false);
                     this.writeCheckTimer.Dispose(shutdownEvent);
-                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000));
+                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000), false);
 
-					this.asyncTasks.Shutdown();
+                    this.asyncTasks.Shutdown();
                     this.asyncTasks = null;
                     this.asyncWriteTask = null;
                     this.asyncErrorTask = null;
@@ -363,7 +363,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             private InactivityMonitor parent;
             private Uri remote;
             private Atomic<bool> pending = new Atomic<bool>(false);
-    
+
             public AsyncSignalReadErrorkTask(InactivityMonitor parent, Uri remote)
             {
                 this.parent = parent;
@@ -375,7 +375,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                 get { return this.pending.Value; }
                 set { this.pending.Value = value; }
             }
-    
+
             public bool Iterate()
             {
                 if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
@@ -383,28 +383,28 @@ namespace Apache.NMS.ActiveMQ.Transport
                     IOException ex = new IOException("Channel was inactive for too long: " + remote);
                     this.parent.OnException(parent, ex);
                 }
-    
+
                 return this.pending.Value;
             }
         }
-    
+
         // Task that fires when the TaskRunner is signaled by the WriteCheck Timer Task.
         class AsyncWriteTask : CompositeTask
         {
             private InactivityMonitor parent;
             private Atomic<bool> pending = new Atomic<bool>(false);
-    
+
             public AsyncWriteTask(InactivityMonitor parent)
             {
                 this.parent = parent;
             }
-    
+
             public bool IsPending
             {
                 get { return this.pending.Value; }
                 set { this.pending.Value = value; }
             }
-    
+
             public bool Iterate()
             {
                 if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
@@ -420,7 +420,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                         this.parent.OnException(parent, e);
                     }
                 }
-    
+
                 return this.pending.Value;
             }
         }
