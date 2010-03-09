@@ -27,10 +27,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
     public class SslTransport : TcpTransport
     {
-        private string brokerCertLocation;
-        private string brokerCertPassword;
         private string clientCertLocation;
         private string clientCertPassword;
+        
+        private bool acceptInvalidBrokerCert = false;
+        
         private SslStream sslStream;
 
         public SslTransport(Uri location, Socket socket, IWireFormat wireFormat) :
@@ -43,28 +44,35 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             Dispose(false);
         }
 
-        public string BrokerCertLocation
-        {
-            get { return this.brokerCertLocation; }
-            set { this.brokerCertLocation = value; }
-        }
-
-        public string BrokerCertPassword
-        {
-            get { return this.brokerCertPassword; }
-            set { this.brokerCertPassword = value; }
-        }
-
+        /// <summary>
+        /// Indicates the location of the Client Certificate to use when the Broker
+        /// is configured for Client Auth (not common).  The SslTransport will supply
+        /// this certificate to the SslStream via the SelectLocalCertificate method.
+        /// </summary>
         public string ClientCertLocation
         {
             get { return this.clientCertLocation; }
             set { this.clientCertLocation = value; }
         }
 
+        /// <summary>
+        /// Password for the Client Certificate specified via configuration.
+        /// </summary>
         public string ClientCertPassword
         {
             get { return this.clientCertPassword; }
             set { this.clientCertPassword = value; }
+        }
+       
+        /// <summary>
+        /// Indicates if the SslTransport should ignore any errors in the supplied Broker
+        /// certificate and connect anyway, this is useful in testing with a default AMQ
+        /// broker certificate that is self signed.
+        /// </summary>
+        public bool AcceptInvalidBrokerCert
+        {
+            get { return this.acceptInvalidBrokerCert; }
+            set { this.acceptInvalidBrokerCert = value; }
         }
         
         protected override Stream CreateSocketStream()
@@ -73,11 +81,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             {
                 return this.sslStream;
             }
+            
+            LocalCertificateSelectionCallback clientCertSelect = null;
+            
+            if(this.clientCertLocation != null )
+            {
+                clientCertSelect = new LocalCertificateSelectionCallback(SelectLocalCertificate);
+            }
 
             this.sslStream = new SslStream(
                 new NetworkStream(this.socket), 
                 false,
-                new RemoteCertificateValidationCallback(ValidateServerCertificate));
+                new RemoteCertificateValidationCallback(ValidateServerCertificate),
+                clientCertSelect );
 
             try
             {
@@ -101,10 +117,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             return sslStream;
         }
 
-        private static bool ValidateServerCertificate(object sender,
-                                                      X509Certificate certificate,
-                                                      X509Chain chain,
-                                                      SslPolicyErrors sslPolicyErrors)
+        private bool ValidateServerCertificate(object sender,
+                                               X509Certificate certificate,
+                                               X509Chain chain,
+                                               SslPolicyErrors sslPolicyErrors)
         {
             Tracer.DebugFormat("ValidateServerCertificate: Issued By {0}", certificate.Issuer);
             if(sslPolicyErrors == SslPolicyErrors.None)
@@ -126,9 +142,27 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             {
                 Tracer.Error("Mismatch between Remote Cert Name.");
             }
+            else if(sslPolicyErrors == SslPolicyErrors.RemoteCertificateNotAvailable)
+            {
+                Tracer.Error("The Remote Certificate was not Available.");
+            }
 
-            // Just ignore any cert errors for now.
-            return true;
+            // Configuration may or may not allow us to connect with an invliad broker cert.
+            return AcceptInvalidBrokerCert;
         }
+        
+        private X509Certificate SelectLocalCertificate(object sender,
+                                                       string targetHost, 
+                                                       X509CertificateCollection localCertificates, 
+                                                       X509Certificate remoteCertificate, 
+                                                       string[] acceptableIssuers)
+        {    
+            Tracer.Debug("Client is selecting a local certificate.");
+        
+            X509Certificate2 certificate = new X509Certificate2( clientCertLocation, clientCertPassword );
+                        
+            return certificate;
+        }
+        
     }
 }

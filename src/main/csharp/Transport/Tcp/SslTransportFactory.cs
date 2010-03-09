@@ -23,25 +23,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
 	public class SslTransportFactory : TcpTransportFactory
 	{
-        private string brokerCertLocation;
-        private string brokerCertPassword;
         private string clientCertLocation;
         private string clientCertPassword;
+        private bool acceptInvalidBrokerCert = false;
         
         public SslTransportFactory() : base()
         {
-        }
-                
-        public string BrokerCertLocation
-        {
-            get { return this.brokerCertLocation; }
-            set { this.brokerCertLocation = value; }
-        }
-
-        public string BrokerCertPassword
-        {
-            get { return this.brokerCertPassword; }
-            set { this.brokerCertPassword = value; }
         }
 
         public string ClientCertLocation
@@ -56,15 +43,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { this.clientCertPassword = value; }
         }        
 
+        public bool AcceptInvalidBrokerCert
+        {
+            get { return this.acceptInvalidBrokerCert; }
+            set { this.acceptInvalidBrokerCert = value; }
+        }
+        
 		protected override ITransport DoCreateTransport(Uri location, Socket socket, IWireFormat wireFormat )
 		{
             Tracer.Debug("Creating new instance of the SSL Transport.");
 			SslTransport transport = new SslTransport(location, socket, wireFormat);
             
-            transport.BrokerCertLocation = BrokerCertLocation;
-            transport.BrokerCertPassword = BrokerCertPassword;
             transport.ClientCertLocation = ClientCertLocation;
             transport.ClientCertPassword = ClientCertPassword;
+            transport.AcceptInvalidBrokerCert = AcceptInvalidBrokerCert;
             
             return transport;
 		}		
