@@ -55,6 +55,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private TaskRunner reconnectTask = null;
         private bool started;
 
+        private int timeout = -1;
         private int initialReconnectDelay = 10;
         private int maxReconnectDelay = 1000 * 30;
         private int backOffMultiplier = 2;
@@ -72,8 +73,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private List<BackupTransport> backups = new List<BackupTransport>();
         private int backupPoolSize = 1;
         private bool trackMessages = false;
-        private int maxCacheSize = 256;
         private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
+        private int maxCacheSize = 256;
         private volatile Exception failure;
         private readonly object mutex = new object();
 
@@ -180,12 +181,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             }
         }
 
+        public int Timeout
+        {
+            get { return this.timeout; }
+            set { this.timeout = value; }
+        }
+
         public TimeSpan RequestTimeout
         {
             get { return requestTimeout; }
             set { requestTimeout = value; }
         }
-
+        
         public int InitialReconnectDelay
         {
             get { return initialReconnectDelay; }
@@ -548,9 +555,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     {
                         // Wait for transport to be connected.
                         ITransport transport = ConnectedTransport;
+                        DateTime start = DateTime.Now;                            
+                        bool timedout = false;
                         while(transport == null && !disposed && connectionFailure == null)
                         {
                             Tracer.Info("Waiting for transport to reconnect.");
+
+                            int elapsed = (int)(DateTime.Now - start).TotalMilliseconds;
+                            if( this.timeout > 0 && elapsed > timeout )
+                            {
+                                timedout = true;
+                                Tracer.DebugFormat("FailoverTransport.oneway - timed out after {0} mills", elapsed );
+                                break;
+                            }
+                            
                             // Release so that the reconnect task can run
                             try
                             {
@@ -575,6 +593,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                             else if(connectionFailure != null)
                             {
                                 error = connectionFailure;
+                            }
+                            else if(timedout)
+                            {
+                                error = new IOException("Failover oneway timed out after "+ timeout +" milliseconds.");
                             }
                             else
                             {

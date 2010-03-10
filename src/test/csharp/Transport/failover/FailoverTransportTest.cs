@@ -334,6 +334,42 @@ namespace Apache.NMS.ActiveMQ.Test
         }
 
         [Test]
+        public void FailoverTransportSendOnewayTimeoutTest()
+        {
+            Uri uri = new Uri(
+                "failover:(mock://localhost:61616?failOnCreate=true)?timeout=1000");
+
+            FailoverTransportFactory factory = new FailoverTransportFactory();
+
+            ITransport transport = factory.CreateTransport( uri );
+            Assert.IsNotNull( transport );
+            transport.Command = new CommandHandler(OnCommand);
+            transport.Exception = new ExceptionHandler(OnException);
+
+            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
+            Assert.IsNotNull(failover);
+            Assert.AreEqual(1000, failover.Timeout);
+
+            transport.Start();
+
+            Thread.Sleep(1000);
+
+            ActiveMQMessage message = new ActiveMQMessage();
+            
+            try
+            {
+                transport.Oneway(message);
+                Assert.Fail("Should have thrown an IOException after timeout.");
+            }
+            catch
+            {
+            }
+
+            transport.Stop();
+            transport.Dispose();
+        }
+        
+        [Test]
         public void FailoverTransportSendRequestFailTest()
         {
             Uri uri = new Uri(
