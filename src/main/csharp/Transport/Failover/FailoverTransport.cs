@@ -104,7 +104,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             {
                 bool result = false;
                 bool buildBackup = true;
-                bool doReconnect = !parent.disposed;
+                bool doReconnect = !parent.disposed && parent.connectionFailure == null;
                 try
                 {
                     parent.backupMutex.WaitOne();
