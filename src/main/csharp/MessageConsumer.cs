@@ -66,11 +66,54 @@ namespace Apache.NMS.ActiveMQ
 		private IRedeliveryPolicy redeliveryPolicy;
 
 		// Constructor internal to prevent clients from creating an instance.
-		internal MessageConsumer(Session session, ConsumerInfo info)
+		internal MessageConsumer(Session session, ConsumerId id, ActiveMQDestination destination, 
+                                 String name, String selector, int prefetch, int maxPendingMessageCount, 
+                                 bool noLocal, bool browser, bool dispatchAsync )
 		{
+            if(destination == null)
+            {
+                throw new InvalidDestinationException("Consumer cannot receive on Null Destinations.");
+            }
+            
 			this.session = session;
-			this.info = info;
-			this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
+            this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
+			
+            this.info = new ConsumerInfo();
+            this.info.ConsumerId = id;
+            this.info.Destination = destination;
+            this.info.SubscriptionName = name;
+            this.info.Selector = selector;
+            this.info.PrefetchSize = prefetch;
+            this.info.MaximumPendingMessageLimit = maxPendingMessageCount;
+            this.info.NoLocal = noLocal;
+            this.info.Browser = browser;
+            this.info.DispatchAsync = dispatchAsync;
+            this.info.Retroactive = session.Retroactive;
+            this.info.Exclusive = session.Exclusive;
+            this.info.Priority = session.Priority;
+            
+            // If the destination contained a URI query, then use it to set public properties
+            // on the ConsumerInfo
+            if(destination.Options != null)
+            {
+                URISupport.SetProperties(this.info, destination.Options, "consumer.");
+            }
+            
+//            try
+//            {
+//                this.session.AddConsumer(this);
+//                this.session.Connection.SyncRequest(this.info);
+//
+//                if(this.session.Connection.IsStarted)
+//                {
+//                    this.Start();
+//                }
+//            }
+//            catch(Exception)
+//            {
+//                this.session.RemoveConsumer(this.info.ConsumerId);
+//                throw;
+//            }
 		}
 
 		~MessageConsumer()
@@ -87,8 +130,13 @@ namespace Apache.NMS.ActiveMQ
 
 		public ConsumerId ConsumerId
 		{
-			get { return info.ConsumerId; }
+			get { return this.info.ConsumerId; }
 		}
+
+        public ConsumerInfo ConsumerInfo
+        {
+            get { return this.info; }
+        }
 
 		public int RedeliveryTimeout
 		{
@@ -106,6 +154,11 @@ namespace Apache.NMS.ActiveMQ
 			get { return this.redeliveryPolicy; }
 			set { this.redeliveryPolicy = value; }
 		}
+        
+        public long UnconsumedMessageCount
+        {
+            get { return this.unconsumedMessages.Count; }
+        }   
 
 		#endregion
 
@@ -286,7 +339,7 @@ namespace Apache.NMS.ActiveMQ
 				}
 
 				this.unconsumedMessages.Close();
-				this.session.DisposeOf(this.info.ConsumerId, this.lastDeliveredSequenceId);
+				this.session.RemoveConsumer(this.info.ConsumerId);
 
                 RemoveInfo removeCommand = new RemoveInfo();
 				removeCommand.ObjectId = this.info.ConsumerId;
@@ -444,7 +497,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		public void Dispatch(MessageDispatch dispatch)
+		public virtual void Dispatch(MessageDispatch dispatch)
 		{
 			MessageListener listener = this.listener;
 

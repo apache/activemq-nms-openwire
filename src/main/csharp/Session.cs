@@ -356,28 +356,31 @@ namespace Apache.NMS.ActiveMQ
 
         public IMessageProducer CreateProducer(IDestination destination)
         {
-            ProducerInfo command = CreateProducerInfo(destination);
-            ProducerId producerId = command.ProducerId;
             MessageProducer producer = null;
 
             try
             {
-                producer = new MessageProducer(this, command);
-                producers[producerId] = producer;
-                this.connection.Oneway(command);
+                ActiveMQDestination dest = null;
+                if(destination != null)
+                {
+                    dest = ActiveMQDestination.Transform(destination);
+                }
+
+                producer = new MessageProducer(this, GetNextProducerId(), dest, this.RequestTimeout);
+
+                this.AddProducer(producer);
+                this.Connection.Oneway(producer.ProducerInfo);
             }
             catch(Exception)
             {
                 if(producer != null)
                 {
+                    this.RemoveProducer(producer.ProducerId);
                     producer.Close();
                 }
 
                 throw;
             }
-
-            // Registered with Connection so it can process Producer Acks.
-            connection.addProducer(producerId, producer);
 
             return producer;
         }
@@ -394,78 +397,83 @@ namespace Apache.NMS.ActiveMQ
 
         public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal)
         {
-            if (destination == null)
+            if(destination == null)
             {
                 throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
             }
 
-            ConsumerInfo command = CreateConsumerInfo(destination, selector);
-            command.NoLocal = noLocal;
-            ConsumerId consumerId = command.ConsumerId;
-            MessageConsumer consumer = null;
+            ActiveMQDestination dest = ActiveMQDestination.Transform(destination);
+            int prefetchSize = this.Connection.PrefetchPolicy.DurableTopicPrefetch;
 
-            // Registered with Connection before we register at the broker.
-            connection.addDispatcher(consumerId, this);
+            if(dest is ITopic || dest is ITemporaryTopic)
+            {
+                prefetchSize = this.connection.PrefetchPolicy.TopicPrefetch;
+            }
+            else if(dest is IQueue || dest is ITemporaryQueue)
+            {
+                prefetchSize = this.connection.PrefetchPolicy.QueuePrefetch;
+            }
+
+            MessageConsumer consumer = null;
 
             try
             {
-                consumer = new MessageConsumer(this, command);
-                // lets register the consumer first in case we start dispatching messages immediately
-                consumers[consumerId] = consumer;
-                this.Connection.SyncRequest(command);
+                consumer = new MessageConsumer(this, GetNextConsumerId(), dest, null, selector, prefetchSize,
+                                               this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
+                                               noLocal, false, this.connection.DispatchAsync);
 
-                if(this.Started)
+                this.AddConsumer(consumer);
+                this.Connection.SyncRequest(consumer.ConsumerInfo);
+
+                if(this.Connection.IsStarted)
                 {
                     consumer.Start();
                 }
-
-                return consumer;
             }
             catch(Exception)
             {
                 if(consumer != null)
                 {
+                    this.RemoveConsumer(consumer.ConsumerId);
                     consumer.Close();
                 }
 
                 throw;
             }
+
+            return consumer;
         }
 
         public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal)
         {
-            if (destination == null)
+            if(destination == null)
             {
                 throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
             }
 
-            ConsumerInfo command = CreateConsumerInfo(destination, selector);
-            ConsumerId consumerId = command.ConsumerId;
-            command.SubscriptionName = name;
-            command.NoLocal = noLocal;
-            command.PrefetchSize = this.connection.PrefetchPolicy.DurableTopicPrefetch;
+            ActiveMQDestination dest = ActiveMQDestination.Transform(destination);
             MessageConsumer consumer = null;
-
-            // Registered with Connection before we register at the broker.
-            connection.addDispatcher(consumerId, this);
 
             try
             {
-                consumer = new MessageConsumer(this, command);
-                // lets register the consumer first in case we start dispatching messages immediately
-                consumers[consumerId] = consumer;
+                consumer = new MessageConsumer(this, GetNextConsumerId(), dest, name, selector,
+                                               this.connection.PrefetchPolicy.DurableTopicPrefetch,
+                                               this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
+                                               noLocal, false, this.connection.DispatchAsync);
 
-                if(this.Started)
+                this.AddConsumer(consumer);
+                this.Connection.SyncRequest(consumer.ConsumerInfo);
+
+                if(this.Connection.IsStarted)
                 {
                     consumer.Start();
                 }
-
-                this.connection.SyncRequest(command);
             }
             catch(Exception)
             {
                 if(consumer != null)
                 {
+                    this.RemoveConsumer(consumer.ConsumerId);
                     consumer.Close();
                 }
 
@@ -486,12 +494,34 @@ namespace Apache.NMS.ActiveMQ
 
         public IQueueBrowser CreateBrowser(IQueue queue)
         {
-            throw new NotSupportedException("Not Yet Implemented");
+            return this.CreateBrowser(queue, null);
         }
 
         public IQueueBrowser CreateBrowser(IQueue queue, string selector)
         {
-            throw new NotSupportedException("Not Yet Implemented");
+            if(queue == null)
+            {
+                throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
+            }
+
+            ActiveMQDestination dest = ActiveMQDestination.Transform(queue);
+            QueueBrowser browser = null;
+
+            try
+            {
+                browser = new QueueBrowser(this, GetNextConsumerId(), dest, selector, this.DispatchAsync);
+            }
+            catch(Exception)
+            {
+                if(browser != null)
+                {
+                    browser.Close();
+                }
+
+                throw;
+            }
+
+            return browser;
         }
 
         public IQueue GetQueue(string name)
@@ -506,16 +536,12 @@ namespace Apache.NMS.ActiveMQ
 
         public ITemporaryQueue CreateTemporaryQueue()
         {
-            ActiveMQTempQueue answer = new ActiveMQTempQueue(Connection.CreateTemporaryDestinationName());
-            CreateTemporaryDestination(answer);
-            return answer;
+            return (ITemporaryQueue)this.connection.CreateTemporaryDestination(false);
         }
 
         public ITemporaryTopic CreateTemporaryTopic()
         {
-            ActiveMQTempTopic answer = new ActiveMQTempTopic(Connection.CreateTemporaryDestinationName());
-            CreateTemporaryDestination(answer);
-            return answer;
+            return (ITemporaryTopic)this.connection.CreateTemporaryDestination(true);
         }
 
         /// <summary>
@@ -523,12 +549,7 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public void DeleteDestination(IDestination destination)
         {
-            DestinationInfo command = new DestinationInfo();
-            command.ConnectionId = Connection.ConnectionId;
-            command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE; // 1 is remove
-            command.Destination = (ActiveMQDestination) destination;
-
-            this.connection.Oneway(command);
+            this.connection.DeleteDestination(destination);
         }
 
         public IMessage CreateMessage()
@@ -604,16 +625,6 @@ namespace Apache.NMS.ActiveMQ
 
         #endregion
 
-        protected void CreateTemporaryDestination(ActiveMQDestination tempDestination)
-        {
-            DestinationInfo command = new DestinationInfo();
-            command.ConnectionId = Connection.ConnectionId;
-            command.OperationType = DestinationInfo.ADD_OPERATION_TYPE; // 0 is add
-            command.Destination = tempDestination;
-
-            this.connection.SyncRequest(command);
-        }
-
         public void DoSend( ActiveMQMessage message, MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout )
         {
             ActiveMQMessage msg = message;
@@ -673,18 +684,33 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void DisposeOf(ConsumerId objectId, long lastDeliveredSequenceId)
+        public void AddConsumer(MessageConsumer consumer)
+        {
+            ConsumerId id = consumer.ConsumerId;
+
+            // Registered with Connection before we register at the broker.
+            consumers[id] = consumer;
+            connection.addDispatcher(id, this);
+        }
+
+        public void RemoveConsumer(ConsumerId objectId)
         {
             connection.removeDispatcher(objectId);
-            this.lastDeliveredSequenceId = Math.Min(this.lastDeliveredSequenceId, lastDeliveredSequenceId);
-
             if(!this.closing)
             {
                 consumers.Remove(objectId);
             }
         }
 
-        public void DisposeOf(ProducerId objectId)
+        public void AddProducer(MessageProducer producer)
+        {
+            ProducerId id = producer.ProducerId;
+
+            this.producers[id] = producer;
+            this.connection.addProducer(id, producer);
+        }
+
+        public void RemoveProducer(ProducerId objectId)
         {
             connection.removeProducer(objectId);
             if(!this.closing)
@@ -693,62 +719,24 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        protected virtual ConsumerInfo CreateConsumerInfo(IDestination destination, string selector)
+        public ConsumerId GetNextConsumerId()
         {
-            ConsumerInfo answer = new ConsumerInfo();
             ConsumerId id = new ConsumerId();
             id.ConnectionId = info.SessionId.ConnectionId;
             id.SessionId = info.SessionId.Value;
             id.Value = Interlocked.Increment(ref consumerCounter);
-            answer.ConsumerId = id;
-            answer.Destination = ActiveMQDestination.Transform(destination);
-            answer.Selector = selector;
-            answer.Priority = this.Priority;
-            answer.Exclusive = this.Exclusive;
-            answer.DispatchAsync = this.DispatchAsync;
-            answer.Retroactive = this.Retroactive;
-            answer.MaximumPendingMessageLimit = this.connection.PrefetchPolicy.MaximumPendingMessageLimit;
 
-            if(destination is ITopic || destination is ITemporaryTopic)
-            {
-                answer.PrefetchSize = this.connection.PrefetchPolicy.TopicPrefetch;
-            }
-            else if(destination is IQueue || destination is ITemporaryQueue)
-            {
-                answer.PrefetchSize = this.connection.PrefetchPolicy.QueuePrefetch;
-            }
-
-            // If the destination contained a URI query, then use it to set public properties
-            // on the ConsumerInfo
-            ActiveMQDestination amqDestination = destination as ActiveMQDestination;
-            if(amqDestination != null && amqDestination.Options != null)
-            {
-                URISupport.SetProperties(answer, amqDestination.Options, "consumer.");
-            }
-
-            return answer;
+            return id;
         }
 
-        protected virtual ProducerInfo CreateProducerInfo(IDestination destination)
+        public ProducerId GetNextProducerId()
         {
-            ProducerInfo answer = new ProducerInfo();
             ProducerId id = new ProducerId();
             id.ConnectionId = info.SessionId.ConnectionId;
             id.SessionId = info.SessionId.Value;
             id.Value = Interlocked.Increment(ref producerCounter);
-            answer.ProducerId = id;
-            answer.Destination = ActiveMQDestination.Transform(destination);
-            answer.WindowSize = connection.ProducerWindowSize;
 
-            // If the destination contained a URI query, then use it to set public
-            // properties on the ProducerInfo
-            ActiveMQDestination amqDestination = destination as ActiveMQDestination;
-            if(amqDestination != null && amqDestination.Options != null)
-            {
-                URISupport.SetProperties(answer, amqDestination.Options, "producer.");
-            }
-
-            return answer;
+            return id;
         }
 
         public void Stop()

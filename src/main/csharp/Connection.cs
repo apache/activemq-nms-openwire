@@ -769,15 +769,15 @@ namespace Apache.NMS.ActiveMQ
 
             foreach(Session session in this.sessions)
             {
-				try
-				{
-                	session.ClearMessagesInProgress();
-				}
-				catch(Exception ex)
-				{
-					Tracer.Warn("Exception while clearing messages: " + ex.Message);
-					Tracer.Warn(ex.StackTrace);
-				}
+                try
+                {
+                    session.ClearMessagesInProgress();
+                }
+                catch(Exception ex)
+                {
+                    Tracer.Warn("Exception while clearing messages: " + ex.Message);
+                    Tracer.Warn(ex.StackTrace);
+                }
             }
 
             if(this.ConnectionInterruptedListener != null && !this.closing )
@@ -824,14 +824,6 @@ namespace Apache.NMS.ActiveMQ
         }
 
         /// <summary>
-        /// Creates a new temporary destination name
-        /// </summary>
-        public String CreateTemporaryDestinationName()
-        {
-            return info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter);
-        }
-
-        /// <summary>
         /// Creates a new local transaction ID
         /// </summary>
         public LocalTransactionId CreateLocalTransactionId()
@@ -850,6 +842,37 @@ namespace Apache.NMS.ActiveMQ
             sessionId.Value = Interlocked.Increment(ref sessionCounter);
             answer.SessionId = sessionId;
             return answer;
+        }
+
+        public ActiveMQTempDestination CreateTemporaryDestination(bool topic)
+        {
+           ActiveMQTempDestination destination = null;
+
+           if(topic)
+           {
+               destination = new ActiveMQTempTopic(
+                   info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter));
+           }
+           else
+           {
+               destination = new ActiveMQTempQueue(
+                   info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter));
+           }
+
+            DestinationInfo command = new DestinationInfo();
+            command.ConnectionId = ConnectionId;
+            command.OperationType = DestinationInfo.ADD_OPERATION_TYPE; // 0 is add
+            command.Destination = destination;
+
+            this.SyncRequest(command);
+
+            destination.Connection = this;
+
+            return destination;
+        }
+
+        protected void CreateTemporaryDestination(ActiveMQDestination tempDestination)
+        {
         }
 
         public void DeleteTemporaryDestination(IDestination destination)

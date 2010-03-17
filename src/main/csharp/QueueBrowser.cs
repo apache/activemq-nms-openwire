@@ -1,0 +1,278 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using Apache.NMS.ActiveMQ.Commands;
+using System.Threading;
+using Apache.NMS.Util;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
+
+namespace Apache.NMS.ActiveMQ
+{
+	public class QueueBrowser : IQueueBrowser, IEnumerator
+	{
+		private readonly Session session;
+		private readonly ActiveMQDestination destination;
+		private readonly string selector;
+
+		private MessageConsumer consumer;
+		private bool closed;
+		private readonly ConsumerId consumerId;
+		private readonly Atomic<bool> browseDone = new Atomic<bool>(true);
+		private readonly bool dispatchAsync;
+		private object semaphore = new object();
+		private object myLock = new object();
+
+		internal QueueBrowser(Session session, ConsumerId consumerId, ActiveMQDestination destination, string selector, bool dispatchAsync)
+		{
+			this.session = session;
+			this.consumerId = consumerId;
+			this.destination = destination;
+			this.selector = selector;
+			this.dispatchAsync = dispatchAsync;
+			this.consumer = CreateConsumer();
+		}
+
+		private MessageConsumer CreateConsumer()
+		{
+            this.browseDone.Value = false;
+			BrowsingMessageConsumer consumer = null;
+
+			try
+			{
+                consumer = new BrowsingMessageConsumer(
+                    this, session, this.consumerId, this.destination, null, this.selector, 
+                    this.session.Connection.PrefetchPolicy.QueueBrowserPrefetch,
+                    this.session.Connection.PrefetchPolicy.MaximumPendingMessageLimit,
+                    false, true, this.dispatchAsync);
+
+                this.session.AddConsumer(consumer);
+                this.session.Connection.SyncRequest(consumer.ConsumerInfo);
+
+                if(this.session.Connection.IsStarted)
+                {
+                    consumer.Start();
+                }
+            }
+            catch(Exception)
+            {
+                if(consumer != null)
+                {
+                    this.session.RemoveConsumer(consumer.ConsumerId);
+                    consumer.Close();
+                }
+
+                throw;
+            }
+
+            return consumer;
+		}
+
+		private void DestroyConsumer()
+		{
+			if(consumer == null)
+            {
+				return;
+            }
+
+			try
+			{
+				consumer.Close();
+				consumer = null;
+			}
+			catch(NMSException e)
+			{
+                Tracer.Debug(e.StackTrace.ToString());
+			}
+		}
+
+		public IEnumerator GetEnumerator()
+		{
+			CheckClosed();
+
+			if(this.consumer == null)
+            {
+				this.consumer = CreateConsumer();
+            }
+
+			return this;
+		}
+
+
+		private void CheckClosed()
+		{
+			if(this.closed)
+            {
+				throw new IllegalStateException("The Consumer is closed");
+            }
+		}
+
+		public bool MoveNext()
+		{
+			while(true)
+			{
+				lock(myLock)
+				{
+					if(consumer == null)
+                    {
+						return false;
+                    }
+				}
+
+				if(consumer.UnconsumedMessageCount > 0)
+                {
+					return true;
+                }
+
+				if(browseDone.Value || !session.Started)
+				{
+					DestroyConsumer();
+					return false;
+				}
+
+				WaitForMessage();
+			}
+		}
+
+		public object Current
+		{
+			get
+			{
+				while(true)
+				{
+					lock(myLock)
+					{
+						if(consumer == null)
+                        {
+							return null;
+                        }
+					}
+
+					try
+					{
+						IMessage answer = consumer.ReceiveNoWait();
+
+						if(answer != null)
+                        {
+							return answer;
+                        }
+					}
+					catch(NMSException)
+					{
+						//TODO: Not implemented.
+						//this.session.Connection.OnClientInternalException(e);
+						return null;
+					}
+
+					if(browseDone.Value || !session.Started)
+					{
+						DestroyConsumer();
+						return null;
+					}
+
+					WaitForMessage();
+				}
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public void Close()
+		{
+			DestroyConsumer();
+			closed = true;
+		}
+
+		public IQueue Queue
+		{
+			get { return (IQueue)destination; }
+		}
+
+		public string MessageSelector
+		{
+			get { return selector; }
+		}
+
+		protected void WaitForMessage()
+		{
+			try
+			{
+				lock(semaphore)
+				{
+					Monitor.Wait(semaphore, 2000);
+				}
+			}
+			catch(ThreadInterruptedException)
+			{
+				Thread.CurrentThread.Interrupt();
+			}
+		}
+
+		protected void NotifyMessageAvailable()
+		{
+			lock(semaphore)
+			{
+				Monitor.PulseAll(semaphore);
+			}
+		}
+
+		public override string ToString()
+		{
+			return "QueueBrowser { value=" + consumerId + " }";
+		}
+
+		public void Reset()
+		{
+			if(consumer != null)
+            {
+				DestroyConsumer();
+            }
+
+			consumer = CreateConsumer();
+		}
+
+		public class BrowsingMessageConsumer : MessageConsumer
+		{
+			private QueueBrowser parent;
+
+			public BrowsingMessageConsumer(QueueBrowser parent, Session session, ConsumerId id, ActiveMQDestination destination, 
+                                           String name, String selector, int prefetch, int maxPendingMessageCount, 
+                                           bool noLocal, bool browser, bool dispatchAsync)
+				: base(session, id, destination, name, selector, prefetch, maxPendingMessageCount, noLocal, browser, dispatchAsync)
+			{
+				this.parent = parent;
+			}
+
+			public override void Dispatch(MessageDispatch md)
+			{
+				if(md.Message == null)
+                {
+					parent.browseDone.Value = true;
+                }
+				else
+				{
+					base.Dispatch(md);
+				}
+
+				parent.NotifyMessageAvailable();
+			}
+		}
+	}
+}

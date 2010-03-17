@@ -43,17 +43,28 @@ namespace Apache.NMS.ActiveMQ
         private bool disableMessageTimestamp = false;
         protected bool disposed = false;
 
-        public MessageProducer(Session session, ProducerInfo info)
+        public MessageProducer(Session session, ProducerId id, ActiveMQDestination destination, TimeSpan requestTimeout)
         {
-            this.session = session;
-            this.info = info;
-            this.RequestTimeout = session.RequestTimeout;
+            this.session = session;            
+            this.RequestTimeout = requestTimeout;
 
+            this.info = new ProducerInfo();
+            this.info.ProducerId = id;
+            this.info.Destination = destination;
+            this.info.WindowSize = session.Connection.ProducerWindowSize;
+            
+            // If the destination contained a URI query, then use it to set public
+            // properties on the ProducerInfo
+            if(destination != null && destination.Options != null)
+            {
+                URISupport.SetProperties(this.info, destination.Options, "producer.");
+            }
+            
             // Version Three and higher will send us a ProducerAck, but only if we
             // have a set producer window size.
-            if( session.Connection.ProtocolVersion >= 3 && info.WindowSize > 0 )
+            if(session.Connection.ProtocolVersion >= 3 && this.info.WindowSize > 0)
             {
-                usage = new MemoryUsage( info.WindowSize );
+                this.usage = new MemoryUsage(this.info.WindowSize);
             }
         }
 
@@ -120,7 +131,7 @@ namespace Apache.NMS.ActiveMQ
 
                 try
                 {
-                    session.DisposeOf(info.ProducerId);
+                    session.RemoveProducer(info.ProducerId);
                 }
                 catch(Exception ex)
                 {
@@ -229,6 +240,11 @@ namespace Apache.NMS.ActiveMQ
         public ProducerId ProducerId
         {
             get { return info.ProducerId; }
+        }
+
+        public ProducerInfo ProducerInfo
+        {
+            get { return info; }
         }
 
         public MsgDeliveryMode DeliveryMode
