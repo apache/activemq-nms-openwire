@@ -16,6 +16,7 @@
  */
 
 using System;
+using Apache.NMS.ActiveMQ;
 
 //
 //  Marshalling code for Open Wire Format for ActiveMQTempDestination
@@ -29,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 {
 	public abstract class ActiveMQTempDestination : ActiveMQDestination
 	{
+        private Connection connection;
 
 		/// <summary>
 		/// Method GetDestinationType
@@ -58,15 +60,19 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 		public const byte ID_ActiveMQTempDestination = 0;
 
-		public ActiveMQTempDestination()
-			: base()
+		public ActiveMQTempDestination() : base()
 		{
 		}
 
-		public ActiveMQTempDestination(String name)
-			: base(name)
+		public ActiveMQTempDestination(String name) : base(name)
 		{
 		}
+
+        public Connection Connection
+        {
+            get { return this.connection; }
+            set { this.connection = value; }
+        }
 
 		public override byte GetDataStructureType()
 		{
@@ -87,6 +93,14 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 			return o;
 		}
+
+        public void Delete()
+        {
+            if(this.connection != null)
+            {
+                this.connection.DeleteTemporaryDestination(this);
+            }
+        }
 
 	}
 }

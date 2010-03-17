@@ -708,7 +708,8 @@ namespace Apache.NMS.ActiveMQ
                     IDispatcher dispatcher = (IDispatcher) dispatchers[dispatch.ConsumerId];
 
                     // Can be null when a consumer has sent a MessagePull and there was
-                    // no available message at the broker to dispatch.
+                    // no available message at the broker to dispatch or when signalled
+                    // that the end of a Queue browse has been reached.
                     if(dispatch.Message != null)
                     {
                         dispatch.Message.ReadOnlyBody = true;
@@ -850,5 +851,21 @@ namespace Apache.NMS.ActiveMQ
             answer.SessionId = sessionId;
             return answer;
         }
+
+        public void DeleteTemporaryDestination(IDestination destination)
+        {
+            this.DeleteDestination(destination);
+        }
+
+        public void DeleteDestination(IDestination destination)
+        {
+            DestinationInfo command = new DestinationInfo();
+            command.ConnectionId = this.ConnectionId;
+            command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE; // 1 is remove
+            command.Destination = (ActiveMQDestination) destination;
+
+            this.Oneway(command);
+        }
+
     }
 }

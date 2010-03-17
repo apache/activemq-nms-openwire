@@ -26,13 +26,11 @@ namespace Apache.NMS.ActiveMQ.Commands
     {
         public const byte ID_ACTIVEMQTEMPTOPIC = 103;
 
-        public ActiveMQTempTopic()
-            : base()
+        public ActiveMQTempTopic() : base()
         {
         }
 
-        public ActiveMQTempTopic(String name)
-            : base(name)
+        public ActiveMQTempTopic(String name) : base(name)
         {
         }
 
@@ -44,7 +42,11 @@ namespace Apache.NMS.ActiveMQ.Commands
             }
         }
 
-
+        public String TopicName
+        {
+            get { return PhysicalName; }
+        }
+            
         public String GetTopicName()
         {
             return PhysicalName;

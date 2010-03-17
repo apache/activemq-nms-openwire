@@ -31,8 +31,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
         }
 
-        public ActiveMQTempQueue(String name)
-            : base(name)
+        public ActiveMQTempQueue(String name) : base(name)
         {
         }
 
@@ -42,6 +41,11 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return DestinationType.TemporaryQueue;
             }
+        }
+        
+        public String QueueName
+        {
+            get { return PhysicalName; }
         }
 
         public String GetQueueName()
