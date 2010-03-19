@@ -34,6 +34,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly string selector;
 
 		private MessageConsumer consumer;
+		private bool disposed;
 		private bool closed;
 		private readonly ConsumerId consumerId;
 		private readonly Atomic<bool> browseDone = new Atomic<bool>(true);
@@ -50,7 +51,41 @@ namespace Apache.NMS.ActiveMQ
 			this.dispatchAsync = dispatchAsync;
 			this.consumer = CreateConsumer();
 		}
+		
+		~QueueBrowser()
+		{
+		}
 
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected void Dispose(bool disposing)
+		{
+			if(disposed)
+			{
+				return;
+			}
+
+			if(disposing)
+			{
+				// Dispose managed code here.
+			}
+
+			try
+			{
+				Close();
+			}
+			catch
+			{
+				// Ignore network errors.
+			}
+
+			disposed = true;
+		}
+		
 		private MessageConsumer CreateConsumer()
 		{
             this.browseDone.Value = false;

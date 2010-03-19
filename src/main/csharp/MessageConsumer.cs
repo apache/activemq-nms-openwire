@@ -98,22 +98,6 @@ namespace Apache.NMS.ActiveMQ
             {
                 URISupport.SetProperties(this.info, destination.Options, "consumer.");
             }
-            
-//            try
-//            {
-//                this.session.AddConsumer(this);
-//                this.session.Connection.SyncRequest(this.info);
-//
-//                if(this.session.Connection.IsStarted)
-//                {
-//                    this.Start();
-//                }
-//            }
-//            catch(Exception)
-//            {
-//                this.session.RemoveConsumer(this.info.ConsumerId);
-//                throw;
-//            }
 		}
 
 		~MessageConsumer()
