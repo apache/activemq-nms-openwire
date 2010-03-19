@@ -51,7 +51,7 @@ namespace Apache.NMS.ActiveMQ
 			this.dispatchAsync = dispatchAsync;
 			this.consumer = CreateConsumer();
 		}
-		
+
 		~QueueBrowser()
 		{
 			Dispose(false);
@@ -86,48 +86,48 @@ namespace Apache.NMS.ActiveMQ
 
 			disposed = true;
 		}
-		
+
 		private MessageConsumer CreateConsumer()
 		{
-            this.browseDone.Value = false;
+			this.browseDone.Value = false;
 			BrowsingMessageConsumer consumer = null;
 
 			try
 			{
-                consumer = new BrowsingMessageConsumer(
-                    this, session, this.consumerId, this.destination, null, this.selector, 
-                    this.session.Connection.PrefetchPolicy.QueueBrowserPrefetch,
-                    this.session.Connection.PrefetchPolicy.MaximumPendingMessageLimit,
-                    false, true, this.dispatchAsync);
+				consumer = new BrowsingMessageConsumer(
+					this, session, this.consumerId, this.destination, null, this.selector,
+					this.session.Connection.PrefetchPolicy.QueueBrowserPrefetch,
+					this.session.Connection.PrefetchPolicy.MaximumPendingMessageLimit,
+					false, true, this.dispatchAsync);
 
-                this.session.AddConsumer(consumer);
-                this.session.Connection.SyncRequest(consumer.ConsumerInfo);
+				this.session.AddConsumer(consumer);
+				this.session.Connection.SyncRequest(consumer.ConsumerInfo);
 
-                if(this.session.Connection.IsStarted)
-                {
-                    consumer.Start();
-                }
-            }
-            catch(Exception)
-            {
-                if(consumer != null)
-                {
-                    this.session.RemoveConsumer(consumer.ConsumerId);
-                    consumer.Close();
-                }
+				if(this.session.Connection.IsStarted)
+				{
+					consumer.Start();
+				}
+			}
+			catch(Exception)
+			{
+				if(consumer != null)
+				{
+					this.session.RemoveConsumer(consumer.ConsumerId);
+					consumer.Close();
+				}
 
-                throw;
-            }
+				throw;
+			}
 
-            return consumer;
+			return consumer;
 		}
 
 		private void DestroyConsumer()
 		{
 			if(consumer == null)
-            {
+			{
 				return;
-            }
+			}
 
 			try
 			{
@@ -136,7 +136,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 			catch(NMSException e)
 			{
-                Tracer.Debug(e.StackTrace.ToString());
+				Tracer.Debug(e.StackTrace.ToString());
 			}
 		}
 
@@ -144,10 +144,13 @@ namespace Apache.NMS.ActiveMQ
 		{
 			CheckClosed();
 
-			if(this.consumer == null)
-            {
-				this.consumer = CreateConsumer();
-            }
+			lock(myLock)
+			{
+				if(this.consumer == null)
+				{
+					this.consumer = CreateConsumer();
+				}
+			}
 
 			return this;
 		}
@@ -156,9 +159,9 @@ namespace Apache.NMS.ActiveMQ
 		private void CheckClosed()
 		{
 			if(this.closed)
-            {
+			{
 				throw new IllegalStateException("The Consumer is closed");
-            }
+			}
 		}
 
 		public bool MoveNext()
@@ -168,20 +171,20 @@ namespace Apache.NMS.ActiveMQ
 				lock(myLock)
 				{
 					if(consumer == null)
-                    {
+					{
 						return false;
-                    }
-				}
+					}
 
-				if(consumer.UnconsumedMessageCount > 0)
-                {
-					return true;
-                }
+					if(consumer.UnconsumedMessageCount > 0)
+					{
+						return true;
+					}
 
-				if(browseDone.Value || !session.Started)
-				{
-					DestroyConsumer();
-					return false;
+					if(browseDone.Value || !session.Started)
+					{
+						DestroyConsumer();
+						return false;
+					}
 				}
 
 				WaitForMessage();
@@ -197,31 +200,31 @@ namespace Apache.NMS.ActiveMQ
 					lock(myLock)
 					{
 						if(consumer == null)
-                        {
+						{
 							return null;
-                        }
-					}
+						}
 
-					try
-					{
-						IMessage answer = consumer.ReceiveNoWait();
+						try
+						{
+							IMessage answer = consumer.ReceiveNoWait();
 
-						if(answer != null)
-                        {
-							return answer;
-                        }
-					}
-					catch(NMSException)
-					{
-						//TODO: Not implemented.
-						//this.session.Connection.OnClientInternalException(e);
-						return null;
-					}
+							if(answer != null)
+							{
+								return answer;
+							}
+						}
+						catch(NMSException)
+						{
+							//TODO: Not implemented.
+							//this.session.Connection.OnClientInternalException(e);
+							return null;
+						}
 
-					if(browseDone.Value || !session.Started)
-					{
-						DestroyConsumer();
-						return null;
+						if(browseDone.Value || !session.Started)
+						{
+							DestroyConsumer();
+							return null;
+						}
 					}
 
 					WaitForMessage();
@@ -229,11 +232,28 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.Synchronized)]
 		public void Close()
 		{
-			DestroyConsumer();
-			closed = true;
+			lock(myLock)
+			{
+				if(this.closed)
+				{
+					return;
+				}
+
+				try
+				{
+					DestroyConsumer();
+				}
+				catch(Exception ex)
+				{
+					Tracer.ErrorFormat("Error during QueueBrowser close: {0}", ex);
+				}
+				finally
+				{
+					this.closed = true;
+				}
+			}
 		}
 
 		public IQueue Queue
@@ -277,9 +297,9 @@ namespace Apache.NMS.ActiveMQ
 		public void Reset()
 		{
 			if(consumer != null)
-            {
+			{
 				DestroyConsumer();
-            }
+			}
 
 			consumer = CreateConsumer();
 		}
@@ -288,9 +308,9 @@ namespace Apache.NMS.ActiveMQ
 		{
 			private QueueBrowser parent;
 
-			public BrowsingMessageConsumer(QueueBrowser parent, Session session, ConsumerId id, ActiveMQDestination destination, 
-                                           String name, String selector, int prefetch, int maxPendingMessageCount, 
-                                           bool noLocal, bool browser, bool dispatchAsync)
+			public BrowsingMessageConsumer(QueueBrowser parent, Session session, ConsumerId id, ActiveMQDestination destination,
+										   String name, String selector, int prefetch, int maxPendingMessageCount,
+										   bool noLocal, bool browser, bool dispatchAsync)
 				: base(session, id, destination, name, selector, prefetch, maxPendingMessageCount, noLocal, browser, dispatchAsync)
 			{
 				this.parent = parent;
@@ -299,9 +319,9 @@ namespace Apache.NMS.ActiveMQ
 			public override void Dispatch(MessageDispatch md)
 			{
 				if(md.Message == null)
-                {
+				{
 					parent.browseDone.Value = true;
-                }
+				}
 				else
 				{
 					base.Dispatch(md);
