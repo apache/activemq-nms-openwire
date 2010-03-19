@@ -54,6 +54,7 @@ namespace Apache.NMS.ActiveMQ
 		
 		~QueueBrowser()
 		{
+			Dispose(false);
 		}
 
 		public void Dispose()
