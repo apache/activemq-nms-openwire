@@ -27,6 +27,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
     public class SslTransport : TcpTransport
     {
+        private string serverName;
         private string clientCertLocation;
         private string clientCertPassword;
         
@@ -42,6 +43,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         ~SslTransport()
         {
             Dispose(false);
+        }
+
+        /// <summary>
+        /// Indicates the name of the Server's Certificate.  By default the Host name
+        /// of the remote server is used, however if this doesn't match the name of the
+        /// Server's certificate then this option can be set to override the default.
+        /// </summary>
+        public string ServerName
+        {
+            get { return this.serverName; }
+            set { this.serverName = value; }
         }
 
         /// <summary>
@@ -97,8 +109,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
             try
             {
-                Tracer.Debug("Authorizing as Client for Server: " + this.RemoteAddress.Host);
-                sslStream.AuthenticateAsClient(this.RemoteAddress.Host);
+                string remoteCertName = this.serverName ?? this.RemoteAddress.Host;
+                Tracer.Debug("Authorizing as Client for Server: " + remoteCertName);
+                sslStream.AuthenticateAsClient(remoteCertName);
                 Tracer.Debug("Server is Authenticated = " + sslStream.IsAuthenticated);
                 Tracer.Debug("Server is Encrypted = " + sslStream.IsEncrypted);                
             }

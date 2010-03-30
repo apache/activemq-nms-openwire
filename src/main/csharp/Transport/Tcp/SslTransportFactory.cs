@@ -23,12 +23,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
 	public class SslTransportFactory : TcpTransportFactory
 	{
+        private string serverName;
         private string clientCertLocation;
         private string clientCertPassword;
         private bool acceptInvalidBrokerCert = false;
         
         public SslTransportFactory() : base()
         {
+        }
+
+        public string ServerName
+        {
+            get { return this.serverName; }
+            set { this.serverName = value; }
         }
 
         public string ClientCertLocation
