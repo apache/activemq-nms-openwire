@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Commands
      *         in the nms-activemq-openwire-generator module
      *
      */
-    public class XATransactionId : TransactionId
+    public class XATransactionId : TransactionId, Xid
     {
         public const byte ID_XATRANSACTIONID = 112;
 

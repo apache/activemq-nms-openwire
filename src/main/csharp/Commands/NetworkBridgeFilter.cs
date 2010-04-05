@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Commands
      *         in the nms-activemq-openwire-generator module
      *
      */
-    public class NetworkBridgeFilter : BaseDataStructure
+    public class NetworkBridgeFilter : BaseDataStructure, BooleanExpression
     {
         public const byte ID_NETWORKBRIDGEFILTER = 91;
 
