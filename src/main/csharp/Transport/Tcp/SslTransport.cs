@@ -31,7 +31,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string clientCertSubject;
         private string clientCertFilename;
         private string clientCertPassword;
-        
+        private string keyStoreName;
+        private string keyStoreLocation;
         private bool acceptInvalidBrokerCert = false;
         
         private SslStream sslStream;
@@ -93,7 +94,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             get { return this.acceptInvalidBrokerCert; }
             set { this.acceptInvalidBrokerCert = value; }
         }
-        
+
+        public string KeyStoreName
+        {
+            get { return this.keyStoreName; }
+            set { this.keyStoreName = value; }
+        }
+
+        public string KeyStoreLocation
+        {
+            get { return this.keyStoreLocation; }
+            set { this.keyStoreLocation = value; }
+        }
+
         protected override Stream CreateSocketStream()
         {
             if(this.sslStream != null)
@@ -209,7 +222,27 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             }
             else
             {
-                X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                string name = String.IsNullOrEmpty(this.keyStoreName) ? StoreName.My.ToString() : this.keyStoreName;
+
+                StoreLocation location = StoreLocation.CurrentUser;
+
+                if(!String.IsNullOrEmpty(this.keyStoreLocation))
+                {
+                    if(String.Compare(this.keyStoreLocation, "CurrentUser", true) == 0)
+                    {
+                        location = StoreLocation.CurrentUser;
+                    }
+                    else if(String.Compare(this.keyStoreLocation, "LocalMachine", true) == 0)
+                    {
+                        location = StoreLocation.LocalMachine;
+                    }
+                    else
+                    {
+                        throw new NMSException("Invlalid StoreLocation given on URI");
+                    }
+                }
+
+                X509Store store = new X509Store(name, location);
 
                 collection = store.Certificates;
             }
