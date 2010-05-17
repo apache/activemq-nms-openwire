@@ -36,7 +36,6 @@ namespace Apache.NMS.ActiveMQ.Test
 		[RowTest]
 		[Row("tcp://${activemqhost}:61616")]
 		[Row("activemq:tcp://${activemqhost}:61616")]
-		[Row("activemq:tcp://${activemqhost}:61616/localhost:0")]
 		[Row("activemq:tcp://${activemqhost}:61616/0.0.0.0:0")]
 		[Row("activemq:tcp://${activemqhost}:61616?connection.asyncclose=false")]
 		[Row("activemq:failover:tcp://${activemqhost}:61616")]
