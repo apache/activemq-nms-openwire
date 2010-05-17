@@ -36,6 +36,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		[RowTest]
 		[Row("tcp://${activemqhost}:61616")]
 		[Row("activemq:tcp://${activemqhost}:61616")]
+		[Row("activemq:tcp://${activemqhost}:61616/0.0.0.0:0")]
 		[Row("activemq:tcp://${activemqhost}:61616?connection.asyncclose=false")]
 		[Row("activemq:failover:tcp://${activemqhost}:61616")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616)")]
@@ -48,6 +49,8 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("activemq:failover:(discovery:(multicast://default))")]
 #endif
 	
+		[Row("activemq:tcp://${activemqhost}:61616/InvalidHost:0", ExpectedException = typeof(NMSConnectionException))]
+		[Row("activemq:tcp://${activemqhost}:61616/0.0.0.0:-1", ExpectedException = typeof(NMSConnectionException))]
 		[Row("tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:tcp://InvalidHost:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:tcp://InvalidHost:61616?connection.asyncclose=false", ExpectedException = typeof(NMSConnectionException))]

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 $pkgname = "Apache.NMS.ActiveMQ"
-$pkgver = "1.3.0-RC1"
+$pkgver = "1.3.x-SNAPSHOT"
 $configurations = "release", "debug"
 $frameworks = "mono-2.0", "net-2.0", "net-3.5"
 
