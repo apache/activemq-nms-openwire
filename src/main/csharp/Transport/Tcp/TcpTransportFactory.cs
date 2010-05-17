@@ -116,9 +116,28 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             // Set transport. properties on this (the factory)
             URISupport.SetProperties(this, map, "transport.");
 
-            Tracer.Debug("Opening socket to: " + location.Host + " on port: " + location.Port);
-            Socket socket = Connect(location.Host, location.Port);
-
+			// See if there is a local address and port specified
+			string localAddress = null;
+			int localPort = -1;
+			
+			if(!String.IsNullOrEmpty(location.AbsolutePath) && !location.AbsolutePath.Equals("/"))
+			{
+				int index = location.AbsolutePath.IndexOf(':');
+				try
+				{
+					localPort = Int16.Parse(location.AbsolutePath.Substring(index + 1));					
+					localAddress = location.AbsolutePath.Substring(1, index - 1);
+					Tracer.DebugFormat("Binding Socket to {0} on port: {1}", localAddress, localPort);
+				}
+				catch
+				{
+            		Tracer.Warn("Invalid Port value on URI for local bind option, ignoring.");
+				}
+			}
+			
+            Tracer.Debug("Opening socket to: " + location.Host + " on port: " + location.Port);            
+			Socket socket = DoConnect(location.Host, location.Port, localAddress, localPort );
+			
 #if !NETCF
             socket.ReceiveBufferSize = ReceiveBufferSize;
             socket.SendBufferSize = SendBufferSize;
@@ -220,7 +239,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             return ipEntry;
         }
 
-        private Socket ConnectSocket(IPAddress address, int port)
+        private Socket TryConnectSocket(IPAddress address, int port, string localAddress, int localPort)
         {
             if(null != address)
             {
@@ -230,6 +249,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
                     if(null != socket)
                     {
+						if(!String.IsNullOrEmpty(localAddress))
+						{
+							DoBind(socket, localAddress, localPort);
+						}
+						
                         socket.Connect(new IPEndPoint(address, port));
                         if(socket.Connected)
                         {
@@ -292,7 +316,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             return null;
         }
 
-        protected Socket Connect(string host, int port)
+        protected Socket DoConnect(string host, int port, string localAddress, int localPort)
         {
             Socket socket = null;
             IPAddress ipaddress;
@@ -301,7 +325,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             {
                 if(TryParseIPAddress(host, out ipaddress))
                 {
-                    socket = ConnectSocket(ipaddress, port);
+                    socket = TryConnectSocket(ipaddress, port, localAddress, localPort);
                 }
                 else
                 {
@@ -313,12 +337,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                     {
                         // Prefer IPv6 first.
                         ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetworkV6);
-                        socket = ConnectSocket(ipaddress, port);
+                        socket = TryConnectSocket(ipaddress, port, localAddress, localPort);
                         if(null == socket)
                         {
                             // Try IPv4 next.
                             ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetwork);
-                            socket = ConnectSocket(ipaddress, port);
+                            socket = TryConnectSocket(ipaddress, port, localAddress, localPort);
                             if(null == socket)
                             {
                                 // Try whatever else there is.
@@ -331,7 +355,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                                         continue;
                                     }
 
-                                    socket = ConnectSocket(address, port);
+                            		socket = TryConnectSocket(ipaddress, port, localAddress, localPort);
                                     if(null != socket)
                                     {
                                         ipaddress = address;
@@ -356,5 +380,86 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             Tracer.DebugFormat("Connected to {0}:{1} using {2} protocol.", host, port, ipaddress.AddressFamily.ToString());
             return socket;
         }
+		
+        protected void DoBind(Socket socket, string host, int port)
+        {
+            IPAddress ipaddress;
+
+            try
+            {
+                if(TryParseIPAddress(host, out ipaddress))
+                {
+                    TryBindSocket(socket, ipaddress, port);
+                }
+                else
+                {
+                    // Looping through the AddressList allows different type of connections to be tried
+                    // (IPv6, IPv4 and whatever else may be available).
+                    IPHostEntry hostEntry = GetIPHostEntry(host);
+
+                    if(null != hostEntry)
+                    {
+                        // Prefer IPv6 first.
+                        ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetworkV6);
+                        if(!TryBindSocket(socket, ipaddress, port))
+                        {
+                            // Try IPv4 next.
+                            ipaddress = GetIPAddress(hostEntry, AddressFamily.InterNetwork);
+	                        if(!TryBindSocket(socket, ipaddress, port))
+                            {
+                                // Try whatever else there is.
+                                foreach(IPAddress address in hostEntry.AddressList)
+                                {
+                                    if(AddressFamily.InterNetworkV6 == address.AddressFamily
+                                        || AddressFamily.InterNetwork == address.AddressFamily)
+                                    {
+                                        // Already tried these protocols.
+                                        continue;
+                                    }
+
+                        			if(TryBindSocket(socket, ipaddress, port))
+                                    {
+                                        ipaddress = address;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if(!socket.IsBound)
+                {
+                    throw new SocketException();
+                }
+            }
+            catch(Exception ex)
+            {
+                throw new NMSConnectionException(String.Format("Error binding to {0}:{1}.", host, port), ex);
+            }
+
+            Tracer.DebugFormat("Bound to {0}:{1} using.", host, port);
+        }		
+		
+        private bool TryBindSocket(Socket socket, IPAddress address, int port)
+        {
+            if(null != socket && null != address)
+            {
+                try
+                {
+                    socket.Bind(new IPEndPoint(address, port));
+                    if(socket.IsBound)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return false;
+        }
+		
     }
 }
