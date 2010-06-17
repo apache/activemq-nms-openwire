@@ -110,6 +110,30 @@
 
     <target name="default" depends="install-all" />
 
+    <zipfileset id="src.package.contents" basedir="${basedir}">
+        <include name="LICENSE.txt" />
+        <include name="NOTICE.txt" />
+        <include name="nant-common.xml" />
+        <include name="nant.build" />
+        <include name="nant.build" />
+        <include name="nmsprovider*.config" />
+        <include name="vs2008-*.csproj" />
+        <include name="vs2008-*.csproj" />
+        <include name="vs2008-*.sln" />
+        <include name="keyfile/*" />
+        <include name="src/**/*.cs" />
+        <exclude name="src/sandbox/**" />
+    </zipfileset>
+
+    <zipfileset id="bin.package.contents" basedir="${basedir}">
+        <include name="LICENSE.txt" />
+        <include name="NOTICE.txt" />
+        <include name="build/**/nmsprovider*" />
+        <include name="build/**/${project.name}*" />
+        <include name="lib/**/*" />
+        <exclude name="build/**/%temp%/**" />
+    </zipfileset>
+
     <!-- Load the common target definitions  -->
     <include buildfile="${basedir}/nant-common.xml" />
 </project>
