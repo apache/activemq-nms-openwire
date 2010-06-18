@@ -145,6 +145,10 @@ namespace Apache.NMS.ActiveMQ.Commands
 				{
 					properties = PrimitiveMap.Unmarshal(MarshalledProperties);
 					propertyHelper = new MessagePropertyIntercepter(this, properties, this.ReadOnlyProperties);
+					
+					// Since JMS doesn't define a Byte array interface for properties we
+					// disable them here to prevent sending invalid data to the broker.
+					propertyHelper.AllowByteArrays = false;
 				}
 
 				return propertyHelper;
