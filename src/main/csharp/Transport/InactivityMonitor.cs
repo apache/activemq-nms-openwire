@@ -45,13 +45,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         private Mutex monitor = new Mutex();
 
-        private Timer readCheckTimer;
-        private Timer writeCheckTimer;
+        private Timer connectionCheckTimer;
 
         private DateTime lastReadCheckTime;
-
-        //private WriteChecker writeChecker;
-        //private ReadChecker readChecker;
 
         private long readCheckTime;
         public long ReadCheckTime
@@ -111,15 +107,26 @@ namespace Apache.NMS.ActiveMQ.Transport
 
             base.Dispose(disposing);
         }
+		
+		public void CheckConnection(object state)
+		{
+			// First see if we have written or can write.
+			WriteCheck();
+			
+			// Now check is we've read anything, if not then we send
+			// a new KeepAlive with response required.
+			ReadCheck();
+		}
 
         #region WriteCheck Related
         /// <summary>
         /// Check the write to the broker
         /// </summary>
-        public void WriteCheck(object state)
+        public void WriteCheck()
         {
             if(this.inWrite.Value || this.failed.Value)
             {
+                Tracer.Debug("Inactivity Monitor is in write or already failed.");				
                 return;
             }
 
@@ -139,13 +146,14 @@ namespace Apache.NMS.ActiveMQ.Transport
         #endregion
 
         #region ReadCheck Related
-        public void ReadCheck(object state)
+        public void ReadCheck()
         {
             DateTime now = DateTime.Now;
             TimeSpan elapsed = now - this.lastReadCheckTime;
 
             if(!AllowReadCheck(elapsed))
             {
+                Tracer.Debug("Inactivity Monitor: A read check is not currently allowed.");				
                 return;
             }
 
@@ -302,6 +310,9 @@ namespace Apache.NMS.ActiveMQ.Transport
                     Math.Min(
                         localWireFormatInfo.MaxInactivityDurationInitialDelay,
                         remoteWireFormatInfo.MaxInactivityDurationInitialDelay);
+				
+				Tracer.DebugFormat("Inactivity: Read Check time interval: {0}", readCheckTime );
+				Tracer.DebugFormat("Inactivity: Initial Delay time interval: {0}", initialDelayTime );
 
                 this.asyncTasks = new CompositeTaskRunner();
 
@@ -317,17 +328,13 @@ namespace Apache.NMS.ActiveMQ.Transport
 
                     writeCheckTime = readCheckTime > 3 ? readCheckTime / 3 : readCheckTime;
 
-                    writeCheckTimer = new Timer(
-                        new TimerCallback(WriteCheck),
+					Tracer.DebugFormat("Inactivity: Write Check time interval: {0}", writeCheckTime );
+									
+                    this.connectionCheckTimer = new Timer(
+                        new TimerCallback(CheckConnection),
                         null,
                         initialDelayTime,
                         writeCheckTime
-                        );
-                    readCheckTimer = new Timer(
-                        new TimerCallback(ReadCheck),
-                        null,
-                        initialDelayTime,
-                        readCheckTime
                         );
                 }
             }
@@ -341,11 +348,9 @@ namespace Apache.NMS.ActiveMQ.Transport
                 {
                     AutoResetEvent shutdownEvent = new AutoResetEvent(false);
 
-                    // Attempt to wait for the Timers to shutdown, but don't wait
+                    // Attempt to wait for the Timer to shutdown, but don't wait
                     // forever, if they don't shutdown after two seconds, just quit.
-                    this.readCheckTimer.Dispose(shutdownEvent);
-                    shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000), false);
-                    this.writeCheckTimer.Dispose(shutdownEvent);
+                    this.connectionCheckTimer.Dispose(shutdownEvent);
                     shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000), false);
 
                     this.asyncTasks.Shutdown();
@@ -407,10 +412,12 @@ namespace Apache.NMS.ActiveMQ.Transport
 
             public bool Iterate()
             {
+				Tracer.Debug("AsyncWriteTask perparing for another Write Check");
                 if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
                 {
                     try
                     {
+						Tracer.Debug("AsyncWriteTask Write Check required sending KeepAlive.");
                         KeepAliveInfo info = new KeepAliveInfo();
                         info.ResponseRequired = this.parent.keepAliveResponseRequired.Value;
                         this.parent.Oneway(info);

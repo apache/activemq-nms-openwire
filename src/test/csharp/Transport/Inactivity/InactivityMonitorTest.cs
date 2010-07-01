@@ -128,7 +128,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 this.transport.InjectCommand( message );
                 Thread.Sleep( 2000 );
             }
-
+			
             // Channel should have been inactive for to long.
             Assert.IsTrue( this.exceptions.Count > 0 );
         }
