@@ -370,16 +370,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     failedConnectTransportURI = ConnectedTransportURI;
                     ConnectedTransportURI = null;
                     connected = false;
+					
+					stateTracker.TransportInterrupted();
+					
+	                if(this.Interrupted != null)
+	                {
+	                    this.Interrupted(transport);
+	                }
+					
                     if(reconnectOk)
                     {
                         reconnectTask.Wakeup();
                     }
-                }
-
-                if(this.Interrupted != null)
-                {
-                    this.Interrupted(transport);
-                }
+				}
             }
         }
 
@@ -1155,7 +1158,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
             return false;
         }
-        
+
+        public void ConnectionInterruptProcessingComplete(ConnectionId connectionId)
+        {
+            lock(reconnectMutex)
+            {
+                Tracer.Debug("Connection Interrupt Processing is complete for ConnectionId: " + connectionId);
+                stateTracker.ConnectionInterruptProcessingComplete(this, connectionId);
+            }
+        }
+
         public void Dispose()
         {
             Dispose(true);

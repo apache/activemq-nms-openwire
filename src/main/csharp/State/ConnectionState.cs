@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.Util;
 
@@ -29,6 +30,9 @@ namespace Apache.NMS.ActiveMQ.State
 		private AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
 		private AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
 		private Atomic<bool> _shutdown = new Atomic<bool>(false);
+	    private bool connectionInterruptProcessingComplete = true;
+		private Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = 
+			new Dictionary<ConsumerId, ConsumerInfo>();
 
 		public ConnectionState(ConnectionInfo info)
 		{
@@ -74,21 +78,6 @@ namespace Apache.NMS.ActiveMQ.State
 			checkShutdown();
 			transactions.Add(id, new TransactionState(id));
 		}
-
-		/*
-		public TransactionState getTransactionState(TransactionId id) {
-			return transactions[id];
-		}
-
-		public SynchronizedCollection<TransactionState> getTransactionStates() {
-			return transactions.Values;
-		}
-
-		public SessionState getSessionState(SessionId id) {
-			return sessions[id];
-		}
-
-		*/
 
 		public TransactionState this[TransactionId id]
 		{
@@ -191,6 +180,17 @@ namespace Apache.NMS.ActiveMQ.State
 			{
 				throw new ApplicationException("Disposed");
 			}
+		}
+		
+		public Dictionary<ConsumerId, ConsumerInfo> RecoveringPullConsumers
+		{
+			get { return this.recoveringPullConsumers; }
+		}
+		
+		public bool ConnectionInterruptProcessingComplete
+		{
+			get { return this.connectionInterruptProcessingComplete; }
+			set { this.connectionInterruptProcessingComplete = value; }
 		}
 
 		public void shutdown()

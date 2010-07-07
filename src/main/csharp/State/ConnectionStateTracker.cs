@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 
@@ -175,10 +176,37 @@ namespace Apache.NMS.ActiveMQ.State
 		/// <param name="sessionState"></param>
 		protected void DoRestoreConsumers(ITransport transport, SessionState sessionState)
 		{
+            // Restore the session's consumers but possibly in pull only (prefetch 0 state) till
+            // recovery completes.
+
+	        ConnectionState connectionState = connectionStates[sessionState.Info.SessionId.ParentId];
+			bool connectionInterruptionProcessingComplete =
+                connectionState.ConnectionInterruptProcessingComplete;
+
 			// Restore the session's consumers
 			foreach(ConsumerState consumerState in sessionState.ConsumerStates)
 			{
-				transport.Oneway(consumerState.Info);
+                ConsumerInfo infoToSend = consumerState.Info;
+
+                if(!connectionInterruptionProcessingComplete && infoToSend.PrefetchSize > 0)
+                {
+                    infoToSend = consumerState.Info.Clone() as ConsumerInfo;
+                    connectionState.RecoveringPullConsumers.Add(infoToSend.ConsumerId, consumerState.Info);
+                    infoToSend.PrefetchSize = 0;
+                    if(Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("restore consumer: " + infoToSend.ConsumerId +
+                                     " in pull mode pending recovery, overriding prefetch: " +
+                                     consumerState.Info.PrefetchSize);
+                    }
+                }
+
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("restore consumer: " + infoToSend.ConsumerId);
+                }
+
+                transport.Oneway(infoToSend);
 			}
 		}
 
@@ -189,7 +217,6 @@ namespace Apache.NMS.ActiveMQ.State
 		protected void DoRestoreProducers(ITransport transport, SessionState sessionState)
 		{
 			// Restore the session's producers
-
 			foreach(ProducerState producerState in sessionState.ProducerStates)
 			{
 				transport.Oneway(producerState.Info);
@@ -652,5 +679,49 @@ namespace Apache.NMS.ActiveMQ.State
 				_maxCacheSize = value;
 			}
 		}
+
+	    public void ConnectionInterruptProcessingComplete(ITransport transport, ConnectionId connectionId) 
+		{
+	        ConnectionState connectionState = connectionStates[connectionId];
+	        if(connectionState != null) 
+			{
+	            connectionState.ConnectionInterruptProcessingComplete = true;
+	            
+				Dictionary<ConsumerId, ConsumerInfo> stalledConsumers = connectionState.RecoveringPullConsumers;
+				foreach(KeyValuePair<ConsumerId, ConsumerInfo> entry in stalledConsumers)
+				{
+	                ConsumerControl control = new ConsumerControl();
+	                control.ConsumerId = entry.Key;
+	                control.Prefetch = entry.Value.PrefetchSize;
+	                control.Destination = entry.Value.Destination;
+	                try 
+					{
+	                    if(Tracer.IsDebugEnabled) 
+						{
+	                        Tracer.Debug("restored recovering consumer: " + control.ConsumerId + 
+							             " with: " + control.Prefetch);
+	                    }
+	                    transport.Oneway(control);
+	                } 
+					catch(Exception ex)
+					{
+	                    if(Tracer.IsDebugEnabled) 
+						{
+	                        Tracer.Debug("Failed to submit control for consumer: " + control.ConsumerId +
+	                                     " with: " + control.Prefetch + "Error: " + ex.Message);
+	                    }
+	                }
+	            }
+	            stalledConsumers.Clear();
+	        }
+	    }
+		
+	    public void TransportInterrupted() 
+		{
+	        foreach(ConnectionState connectionState in connectionStates.Values) 
+			{
+	            connectionState.ConnectionInterruptProcessingComplete = false;
+	        }
+	    }		
 	}
 }

@@ -793,13 +793,30 @@ namespace Apache.NMS.ActiveMQ
                 this.executor.ClearMessagesInProgress();
             }
 
+            // Because we are called from inside the Transport Reconnection logic
+            // we spawn the Consumer clear to another Thread so that we can avoid
+            // any lock contention that might exist between the consumer and the
+            // connection that is reconnecting.
             lock(this.consumers.SyncRoot)
             {
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
-                    consumer.ClearMessagesInProgress();
+                    consumer.InProgressClearRequired();
+                    ThreadPool.QueueUserWorkItem(ClearMessages, consumer);
                 }
             }
+        }
+
+        private void ClearMessages(object value)
+        {
+            MessageConsumer consumer = value as MessageConsumer;
+
+            if(Tracer.IsDebugEnabled)
+            {
+                Tracer.Debug("Performing Async Clear of In Progress Messages on Consumer: " + consumer.ConsumerId);
+            }
+
+            consumer.ClearMessagesInProgress();
         }
 
         internal void Acknowledge()

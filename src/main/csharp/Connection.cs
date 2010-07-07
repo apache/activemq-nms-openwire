@@ -20,6 +20,7 @@ using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.Util;
 
@@ -67,6 +68,7 @@ namespace Apache.NMS.ActiveMQ
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
         private IdGenerator clientIdGenerator;
+        private volatile CountDownLatch transportInterruptionProcessingComplete;
 
         public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
         {
@@ -641,6 +643,7 @@ namespace Apache.NMS.ActiveMQ
         {
             if(command is MessageDispatch)
             {
+                WaitForTransportInterruptionProcessingToComplete();
                 DispatchMessage((MessageDispatch) command);
             }
             else if(command is KeepAliveInfo)
@@ -767,6 +770,12 @@ namespace Apache.NMS.ActiveMQ
         {
             Tracer.Debug("Connection: Transport has been Interrupted.");
 
+            this.transportInterruptionProcessingComplete = new CountDownLatch(dispatchers.Count);
+            if(Tracer.IsDebugEnabled)
+            {
+                Tracer.Debug("transport interrupted, dispatchers: " + dispatchers.Count);
+            }
+
             foreach(Session session in this.sessions)
             {
                 try
@@ -888,6 +897,63 @@ namespace Apache.NMS.ActiveMQ
             command.Destination = (ActiveMQDestination) destination;
 
             this.Oneway(command);
+        }
+
+        private void WaitForTransportInterruptionProcessingToComplete()
+        {
+            CountDownLatch cdl = this.transportInterruptionProcessingComplete;
+            if(cdl != null)
+            {
+                if(!closed && cdl.Remaining > 0)
+                {
+                    Tracer.Warn("dispatch paused, waiting for outstanding dispatch interruption " +
+                                "processing (" + cdl.Remaining + ") to complete..");
+                    cdl.await(TimeSpan.FromSeconds(10));
+                }
+
+                SignalInterruptionProcessingComplete();
+            }
+        }
+
+        internal void TransportInterruptionProcessingComplete()
+        {
+            CountDownLatch cdl = this.transportInterruptionProcessingComplete;
+            if(cdl != null)
+            {
+                cdl.countDown();
+                try
+                {
+                    SignalInterruptionProcessingComplete();
+                }
+                catch
+                {
+                }
+            }
+        }
+    
+        private void SignalInterruptionProcessingComplete()
+        {
+            CountDownLatch cdl = this.transportInterruptionProcessingComplete;
+            if(cdl.Remaining == 0)
+            {
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("transportInterruptionProcessingComplete for: " + this.info.ConnectionId);
+                }
+                this.transportInterruptionProcessingComplete = null;
+
+                FailoverTransport failoverTransport = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+                if(failoverTransport != null)
+                {
+                    failoverTransport.ConnectionInterruptProcessingComplete(this.info.ConnectionId);
+                    if(Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("notified failover transport (" + failoverTransport +
+                                     ") of interruption completion for: " + this.info.ConnectionId);
+                    }
+                }
+    
+            }
         }
 
     }
