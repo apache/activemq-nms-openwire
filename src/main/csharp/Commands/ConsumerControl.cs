@@ -35,6 +35,7 @@ namespace Apache.NMS.ActiveMQ.Commands
     {
         public const byte ID_CONSUMERCONTROL = 17;
 
+        ActiveMQDestination destination;
         bool close;
         ConsumerId consumerId;
         int prefetch;
@@ -64,12 +65,19 @@ namespace Apache.NMS.ActiveMQ.Commands
             return GetType().Name + "[ " + 
                 "commandId = " + this.CommandId + ", " + 
                 "responseRequired = " + this.ResponseRequired + ", " + 
+                "Destination = " + Destination + ", " + 
                 "Close = " + Close + ", " + 
                 "ConsumerId = " + ConsumerId + ", " + 
                 "Prefetch = " + Prefetch + ", " + 
                 "Flush = " + Flush + ", " + 
                 "Start = " + Start + ", " + 
                 "Stop = " + Stop + " ]";
+        }
+
+        public ActiveMQDestination Destination
+        {
+            get { return destination; }
+            set { this.destination = value; }
         }
 
         public bool Close

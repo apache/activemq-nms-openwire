@@ -40,6 +40,9 @@ namespace Apache.NMS.ActiveMQ.Commands
         bool faultTolerant;
         bool resume;
         bool suspend;
+        string connectedBrokers;
+        string reconnectTo;
+        bool rebalanceConnection;
 
         ///
         /// <summery>
@@ -67,7 +70,10 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "Exit = " + Exit + ", " + 
                 "FaultTolerant = " + FaultTolerant + ", " + 
                 "Resume = " + Resume + ", " + 
-                "Suspend = " + Suspend + " ]";
+                "Suspend = " + Suspend + ", " + 
+                "ConnectedBrokers = " + ConnectedBrokers + ", " + 
+                "ReconnectTo = " + ReconnectTo + ", " + 
+                "RebalanceConnection = " + RebalanceConnection + " ]";
         }
 
         public bool Close
@@ -98,6 +104,24 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return suspend; }
             set { this.suspend = value; }
+        }
+
+        public string ConnectedBrokers
+        {
+            get { return connectedBrokers; }
+            set { this.connectedBrokers = value; }
+        }
+
+        public string ReconnectTo
+        {
+            get { return reconnectTo; }
+            set { this.reconnectTo = value; }
+        }
+
+        public bool RebalanceConnection
+        {
+            get { return rebalanceConnection; }
+            set { this.rebalanceConnection = value; }
         }
 
         ///
