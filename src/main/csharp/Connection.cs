@@ -87,6 +87,7 @@ namespace Apache.NMS.ActiveMQ
 
             this.info = new ConnectionInfo();
             this.info.ConnectionId = id;
+            this.info.FaultTolerant = transport.IsFaultTolerant;
         }
 
         ~Connection()
@@ -930,7 +931,7 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
         }
-    
+
         private void SignalInterruptionProcessingComplete()
         {
             CountDownLatch cdl = this.transportInterruptionProcessingComplete;
@@ -952,7 +953,7 @@ namespace Apache.NMS.ActiveMQ
                                      ") of interruption completion for: " + this.info.ConnectionId);
                     }
                 }
-    
+
             }
         }
 

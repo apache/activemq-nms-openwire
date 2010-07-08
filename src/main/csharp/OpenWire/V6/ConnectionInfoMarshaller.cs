@@ -84,6 +84,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V6
             info.Manageable = bs.ReadBoolean();
             info.ClientMaster = bs.ReadBoolean();
             info.FaultTolerant = bs.ReadBoolean();
+            info.FailoverReconnect = bs.ReadBoolean();
         }
 
         //
@@ -103,6 +104,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V6
             bs.WriteBoolean(info.Manageable);
             bs.WriteBoolean(info.ClientMaster);
             bs.WriteBoolean(info.FaultTolerant);
+            bs.WriteBoolean(info.FailoverReconnect);
 
             return rc + 0;
         }
@@ -120,6 +122,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V6
             TightMarshalString2(info.Password, dataOut, bs);
             TightMarshalString2(info.UserName, dataOut, bs);
             TightMarshalObjectArray2(wireFormat, info.BrokerPath, dataOut, bs);
+            bs.ReadBoolean();
             bs.ReadBoolean();
             bs.ReadBoolean();
             bs.ReadBoolean();
@@ -154,6 +157,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V6
             info.Manageable = dataIn.ReadBoolean();
             info.ClientMaster = dataIn.ReadBoolean();
             info.FaultTolerant = dataIn.ReadBoolean();
+            info.FailoverReconnect = dataIn.ReadBoolean();
         }
 
         // 
@@ -174,6 +178,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V6
             dataOut.Write(info.Manageable);
             dataOut.Write(info.ClientMaster);
             dataOut.Write(info.FaultTolerant);
+            dataOut.Write(info.FailoverReconnect);
         }
     }
 }

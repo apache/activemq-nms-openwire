@@ -44,6 +44,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         bool manageable;
         bool clientMaster;
         bool faultTolerant;
+        bool failoverReconnect;
 
         ///
         /// <summery>
@@ -75,7 +76,8 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "BrokerMasterConnector = " + BrokerMasterConnector + ", " + 
                 "Manageable = " + Manageable + ", " + 
                 "ClientMaster = " + ClientMaster + ", " + 
-                "FaultTolerant = " + FaultTolerant + " ]";
+                "FaultTolerant = " + FaultTolerant + ", " + 
+                "FailoverReconnect = " + FailoverReconnect + " ]";
         }
 
         public ConnectionId ConnectionId
@@ -130,6 +132,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return faultTolerant; }
             set { this.faultTolerant = value; }
+        }
+
+        public bool FailoverReconnect
+        {
+            get { return failoverReconnect; }
+            set { this.failoverReconnect = value; }
         }
 
         ///
