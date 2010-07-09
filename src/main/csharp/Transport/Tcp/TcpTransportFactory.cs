@@ -92,13 +92,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { sendTimeout = value; }
         }
 
-        private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
-        public int RequestTimeout
-        {
-            get { return (int) requestTimeout.TotalMilliseconds; }
-            set { requestTimeout = TimeSpan.FromMilliseconds(value); }
-        }
-
         #endregion
 
         #region ITransportFactory Members
@@ -163,7 +156,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             }
 
             transport = new WireFormatNegotiator(transport, wireformat);
-            transport.RequestTimeout = this.requestTimeout;
             if(setTransport != null)
             {
                 setTransport(transport, location);
@@ -178,7 +170,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
             transport = new MutexTransport(transport);
             transport = new ResponseCorrelator(transport);
-            transport.RequestTimeout = this.requestTimeout;
 
             return transport;
         }

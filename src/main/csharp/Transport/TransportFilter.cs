@@ -92,22 +92,13 @@ namespace Apache.NMS.ActiveMQ.Transport
 		}
 
 		/// <summary>
-		/// Property RequestTimeout
-		/// </summary>
-		public TimeSpan RequestTimeout
-		{
-			get { return this.next.RequestTimeout; }
-			set { this.next.RequestTimeout = value; }
-		}
-
-		/// <summary>
 		/// Method Request
 		/// </summary>
 		/// <returns>A Response</returns>
 		/// <param name="command">A  Command</param>
 		public virtual Response Request(Command command)
-		{
-			return Request(command, RequestTimeout);
+		{			
+			return Request(command, TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite));
 		}
 
 		/// <summary>

@@ -73,7 +73,6 @@ namespace Apache.NMS.ActiveMQ
         public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
         {
             this.brokerUri = connectionUri;
-            this.requestTimeout = transport.RequestTimeout;
             this.clientIdGenerator = clientIdGenerator;
 
             this.transport = transport;

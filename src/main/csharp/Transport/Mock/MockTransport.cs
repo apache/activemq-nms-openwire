@@ -52,7 +52,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         private ResumedHandler resumedHandler;
         private bool disposed = false;
         private bool started = false;
-        private TimeSpan requestTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
         private TaskRunner asyncResponseTask;
         private Queue<Command> receiveQueue = new Queue<Command>();
         private IResponseBuilder responseBuilder = new OpenWireResponseBuilder();
@@ -263,12 +262,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         }
         
 		#region Property Accessors
-		
-        public TimeSpan RequestTimeout
-        {
-            get{ return requestTimeout; }
-            set{ this.requestTimeout = value; }
-        }
 
         public CommandHandler Command
         {

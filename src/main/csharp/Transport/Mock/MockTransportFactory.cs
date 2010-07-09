@@ -32,13 +32,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 		#region Properties
 
-		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
-		public int RequestTimeout
-		{
-			get { return (int) requestTimeout.TotalMilliseconds; }
-			set { requestTimeout = TimeSpan.FromMilliseconds(value); }
-		}
-
 		private bool useLogging = false;
 		public bool UseLogging
 		{
@@ -89,7 +82,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 			transport = new MutexTransport(transport);
 			transport = new ResponseCorrelator(transport);
-			transport.RequestTimeout = this.requestTimeout;
 
 			return transport;
 		}

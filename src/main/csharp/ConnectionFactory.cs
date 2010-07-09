@@ -49,6 +49,7 @@ namespace Apache.NMS.ActiveMQ
         private bool alwaysSyncSend;
         private bool sendAcksAsync=true;
         private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
+		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
 
         private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
@@ -240,6 +241,12 @@ namespace Apache.NMS.ActiveMQ
             get { return this.dispatchAsync; }
             set { this.dispatchAsync = value; }
         }
+		
+		public int RequestTimeout
+		{
+			get { return (int)this.requestTimeout.TotalMilliseconds; }
+			set { this.requestTimeout = TimeSpan.FromMilliseconds(value); }
+		}
 
         public string AckMode
         {
@@ -330,6 +337,7 @@ namespace Apache.NMS.ActiveMQ
             connection.SendAcksAsync = this.SendAcksAsync;
             connection.AcknowledgementMode = this.acknowledgementMode;
             connection.UseCompression = this.useCompression;
+			connection.RequestTimeout = this.requestTimeout;
             connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
             connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
             connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;

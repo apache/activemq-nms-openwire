@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 	/// </summary>
 	public class FutureResponse
 	{
-		private static TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
+		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
 		public TimeSpan ResponseTimeout
 		{
 			get { return maxWait; }
@@ -37,39 +37,26 @@ namespace Apache.NMS.ActiveMQ.Transport
 		private readonly CountDownLatch latch = new CountDownLatch(1);
 		private Response response;
 
-		public WaitHandle AsyncWaitHandle
-		{
-			get { return latch.AsyncWaitHandle; }
-		}
-
 		public Response Response
 		{
 			// Blocks the caller until a value has been set
 			get
 			{
-				bool waitForResponse = false;
-
 				lock(latch)
 				{
-					if(null == response)
+					if(null != response)
 					{
-						waitForResponse = true;
+						return response;
 					}
 				}
 
-				if(waitForResponse)
+				try
 				{
-					try
-					{
-						if(!latch.await(maxWait))
-						{
-							// TODO: Throw timeout exception?
-						}
-					}
-					catch (Exception e)
-					{
-						Tracer.Error("Caught while waiting on monitor: " + e);
-					}
+					latch.await(maxWait);
+				}
+				catch (Exception e)
+				{
+					Tracer.Error("Caught while waiting on monitor: " + e);
 				}
 
 				lock(latch)

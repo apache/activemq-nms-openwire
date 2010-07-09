@@ -29,6 +29,7 @@ namespace Apache.NMS.ActiveMQ.Transport
     {
         private readonly IDictionary requestMap = Hashtable.Synchronized(new Hashtable());
         private int nextCommandId;
+		private Exception error;
 
         public ResponseCorrelator(ITransport next) : base(next)
         {
@@ -36,20 +37,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         protected override void OnException(ITransport sender, Exception command)
         {
+			Dispose(command);
             base.OnException(sender, command);
-
-            foreach(DictionaryEntry entry in requestMap)
-            {
-                FutureResponse value = (FutureResponse) entry.Value;
-                ExceptionResponse response = new ExceptionResponse();
-                BrokerError error = new BrokerError();
-
-                error.Message = command.Message;
-                response.Exception = error;
-                value.Response = response;
-            }
-
-            requestMap.Clear();
         }
 
         internal int GetNextCommandId()
@@ -59,11 +48,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         public override void Oneway(Command command)
         {
-            if(0 == command.CommandId)
-            {
-                command.CommandId = GetNextCommandId();
-            }
-
+            command.CommandId = GetNextCommandId();
+			command.ResponseRequired = false;
+			
             next.Oneway(command);
         }
 
@@ -74,9 +61,29 @@ namespace Apache.NMS.ActiveMQ.Transport
             command.CommandId = commandId;
             command.ResponseRequired = true;
             FutureResponse future = new FutureResponse();
-            requestMap[commandId] = future;
+	        Exception priorError = null;
+	        lock(requestMap.SyncRoot) 
+			{
+	            priorError = this.error;
+	            if(priorError == null) 
+				{
+		            requestMap[commandId] = future;
+	            }
+	        }
+	
+	        if(priorError != null) 
+			{
+				BrokerError brError = new BrokerError();
+				brError.Message = priorError.Message;
+				ExceptionResponse response = new ExceptionResponse();
+				response.Exception = brError;
+	            future.Response = response;
+	            throw priorError;
+	        }
+			
             next.Oneway(command);
-            return future;
+
+			return future;
         }
 
         public override Response Request(Command command, TimeSpan timeout)
@@ -87,10 +94,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 
             if(response != null && response is ExceptionResponse)
             {
-                ExceptionResponse er = (ExceptionResponse) response;
+                ExceptionResponse er = response as ExceptionResponse;
                 BrokerError brokerError = er.Exception;
 
-                if (brokerError == null)
+                if(brokerError == null)
                 {
                     throw new BrokerException();
                 }
@@ -118,7 +125,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
                     if(response is ExceptionResponse)
                     {
-                        ExceptionResponse er = (ExceptionResponse) response;
+                        ExceptionResponse er = response as ExceptionResponse;
                         BrokerError brokerError = er.Exception;
                         BrokerException exception = new BrokerException(brokerError);
                         this.exceptionHandler(this, exception);
@@ -132,16 +139,45 @@ namespace Apache.NMS.ActiveMQ.Transport
                     }
                 }
             }
-            else if(command is ShutdownInfo)
-            {
-                // lets shutdown
-                this.commandHandler(sender, command);
-            }
             else
             {
                 this.commandHandler(sender, command);
             }
         }
+		
+		public override void Stop()
+		{
+			this.Dispose(new IOException("Stopped"));
+			base.Stop();
+		}
+		
+		private void Dispose(Exception error)
+		{
+			ArrayList requests = null;
+			
+	        lock(requestMap.SyncRoot) 
+			{
+	            if(this.error == null) 
+				{
+	                this.error = error;
+	                requests = new ArrayList(requestMap.Values);
+	                requestMap.Clear();
+	            }
+	        }
+			
+	        if(requests != null)
+			{
+				foreach(FutureResponse future in requests)
+				{
+					BrokerError brError = new BrokerError();
+					brError.Message = error.Message;
+					ExceptionResponse response = new ExceptionResponse();
+					response.Exception = brError;
+		            future.Response = response;
+				}
+	        }
+		}
+		
     }
 }
 

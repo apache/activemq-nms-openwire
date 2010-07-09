@@ -73,7 +73,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private List<BackupTransport> backups = new List<BackupTransport>();
         private int backupPoolSize = 1;
         private bool trackMessages = false;
-        private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
         private int maxCacheSize = 256;
         private volatile Exception failure;
         private readonly object mutex = new object();
@@ -187,12 +186,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             set { this.timeout = value; }
         }
 
-        public TimeSpan RequestTimeout
-        {
-            get { return requestTimeout; }
-            set { requestTimeout = value; }
-        }
-        
         public int InitialReconnectDelay
         {
             get { return initialReconnectDelay; }
