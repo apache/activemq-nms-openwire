@@ -405,7 +405,7 @@ namespace Apache.NMS.ActiveMQ
             Session session = new Session(this, info, sessionAcknowledgementMode, this.dispatchAsync);
 
             // Set properties on session using parameters prefixed with "session."
-            URISupport.CompositeData c = URISupport.parseComposite(this.brokerUri);
+            URISupport.CompositeData c = URISupport.ParseComposite(this.brokerUri);
             URISupport.SetProperties(session, c.Parameters, "session.");
 
             if(IsStarted)

@@ -25,7 +25,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	{
 		private ITransport doConnect(Uri location)
 		{
-			ITransport transport = CreateTransport(URISupport.parseComposite(location));
+			ITransport transport = CreateTransport(URISupport.ParseComposite(location));
 			transport = new MutexTransport(transport);
 			transport = new ResponseCorrelator(transport);
 			return transport;
@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public ITransport CompositeConnect(Uri location)
 		{
-			return CreateTransport(URISupport.parseComposite(location));
+			return CreateTransport(URISupport.ParseComposite(location));
 		}
 
 		public ITransport CompositeConnect(Uri location, SetTransport setTransport)

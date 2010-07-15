@@ -87,7 +87,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 
 		public ITransport CreateTransport(Uri location)
 		{
-			URISupport.CompositeData cd = URISupport.parseComposite(location);
+			URISupport.CompositeData cd = URISupport.ParseComposite(location);
 
 			if(cd.Components.Length > 0)
 			{

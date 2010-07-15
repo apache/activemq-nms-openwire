@@ -41,6 +41,10 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("activemq:failover:tcp://${activemqhost}:61616")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616)")]
 		[Row("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
+        [Row("activemq:failover://(tcp://${activemqhost}:61616)?initialReconnectDelay=100")]
+        [Row("activemq:failover:(tcp://${activemqhost}:61616)?connection.asyncSend=true")]
+        [Row("activemq:failover:(tcp://${activemqhost}:61616)?timeout=100&connection.asyncSend=true")]
+
 #if false
 		[Row("activemq:discovery:multicast://default")]
 		[Row("activemq:discovery:(multicast://default)")]
@@ -66,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Row("discovery://${activemqhost}:6155", ExpectedException = typeof(NMSConnectionException))]
 		[Row("sms://${activemqhost}:61616", ExpectedException = typeof(NMSConnectionException))]
 		[Row("activemq:multicast://${activemqhost}:6155", ExpectedException = typeof(NMSConnectionException))]
-		[Row("activemq:(tcp://${activemqhost}:61616)?connection.asyncClose=false", ExpectedException = typeof(NMSConnectionException))]
+        [Row("activemq:(tcp://${activemqhost}:61616)?connection.asyncClose=false", ExpectedException = typeof(NMSConnectionException))]
 
         [Row("(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)", ExpectedException = typeof(UriFormatException))]
 		[Row("tcp://${activemqhost}:61616,tcp://${activemqhost}:61616", ExpectedException = typeof(UriFormatException))]
