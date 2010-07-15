@@ -74,6 +74,7 @@
     </Compile>
     <Compile Include="src\test\csharp\Commands\MessageCompressionTest.cs" />
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
+    <Compile Include="src\test\csharp\ConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\ConnectionMetaDataTest.cs" />
     <Compile Include="src\test\csharp\ExclusiveConsumerTest.cs" />
     <Compile Include="src\test\csharp\IndividualAckTest.cs" />
