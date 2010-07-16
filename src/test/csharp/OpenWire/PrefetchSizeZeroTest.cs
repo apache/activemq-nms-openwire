@@ -16,11 +16,11 @@
  */
 
 using System;
-using Apache.NMS.ActiveMQ;
+using Apache.NMS.Test;
 using Apache.NMS.Util;
 using NUnit.Framework;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
 	[TestFixture]
 	public class PrefetchSizeZeroTest : NMSTestSupport

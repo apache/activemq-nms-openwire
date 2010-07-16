@@ -16,9 +16,10 @@
  */
 
 using System;
+using Apache.NMS.Test;
 using NUnit.Framework;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]    
     public class IndividualAckTest : NMSTestSupport

@@ -16,11 +16,11 @@
  */
 
 using System;
+using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {    
     [TestFixture]
     public class ZeroPrefetchConsumerTest : NMSTestSupport
@@ -67,10 +67,10 @@ namespace Apache.NMS.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
 
-        [RowTest]
-        [Row(AcknowledgementMode.AutoAcknowledge)]
-        [Row(AcknowledgementMode.Transactional)]        
-        public void TestIdleConsumer(AcknowledgementMode ackMode) 
+        [Test]
+        public void TestIdleConsumer(
+			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.Transactional)]
+			AcknowledgementMode ackMode) 
         {
             ISession session = connection.CreateSession(ackMode);
     
@@ -105,10 +105,10 @@ namespace Apache.NMS.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
     
-        [RowTest]
-        [Row(AcknowledgementMode.AutoAcknowledge)]
-        [Row(AcknowledgementMode.Transactional)]  
-        public void TestRecvRecvCommit(AcknowledgementMode ackMode)
+        [Test]
+        public void TestRecvRecvCommit(
+			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.Transactional)]
+			AcknowledgementMode ackMode)
         {
             ISession session = connection.CreateSession(ackMode);
     

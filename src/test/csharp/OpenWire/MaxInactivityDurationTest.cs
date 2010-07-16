@@ -17,10 +17,11 @@
 
 using System;
 using System.Threading;
+using Apache.NMS.Test;
 using Apache.NMS.Util;
 using NUnit.Framework;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
 	[TestFixture]
 	public class MaxInactivityDurationTest : NMSTestSupport

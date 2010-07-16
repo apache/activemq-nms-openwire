@@ -16,11 +16,10 @@
  */
 
 using System.Threading;
-using Apache.NMS.ActiveMQ;
+using Apache.NMS.Test;
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
 	[TestFixture]
 	public class VirtualTopicTest : NMSTestSupport
@@ -33,16 +32,13 @@ namespace Apache.NMS.Test
 
 		protected const int totalMsgs = 5;
 
-		[RowTest]
-		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.Persistent)]
-		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.Persistent)]
-		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.Persistent)]
-		[Row(AcknowledgementMode.Transactional,     MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.Transactional,     MsgDeliveryMode.Persistent)]
-		public void SendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, MsgDeliveryMode deliveryMode)
+		[Test]
+		public void SendReceiveVirtualTopicMessage(
+			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge,
+				AcknowledgementMode.DupsOkAcknowledge, AcknowledgementMode.Transactional)]
+			AcknowledgementMode ackMode,
+			[Values(MsgDeliveryMode.NonPersistent, MsgDeliveryMode.Persistent)]
+			MsgDeliveryMode deliveryMode)
 		{
 			using(IConnection connection = CreateConnection(TEST_CLIENT_ID))
 			{
@@ -109,15 +105,13 @@ namespace Apache.NMS.Test
 		protected int receivedA;
 		protected int receivedB;
 
-		[RowTest]
-		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.AutoAcknowledge,   MsgDeliveryMode.Persistent)]
-		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.ClientAcknowledge, MsgDeliveryMode.Persistent)]
-		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.NonPersistent)]
-		[Row(AcknowledgementMode.DupsOkAcknowledge, MsgDeliveryMode.Persistent)]
+		[Test]
 		// Do not use listeners with transactional processing.
-		public void AsyncSendReceiveVirtualTopicMessage(AcknowledgementMode ackMode, MsgDeliveryMode deliveryMode)
+		public void AsyncSendReceiveVirtualTopicMessage(
+			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge, AcknowledgementMode.DupsOkAcknowledge)]
+			AcknowledgementMode ackMode,
+			[Values(MsgDeliveryMode.NonPersistent, MsgDeliveryMode.Persistent)]
+			MsgDeliveryMode deliveryMode)
 		{
 			receivedA = 0;
 			receivedB = 0;

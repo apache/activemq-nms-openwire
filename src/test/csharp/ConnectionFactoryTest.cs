@@ -21,7 +21,6 @@ using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ;
 
 using NUnit.Framework;
-using NUnit.Framework.Extensions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {

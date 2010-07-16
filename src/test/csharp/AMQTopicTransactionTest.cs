@@ -18,7 +18,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
     public class AMQTopicTransactionTest : AMQTransactionTestSupport

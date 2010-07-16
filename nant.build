@@ -29,7 +29,6 @@
 
     <!-- Lib organized as: module/plaform/artifact, platform might be something like 'all' or 'net-2.0/release' -->
     <property name="nunit.dll" value="${basedir}/lib/NUnit/${current.build.framework}/nunit.framework.dll" dynamic="true" />
-    <property name="nunit.extensions.dll" value="${basedir}/lib/NUnit/${current.build.framework}/nunit.framework.extensions.dll" dynamic="true" />
     <property name="Apache.NMS.dll" value="${basedir}/lib/Apache.NMS/${current.build.framework}/Apache.NMS.dll" dynamic="true" />
     <property name="Apache.NMS.pdb" value="${basedir}/lib/Apache.NMS/${current.build.framework}/Apache.NMS.pdb" dynamic="true" />
     <property name="Apache.NMS.Test.dll" value="${basedir}/lib/Apache.NMS/${current.build.framework}//Apache.NMS.Test.dll" dynamic="true" />
@@ -62,8 +61,8 @@
         <!-- Property grouping for 'vendor.nunit.org' -->
         <property name="vendor.nunit.org.name" value="NUnit" />
         <property name="vendor.nunit.org.group" value="org.nunit" />
-        <property name="vendor.nunit.org.version" value="2.4.8" />
-        <property name="vendor.nunit.org.filenames" value="nunit.framework.dll,nunit.framework.extensions.dll" />
+        <property name="vendor.nunit.org.version" value="2.5.5" />
+        <property name="vendor.nunit.org.filenames" value="nunit.framework.dll" />
     </target>
 
     <target name="dependency-init" description="Initializes build dependencies">
@@ -82,7 +81,6 @@
             <include name="${Apache.NMS.Test.dll}" />
             <include name="${build.bin.dir}/${project.name}.dll" />
             <include name="${nunit.dll}" />
-            <include name="${nunit.extensions.dll}" />
         </assemblyfileset>
 
         <fileset id="content.filenames">
@@ -94,7 +92,6 @@
             <include name="${Apache.NMS.Test.dll}" />
             <include name="${Apache.NMS.Test.pdb}" />
             <include name="${nunit.dll}" />
-            <include name="${nunit.extensions.dll}" />
             <include name="${NUnit.Projectfile}" />
         </fileset>
 

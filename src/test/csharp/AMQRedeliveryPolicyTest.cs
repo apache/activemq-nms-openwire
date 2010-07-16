@@ -16,11 +16,11 @@
  */
 
 using System;
-using Apache.NMS.ActiveMQ;
+using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
     public class AMQRedeliveryPolicyTest : NMSTestSupport

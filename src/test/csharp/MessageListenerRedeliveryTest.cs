@@ -16,11 +16,11 @@
  */
 
 using System.Threading;
-using Apache.NMS.ActiveMQ;
+using Apache.NMS.Test;
 using Apache.NMS.Policies;
 using NUnit.Framework;
 
-namespace Apache.NMS.Test
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
     public class MessageListenerRedeliveryTest : NMSTestSupport
