@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
@@ -404,9 +405,9 @@ namespace Apache.NMS.ActiveMQ
             SyncRequest(info, this.RequestTimeout);
             Session session = new Session(this, info, sessionAcknowledgementMode, this.dispatchAsync);
 
-            // Set properties on session using parameters prefixed with "session."
-            URISupport.CompositeData c = URISupport.ParseComposite(this.brokerUri);
-            URISupport.SetProperties(session, c.Parameters, "session.");
+            // Set propertieDs on session using parameters prefixed with "session."
+			StringDictionary options = URISupport.ParseQuery(this.brokerUri.Query);
+            URISupport.SetProperties(session, options, "session.");
 
             if(IsStarted)
             {
