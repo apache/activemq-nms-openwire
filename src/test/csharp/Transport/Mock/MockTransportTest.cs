@@ -28,27 +28,27 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class MockTransportTest
     {
-        private List<Command> sent = new List<Command>();
-        private List<Command> received = new List<Command>();
-        private List<Exception> exceptions = new List<Exception>();
-        
+        private List<Command> sent;
+        private List<Command> received;
+        private List<Exception> exceptions;
+
         private MockTransport transport;
-        
+
         public void OnException(ITransport transport, Exception exception)
         {
-            Tracer.DebugFormat("MockTransportTest::onException - " + exception );            
+            Tracer.DebugFormat("MockTransportTest::onException - " + exception );
             exceptions.Add( exception );
         }
-        
+
         public void OnCommand(ITransport transport, Command command)
         {
-            Tracer.DebugFormat("MockTransportTest::OnCommand - " + command );            
+            Tracer.DebugFormat("MockTransportTest::OnCommand - " + command );
             received.Add( command );
         }
-        
+
         public void OnOutgoingCommand(ITransport transport, Command command)
         {
-            Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command );            
+            Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command );
             sent.Add( command );
         }
 
@@ -57,16 +57,20 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             this.transport = new MockTransport();
 
+            sent = new List<Command>();
+            received = new List<Command>();
+            exceptions = new List<Exception>();
+
             transport.Command = new CommandHandler(OnCommand);
             transport.Exception = new ExceptionHandler(OnException);
             transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
         }
-        
+
         [Test]
         public void CreateMockTransportTest()
         {
             MockTransport transport = new MockTransport();
-            
+
             Assert.IsNotNull(transport);
             Assert.IsFalse(transport.IsStarted);
             Assert.IsFalse(transport.IsDisposed);
@@ -82,7 +86,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             transport.Start();
         }
-        
+
         [Test]
         [ExpectedException( "System.InvalidOperationException" )]
         public void StartUnitializedTransportTest()
@@ -90,15 +94,17 @@ namespace Apache.NMS.ActiveMQ.Test
             MockTransport transport = new MockTransport();
             transport.Start();
         }
-        
+
         [Test]
         public void OneWaySendMessageTest()
         {
             transport.Start();
             ActiveMQTextMessage message = new ActiveMQTextMessage();
+            message.Text = "Hellow World";
             transport.Oneway( message );
             Assert.IsTrue(transport.NumSentMessages == 1);
-            Assert.Contains(message, sent);
+            Assert.IsTrue(sent.Count == 1);
+            Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
         }
 
         [Test]
@@ -106,11 +112,13 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             transport.Start();
             ActiveMQTextMessage message = new ActiveMQTextMessage();
+            message.Text = "Hellow World";
             transport.Request( message );
             Assert.IsTrue(transport.NumSentMessages == 1);
-            Assert.Contains(message, sent);
+            Assert.IsTrue(sent.Count == 1);
+            Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
         }
-        
+
         [Test]
         [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
         public void OneWayFailOnSendMessageTest()
@@ -130,7 +138,7 @@ namespace Apache.NMS.ActiveMQ.Test
             ActiveMQTextMessage message = new ActiveMQTextMessage();
             Assert.IsNotNull( transport.Request( message ) );
         }
-        
+
         [Test]
         [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
         public void AsyncRequestFailOnSendMessageTest()
@@ -140,7 +148,7 @@ namespace Apache.NMS.ActiveMQ.Test
             ActiveMQTextMessage message = new ActiveMQTextMessage();
             Assert.IsNotNull( transport.AsyncRequest( message ) );
         }
-        
+
         [Test]
         [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
         public void OnewayFailOnSendTwoMessagesTest()
@@ -152,7 +160,7 @@ namespace Apache.NMS.ActiveMQ.Test
             transport.Oneway( message );
             transport.Oneway( message );
             transport.Oneway( message );
-        }        
+        }
 
         [Test]
         [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
@@ -165,8 +173,8 @@ namespace Apache.NMS.ActiveMQ.Test
             transport.Request( message );
             transport.Request( message );
             transport.Request( message );
-        }        
-        
+        }
+
         [Test]
         [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
         public void AsyncRequestFailOnSendTwoMessagesTest()
@@ -179,34 +187,34 @@ namespace Apache.NMS.ActiveMQ.Test
             transport.AsyncRequest( message );
             transport.AsyncRequest( message );
         }
-        
+
         [Test]
         public void InjectCommandTest()
         {
             ActiveMQMessage message = new ActiveMQMessage();
-            
-            transport.Start();            
+
+            transport.Start();
             transport.InjectCommand(message);
-            
+
             Thread.Sleep( 1000 );
-            
+
             Assert.IsTrue(this.received.Count > 0 );
             Assert.IsTrue(transport.NumReceivedMessages == 1);
         }
-        
+
         [Test]
         public void FailOnReceiveMessageTest()
         {
             ActiveMQMessage message = new ActiveMQMessage();
-            
+
             transport.FailOnReceiveMessage = true;
             transport.Start();
             transport.InjectCommand(message);
-            
+
             Thread.Sleep( 1000 );
-            
+
             Assert.IsTrue(this.exceptions.Count > 0 );
             Assert.IsTrue(transport.NumReceivedMessages == 1);
-        }        
+        }
     }
 }
