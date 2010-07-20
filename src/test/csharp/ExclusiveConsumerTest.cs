@@ -39,16 +39,30 @@ namespace Apache.NMS.ActiveMQ.Test
             
             return conn;
         }
+		
+		public void purgeQueue(IConnection conn, ActiveMQQueue queue)
+		{
+			ISession session = conn.CreateSession();
+			IMessageConsumer consumer = session.CreateConsumer(queue);
+			while(consumer.Receive(TimeSpan.FromMilliseconds(500)) != null)
+			{
+			}				
+			
+			consumer.Close();
+			session.Close();
+		}
     
         [Test]
         public void TestExclusiveConsumerSelectedCreatedFirst()
-        {
+        {			
             IConnection conn = createConnection(true);
     
             ISession exclusiveSession = null;
             ISession fallbackSession = null;
             ISession senderSession = null;
     
+			purgeQueue(conn, new ActiveMQQueue("TEST.QUEUE1"));
+			
             try 
             {
                 exclusiveSession = conn.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -91,6 +105,8 @@ namespace Apache.NMS.ActiveMQ.Test
             ISession fallbackSession = null;
             ISession senderSession = null;
     
+			purgeQueue(conn, new ActiveMQQueue("TEST.QUEUE5"));
+			
             try 
             {
                 exclusiveSession = conn.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -134,6 +150,8 @@ namespace Apache.NMS.ActiveMQ.Test
             ISession fallbackSession = null;
             ISession senderSession = null;
     
+			purgeQueue(conn, new ActiveMQQueue("TEST.QUEUE2"));
+			
             try 
             {
                 exclusiveSession1 = conn.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -192,6 +210,8 @@ namespace Apache.NMS.ActiveMQ.Test
             ISession fallbackSession = null;
             ISession senderSession = null;
     
+			purgeQueue(conn, new ActiveMQQueue("TEST.QUEUE6"));
+			
             try 
             {
                 exclusiveSession1 = conn.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -226,6 +246,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 // Close the exclusive consumer to verify the non-exclusive consumer
                 // takes over
                 exclusiveConsumer1.Close();
+				
+				Thread.Sleep(100);
     
                 producer.Send(msg);
                 producer.Send(msg);
@@ -250,6 +272,8 @@ namespace Apache.NMS.ActiveMQ.Test
             ISession fallbackSession = null;
             ISession senderSession = null;
     
+			purgeQueue(conn, new ActiveMQQueue("TEST.QUEUE3"));
+			
             try 
             {
                 exclusiveSession = conn.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -303,6 +327,8 @@ namespace Apache.NMS.ActiveMQ.Test
             ISession fallbackSession = null;
             ISession senderSession = null;
     
+			purgeQueue(conn, new ActiveMQQueue("TEST.QUEUE4"));
+			
             try 
             {
                 exclusiveSession = conn.CreateSession(AcknowledgementMode.AutoAcknowledge);
