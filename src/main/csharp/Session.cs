@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ
         private bool dispatchAsync;
         private bool exclusive;
         private bool retroactive;
-        private byte priority = 4;
+        private byte priority = 0;
 
         private readonly SessionInfo info;
         private int consumerCounter;
@@ -421,7 +421,7 @@ namespace Apache.NMS.ActiveMQ
                 consumer = new MessageConsumer(this, GetNextConsumerId(), dest, null, selector, prefetchSize,
                                                this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
                                                noLocal, false, this.connection.DispatchAsync);
-
+				
                 this.AddConsumer(consumer);
                 this.Connection.SyncRequest(consumer.ConsumerInfo);
 

@@ -407,7 +407,8 @@ namespace Apache.NMS.ActiveMQ
 
             // Set propertieDs on session using parameters prefixed with "session."
 			StringDictionary options = URISupport.ParseQuery(this.brokerUri.Query);
-            URISupport.SetProperties(session, options, "session.");
+			options = URISupport.GetProperties(options, "session.");
+            URISupport.SetProperties(session, options);
 
             if(IsStarted)
             {

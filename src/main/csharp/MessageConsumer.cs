@@ -18,6 +18,7 @@ using System;
 using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS;
 using Apache.NMS.Util;
@@ -96,8 +97,9 @@ namespace Apache.NMS.ActiveMQ
             // If the destination contained a URI query, then use it to set public properties
             // on the ConsumerInfo
             if(destination.Options != null)
-            {
-                URISupport.SetProperties(this.info, destination.Options, "consumer.");
+            {				
+				StringDictionary options = URISupport.GetProperties(destination.Options, "consumer.");
+				URISupport.SetProperties(this.info, options);
             }
 		}
 
