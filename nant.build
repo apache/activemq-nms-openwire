@@ -29,6 +29,7 @@
 
     <!-- Lib organized as: module/plaform/artifact, platform might be something like 'all' or 'net-2.0/release' -->
     <property name="nunit.dll" value="${basedir}/lib/NUnit/${current.build.framework}/nunit.framework.dll" dynamic="true" />
+    <property name="dotnetzip.dll" value="${basedir}/lib/DotNetZip/${current.build.framework}/Ionic.Zlib.dll" dynamic="true" />
     <property name="Apache.NMS.dll" value="${basedir}/lib/Apache.NMS/${current.build.framework}/Apache.NMS.dll" dynamic="true" />
     <property name="Apache.NMS.pdb" value="${basedir}/lib/Apache.NMS/${current.build.framework}/Apache.NMS.pdb" dynamic="true" />
     <property name="Apache.NMS.Test.dll" value="${basedir}/lib/Apache.NMS/${current.build.framework}//Apache.NMS.Test.dll" dynamic="true" />
@@ -45,7 +46,7 @@
            'vendor.fileset.names'.  This comma-delimited list is iterated, and properties with
            well-known suffixes are used to access and copy down vendor file dependencies.
         -->
-        <property name="vendor.fileset.names" value="vendor.apache.org,vendor.nunit.org" />
+        <property name="vendor.fileset.names" value="vendor.apache.org,vendor.nunit.org,vendor.dotnetzip.org" />
 
         <!-- Property grouping for 'vendor.apache.org' -->
         <property name="vendor.apache.org.name" value="Apache.NMS" />
@@ -63,6 +64,12 @@
         <property name="vendor.nunit.org.group" value="org.nunit" />
         <property name="vendor.nunit.org.version" value="2.5.5" />
         <property name="vendor.nunit.org.filenames" value="nunit.framework.dll" />
+
+        <!-- Property grouping for 'vendor.nunit.org' -->
+        <property name="vendor.dotnetzip.org.name" value="DotNetZip" />
+        <property name="vendor.dotnetzip.org.group" value="org.dotnetzip" />
+        <property name="vendor.dotnetzip.org.version" value="1.9.0" />
+        <property name="vendor.dotnetzip.org.filenames" value="Ionic.Zlib.dll" />
     </target>
 
     <target name="dependency-init" description="Initializes build dependencies">
@@ -71,6 +78,7 @@
             <include name="${current.build.framework.assembly.dir}/System.dll" />
             <include name="${current.build.framework.assembly.dir}/System.Xml.dll" />
             <include name="${Apache.NMS.dll}" />
+            <include name="${dotnetzip.dll}" />
         </assemblyfileset>
 
         <assemblyfileset failonempty="true" id="test.dependencies">
@@ -81,6 +89,7 @@
             <include name="${Apache.NMS.Test.dll}" />
             <include name="${build.bin.dir}/${project.name}.dll" />
             <include name="${nunit.dll}" />
+            <include name="${dotnetzip.dll}" />
         </assemblyfileset>
 
         <fileset id="content.filenames">
@@ -91,6 +100,7 @@
             <include name="${Apache.NMS.pdb}" />
             <include name="${Apache.NMS.Test.dll}" />
             <include name="${Apache.NMS.Test.pdb}" />
+            <include name="${dotnetzip.dll}" />
             <include name="${nunit.dll}" />
             <include name="${NUnit.Projectfile}" />
         </fileset>

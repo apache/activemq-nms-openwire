@@ -17,7 +17,6 @@
 
 using System;
 using System.IO;
-using System.IO.Compression;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -30,12 +29,12 @@ namespace Apache.NMS.ActiveMQ
     {
         public Stream CreateCompressionStream(Stream data)
         {
-            return new GZipStream(data, CompressionMode.Compress);
+			return new Ionic.Zlib.ZlibStream(data, Ionic.Zlib.CompressionMode.Compress);
         }
 
         public Stream CreateDecompressionStream(Stream data)
         {
-            return new GZipStream(data, CompressionMode.Decompress);
+			return new Ionic.Zlib.ZlibStream(data, Ionic.Zlib.CompressionMode.Decompress);
         }
 
         public object Clone()

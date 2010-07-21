@@ -55,36 +55,12 @@ namespace Apache.NMS.ActiveMQ.Test
         protected float m = 2.1F;
         protected double n = 2.3;
         
-		/// <summary>
-		/// Test that we can set our own compression policy.  Also works around the fact
-		/// that sending a compressed Text Message to the broker using the default .NET
-		/// compression will cause a BrokerException to be fired.
-		/// </summary>
-		class NoCompressionPolicy : ICompressionPolicy
-		{
-			public Stream CreateCompressionStream(Stream data)
-			{
-				return data;
-			}
-			
-        	public Stream CreateDecompressionStream(Stream data)
-			{
-				return data;
-			}		
-			
-			public Object Clone()
-			{
-				return this.MemberwiseClone();
-			}
-		}
-		
         [Test]
         public void TestTextMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
             {
                 connection.UseCompression = true;
-				connection.CompressionPolicy = new NoCompressionPolicy();
                 connection.Start();
 
                 Assert.IsTrue(connection.UseCompression);
