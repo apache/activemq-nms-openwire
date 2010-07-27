@@ -217,6 +217,22 @@ namespace Apache.NMS.ActiveMQ.Transport
         {
             get{ return next.RemoteAddress; }
         }
+		
+	    public bool IsReconnectSupported
+		{
+			get{ return next.IsReconnectSupported; }
+		}
+	    
+	    public bool IsUpdateURIsSupported
+		{
+			get{ return next.IsUpdateURIsSupported; }
+		}
+		
+		public void UpdateURIs(bool rebalance, Uri[] updatedURIs)
+		{
+			next.UpdateURIs(rebalance, updatedURIs);
+		}
+		
     }
 }
 

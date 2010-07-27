@@ -38,6 +38,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private bool disposed;
         private bool connected;
         private List<Uri> uris = new List<Uri>();
+		private List<Uri> updated = new List<Uri>();
         private CommandHandler commandHandler;
         private ExceptionHandler exceptionHandler;
         private InterruptedHandler interruptedHandler;
@@ -76,7 +77,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private int maxCacheSize = 256;
         private volatile Exception failure;
         private readonly object mutex = new object();
-
+		private bool reconnectSupported = true;
+		private bool updateURIsSupported = true;
+		
         public FailoverTransport()
         {
             id = idCounter++;
@@ -303,7 +306,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         {
             get { return started; }
         }
-                   
+
+	    public bool IsReconnectSupported
+		{
+			get{ return this.reconnectSupported; }
+		}
+
+	    public bool IsUpdateURIsSupported
+		{
+			get{ return this.updateURIsSupported; }
+		}
+		
         /// <summary>
         /// </summary>
         /// <param name="command"></param>
@@ -399,7 +412,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 }
                 else
                 {
-                    Reconnect();
+                    Reconnect(false);
                 }
             }
         }
@@ -499,22 +512,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
                 if(!initialized)
                 {
-                    if(command.IsBrokerInfo)
-                    {
-                        BrokerInfo info = (BrokerInfo) command;
-                        BrokerInfo[] peers = info.PeerBrokerInfos;
-                        if(peers != null)
-                        {
-                            for(int i = 0; i < peers.Length; i++)
-                            {
-                                String brokerString = peers[i].BrokerURL;
-                                Add(brokerString);
-                            }
-                        }
-
-                        initialized = true;
-                    }
+                    initialized = true;
                 }
+				
+				if(command.IsConnectionControl)
+				{
+					this.HandleConnectionControl(command as ConnectionControl);
+				}
             }
 
             this.Command(sender, command);
@@ -669,7 +673,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             }
         }
 
-        public void Add(Uri[] u)
+        public void Add(bool rebalance, Uri[] u)
         {
             lock(uris)
             {
@@ -682,10 +686,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 }
             }
 
-            Reconnect();
+            Reconnect(rebalance);
         }
 
-        public void Remove(Uri[] u)
+        public void Remove(bool rebalance, Uri[] u)
         {
             lock(uris)
             {
@@ -695,10 +699,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 }
             }
 
-            Reconnect();
+            Reconnect(rebalance);
         }
 
-        public void Add(String u)
+        public void Add(bool rebalance, String u)
         {
             try
             {
@@ -708,10 +712,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     if(!uris.Contains(uri))
                     {
                         uris.Add(uri);
+						Reconnect(rebalance);
                     }
-                }
-
-                Reconnect();
+                }				
             }
             catch(Exception e)
             {
@@ -721,10 +724,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
         public void Reconnect(Uri uri)
         {
-            Add(new Uri[] { uri });
+            Add(true, new Uri[] { uri });
         }
         
-        public void Reconnect()
+        public void Reconnect(bool rebalance)
         {
             lock(reconnectMutex)
             {
@@ -1161,7 +1164,118 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             }
         }
 
-        public void Dispose()
+		
+		public void UpdateURIs(bool rebalance, Uri[] updatedURIs)
+		{		
+	        if(IsUpdateURIsSupported)
+			{
+	            List<Uri> copy = new List<Uri>(this.updated);
+	            List<Uri> added = new List<Uri>();
+				
+	            if(updatedURIs != null && updatedURIs.Length > 0) 
+				{
+	                HashSet<Uri> uriSet = new HashSet<Uri>();
+	                for(int i = 0; i < updatedURIs.Length; i++) 
+					{
+	                    Uri uri = updatedURIs[i];
+	                    if(uri != null) 
+						{
+	                        uriSet.Add(uri);
+	                    }
+	                }
+					
+	                foreach(Uri uri in uriSet)
+					{
+	                    if(copy.Remove(uri) == false) 
+						{
+	                        uriSet.Add(uri);
+	                    }
+	                }
+					
+	                lock(reconnectMutex) 
+					{
+	                    this.updated.Clear();
+	                    this.updated.AddRange(added);
+	                    
+						foreach(Uri uri in copy) 
+						{
+	                        this.uris.Remove(uri);
+	                    }
+	                    
+						this.Add(rebalance, added.ToArray());
+	                }
+	            }
+	        }			
+		}
+
+	    public void HandleConnectionControl(ConnectionControl control) 
+		{
+	        string reconnectStr = control.ReconnectTo;
+	        
+			if(reconnectStr != null) 
+			{
+	            reconnectStr = reconnectStr.Trim();
+	            if(reconnectStr.Length > 0) 
+				{
+	                try 
+					{
+	                    Uri uri = new Uri(reconnectStr);
+	                    if(IsReconnectSupported) 
+						{
+	                        Reconnect(uri);
+	                        Tracer.Info("Reconnected to: " + uri.OriginalString);
+	                    }
+	                } 
+					catch(Exception e) 
+					{
+	                    Tracer.ErrorFormat("Failed to handle ConnectionControl reconnect to {0}: {1}", reconnectStr, e);
+	                }
+	            }
+	        }
+			
+	        ProcessNewTransports(control.RebalanceConnection, control.ConnectedBrokers);
+	    }
+	
+	    private void ProcessNewTransports(bool rebalance, String newTransports) 
+		{
+	        if(newTransports != null) 
+			{
+	            newTransports = newTransports.Trim();
+				
+	            if(newTransports.Length > 0 && IsUpdateURIsSupported) 
+				{
+	                List<Uri> list = new List<Uri>();
+	                String[] tokens = newTransports.Split(new Char []{','});
+	                
+					foreach(String str in tokens)
+					{
+	                    try 
+						{
+	                        Uri uri = new Uri(str);
+	                        list.Add(uri);
+	                    } 
+						catch 
+						{
+	                        Tracer.Error("Failed to parse broker address: " + str);
+	                    }
+	                }
+					
+	                if(list.Count != 0)
+					{
+	                    try 
+						{
+	                        UpdateURIs(rebalance, list.ToArray());
+	                    } 
+						catch
+						{
+	                        Tracer.Error("Failed to update transport URI's from: " + newTransports);
+	                    }
+	                }
+	            }
+	        }
+	    }
+		
+		public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

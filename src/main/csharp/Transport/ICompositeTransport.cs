@@ -21,8 +21,29 @@ namespace Apache.NMS.ActiveMQ.Transport
 {
 	public interface ICompositeTransport : ITransport
 	{
-		void Add(Uri[] uris);
-		void Remove(Uri[] uris);
+		/// <summary>
+		/// Adds a new set of Uris to the list of Uris that this Transport can connect to. 
+		/// </summary>
+		/// <param name="rebalance">
+		/// A <see cref="System.Boolean"/>
+		/// Should the current connection be broken and a new one created.
+		/// </param>
+		/// <param name="uris">
+		/// A <see cref="Uri[]"/>
+		/// </param>
+		void Add(bool rebalance, Uri[] uris);
+
+		/// <summary>
+		/// Remove the given Uris from this Transports list of known Uris. 
+		/// </summary>
+		/// <param name="rebalance">
+		/// A <see cref="System.Boolean"/>
+		/// Should the current connection be broken and a new one created.
+		/// </param>
+		/// <param name="uris">
+		/// A <see cref="Uri[]"/>
+		/// </param>
+		void Remove(bool rebalance, Uri[] uris);
 	}
 }
 

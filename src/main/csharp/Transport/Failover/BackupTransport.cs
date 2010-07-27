@@ -41,7 +41,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             this.disposed = true;
             if(failoverTransport != null)
             {
-                this.failoverTransport.Reconnect();
+                this.failoverTransport.Reconnect(false);
             }
         }
 

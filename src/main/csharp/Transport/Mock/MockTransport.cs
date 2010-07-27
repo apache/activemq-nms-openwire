@@ -372,6 +372,21 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             get{ return new Uri("mock://mock"); }
         }
         
+	    public bool IsReconnectSupported
+		{
+			get{ return false; }
+		}
+	    
+	    public bool IsUpdateURIsSupported
+		{
+			get{ return false; }
+		}
+		
+		public void UpdateURIs(bool rebalance, Uri[] updatedURIs)
+		{
+			throw new IOException();
+		}
+		
         #endregion
 	}
 }

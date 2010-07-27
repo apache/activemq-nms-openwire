@@ -365,6 +365,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			return null;
 		}
 
+	    public bool IsReconnectSupported
+		{
+			get{ return false; }
+		}
+	    
+	    public bool IsUpdateURIsSupported
+		{
+			get{ return false; }
+		}
+		
+		public void UpdateURIs(bool rebalance, Uri[] updatedURIs)
+		{
+			throw new IOException();
+		}		
 	}
 }
 
