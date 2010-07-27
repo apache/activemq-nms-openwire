@@ -74,6 +74,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			set { this.failOnCreate = value; }
 		}
 
+        private string name = null;
+        public string Name
+        {
+            get { return this.name; }
+            set { this.name = value; }
+        }
+
 		#endregion
 
 		public ITransport CreateTransport(Uri location)
@@ -108,6 +115,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			transport.NumReceivedMessagesBeforeFail = this.NumReceivedMessagesBeforeFail;
 			transport.FailOnSendMessage = this.FailOnSendMessage;
 			transport.NumSentMessagesBeforeFail = this.NumSentMessagesBeforeFail;
+            transport.Name = this.Name;
 
 			return transport;
 		}

@@ -740,6 +740,24 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                                             "ActiveMQ Failover Worker: " + this.GetHashCode().ToString());
                     }
 
+                    if(rebalance)
+                    {
+                        ITransport transport = connectedTransport.GetAndSet(null);
+                        if(transport != null)
+                        {
+                            transport.Command = new CommandHandler(disposedOnCommand);
+                            transport.Exception = new ExceptionHandler(disposedOnException);
+                            try
+                            {
+                                transport.Stop();
+                            }
+                            catch(Exception ex)
+                            {
+                                ex.GetType();   // Ignore errors but this lets us see the error during debugging
+                            }
+                        }
+                    }
+
                     Tracer.Debug("Waking up reconnect task");
                     try
                     {
@@ -1188,7 +1206,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					{
 	                    if(copy.Remove(uri) == false) 
 						{
-	                        uriSet.Add(uri);
+	                        added.Add(uri);
 	                    }
 	                }
 					

@@ -543,5 +543,52 @@ namespace Apache.NMS.ActiveMQ.Test
             transport.Oneway( command );
         }
 
+		[Test]
+		public void TestFailoverTransportConnectionControlHandling()
+		{
+            Uri uri = new Uri("failover:(mock://localhost:61613)?randomize=false");
+
+			string reconnectTo = "mock://localhost:61616?transport.name=Reconnected";
+			string connectedBrokers = "mock://localhost:61616?transport.name=Broker1," +
+                                      "mock://localhost:61617?transport.name=Broker2";
+
+			ConnectionControl cmd = new ConnectionControl();
+			cmd.FaultTolerant = true;
+			cmd.ReconnectTo = reconnectTo;
+			cmd.ConnectedBrokers = connectedBrokers;
+
+            FailoverTransportFactory factory = new FailoverTransportFactory();
+
+            ITransport transport = factory.CreateTransport( uri );
+            Assert.IsNotNull( transport );
+            transport.Command = new CommandHandler(OnCommand);
+            transport.Exception = new ExceptionHandler(OnException);
+
+            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
+            Assert.IsNotNull(failover);
+            Assert.IsFalse(failover.Randomize);
+        
+            transport.Start();
+
+            MockTransport mock = null;
+            while(mock == null ) {
+                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
+            }
+
+            mock.InjectCommand(cmd);
+
+            failover.Remove(true, new Uri[] {new Uri("mock://localhost:61613")});
+
+            Thread.Sleep(1000);
+
+            mock = null;
+
+            while(mock == null) {
+                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
+            }
+
+            Assert.AreEqual("Reconnected", mock.Name);
+
+		}
 	}
 }

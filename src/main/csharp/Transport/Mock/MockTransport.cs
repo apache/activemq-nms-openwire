@@ -34,7 +34,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 	public class MockTransport : ITransport
 	{
         #region Properties
-        
+
+        private string name;
         private bool failOnSendMessage = false;
         private int numSentMessagesBeforeFail = -1;
         private int numSentMessages = 0;
@@ -262,6 +263,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         }
         
 		#region Property Accessors
+
+        public string Name
+        {
+            get { return this.name; }
+            set { this.name = value; }
+        }
 
         public CommandHandler Command
         {
