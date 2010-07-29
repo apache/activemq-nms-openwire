@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 	{
         /// <summary>
         /// Sends a Command object on the Wire but does not wait for any response from the
-        /// receiver before returning.  
+        /// receiver before returning.
         /// </summary>
         /// <param name="command">
         /// A <see cref="Command"/>
@@ -70,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         /// <summary>
         /// Sends a Command to the Broker and waits for the given TimeSpan to expire for a
-        /// response before returning.  
+        /// response before returning.
         /// </summary>
         /// <param name="command">
         /// A <see cref="Command"/>
@@ -95,8 +95,8 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// <returns>
         /// A <see cref="System.Object"/>
         /// </returns>
-        Object Narrow(Type type);            
-        
+        Object Narrow(Type type);
+
 		CommandHandler Command
 		{
 			get;
@@ -113,13 +113,13 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			get;
 			set;
-		}		
+		}
 
 		ResumedHandler Resumed
 		{
 			get;
 			set;
-		}		
+		}
 
         /// <value>
         /// Indicates if this Transport has already been disposed and can no longer
@@ -155,7 +155,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         {
             get;
         }
-        
+
 		/// <summary>
 		/// Returns true if this Transport supports reconnections.
 		/// </summary>
@@ -163,7 +163,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			get;
 		}
-	    
+
 		/// <summary>
 		/// Returns true if this Transport can accept updated lists of connection Uri's.
 		/// </summary>
@@ -171,7 +171,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			get;
 		}
-		
+
 		/// <summary>
 		/// Updates the Uri's that this Transport is aware of and will use to
 		/// connect itself to.  If the rebalance option is true this method will
@@ -182,10 +182,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// A <see cref="System.Boolean"/>
 		/// </param>
 		/// <param name="updatedURIs">
-		/// A <see cref="Uri[]"/>
+		/// A <see cref="Uri"/>
 		/// </param>
 		void UpdateURIs(bool rebalance, Uri[] updatedURIs);
-		
+
 	}
 }
 
