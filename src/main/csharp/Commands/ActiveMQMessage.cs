@@ -190,7 +190,15 @@ namespace Apache.NMS.ActiveMQ.Commands
 		/// </summary>
 		public TimeSpan NMSTimeToLive
 		{
-			get { return timeToLive; }
+			get
+			{
+				if(Expiration > 0 && timeToLive.TotalMilliseconds <= 0.0)
+				{
+					timeToLive = TimeSpan.FromMilliseconds(Expiration - Timestamp);
+				}
+
+				return timeToLive;
+			}
 
 			set
 			{
