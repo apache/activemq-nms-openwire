@@ -81,6 +81,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             set { this.name = value; }
         }
 
+        private int numMessagesToRespondTo = -1;
+        public int NumMessagesToRespondTo
+        {
+            get { return numMessagesToRespondTo; }
+            set { numMessagesToRespondTo = value; }
+        }
+
+        private bool respondToMessages = true;
+        public bool RespondToMessages
+        {
+            get { return respondToMessages; }
+            set { respondToMessages = value; }
+        }
+
 		#endregion
 
 		public ITransport CreateTransport(Uri location)
@@ -116,6 +130,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			transport.FailOnSendMessage = this.FailOnSendMessage;
 			transport.NumSentMessagesBeforeFail = this.NumSentMessagesBeforeFail;
             transport.Name = this.Name;
+            transport.RespondToMessages = this.respondToMessages;
+            transport.NumMessagesToRespondTo = this.numMessagesToRespondTo;
 
 			return transport;
 		}

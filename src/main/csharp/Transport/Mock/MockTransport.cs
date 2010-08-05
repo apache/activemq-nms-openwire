@@ -37,6 +37,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
         private string name;
         private bool failOnSendMessage = false;
+        private int numMessagesToRespondTo = -1;
+        private int numMessagesRespondedTo = 0;
+        private bool respondToMessages = true;
         private int numSentMessagesBeforeFail = -1;
         private int numSentMessages = 0;
         private bool failOnReceiveMessage = false;
@@ -170,9 +173,21 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
             }
             
             // Process and send any new Commands back.
+            List<Command> results = new List<Command>();
 
             // Let the Response Builder give us the Commands to send to the Client App.
-            List<Command> results = this.responseBuilder.BuildIncomingCommands(command);
+            if( command.IsMessage )
+            {
+                if( this.respondToMessages && this.NumMessagesToRespondTo < this.numMessagesRespondedTo )
+                {
+                    results = this.responseBuilder.BuildIncomingCommands(command);
+                    this.numMessagesRespondedTo++;
+                }
+            }
+            else
+            {
+                results = this.responseBuilder.BuildIncomingCommands(command);
+            }
             
             lock(this.receiveQueue)
             {
@@ -362,6 +377,24 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
         {
             get { return numSentKeppAliveInfos; }
             set { numSentKeppAliveInfos = value; }
+        }
+
+        public int NumMessagesToRespondTo
+        {
+            get { return numMessagesToRespondTo; }
+            set { numMessagesToRespondTo = value; }
+        }
+
+        public int NumMessagesRespondedTo
+        {
+            get { return numMessagesRespondedTo; }
+            set { numMessagesRespondedTo = value; }
+        }
+
+        public bool RespondToMessages
+        {
+            get { return respondToMessages; }
+            set { respondToMessages = value; }
         }
 
         public bool IsFaultTolerant
