@@ -97,9 +97,14 @@ namespace Apache.NMS.ActiveMQ
             // If the destination contained a URI query, then use it to set public properties
             // on the ConsumerInfo
             if(destination.Options != null)
-            {				
+            {
+				// Get options prefixed with "consumer.*"
 				StringDictionary options = URISupport.GetProperties(destination.Options, "consumer.");
+				// Extract out custom extension options "consumer.nms.*"
+				StringDictionary customConsumerOptions = URISupport.ExtractProperties(options, "nms.");
+
 				URISupport.SetProperties(this.info, options);
+				URISupport.SetProperties(this, customConsumerOptions, "nms.");
             }
 		}
 
@@ -145,7 +150,15 @@ namespace Apache.NMS.ActiveMQ
         public long UnconsumedMessageCount
         {
             get { return this.unconsumedMessages.Count; }
-        }   
+        }
+
+		// Custom Options
+		private bool ignoreExpiration = false;
+		public bool IgnoreExpiration
+		{
+			get { return ignoreExpiration; }
+			set { ignoreExpiration = value; }
+		}
 
 		#endregion
 
@@ -335,7 +348,7 @@ namespace Apache.NMS.ActiveMQ
 				this.session.Connection.Oneway(removeCommand);
 				this.session = null;
 
-                Tracer.Debug("Consumer instnace Closed.");
+                Tracer.Debug("Consumer instance Closed.");
             }
 		}
 
@@ -541,7 +554,7 @@ namespace Apache.NMS.ActiveMQ
 
 							try
 							{
-								bool expired = message.IsExpired();
+								bool expired = (!IgnoreExpiration && message.IsExpired());
 
 								if(!expired)
 								{
@@ -672,7 +685,7 @@ namespace Apache.NMS.ActiveMQ
 				{
 					return null;
 				}
-				else if(dispatch.Message.IsExpired())
+				else if(!IgnoreExpiration && dispatch.Message.IsExpired())
 				{
 					Tracer.DebugFormat("{0} received expired message: {1}", info.ConsumerId, dispatch.Message.MessageId);
 
@@ -727,7 +740,7 @@ namespace Apache.NMS.ActiveMQ
 				return;
 			}
 
-			if(expired == true)
+			if(expired)
 			{
 				lock(this.dispatchedMessages)
 				{
