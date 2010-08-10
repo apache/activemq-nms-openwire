@@ -121,12 +121,13 @@ namespace Apache.NMS.ActiveMQ.Test
 		[TestCase(112, 212, 312, 412, 512)]
         public void TestURIForPrefetchHandling(int queuePreFetch, int queueBrowserPrefetch, int topicPrefetch, int durableTopicPrefetch, int maximumPendingMessageLimit)
         {
-            string testuri = string.Format("activemq:tcp://${activemqhost}:61616" +
-                          "?nms.PrefetchPolicy.queuePrefetch=" + queuePreFetch +
-                          "&nms.PrefetchPolicy.queueBrowserPrefetch=" + queueBrowserPrefetch +
-                          "&nms.PrefetchPolicy.topicPrefetch=" + topicPrefetch +
-                          "&nms.PrefetchPolicy.durableTopicPrefetch=" + durableTopicPrefetch +
-                          "&nms.PrefetchPolicy.maximumPendingMessageLimit="+ maximumPendingMessageLimit);
+            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
+                          				   "?nms.PrefetchPolicy.queuePrefetch={0}" +
+                                           "&nms.PrefetchPolicy.queueBrowserPrefetch={1}" +
+                                           "&nms.PrefetchPolicy.topicPrefetch={2}" +
+                                           "&nms.PrefetchPolicy.durableTopicPrefetch={3}" +
+                                           "&nms.PrefetchPolicy.maximumPendingMessageLimit={4}",
+			                               queuePreFetch, queueBrowserPrefetch, topicPrefetch, durableTopicPrefetch, maximumPendingMessageLimit);
 
             NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 
@@ -137,11 +138,11 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.IsNotNull(connection);
 
                 Connection amqConnection = connection as Connection;
-                Assert.AreEqual(1, amqConnection.PrefetchPolicy.QueuePrefetch);
-                Assert.AreEqual(2, amqConnection.PrefetchPolicy.QueueBrowserPrefetch);
-                Assert.AreEqual(3, amqConnection.PrefetchPolicy.TopicPrefetch);
-                Assert.AreEqual(4, amqConnection.PrefetchPolicy.DurableTopicPrefetch);
-                Assert.AreEqual(5, amqConnection.PrefetchPolicy.MaximumPendingMessageLimit);
+                Assert.AreEqual(queuePreFetch, amqConnection.PrefetchPolicy.QueuePrefetch);
+                Assert.AreEqual(queueBrowserPrefetch, amqConnection.PrefetchPolicy.QueueBrowserPrefetch);
+                Assert.AreEqual(topicPrefetch, amqConnection.PrefetchPolicy.TopicPrefetch);
+                Assert.AreEqual(durableTopicPrefetch, amqConnection.PrefetchPolicy.DurableTopicPrefetch);
+                Assert.AreEqual(maximumPendingMessageLimit, amqConnection.PrefetchPolicy.MaximumPendingMessageLimit);
             }
         }
     }
