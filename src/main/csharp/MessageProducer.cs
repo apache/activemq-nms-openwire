@@ -64,6 +64,7 @@ namespace Apache.NMS.ActiveMQ
             // have a set producer window size.
             if(session.Connection.ProtocolVersion >= 3 && this.info.WindowSize > 0)
             {
+				Tracer.Debug("MessageProducer created with a Window Size of: " + this.info.WindowSize);
                 this.usage = new MemoryUsage(this.info.WindowSize);
             }
         }

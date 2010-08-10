@@ -45,11 +45,12 @@ namespace Apache.NMS.ActiveMQ
 
         private bool useCompression;
         private bool copyMessageOnSend = true;
-        private bool dispatchAsync=true;
+        private bool dispatchAsync = true;
         private bool asyncSend;
         private bool asyncClose;
         private bool alwaysSyncSend;
-        private bool sendAcksAsync=true;
+        private bool sendAcksAsync = true;
+		private int producerWindowSize = 0;
         private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
 
@@ -272,6 +273,12 @@ namespace Apache.NMS.ActiveMQ
             set { this.acknowledgementMode = value; }
         }
 
+        public int ProducerWindowSize
+        {
+            get { return producerWindowSize; }
+            set { producerWindowSize = value; }
+        }
+		
         public PrefetchPolicy PrefetchPolicy
         {
             get { return this.prefetchPolicy; }
@@ -351,6 +358,7 @@ namespace Apache.NMS.ActiveMQ
             connection.AcknowledgementMode = this.acknowledgementMode;
             connection.UseCompression = this.useCompression;
 			connection.RequestTimeout = this.requestTimeout;
+			connection.ProducerWindowSize = this.producerWindowSize;
             connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
             connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
             connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;

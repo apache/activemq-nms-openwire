@@ -670,9 +670,16 @@ namespace Apache.NMS.ActiveMQ
             else if(command is ProducerAck)
             {
                 ProducerAck ack = (ProducerAck) command;
-                if(ack != null && ack.ProducerId != null) {
-                    MessageProducer producer = (MessageProducer) producers[ack.ProducerId];
-                    if( producer != null ) {
+                if(ack != null && ack.ProducerId != null) 
+				{
+                    MessageProducer producer = producers[ack.ProducerId] as MessageProducer;
+                    if(producer != null) 
+					{						
+						if(Tracer.IsDebugEnabled)
+						{
+							Tracer.Debug("Connection: Received a new ProducerAck -> " + ack);
+						}
+						
                         producer.OnProducerAck(ack);
                     }
                 }

@@ -16,6 +16,7 @@
  */
 using System;
 using System.Threading;
+using Apache.NMS;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Util
@@ -79,7 +80,9 @@ namespace Apache.NMS.ActiveMQ.Util
             {
                 while(this.IsFull() && !stopped.Value)
                 {
-                    if( !Monitor.Wait(this.mutex, timeout ) )
+					Tracer.Debug("MemoryUsage: Memory Limit Reached, waiting for more space.");
+					
+                    if(!Monitor.Wait(this.mutex, timeout))
                     {
                         return;
                     }
@@ -116,6 +119,11 @@ namespace Apache.NMS.ActiveMQ.Util
             lock(this.mutex)
             {
                 this.Usage += value;
+				
+				if(Tracer.IsDebugEnabled)
+				{
+					Tracer.DebugFormat("MemoryUsage: Increase Usage to: {0} bytes.", this.usage);
+				}				
             }
         }
 
@@ -142,7 +150,12 @@ namespace Apache.NMS.ActiveMQ.Util
                 {
                     this.Usage -= value;
                 }
-
+				
+				if(Tracer.IsDebugEnabled)
+				{
+					Tracer.DebugFormat("MemoryUsage: Decrease Usage to: {0} bytes.", this.usage);
+				}
+				
                 Monitor.PulseAll(this.mutex);
             }
         }
