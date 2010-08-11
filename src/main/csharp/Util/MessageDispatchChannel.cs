@@ -22,205 +22,60 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
 {
-    public class MessageDispatchChannel
+    /// <summary>
+    /// Defines an interface for a Message Channel used to dispatch incoming
+    /// Messages to a Session or MessageConsumer.  The implementation controls
+    /// how the messages are dequeued from the channel, one option is for a
+    /// FIFO ordering while another might be to sort the Message's based on the
+    /// set Message Priority.
+    /// </summary>
+    public interface MessageDispatchChannel
     {
-        private readonly Mutex mutex = new Mutex();
-        private bool closed;
-        private bool running;
-        private LinkedList<MessageDispatch> channel = new LinkedList<MessageDispatch>();
-        
-        #region Properties
-
-        public object SyncRoot
+        object SyncRoot
         {
-            get{ return this.mutex; }
+            get;
         }
         
-        public bool Closed
+        bool Closed
         {
-            get 
-            {
-                lock(this.mutex)
-                {
-                    return this.closed; 
-                }
-            }
-            
-            set 
-            {
-                lock(this.mutex)
-                {
-                    this.closed = value;
-                }
-            }
+            get;
+            set;
         }
 
-        public bool Running
+        bool Running
         {
-            get
-            {
-                lock(this.mutex)
-                {
-                    return this.running;
-                }
-            }
-            
-            set
-            {
-                lock(this.mutex)
-                {
-                    this.running = value;
-                }
-            }
+            get;
+            set;
         }
 
-        public bool Empty
+        bool Empty
         {
-            get
-            {
-                lock(mutex)
-                {
-                    return channel.Count == 0;
-                }
-            }
+            get;
         }
 
-        public long Count
+        long Count
         {
-            get
-            {
-                lock(mutex)
-                {
-                    return channel.Count;
-                }
-            }
+            get;
         }
 
-        #endregion
+        void Start();
 
-        public void Start()
-        {
-            lock(this.mutex)
-            {
-                if(!Closed)
-                {
-                    this.running = true;
-                    Monitor.PulseAll(this.mutex);
-                }
-            }
-        }
+        void Stop();
 
-        public void Stop()
-        {
-            lock(mutex)
-            {
-                this.running = false;
-                Monitor.PulseAll(this.mutex);
-            }
-        }
-
-        public void Close()
-        {
-            lock(mutex)
-            {
-                if(!Closed)
-                {
-                    this.running = false;
-                    this.closed = true;
-                }          
-
-                Monitor.PulseAll(this.mutex);
-            }            
-        }
+        void Close();
         
-        public void Enqueue(MessageDispatch dispatch)
-        {
-            lock(this.mutex)
-            {
-                this.channel.AddLast(dispatch);
-                Monitor.Pulse(this.mutex);
-            }
-        }
+        void Enqueue(MessageDispatch dispatch);
 
-        public void EnqueueFirst(MessageDispatch dispatch)
-        {
-            lock(this.mutex)
-            {
-                this.channel.AddFirst(dispatch);
-                Monitor.Pulse(this.mutex);
-            }
-        }
+        void EnqueueFirst(MessageDispatch dispatch);
 
-        public MessageDispatch Dequeue(TimeSpan timeout)
-        {
-            lock(this.mutex)
-            {
-                // Wait until the channel is ready to deliver messages.
-                if( timeout != TimeSpan.Zero && !Closed && ( Empty || !Running ) )
-                {
-                    Monitor.Wait(this.mutex, timeout);
-                }
-        
-                if( Closed || !Running || Empty ) 
-                {
-                    return null;
-                }
-        
-                return DequeueNoWait();                      
-            }
-        }
+        MessageDispatch Dequeue(TimeSpan timeout);
 
-        public MessageDispatch DequeueNoWait()
-        {
-            MessageDispatch result = null;
-            
-            lock(this.mutex)
-            {
-                if( Closed || !Running || Empty ) 
-                {
-                    return null;
-                }
-                
-                result = channel.First.Value;
-                this.channel.RemoveFirst();
-            }
+        MessageDispatch DequeueNoWait();
 
-            return result;
-        }
+        MessageDispatch Peek();
 
-        public MessageDispatch Peek()
-        {
-            lock(this.mutex)
-            {
-                if( Closed || !Running || Empty ) 
-                {
-                    return null;
-                }
-                
-                return channel.First.Value;
-            }
-        }
+        void Clear();
 
-        public void Clear()
-        {
-            lock(mutex)
-            {
-                this.channel.Clear();
-            }
-        }
-
-        public MessageDispatch[] RemoveAll()
-        {
-            MessageDispatch[] result;
-            
-            lock(mutex)
-            {
-                result = new MessageDispatch[this.Count];
-                channel.CopyTo(result, 0);
-                channel.Clear();
-            }
-
-            return result;
-        }
+        MessageDispatch[] RemoveAll();
     }
 }

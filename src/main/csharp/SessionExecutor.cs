@@ -25,7 +25,7 @@ namespace Apache.NMS.ActiveMQ
 {
     public class SessionExecutor : Threads.Task
     {
-        private MessageDispatchChannel messageQueue = new MessageDispatchChannel();
+        private MessageDispatchChannel messageQueue = null;
         private TaskRunner taskRunner = null;
 
         private Session session = null;
@@ -35,6 +35,15 @@ namespace Apache.NMS.ActiveMQ
         {
             this.session = session;
             this.consumers = consumers;
+
+            if(this.session.Connection != null && this.session.Connection.MessagePrioritySupported)
+            {
+               this.messageQueue = new SimplePriorityMessageDispatchChannel();
+            }
+            else
+            {
+                this.messageQueue = new FifoMessageDispatchChannel();
+            }
         }
 
         ~SessionExecutor()

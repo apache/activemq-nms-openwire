@@ -53,6 +53,7 @@ namespace Apache.NMS.ActiveMQ
 		private int producerWindowSize = 0;
         private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
+        private bool messagePrioritySupported=true;
 
         private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
@@ -255,7 +256,13 @@ namespace Apache.NMS.ActiveMQ
             get { return this.dispatchAsync; }
             set { this.dispatchAsync = value; }
         }
-		
+
+        public bool MessagePrioritySupported
+        {
+            get { return this.messagePrioritySupported; }
+            set { this.messagePrioritySupported = value; }
+        }
+
 		public int RequestTimeout
 		{
 			get { return (int)this.requestTimeout.TotalMilliseconds; }
@@ -359,6 +366,7 @@ namespace Apache.NMS.ActiveMQ
             connection.UseCompression = this.useCompression;
 			connection.RequestTimeout = this.requestTimeout;
 			connection.ProducerWindowSize = this.producerWindowSize;
+            connection.MessagePrioritySupported = this.messagePrioritySupported;
             connection.RedeliveryPolicy = this.redeliveryPolicy.Clone() as IRedeliveryPolicy;
             connection.PrefetchPolicy = this.prefetchPolicy.Clone() as PrefetchPolicy;
             connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;

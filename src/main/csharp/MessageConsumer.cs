@@ -39,7 +39,7 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
-		private readonly MessageDispatchChannel unconsumedMessages = new MessageDispatchChannel();
+		private readonly MessageDispatchChannel unconsumedMessages;
 		private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
 		private readonly ConsumerInfo info;
 		private Session session;
@@ -79,7 +79,16 @@ namespace Apache.NMS.ActiveMQ
             
 			this.session = session;
             this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
-			
+
+            if(session.Connection.MessagePrioritySupported)
+            {
+                this.unconsumedMessages = new SimplePriorityMessageDispatchChannel();
+            }
+            else
+            {
+                this.unconsumedMessages = new FifoMessageDispatchChannel();
+            }
+
             this.info = new ConsumerInfo();
             this.info.ConsumerId = id;
             this.info.Destination = destination;

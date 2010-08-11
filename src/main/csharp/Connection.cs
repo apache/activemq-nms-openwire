@@ -44,6 +44,7 @@ namespace Apache.NMS.ActiveMQ
         private bool sendAcksAsync = false;
         private bool dispatchAsync = true;
         private int producerWindowSize = 0;
+        private bool messagePrioritySupported=true;
 
         private bool userSpecifiedClientID;
         private readonly Uri brokerUri;
@@ -236,6 +237,17 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return this.useCompression; }
             set { this.useCompression = value; }
+        }
+
+        /// <summary>
+        /// Indicate whether or not the resources of this Connection should support the
+        /// Message Priority value of incoming messages and dispatch them accordingly.
+        /// When disabled Message are always dispatched to Consumers in FIFO order.
+        /// </summary>
+        public bool MessagePrioritySupported
+        {
+            get { return this.messagePrioritySupported; }
+            set { this.messagePrioritySupported = value; }
         }
 
         public IConnectionMetaData MetaData
