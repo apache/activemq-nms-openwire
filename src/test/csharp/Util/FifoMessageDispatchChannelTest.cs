@@ -23,12 +23,12 @@ using NUnit.Framework;
 namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
-    public class MessageDispatchChannelTest
+    public class FifoMessageDispatchChannelTest
     {
         [Test]
         public void TestCtor()
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             Assert.IsTrue( channel.Running == false );
             Assert.IsTrue( channel.Empty == true );
             Assert.IsTrue( channel.Count == 0 );
@@ -38,7 +38,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestStart() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             channel.Start();
             Assert.IsTrue( channel.Running == true );
         }
@@ -46,7 +46,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestStop() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             channel.Start();
             Assert.IsTrue( channel.Running == true );
             channel.Stop();
@@ -56,7 +56,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestClose() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             channel.Start();
             Assert.IsTrue( channel.Running == true );
             Assert.IsTrue( channel.Closed == false );
@@ -71,7 +71,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestEnqueue() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             MessageDispatch dispatch1 = new MessageDispatch();
             MessageDispatch dispatch2 = new MessageDispatch();
         
@@ -92,7 +92,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestEnqueueFront() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             MessageDispatch dispatch1 = new MessageDispatch();
             MessageDispatch dispatch2 = new MessageDispatch();
         
@@ -118,7 +118,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestPeek() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
             MessageDispatch dispatch1 = new MessageDispatch();
             MessageDispatch dispatch2 = new MessageDispatch();
         
@@ -148,7 +148,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestDequeueNoWait() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
         
             MessageDispatch dispatch1 = new MessageDispatch();
             MessageDispatch dispatch2 = new MessageDispatch();
@@ -178,7 +178,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestDequeue() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
         
             MessageDispatch dispatch1 = new MessageDispatch();
             MessageDispatch dispatch2 = new MessageDispatch();
@@ -212,7 +212,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestRemoveAll() 
         {
-            MessageDispatchChannel channel = new MessageDispatchChannel();
+            FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
         
             MessageDispatch dispatch1 = new MessageDispatch();
             MessageDispatch dispatch2 = new MessageDispatch();
