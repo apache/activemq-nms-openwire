@@ -21,16 +21,16 @@ using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]    
+    [TestFixture]
     public class IndividualAckTest : NMSTestSupport
     {
         private IConnection connection;
-        
+
         [SetUp]
         public override void SetUp()
         {
             base.SetUp();
-    
+
             connection = CreateConnection();
             connection.Start();
         }
@@ -43,120 +43,123 @@ namespace Apache.NMS.ActiveMQ.Test
         }
 
         [Test]
-        public void TestAckedMessageAreConsumed() 
+        public void TestAckedMessageAreConsumed()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
             ITemporaryQueue queue = session.CreateTemporaryQueue();
             IMessageProducer producer = session.CreateProducer(queue);
             producer.Send(session.CreateTextMessage("Hello"));
-    
+
             // Consume the message...
             IMessageConsumer consumer = session.CreateConsumer(queue);
             IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(msg);
             msg.Acknowledge();
-    
+
             // Reset the session.
             session.Close();
             session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
-    
+
             // Attempt to Consume the message...
             consumer = session.CreateConsumer(queue);
             msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNull(msg);
-    
+
             session.Close();
         }
 
         [Test]
-        public void TestLastMessageAcked() 
+        public void TestLastMessageAcked()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
             ITemporaryQueue queue = session.CreateTemporaryQueue();
             IMessageProducer producer = session.CreateProducer(queue);
-            ITextMessage msg1 = session.CreateTextMessage("msg1");
-            ITextMessage msg2 = session.CreateTextMessage("msg2");
-            ITextMessage msg3 = session.CreateTextMessage("msg3");
+            ITextMessage msg1 = session.CreateTextMessage("msg1" + Guid.NewGuid().ToString());
+            ITextMessage msg2 = session.CreateTextMessage("msg2" + Guid.NewGuid().ToString());
+            ITextMessage msg3 = session.CreateTextMessage("msg3" + Guid.NewGuid().ToString());
             producer.Send(msg1);
             producer.Send(msg2);
             producer.Send(msg3);
-    
+
             // Consume the message...
             IMessageConsumer consumer = session.CreateConsumer(queue);
-            IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(msg);
-            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(msg);        
-            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(msg);
-            msg.Acknowledge();
-    
+            ITextMessage ackmsg = consumer.Receive(TimeSpan.FromMilliseconds(1000)) as ITextMessage;
+            Assert.IsNotNull(ackmsg);
+            Assert.AreEqual(msg1.Text,ackmsg.Text);
+            ackmsg = consumer.Receive(TimeSpan.FromMilliseconds(1000)) as ITextMessage;
+            Assert.IsNotNull(ackmsg);
+            Assert.AreEqual(msg2.Text,ackmsg.Text);
+            ackmsg = consumer.Receive(TimeSpan.FromMilliseconds(1000)) as ITextMessage;
+            Assert.IsNotNull(ackmsg);
+            Assert.AreEqual(msg3.Text,ackmsg.Text);
+            ackmsg.Acknowledge();
+
             // Reset the session.
             session.Close();
             session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
-    
+
             // Attempt to Consume the message...
             consumer = session.CreateConsumer(queue);
-            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(msg);
-            Assert.AreEqual(msg1,msg);
-            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(msg);
-            Assert.AreEqual(msg2,msg);
-            msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+            ackmsg = consumer.Receive(TimeSpan.FromMilliseconds(1000)) as ITextMessage;
+            Assert.IsNotNull(ackmsg);
+            Assert.AreEqual(msg1.Text,ackmsg.Text);
+            ackmsg = consumer.Receive(TimeSpan.FromMilliseconds(1000)) as ITextMessage;
+            Assert.IsNotNull(ackmsg);
+            Assert.AreEqual(msg2.Text,ackmsg.Text);
+            IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNull(msg);
             session.Close();
         }
 
         [Test]
-        public void TestUnAckedMessageAreNotConsumedOnSessionClose() 
+        public void TestUnAckedMessageAreNotConsumedOnSessionClose()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
             ITemporaryQueue queue = session.CreateTemporaryQueue();
             IMessageProducer producer = session.CreateProducer(queue);
             producer.Send(session.CreateTextMessage("Hello"));
-    
+
             // Consume the message...
             IMessageConsumer consumer = session.CreateConsumer(queue);
             IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(msg);        
+            Assert.IsNotNull(msg);
             // Don't ack the message.
-            
+
             // Reset the session.  This should cause the unacknowledged message to be re-delivered.
             session.Close();
             session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
-                    
+
             // Attempt to Consume the message...
             consumer = session.CreateConsumer(queue);
             msg = consumer.Receive(TimeSpan.FromMilliseconds(2000));
-            Assert.IsNotNull(msg);        
+            Assert.IsNotNull(msg);
             msg.Acknowledge();
-            
+
             session.Close();
         }
-        
+
         [Test]
 	    public void TestIndividualAcknowledgeMultiMessages_AcknowledgeFirstTest()
 		{
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
-	
+
             // Push 2 messages to queue
             ITemporaryQueue queue = session.CreateTemporaryQueue();
             IMessageProducer producer = session.CreateProducer(queue);
 
             ITextMessage msg = session.CreateTextMessage("test 1");
-            producer.Send(msg, MsgDeliveryMode.Persistent, MsgPriority.Normal, TimeSpan.MinValue);            
-			msg = session.CreateTextMessage("test 2");		
+            producer.Send(msg, MsgDeliveryMode.Persistent, MsgPriority.Normal, TimeSpan.MinValue);
+			msg = session.CreateTextMessage("test 2");
             producer.Send(msg, MsgDeliveryMode.Persistent, MsgPriority.Normal, TimeSpan.MinValue);
             producer.Close();
 
             IMessageConsumer consumer = session.CreateConsumer(queue);
-			
+
             // Read the first message
             ITextMessage fetchedMessage1 = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
             Assert.IsNotNull(fetchedMessage1);
             Assert.AreEqual("test 1", fetchedMessage1.Text);
-            
+
 			// Read the second message
 			ITextMessage fetchedMessage2 = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
             Assert.IsNotNull(fetchedMessage2);
@@ -215,7 +218,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNull(msg);
             session.Close();
         }
-		
+
         [Test]
         public void TestManyMessageAckedAfterAllConsumption()
         {
