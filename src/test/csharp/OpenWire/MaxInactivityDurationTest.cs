@@ -31,11 +31,12 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		/// <summary>
 		/// The name of the connection configuration that CreateNMSFactory() will load.
+		/// Refer to the nmsprovider-test.config file for the value of this variable.
 		/// </summary>
 		/// <returns></returns>
 		protected override string GetNameTestURI() { return "maxInactivityDurationURI"; }
 
-		[Test, Explicit]
+		[Test]
 		public void TestMaxInactivityDuration()
 		{
 			using(IConnection connection = CreateConnection())
@@ -53,7 +54,7 @@ namespace Apache.NMS.ActiveMQ.Test
 						Assert.AreEqual(CORRELATION_ID, receivedMsg.NMSCorrelationID, "Invalid correlation ID.");
 
 						// Go inactive...
-						Thread.Sleep(60 * 1000);
+						Thread.Sleep(TimeSpan.FromSeconds(30));
 
 						// Send another message.
 						SendMessage(producer);

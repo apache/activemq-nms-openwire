@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	{	
         protected static string DESTINATION_NAME = "TestPrefetchSizeZero";
 			
-		[Test, Explicit]
+		[Test]
 		public void TestZeroPrefetchSize()
 		{
 			using(IConnection connection = CreateConnection())
