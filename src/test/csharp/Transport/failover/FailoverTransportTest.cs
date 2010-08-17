@@ -228,7 +228,8 @@ namespace Apache.NMS.ActiveMQ.Test
             MockTransport mock = null;
             while(mock == null ) {
                 mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-            }
+				Thread.Sleep(50);
+			}
             mock.OutgoingCommand = new CommandHandler(OnCommand);
 
             ActiveMQMessage message = new ActiveMQMessage();
@@ -270,7 +271,8 @@ namespace Apache.NMS.ActiveMQ.Test
             MockTransport mock = null;
             while(mock == null ) {
                 mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-            }
+				Thread.Sleep(50);
+			}
             mock.OutgoingCommand = new CommandHandler(OnCommand);
 
             ActiveMQMessage message = new ActiveMQMessage();
@@ -315,7 +317,8 @@ namespace Apache.NMS.ActiveMQ.Test
             MockTransport mock = null;
             while(mock == null ) {
                 mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-            }
+				Thread.Sleep(50);
+			}
             mock.OutgoingCommand = new CommandHandler(OnCommand);
 
             ActiveMQMessage message = new ActiveMQMessage();
@@ -396,7 +399,8 @@ namespace Apache.NMS.ActiveMQ.Test
             MockTransport mock = null;
             while(mock == null ) {
                 mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-            }
+				Thread.Sleep(50);
+			}
             mock.OutgoingCommand = new CommandHandler(OnCommand);
 
             ActiveMQMessage message = new ActiveMQMessage();
@@ -573,7 +577,8 @@ namespace Apache.NMS.ActiveMQ.Test
             MockTransport mock = null;
             while(mock == null ) {
                 mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-            }
+				Thread.Sleep(50);
+			}
 
             mock.InjectCommand(cmd);
 
@@ -585,6 +590,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             while(mock == null) {
                 mock = (MockTransport) transport.Narrow(typeof(MockTransport));
+				Thread.Sleep(50);
             }
 
             Assert.AreEqual("Reconnected", mock.Name);
