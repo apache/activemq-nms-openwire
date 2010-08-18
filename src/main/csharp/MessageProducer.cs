@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ
         private int producerSequenceId = 0;
 
         private MsgDeliveryMode msgDeliveryMode = NMSConstants.defaultDeliveryMode;
-        private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
+        private TimeSpan requestTimeout;
         private TimeSpan msgTimeToLive = NMSConstants.defaultTimeToLive;
         private MsgPriority msgPriority = NMSConstants.defaultPriority - 1;
         private bool disableMessageID = false;

@@ -21,38 +21,36 @@ using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]
-    public class MessageProducerTest
-    {
-        [Test]
-        public void TestProducerSendWithTimeout()
-        {
-            Uri uri = new Uri("mock://localhost:61616?connection.RequestTimeout=100&transport.respondToMessages=false");
+	[TestFixture]
+	public class MessageProducerTest
+	{
+		[Test]
+		public void TestProducerSendWithTimeout()
+		{
+			int timeout = 1500;
+			Uri uri = new Uri(string.Format("mock://localhost:61616?connection.RequestTimeout={0}&transport.respondToMessages=false", timeout));
 
-            ConnectionFactory factory = new ConnectionFactory(uri);
-            using(IConnection connection = factory.CreateConnection())
-            {
-                ISession session = connection.CreateSession();
-                IDestination destination = session.GetTopic("Test");
-                IMessageProducer producer = session.CreateProducer(destination);
+			ConnectionFactory factory = new ConnectionFactory(uri);
+			using(IConnection connection = factory.CreateConnection())
+			using(ISession session = connection.CreateSession())
+			{
+				IDestination destination = session.GetTopic("Test");
+				using(IMessageProducer producer = session.CreateProducer(destination))
+				{
+					ITextMessage message = session.CreateTextMessage("Hello World");
 
-                ITextMessage message = session.CreateTextMessage("Hello World");
+					for(int i = 0; i < 10; ++i)
+					{
+						DateTime start = DateTime.Now;
 
-                for(int i = 0; i < 10; ++i)
-                {
-                    DateTime start = DateTime.Now;
-
-                    producer.Send(message);
-
-                    DateTime end = DateTime.Now;
-    
-                    TimeSpan elapsed = end - start;
-    
-                    // We test for something close since its a bit hard to be exact here
-                    Assert.AreEqual(100.0, elapsed.TotalMilliseconds, 10.0);
-                }
-            }
-        }
-    }
+						producer.Send(message);
+						TimeSpan elapsed = DateTime.Now - start;
+						// Make sure we timed out.
+						Assert.GreaterOrEqual((int) elapsed.TotalMilliseconds, timeout, "Did not reach timeout limit.");
+					}
+				}
+			}
+		}
+	}
 }
 

@@ -49,7 +49,6 @@ namespace Apache.NMS.ActiveMQ.Test
 					using(IMessageConsumer consumerB = session.CreateConsumer(session.GetQueue(CONSUMER_B_DESTINATION_NAME)))
 					using(IMessageProducer producer = session.CreateProducer(session.GetTopic(PRODUCER_DESTINATION_NAME)))
 					{
-						producer.RequestTimeout = receiveTimeout;
 						producer.DeliveryMode = deliveryMode;
 
 						for(int index = 0; index < totalMsgs; index++)
@@ -125,7 +124,6 @@ namespace Apache.NMS.ActiveMQ.Test
 					using(IMessageConsumer consumerB = session.CreateConsumer(session.GetQueue(CONSUMER_B_DESTINATION_NAME)))
 					using(IMessageProducer producer = session.CreateProducer(session.GetTopic(PRODUCER_DESTINATION_NAME)))
 					{
-						producer.RequestTimeout = receiveTimeout;
 						producer.DeliveryMode = deliveryMode;
 
 						consumerA.Listener += MessageListenerA;

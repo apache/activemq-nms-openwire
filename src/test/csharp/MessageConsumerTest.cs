@@ -70,7 +70,6 @@ namespace Apache.NMS.ActiveMQ.Test
 						using(IMessageConsumer consumer = session.CreateConsumer(destination))
 						using(IMessageProducer producer = session.CreateProducer(destination))
 						{
-							producer.RequestTimeout = receiveTimeout;
 							producer.DeliveryMode = deliveryMode;
 
 							string msgText = "ExpiredMessage:" + Guid.NewGuid().ToString();

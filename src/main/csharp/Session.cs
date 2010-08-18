@@ -55,8 +55,8 @@ namespace Apache.NMS.ActiveMQ
         private bool closed = false;
         private bool closing = false;
         private TimeSpan disposeStopTimeout = TimeSpan.FromMilliseconds(30000);
-        private TimeSpan closeStopTimeout = TimeSpan.FromMilliseconds(-1);
-        private TimeSpan requestTimeout = Apache.NMS.NMSConstants.defaultRequestTimeout;
+        private TimeSpan closeStopTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
+		private TimeSpan requestTimeout;
         private AcknowledgementMode acknowledgementMode;
 
         public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode, bool dispatchAsync)

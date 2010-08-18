@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ
         private readonly Uri brokerUri;
         private ITransport transport;
         private ConnectionInfo info;
-        private TimeSpan requestTimeout;
+		private TimeSpan requestTimeout; // from connection factory
         private BrokerInfo brokerInfo; // from broker
         private WireFormatInfo brokerWireFormatInfo; // from broker
         private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
