@@ -25,196 +25,206 @@ using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]
-    public class MockTransportTest
-    {
-        private List<Command> sent;
-        private List<Command> received;
-        private List<Exception> exceptions;
+	[TestFixture]
+	public class BasicMockTransportTest
+	{
+		private Uri mockUri = new Uri("mock://mock");
 
-        private MockTransport transport;
+		[Test]
+		public void CreateMockTransportTest()
+		{
+			MockTransport transport = new MockTransport(mockUri);
 
-        public void OnException(ITransport transport, Exception exception)
-        {
-            Tracer.DebugFormat("MockTransportTest::onException - " + exception );
-            exceptions.Add( exception );
-        }
+			Assert.IsNotNull(transport);
+			Assert.IsFalse(transport.IsStarted);
+			Assert.IsFalse(transport.IsDisposed);
+		}
 
-        public void OnCommand(ITransport transport, Command command)
-        {
-            Tracer.DebugFormat("MockTransportTest::OnCommand - " + command );
-            received.Add( command );
-        }
+		[Test]
+		public void StartInitializedTransportTest()
+		{
+			MockTransport transport = new MockTransport(mockUri);
 
-        public void OnOutgoingCommand(ITransport transport, Command command)
-        {
-            Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command );
-            sent.Add( command );
-        }
+			transport.Command = new CommandHandler(OnCommand);
+			transport.Exception = new ExceptionHandler(OnException);
 
-        [SetUp]
-        public void Init()
-        {
-            this.transport = new MockTransport();
+			transport.Start();
+		}
 
-            sent = new List<Command>();
-            received = new List<Command>();
-            exceptions = new List<Exception>();
+		[Test]
+		[ExpectedException("System.InvalidOperationException")]
+		public void StartUnitializedTransportTest()
+		{
+			MockTransport transport = new MockTransport(mockUri);
+			transport.Start();
+		}
 
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-            transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
-        }
+		public void OnException(ITransport transport, Exception exception)
+		{
+			Tracer.DebugFormat("MockTransportTest::onException - " + exception);
+		}
 
-        [Test]
-        public void CreateMockTransportTest()
-        {
-            MockTransport transport = new MockTransport();
+		public void OnCommand(ITransport transport, Command command)
+		{
+			Tracer.DebugFormat("MockTransportTest::OnCommand - " + command);
+		}
+	}
 
-            Assert.IsNotNull(transport);
-            Assert.IsFalse(transport.IsStarted);
-            Assert.IsFalse(transport.IsDisposed);
-        }
+	[TestFixture]
+	public class MockTransportTest
+	{
+		private Uri mockUri = new Uri("mock://mock");
+		private List<Command> sent;
+		private List<Command> received;
+		private List<Exception> exceptions;
 
-        [Test]
-        public void StartItializedTransportTest()
-        {
-            MockTransport transport = new MockTransport();
+		private MockTransport transport;
 
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
+		public void OnException(ITransport transport, Exception exception)
+		{
+			Tracer.DebugFormat("MockTransportTest::onException - " + exception);
+			exceptions.Add(exception);
+		}
 
-            transport.Start();
-        }
+		public void OnCommand(ITransport transport, Command command)
+		{
+			Tracer.DebugFormat("MockTransportTest::OnCommand - " + command);
+			received.Add(command);
+		}
 
-        [Test]
-        [ExpectedException( "System.InvalidOperationException" )]
-        public void StartUnitializedTransportTest()
-        {
-            MockTransport transport = new MockTransport();
-            transport.Start();
-        }
+		public void OnOutgoingCommand(ITransport transport, Command command)
+		{
+			Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command);
+			sent.Add(command);
+		}
 
-        [Test]
-        public void OneWaySendMessageTest()
-        {
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            message.Text = "Hellow World";
-            transport.Oneway( message );
-            Assert.IsTrue(transport.NumSentMessages == 1);
-            Assert.IsTrue(sent.Count == 1);
-            Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
-        }
+		[SetUp]
+		public void Init()
+		{
+			transport = new MockTransport(mockUri);
+			sent = new List<Command>();
+			received = new List<Command>();
+			exceptions = new List<Exception>();
 
-        [Test]
-        public void RequestMessageTest()
-        {
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            message.Text = "Hellow World";
-            transport.Request( message );
-            Assert.IsTrue(transport.NumSentMessages == 1);
-            Assert.IsTrue(sent.Count == 1);
-            Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
-        }
+			transport.Command = new CommandHandler(OnCommand);
+			transport.Exception = new ExceptionHandler(OnException);
+			transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
+		}
 
-        [Test]
-        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
-        public void OneWayFailOnSendMessageTest()
-        {
-            transport.FailOnSendMessage = true;
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            transport.Oneway( message );
-        }
+		[Test]
+		public void OneWaySendMessageTest()
+		{
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			message.Text = "Hello, World";
+			transport.Oneway(message);
+			Assert.IsTrue(transport.NumSentMessages == 1);
+			Assert.IsTrue(sent.Count == 1);
+			Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
+		}
 
-        [Test]
-        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
-        public void RequestFailOnSendMessageTest()
-        {
-            transport.FailOnSendMessage = true;
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            Assert.IsNotNull( transport.Request( message ) );
-        }
+		[Test]
+		public void RequestMessageTest()
+		{
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			message.Text = "Hello, World";
+			transport.Request(message);
+			Assert.IsTrue(transport.NumSentMessages == 1);
+			Assert.IsTrue(sent.Count == 1);
+			Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
+		}
 
-        [Test]
-        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
-        public void AsyncRequestFailOnSendMessageTest()
-        {
-            transport.FailOnSendMessage = true;
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            Assert.IsNotNull( transport.AsyncRequest( message ) );
-        }
+		[Test, ExpectedException(typeof(IOException))]
+		public void OneWayFailOnSendMessageTest()
+		{
+			transport.FailOnSendMessage = true;
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			transport.Oneway(message);
+		}
 
-        [Test]
-        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
-        public void OnewayFailOnSendTwoMessagesTest()
-        {
-            transport.FailOnSendMessage = true;
-            transport.NumSentMessagesBeforeFail = 2;
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            transport.Oneway( message );
-            transport.Oneway( message );
-            transport.Oneway( message );
-        }
+		[Test, ExpectedException(typeof(IOException))]
+		public void RequestFailOnSendMessageTest()
+		{
+			transport.FailOnSendMessage = true;
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			Assert.IsNotNull(transport.Request(message));
+		}
 
-        [Test]
-        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
-        public void RequestFailOnSendTwoMessagesTest()
-        {
-            transport.FailOnSendMessage = true;
-            transport.NumSentMessagesBeforeFail = 2;
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            transport.Request( message );
-            transport.Request( message );
-            transport.Request( message );
-        }
+		[Test, ExpectedException(typeof(IOException))]
+		public void AsyncRequestFailOnSendMessageTest()
+		{
+			transport.FailOnSendMessage = true;
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			Assert.IsNotNull(transport.AsyncRequest(message));
+		}
 
-        [Test]
-        [ExpectedException( "Apache.NMS.ActiveMQ.IOException" )]
-        public void AsyncRequestFailOnSendTwoMessagesTest()
-        {
-            transport.FailOnSendMessage = true;
-            transport.NumSentMessagesBeforeFail = 2;
-            transport.Start();
-            ActiveMQTextMessage message = new ActiveMQTextMessage();
-            transport.AsyncRequest( message );
-            transport.AsyncRequest( message );
-            transport.AsyncRequest( message );
-        }
+		[Test, ExpectedException(typeof(IOException))]
+		public void OnewayFailOnSendTwoMessagesTest()
+		{
+			transport.FailOnSendMessage = true;
+			transport.NumSentMessagesBeforeFail = 2;
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			transport.Oneway(message);
+			transport.Oneway(message);
+			transport.Oneway(message);
+		}
 
-        [Test]
-        public void InjectCommandTest()
-        {
-            ActiveMQMessage message = new ActiveMQMessage();
+		[Test, ExpectedException(typeof(IOException))]
+		public void RequestFailOnSendTwoMessagesTest()
+		{
+			transport.FailOnSendMessage = true;
+			transport.NumSentMessagesBeforeFail = 2;
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			transport.Request(message);
+			transport.Request(message);
+			transport.Request(message);
+		}
 
-            transport.Start();
-            transport.InjectCommand(message);
+		[Test, ExpectedException(typeof(IOException))]
+		public void AsyncRequestFailOnSendTwoMessagesTest()
+		{
+			transport.FailOnSendMessage = true;
+			transport.NumSentMessagesBeforeFail = 2;
+			transport.Start();
+			ActiveMQTextMessage message = new ActiveMQTextMessage();
+			transport.AsyncRequest(message);
+			transport.AsyncRequest(message);
+			transport.AsyncRequest(message);
+		}
 
-            Thread.Sleep( 1000 );
+		[Test]
+		public void InjectCommandTest()
+		{
+			ActiveMQMessage message = new ActiveMQMessage();
 
-            Assert.IsTrue(this.received.Count > 0 );
-            Assert.IsTrue(transport.NumReceivedMessages == 1);
-        }
+			transport.Start();
+			transport.InjectCommand(message);
 
-        [Test]
-        public void FailOnReceiveMessageTest()
-        {
-            ActiveMQMessage message = new ActiveMQMessage();
+			Thread.Sleep(1000);
 
-            transport.FailOnReceiveMessage = true;
-            transport.Start();
-            transport.InjectCommand(message);
+			Assert.IsTrue(this.received.Count > 0);
+			Assert.IsTrue(transport.NumReceivedMessages == 1);
+		}
 
-            Thread.Sleep( 1000 );
+		[Test]
+		public void FailOnReceiveMessageTest()
+		{
+			ActiveMQMessage message = new ActiveMQMessage();
 
-            Assert.IsTrue(this.exceptions.Count > 0 );
-            Assert.IsTrue(transport.NumReceivedMessages == 1);
-        }
-    }
+			transport.FailOnReceiveMessage = true;
+			transport.Start();
+			transport.InjectCommand(message);
+
+			Thread.Sleep(1000);
+
+			Assert.IsTrue(this.exceptions.Count > 0);
+			Assert.IsTrue(transport.NumReceivedMessages == 1);
+		}
+	}
 }

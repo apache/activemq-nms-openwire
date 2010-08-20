@@ -352,8 +352,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			ITransport transport = connectedTransport.GetAndSet(null);
 			if(transport != null)
 			{
-				transport.Command = new CommandHandler(disposedOnCommand);
-				transport.Exception = new ExceptionHandler(disposedOnException);
+				transport.Command = disposedOnCommand;
+				transport.Exception = disposedOnException;
 				try
 				{
 					transport.Stop();
@@ -541,9 +541,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					if(command is RemoveInfo)
 					{
 						// Simulate response to RemoveInfo command
-						Response response = new Response();
-						response.CorrelationId = command.CommandId;
-						OnCommand(this, response);
+						OnCommand(this, new Response() { CorrelationId = command.CommandId });
 						return;
 					}
 				}
@@ -689,6 +687,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			Reconnect(rebalance);
 		}
 
+		public void Add(bool rebalance, String u)
+		{
+			try
+			{
+				Add(rebalance, new Uri[] { new Uri(u) });
+			}
+			catch(Exception e)
+			{
+				Tracer.ErrorFormat("Failed to parse URI '{0}': {1}", u, e.Message);
+			}
+		}
+
 		public void Remove(bool rebalance, Uri[] u)
 		{
 			lock(uris)
@@ -702,19 +712,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			Reconnect(rebalance);
 		}
 
-		public void Add(bool rebalance, String u)
+		public void Remove(bool rebalance, String u)
 		{
 			try
 			{
-				Uri uri = new Uri(u);
-				lock(uris)
-				{
-					if(!uris.Contains(uri))
-					{
-						uris.Add(uri);
-						Reconnect(rebalance);
-					}
-				}
+				Remove(rebalance, new Uri[] { new Uri(u) });
 			}
 			catch(Exception e)
 			{
@@ -740,23 +742,23 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 											"ActiveMQ Failover Worker: " + this.GetHashCode().ToString());
 					}
 
-                    if(rebalance)
-                    {
-                        ITransport transport = connectedTransport.GetAndSet(null);
-                        if(transport != null)
-                        {
-                            transport.Command = new CommandHandler(disposedOnCommand);
-                            transport.Exception = new ExceptionHandler(disposedOnException);
-                            try
-                            {
-                                transport.Stop();
-                            }
-                            catch(Exception ex)
-                            {
-                                ex.GetType();   // Ignore errors but this lets us see the error during debugging
-                            }
-                        }
-                    }
+					if(rebalance)
+					{
+						ITransport transport = connectedTransport.GetAndSet(null);
+						if(transport != null)
+						{
+							transport.Command = disposedOnCommand;
+							transport.Exception = disposedOnException;
+							try
+							{
+								transport.Stop();
+							}
+							catch(Exception ex)
+							{
+								ex.GetType();   // Ignore errors but this lets us see the error during debugging
+							}
+						}
+					}
 
 					Tracer.Debug("Waking up reconnect task");
 					try
@@ -812,10 +814,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			Tracer.Info("Restoring previous transport connection.");
 			t.Start();
 
-			//send information to the broker - informing it we are an ft client
-			ConnectionControl cc = new ConnectionControl();
-			cc.FaultTolerant = true;
-			t.Oneway(cc);
+			// Send information to the broker - informing it we are a fault tolerant client
+			t.Oneway(new ConnectionControl() { FaultTolerant = true });
 			stateTracker.DoRestore(t);
 
 			Tracer.Info("Sending queued commands...");
@@ -888,8 +888,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								backups.RemoveAt(0);
 								ITransport t = bt.Transport;
 								Uri uri = bt.Uri;
-								t.Command = new CommandHandler(OnCommand);
-								t.Exception = new ExceptionHandler(OnException);
+								t.Command = OnCommand;
+								t.Exception = OnException;
 								try
 								{
 									if(started)
@@ -989,8 +989,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 							if(transport != null)
 							{
-								transport.Command = new CommandHandler(OnCommand);
-								transport.Exception = new ExceptionHandler(OnException);
+								transport.Command = OnCommand;
+								transport.Exception = OnException;
 								transport.Start();
 
 								if(started)
@@ -1145,13 +1145,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						{
 							try
 							{
-								BackupTransport bt = new BackupTransport(this);
-								bt.Uri = uri;
+								BackupTransport bt = new BackupTransport(this)
+								{
+									Uri = uri
+								};
+
 								if(!backups.Contains(bt))
 								{
 									ITransport t = TransportFactory.CompositeConnect(uri);
-									t.Command = new CommandHandler(bt.OnCommand);
-									t.Exception = new ExceptionHandler(bt.OnException);
+									t.Command = bt.OnCommand;
+									t.Exception = bt.OnException;
 									t.Start();
 									bt.Transport = t;
 									backups.Add(bt);

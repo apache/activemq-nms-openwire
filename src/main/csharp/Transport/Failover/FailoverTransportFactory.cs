@@ -61,7 +61,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		public FailoverTransport CreateTransport(StringDictionary parameters)
 		{
 			FailoverTransport transport = new FailoverTransport();
-			URISupport.SetProperties(transport, parameters, "");
+			URISupport.SetProperties(transport, parameters, "transport.");
 			return transport;
 		}
 	}

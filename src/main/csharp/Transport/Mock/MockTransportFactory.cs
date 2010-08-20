@@ -123,7 +123,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			}
 
 			// Create the Mock Transport
-			MockTransport transport = new MockTransport();
+			MockTransport transport = new MockTransport(location);
 
 			transport.FailOnReceiveMessage = this.FailOnReceiveMessage;
 			transport.NumReceivedMessagesBeforeFail = this.NumReceivedMessagesBeforeFail;

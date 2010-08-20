@@ -40,9 +40,9 @@ namespace Apache.NMS.ActiveMQ.Test
 		[TestCase("activemq:failover:tcp://${activemqhost}:61616")]
 		[TestCase("activemq:failover:(tcp://${activemqhost}:61616)")]
 		[TestCase("activemq:failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
-		[TestCase("activemq:failover://(tcp://${activemqhost}:61616)?initialReconnectDelay=100")]
+		[TestCase("activemq:failover://(tcp://${activemqhost}:61616)?transport.initialReconnectDelay=100")]
 		[TestCase("activemq:failover:(tcp://${activemqhost}:61616)?connection.asyncSend=true")]
-		[TestCase("activemq:failover:(tcp://${activemqhost}:61616)?timeout=100&connection.asyncSend=true")]
+		[TestCase("activemq:failover:(tcp://${activemqhost}:61616)?transport.timeout=100&connection.asyncSend=true")]
 
 #if false
 		[TestCase("activemq:discovery:multicast://default")]
@@ -94,7 +94,7 @@ namespace Apache.NMS.ActiveMQ.Test
             {
                 Assert.IsNotNull(connection);
 
-                MockTransport transport = (MockTransport) connection.ITransport.Narrow(typeof(MockTransport));
+				MockTransport transport = (MockTransport) connection.ITransport.Narrow(typeof(MockTransport));
 
                 transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
 

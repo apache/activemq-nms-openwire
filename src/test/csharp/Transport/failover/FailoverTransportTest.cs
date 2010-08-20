@@ -29,572 +29,557 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class FailoverTransportTest
 	{
-        private List<Command> received;
-        private List<Exception> exceptions;
+		private List<Command> sent;
+		private List<Command> received;
+		private List<Exception> exceptions;
 
-        int sessionIdx = 1;
-        int consumerIdx = 1;
-        int producerIdx = 1;
-        
-        public void OnException(ITransport transport, Exception exception)
-        {
-            Tracer.Debug("Test: Received Exception from Transport: " + exception );
-            exceptions.Add( exception );
-        }
-        
-        public void OnCommand(ITransport transport, Command command)
-        {
-            Tracer.Debug("Test: Received Command from Transport: " + command );
-            received.Add( command );
-        }
+		int sessionIdx = 1;
+		int consumerIdx = 1;
+		int producerIdx = 1;
 
-        [SetUp]
-        public void init()
-        {
-            this.received = new List<Command>();
-            this.exceptions = new List<Exception>();
-            this.sessionIdx = 1;
-            this.consumerIdx = 1;
-            this.producerIdx = 1;
-        }
+		private void OnException(ITransport transport, Exception exception)
+		{
+			Tracer.Debug("Test: Received Exception from Transport: " + exception);
+			exceptions.Add(exception);
+		}
 
-        [Test]
-        public void FailoverTransportCreateTest()
-        {
-            Uri uri = new Uri("failover:(mock://localhost:61616)?randomize=false");
+		private void OnCommand(ITransport transport, Command command)
+		{
+			Tracer.DebugFormat("Test: Received Command from Transport: {0}", command);
+			received.Add(command);
+		}
 
-            FailoverTransportFactory factory = new FailoverTransportFactory();
+		private void OnOutgoingCommand(ITransport transport, Command command)
+		{
+			Tracer.DebugFormat("FailoverTransportTest::OnOutgoingCommand - {0}", command);
+			sent.Add(command);
+		}
 
-            ITransport transport = factory.CreateTransport(uri);
-            Assert.IsNotNull(transport);
+		private void OnResumed(ITransport sender)
+		{
+			Tracer.DebugFormat("FailoverTransportTest::OnResumed - {0}", sender.RemoteAddress);
+			// Ensure the current mock transport has the correct outgoing command handler
+			MockTransport mock = sender as MockTransport;
+			Assert.IsNotNull(mock);
+			mock.OutgoingCommand = OnOutgoingCommand;
+		}
 
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
+		private void VerifyCommandHandlerSetting(ITransport transport, MockTransport mock)
+		{
+			// Walk the stack of wrapper transports.
+			ITransport failoverTransportTarget = mock.Command.Target as ITransport;
+			Assert.IsNotNull(failoverTransportTarget);
+			ITransport mutexTransportTarget = failoverTransportTarget.Command.Target as ITransport;
+			Assert.IsNotNull(mutexTransportTarget);
+			ITransport responseCorrelatorTransportTarget = mutexTransportTarget.Command.Target as ITransport;
+			Assert.IsNotNull(responseCorrelatorTransportTarget);
+			Assert.AreEqual(transport.Command.Target, responseCorrelatorTransportTarget.Command.Target);
+		}
 
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-          
-            transport.Start();
+		[SetUp]
+		public void init()
+		{
+			sent = new List<Command>();
+			received = new List<Command>();
+			exceptions = new List<Exception>();
+			sessionIdx = 1;
+			consumerIdx = 1;
+			producerIdx = 1;
+		}
 
-            Thread.Sleep(1000);
-            Assert.IsTrue(failover.IsConnected);
-            
-            transport.Stop();
-            transport.Dispose();
-        }
+		[Test]
+		public void FailoverTransportCreateTest()
+		{
+			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-        [Test]
-        public void FailoverTransportWithBackupsTest()
-        {
-            Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)?randomize=false&backup=true");
-        
-            FailoverTransportFactory factory = new FailoverTransportFactory();
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
 
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-            Assert.IsTrue(failover.Backup);
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
 
-            transport.Start();
+				transport.Start();
 
-            Thread.Sleep(1000);
-            Assert.IsTrue(failover.IsConnected);
-            
-            transport.Stop();      
-            transport.Dispose();
-        }
-
-        [Test]
-        public void FailoverTransportCreateFailOnCreateTest()
-        {
-            Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
-                              "useExponentialBackOff=false&maxReconnectAttempts=3&initialReconnectDelay=100");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsTrue(failover.MaxReconnectAttempts == 3);
-
-            transport.Start();
-
-            Thread.Sleep(2000);
-            Assert.IsNotEmpty(this.exceptions);
-            Assert.IsFalse(failover.IsConnected);
-
-            transport.Stop();
-            transport.Dispose();
-        }
-
-        [Test]
-        public void FailoverTransportFailOnSendMessageTest()
-        {
-            Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
-                              "useExponentialBackOff=false&maxReconnectAttempts=3&initialReconnectDelay=100");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsTrue(failover.MaxReconnectAttempts == 3);
-
-            transport.Start();
-
-            try{
-                ActiveMQMessage message = new ActiveMQMessage();
-                transport.Oneway(message);
-
-                Assert.Fail("Oneway call should block and then throw.");
-            }
-            catch(Exception)
-            {
-            }
-
-            Assert.IsNotEmpty(this.exceptions);
-            Assert.IsFalse(failover.IsConnected);
-            
-            transport.Stop();
-            transport.Dispose();
-        }
-
-        [Test]
-        public void FailoverTransportFailingBackupsTest()
-        {
-            Uri uri = new Uri(
-                "failover:(mock://localhost:61616," +
-                          "mock://localhost:61618?transport.failOnCreate=true)?randomize=false&backup=true");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsTrue(failover.Backup = true);
-
-            transport.Start();
-
-            Thread.Sleep(2000);
-            
-            Assert.IsTrue(failover.IsConnected);
-
-            transport.Stop();
-            transport.Dispose();
-        }
-
-        [Test]
-        public void FailoverTransportSendOnewayMessageTest()
-        {
-            int numMessages = 1000;
-            Uri uri = new Uri(
-                "failover:(mock://localhost:61616)?randomize=false");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-
-            transport.Start();
-
-            Thread.Sleep(1000);
-
-            Assert.IsTrue(failover.IsConnected);
-
-            MockTransport mock = null;
-            while(mock == null ) {
-                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-				Thread.Sleep(50);
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
 			}
-            mock.OutgoingCommand = new CommandHandler(OnCommand);
+		}
 
-            ActiveMQMessage message = new ActiveMQMessage();
-            for(int i = 0; i < numMessages; ++i) {
-                transport.Oneway(message);
-            }
+		[Test]
+		public void FailoverTransportWithBackupsTest()
+		{
+			Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)?transport.randomize=false&transport.backup=true");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-            Thread.Sleep(2000);
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            Assert.IsTrue(this.received.Count == numMessages);
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
+				Assert.IsTrue(failover.Backup);
 
-            transport.Stop();
-            transport.Dispose();
-        }
-
-        [Test]
-        public void FailoverTransportSendRequestTest()
-        {
-            Uri uri = new Uri(
-                "failover:(mock://localhost:61616)?randomize=false");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-
-            transport.Start();
-
-            Thread.Sleep(1000);
-
-            Assert.IsTrue(failover.IsConnected);
-
-            MockTransport mock = null;
-            while(mock == null ) {
-                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-				Thread.Sleep(50);
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
 			}
-            mock.OutgoingCommand = new CommandHandler(OnCommand);
+		}
 
-            ActiveMQMessage message = new ActiveMQMessage();
-            
-            transport.Request(message);
-            transport.Request(message);
-            transport.Request(message);
-            transport.Request(message);
+		[Test]
+		public void FailoverTransportCreateFailOnCreateTest()
+		{
+			Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
+							  "transport.useExponentialBackOff=false&transport.maxReconnectAttempts=3&transport.initialReconnectDelay=100");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-            Thread.Sleep(1000);
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            Assert.IsTrue(this.received.Count == 4);
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.UseExponentialBackOff);
+				Assert.AreEqual(3, failover.MaxReconnectAttempts);
+				Assert.AreEqual(100, failover.InitialReconnectDelay);
 
-            transport.Stop();
-            transport.Dispose();
-        }
-
-        [Test]
-        public void FailoverTransportSendOnewayFailTest()
-        {
-            Uri uri = new Uri(
-                "failover:(mock://localhost:61616?failOnSendMessage=true," +
-                          "mock://localhost:61618)?randomize=false");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-
-            transport.Start();
-
-            Thread.Sleep(1000);
-
-            Assert.IsTrue(failover.IsConnected);
-
-            MockTransport mock = null;
-            while(mock == null ) {
-                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-				Thread.Sleep(50);
+				transport.Start();
+				Thread.Sleep(2000);
+				Assert.IsNotEmpty(this.exceptions);
+				Assert.IsFalse(failover.IsConnected);
 			}
-            mock.OutgoingCommand = new CommandHandler(OnCommand);
+		}
 
-            ActiveMQMessage message = new ActiveMQMessage();
-            
-            transport.Oneway(message);
-            transport.Oneway(message);
-            transport.Oneway(message);
-            transport.Oneway(message);
+		[Test]
+		public void FailoverTransportFailOnSendMessageTest()
+		{
+			Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
+							  "transport.useExponentialBackOff=false&transport.maxReconnectAttempts=3&transport.initialReconnectDelay=100");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-            Thread.Sleep(1000);
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            Assert.IsTrue(this.received.Count == 4);
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.UseExponentialBackOff);
+				Assert.AreEqual(3, failover.MaxReconnectAttempts);
+				Assert.AreEqual(100, failover.InitialReconnectDelay);
 
-            transport.Stop();
-            transport.Dispose();
-        }
+				transport.Start();
 
-        [Test]
-        public void FailoverTransportSendOnewayTimeoutTest()
-        {
-            Uri uri = new Uri(
-                "failover:(mock://localhost:61616?failOnCreate=true)?timeout=1000");
+				ActiveMQMessage message = new ActiveMQMessage();
+				Assert.Throws<IOException>(delegate() { transport.Oneway(message); }, "Oneway call should block and then throw.");
 
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.AreEqual(1000, failover.Timeout);
-
-            transport.Start();
-
-            Thread.Sleep(1000);
-
-            ActiveMQMessage message = new ActiveMQMessage();
-            
-            try
-            {
-                transport.Oneway(message);
-                Assert.Fail("Should have thrown an IOException after timeout.");
-            }
-            catch
-            {
-            }
-
-            transport.Stop();
-            transport.Dispose();
-        }
-        
-        [Test]
-        public void FailoverTransportSendRequestFailTest()
-        {
-            Uri uri = new Uri(
-                "failover:(mock://localhost:61616?failOnSendMessage=true," +
-                          "mock://localhost:61618)?randomize=false");
-
-            FailoverTransportFactory factory = new FailoverTransportFactory();
-
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
-
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-
-            transport.Start();
-
-            Thread.Sleep(1000);
-
-            Assert.IsTrue(failover.IsConnected);
-
-            MockTransport mock = null;
-            while(mock == null ) {
-                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-				Thread.Sleep(50);
+				Assert.IsNotEmpty(this.exceptions);
+				Assert.IsFalse(failover.IsConnected);
 			}
-            mock.OutgoingCommand = new CommandHandler(OnCommand);
+		}
 
-            ActiveMQMessage message = new ActiveMQMessage();
-            
-            transport.Request(message);
-            transport.Request(message);
-            transport.Request(message);
-            transport.Request(message);
+		[Test]
+		public void FailoverTransportFailingBackupsTest()
+		{
+			Uri uri = new Uri(
+				"failover:(mock://localhost:61616," +
+						  "mock://localhost:61618?transport.failOnCreate=true)?transport.randomize=false&transport.backup=true");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-            Thread.Sleep(1000);
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            Assert.IsTrue(this.received.Count == 4);
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
+				Assert.IsTrue(failover.Backup);
 
-            transport.Stop();
-            transport.Dispose();
-        }
+				transport.Start();
+				Thread.Sleep(2000);
+				Assert.IsTrue(failover.IsConnected);
+			}
+		}
 
-        [Test]
-        public void OpenWireCommandsTest() {
-        
-            Uri uri = new Uri("failover:(mock://localhost:61616)?randomize=false");
-        
-            FailoverTransportFactory factory = new FailoverTransportFactory();
+		[Test]
+		public void FailoverTransportSendOnewayMessageTest()
+		{
+			int numMessages = 1000;
+			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-        
-            transport.Start();
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
 
-            Thread.Sleep(1000);
+				failover.Resumed = OnResumed;
 
-            Assert.IsTrue(failover.IsConnected);
-        
-            ConnectionInfo connection = createConnection();
-            transport.Request( connection );
-            SessionInfo session1 = createSession( connection );
-            transport.Request( session1 );
-            SessionInfo session2 = createSession( connection );
-            transport.Request( session2 );
-            ConsumerInfo consumer1 = createConsumer( session1 );
-            transport.Request( consumer1 );
-            ConsumerInfo consumer2 = createConsumer( session1 );
-            transport.Request( consumer2 );
-            ConsumerInfo consumer3 = createConsumer( session2 );
-            transport.Request( consumer3 );
-        
-            ProducerInfo producer1 = createProducer( session2 );
-            transport.Request( producer1 );
-        
-            // Remove the Producers
-            disposeOf( producer1, transport );
-        
-            // Remove the Consumers
-            disposeOf( consumer1, transport );
-            disposeOf( consumer2, transport );
-            disposeOf( consumer3, transport );
-        
-            // Remove the Session instances.
-            disposeOf( session1, transport );
-            disposeOf( session2, transport );
-        
-            // Indicate that we are done.
-            ShutdownInfo shutdown = new ShutdownInfo();
-            transport.Oneway(shutdown);
-        
-            transport.Stop();
-            transport.Dispose();
-        }
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
 
-        protected ConnectionInfo createConnection() {
-        
-            ConnectionId id = new ConnectionId();
-            id.Value = Guid.NewGuid().ToString();
-        
-            ConnectionInfo info = new ConnectionInfo();
-            info.ClientId = Guid.NewGuid().ToString();
-            info.ConnectionId = id;
-        
-            return info;
-        }
+				// Ensure the current mock transport has the correct outgoing command handler
+				MockTransport mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+				Assert.IsNotNull(mock);
+				Assert.AreEqual(61616, mock.RemoteAddress.Port);
 
-        SessionInfo createSession( ConnectionInfo parent ) {
-        
-            SessionId id = new SessionId();
-            id.ConnectionId = parent.ConnectionId.Value;
-            id.Value = sessionIdx++;
-        
-            SessionInfo info = new SessionInfo();
-            info.SessionId = id;
-        
-            return info;
-        }
-        
-        ConsumerInfo createConsumer( SessionInfo parent ) {
-                
-            ConsumerId id = new ConsumerId();
-            id.ConnectionId = parent.SessionId.ConnectionId;
-            id.SessionId = parent.SessionId.Value;
-            id.Value = consumerIdx++;
-        
-            ConsumerInfo info = new ConsumerInfo();
-            info.ConsumerId = id;
-        
-            return info;
-        }
-        
-        ProducerInfo createProducer( SessionInfo parent ) {
-                
-            ProducerId id = new ProducerId();
-            id.ConnectionId = parent.SessionId.ConnectionId;
-            id.SessionId = parent.SessionId.Value;
-            id.Value = producerIdx++;
-        
-            ProducerInfo info = new ProducerInfo();
-            info.ProducerId = id;
-        
-            return info;
-        }
-        
-        void disposeOf( SessionInfo session, ITransport transport ) {
-        
-            RemoveInfo command = new RemoveInfo();
-            command.ObjectId = session.SessionId;
-            transport.Oneway( command );
-        }
-        
-        void disposeOf( ConsumerInfo consumer, ITransport transport ) {
-        
-            RemoveInfo command = new RemoveInfo();
-            command.ObjectId = consumer.ConsumerId;
-            transport.Oneway( command );
-        }
-        
-        void disposeOf( ProducerInfo producer, ITransport transport ) {
-        
-            RemoveInfo command = new RemoveInfo();
-            command.ObjectId = producer.ProducerId;
-            transport.Oneway( command );
-        }
+				VerifyCommandHandlerSetting(transport, mock);
+				mock.OutgoingCommand = OnOutgoingCommand;
+
+				ActiveMQMessage message = new ActiveMQMessage();
+				for(int i = 0; i < numMessages; ++i)
+				{
+					transport.Oneway(message);
+				}
+
+				Thread.Sleep(1000);
+				Assert.AreEqual(numMessages, this.sent.Count);
+			}
+		}
+
+		[Test]
+		public void FailoverTransportSendRequestTest()
+		{
+			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
+
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
+
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
+
+				failover.Resumed = OnResumed;
+
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
+
+				// Ensure the current mock transport has the correct outgoing command handler
+				MockTransport mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+				Assert.IsNotNull(mock);
+				Assert.AreEqual(61616, mock.RemoteAddress.Port);
+				VerifyCommandHandlerSetting(transport, mock);
+				mock.OutgoingCommand = OnOutgoingCommand;
+
+				ActiveMQMessage message = new ActiveMQMessage();
+				int numMessages = 4;
+
+				for(int i = 0; i < numMessages; ++i)
+				{
+					transport.Request(message);
+				}
+
+				Thread.Sleep(1000);
+				Assert.AreEqual(numMessages, this.sent.Count);
+			}
+		}
+
+		[Test]
+		public void FailoverTransportSendOnewayFailTest()
+		{
+			Uri uri = new Uri(
+				"failover:(mock://localhost:61616?transport.failOnSendMessage=true," +
+						  "mock://localhost:61618)?transport.randomize=false");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
+
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
+
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
+
+				failover.Resumed = OnResumed;
+
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
+
+				// Ensure the current mock transport has the correct outgoing command handler
+				MockTransport mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+				Assert.IsNotNull(mock);
+				Assert.AreEqual(61616, mock.RemoteAddress.Port);
+				VerifyCommandHandlerSetting(transport, mock);
+				mock.OutgoingCommand = OnOutgoingCommand;
+
+				ActiveMQMessage message = new ActiveMQMessage();
+				int numMessages = 4;
+
+				for(int i = 0; i < numMessages; ++i)
+				{
+					transport.Oneway(message);
+					// Make sure we switched to second failover
+					mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+					Assert.IsNotNull(mock);
+					Assert.AreEqual(61618, mock.RemoteAddress.Port);
+				}
+
+				Thread.Sleep(1000);
+				Assert.AreEqual(numMessages, this.sent.Count);
+			}
+		}
+
+		[Test]
+		public void FailoverTransportSendOnewayTimeoutTest()
+		{
+			Uri uri = new Uri(
+				"failover:(mock://localhost:61616?transport.failOnCreate=true)?transport.timeout=1000");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
+
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
+
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.AreEqual(1000, failover.Timeout);
+
+				transport.Start();
+				Thread.Sleep(1000);
+
+				ActiveMQMessage message = new ActiveMQMessage();
+				Assert.Throws<IOException>(delegate() { transport.Oneway(message); });
+			}
+		}
+
+		[Test]
+		public void FailoverTransportSendRequestFailTest()
+		{
+			Uri uri = new Uri(
+				"failover:(mock://localhost:61616?transport.failOnSendMessage=true," +
+						  "mock://localhost:61618)?transport.randomize=false");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
+
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
+
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
+
+				failover.Resumed = OnResumed;
+
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
+
+				// Ensure the current mock transport has the correct outgoing command handler
+				MockTransport mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+				Assert.IsNotNull(mock);
+				VerifyCommandHandlerSetting(transport, mock);
+				mock.OutgoingCommand = OnOutgoingCommand;
+
+				ActiveMQMessage message = new ActiveMQMessage();
+				int numMessages = 4;
+
+				for(int i = 0; i < numMessages; ++i)
+				{
+					transport.Request(message);
+				}
+
+				Thread.Sleep(1000);
+				Assert.AreEqual(numMessages, this.sent.Count);
+			}
+		}
 
 		[Test]
 		public void TestFailoverTransportConnectionControlHandling()
 		{
-            Uri uri = new Uri("failover:(mock://localhost:61613)?randomize=false");
-
+			Uri uri = new Uri("failover:(mock://localhost:61613)?transport.randomize=false");
 			string reconnectTo = "mock://localhost:61616?transport.name=Reconnected";
-			string connectedBrokers = "mock://localhost:61616?transport.name=Broker1," +
-                                      "mock://localhost:61617?transport.name=Broker2";
+			string connectedBrokers = "mock://localhost:61617?transport.name=Broker1," +
+									  "mock://localhost:61618?transport.name=Broker2";
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-			ConnectionControl cmd = new ConnectionControl();
-			cmd.FaultTolerant = true;
-			cmd.ReconnectTo = reconnectTo;
-			cmd.ConnectedBrokers = connectedBrokers;
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            FailoverTransportFactory factory = new FailoverTransportFactory();
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
 
-            ITransport transport = factory.CreateTransport( uri );
-            Assert.IsNotNull( transport );
-            transport.Command = new CommandHandler(OnCommand);
-            transport.Exception = new ExceptionHandler(OnException);
+				failover.Resumed = OnResumed;
 
-            FailoverTransport failover = (FailoverTransport) transport.Narrow(typeof(FailoverTransport));
-            Assert.IsNotNull(failover);
-            Assert.IsFalse(failover.Randomize);
-        
-            transport.Start();
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
 
-            MockTransport mock = null;
-            while(mock == null ) {
-                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-				Thread.Sleep(50);
+				// Ensure the current mock transport has the correct outgoing command handler
+				MockTransport mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+				Assert.IsNotNull(mock);
+				Assert.AreEqual(61613, mock.RemoteAddress.Port);
+				VerifyCommandHandlerSetting(transport, mock);
+				mock.OutgoingCommand = OnOutgoingCommand;
+
+				mock.InjectCommand(new ConnectionControl()
+				{
+					FaultTolerant = true,
+					ReconnectTo = reconnectTo,
+					ConnectedBrokers = connectedBrokers
+				});
+
+				failover.Remove(true, "mock://localhost:61613");
+				Thread.Sleep(1000);
+
+				mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+				Assert.IsNotNull(mock);
+				Assert.AreEqual(61616, mock.RemoteAddress.Port);
+				Assert.AreEqual("Reconnected", mock.Name);
 			}
+		}
 
-            mock.InjectCommand(cmd);
+		[Test]
+		public void OpenWireCommandsTest()
+		{
+			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
+			FailoverTransportFactory factory = new FailoverTransportFactory();
 
-            failover.Remove(true, new Uri[] {new Uri("mock://localhost:61613")});
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
 
-            Thread.Sleep(1000);
+				FailoverTransport failover =  transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize);
 
-            mock = null;
+				transport.Start();
+				Thread.Sleep(1000);
+				Assert.IsTrue(failover.IsConnected);
 
-            while(mock == null) {
-                mock = (MockTransport) transport.Narrow(typeof(MockTransport));
-				Thread.Sleep(50);
-            }
+				ConnectionInfo connection = createConnection();
+				transport.Request(connection);
+				SessionInfo session1 = createSession(connection);
+				transport.Request(session1);
+				SessionInfo session2 = createSession(connection);
+				transport.Request(session2);
+				ConsumerInfo consumer1 = createConsumer(session1);
+				transport.Request(consumer1);
+				ConsumerInfo consumer2 = createConsumer(session1);
+				transport.Request(consumer2);
+				ConsumerInfo consumer3 = createConsumer(session2);
+				transport.Request(consumer3);
 
-            Assert.AreEqual("Reconnected", mock.Name);
+				ProducerInfo producer1 = createProducer(session2);
+				transport.Request(producer1);
 
+				// Remove the Producers
+				disposeOf(transport, producer1);
+
+				// Remove the Consumers
+				disposeOf(transport, consumer1);
+				disposeOf(transport, consumer2);
+				disposeOf(transport, consumer3);
+
+				// Remove the Session instances.
+				disposeOf(transport, session1);
+				disposeOf(transport, session2);
+
+				// Indicate that we are done.
+				ShutdownInfo shutdown = new ShutdownInfo();
+				transport.Oneway(shutdown);
+			}
+		}
+
+		protected ConnectionInfo createConnection()
+		{
+			return new ConnectionInfo()
+			{
+				ClientId = Guid.NewGuid().ToString(),
+				ConnectionId = new ConnectionId()
+				{
+					Value = Guid.NewGuid().ToString()
+				}
+			};
+		}
+
+		protected SessionInfo createSession(ConnectionInfo parent)
+		{
+			return new SessionInfo()
+			{
+				SessionId = new SessionId()
+				{
+					ConnectionId = parent.ConnectionId.Value,
+					Value = sessionIdx++
+				}
+			};
+		}
+
+		protected ConsumerInfo createConsumer(SessionInfo parent)
+		{
+			return new ConsumerInfo()
+			{
+				ConsumerId = new ConsumerId()
+				{
+					ConnectionId = parent.SessionId.ConnectionId,
+					SessionId = parent.SessionId.Value,
+					Value = consumerIdx++
+				}
+			};
+		}
+
+		protected ProducerInfo createProducer(SessionInfo parent)
+		{
+			return new ProducerInfo()
+			{
+				ProducerId = new ProducerId()
+				{
+					ConnectionId = parent.SessionId.ConnectionId,
+					SessionId = parent.SessionId.Value,
+					Value = producerIdx++
+				}
+			};
+		}
+
+		protected void disposeOf(ITransport transport, SessionInfo session)
+		{
+			transport.Oneway(new RemoveInfo() { ObjectId = session.SessionId });
+		}
+
+		protected void disposeOf(ITransport transport, ConsumerInfo consumer)
+		{
+			transport.Oneway(new RemoveInfo() { ObjectId = consumer.ConsumerId });
+		}
+
+		protected void disposeOf(ITransport transport, ProducerInfo producer)
+		{
+			transport.Oneway(new RemoveInfo() { ObjectId = producer.ProducerId });
 		}
 	}
 }
