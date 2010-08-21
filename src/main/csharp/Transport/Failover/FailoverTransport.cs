@@ -934,10 +934,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									break;
 								}
 
-								Tracer.DebugFormat("Attempting connect to: {0}", uri);
-
 								if(asyncConnect)
 								{
+									Tracer.DebugFormat("Attempting async connect to: {0}", uri);
 									// set connector up
 									Connector connector = new Connector(
 										delegate(ITransport transportToUse, Uri uriToUse)
@@ -968,7 +967,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									// synchronous connect
 									try
 									{
-										Tracer.DebugFormat("Attempting connect to: {0}", uri.ToString());
+										Tracer.DebugFormat("Attempting sync connect to: {0}", uri);
 										transport = TransportFactory.CompositeConnect(uri);
 										chosenUri = transport.RemoteAddress;
 										break;

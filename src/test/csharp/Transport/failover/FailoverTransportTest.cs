@@ -457,7 +457,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				Thread.Sleep(1000);
 
 				mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
-				Assert.IsNotNull(mock);
+				Assert.IsNotNull(mock, "Error reconnecting to failover broker.");
 				Assert.AreEqual(61616, mock.RemoteAddress.Port);
 				Assert.AreEqual("Reconnected", mock.Name);
 			}
