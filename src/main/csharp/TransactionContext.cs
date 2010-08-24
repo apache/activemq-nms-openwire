@@ -83,58 +83,54 @@ namespace Apache.NMS.ActiveMQ
         
         public void Rollback()
         {
-            if(!InTransaction)
+            if(InTransaction)
             {
-                throw new NMSException("Invliad State: Not Currently in a Transaction");
+                this.BeforeEnd();
+    
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Rollback: "  + this.transactionId +
+                                 " syncCount: " +
+                                 (synchronizations != null ? synchronizations.Count : 0));
+                }
+    
+                TransactionInfo info = new TransactionInfo();
+                info.ConnectionId = this.session.Connection.ConnectionId;
+                info.TransactionId = transactionId;
+                info.Type = (int) TransactionType.Rollback;
+                
+                this.transactionId = null;
+                this.session.Connection.SyncRequest(info);
+    
+                this.AfterRollback();
+                this.synchronizations.Clear();
             }
-
-            this.BeforeEnd();
-
-            if(Tracer.IsDebugEnabled)
-            {
-                Tracer.Debug("Rollback: "  + this.transactionId +
-                             " syncCount: " +
-                             (synchronizations != null ? synchronizations.Count : 0));
-            }
-
-            TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.session.Connection.ConnectionId;
-            info.TransactionId = transactionId;
-            info.Type = (int) TransactionType.Rollback;
-            
-            this.transactionId = null;
-            this.session.Connection.SyncRequest(info);
-
-            this.AfterRollback();
-            this.synchronizations.Clear();
         }
         
         public void Commit()
         {
-            if(!InTransaction)
+            if(InTransaction)
             {
-                throw new NMSException("Invliad State: Not Currently in a Transaction");
+                this.BeforeEnd();
+    
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Commit: "  + this.transactionId +
+                                 " syncCount: " +
+                                 (synchronizations != null ? synchronizations.Count : 0));
+                }
+    
+                TransactionInfo info = new TransactionInfo();
+                info.ConnectionId = this.session.Connection.ConnectionId;
+                info.TransactionId = transactionId;
+                info.Type = (int) TransactionType.CommitOnePhase;
+                
+                this.transactionId = null;
+                this.session.Connection.SyncRequest(info);
+                
+                this.AfterCommit();
+                this.synchronizations.Clear();
             }
-
-            this.BeforeEnd();
-
-            if(Tracer.IsDebugEnabled)
-            {
-                Tracer.Debug("Commit: "  + this.transactionId +
-                             " syncCount: " +
-                             (synchronizations != null ? synchronizations.Count : 0));
-            }
-
-            TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.session.Connection.ConnectionId;
-            info.TransactionId = transactionId;
-            info.Type = (int) TransactionType.CommitOnePhase;
-            
-            this.transactionId = null;
-            this.session.Connection.SyncRequest(info);
-            
-            this.AfterCommit();
-            this.synchronizations.Clear();
         }
 
         internal void BeforeEnd()

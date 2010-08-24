@@ -108,6 +108,18 @@ namespace Apache.NMS.ActiveMQ.Test
         }
 
         [Test]
+        public void TestSessionCommitedWithoutReceivingMessage()
+        {
+            Assert.IsTrue(session.Transacted);
+
+            IMessage message = consumer.Receive(new TimeSpan(0, 0, 0, 0, 100));
+            Assert.IsNull(message);
+            session.Commit();
+
+            Assert.Pass("When getting here. It is ok");
+        }
+
+        [Test]
         public void TestSendReceiveTransactedBatches()
         {
             ITextMessage message = session.CreateTextMessage("Batch IMessage");
@@ -605,6 +617,5 @@ namespace Apache.NMS.ActiveMQ.Test
 
             Assert.IsFalse(ackMessages.Count < MESSAGE_COUNT);
         }
-
     }
 }
