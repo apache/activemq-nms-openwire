@@ -27,76 +27,97 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class ConnectionFactoryTest : NMSTestSupport
 	{
-		[Test]
-		public void TestConnectionFactorySetParams()
+		[Test, Sequential]
+		public void TestConnectionFactorySetParams(
+			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
+			string connectionURI,
+			[Values(AcknowledgementMode.ClientAcknowledge, AcknowledgementMode.AutoAcknowledge)]
+			AcknowledgementMode ackMode,
+			[Values(true, false)]
+			bool asyncSend,
+			[Values(true, false)]
+			bool alwaysSyncSend,
+			[Values(true, false)]
+			bool asyncClose,
+			[Values(true, false)]
+			bool copyMessageOnSend,
+			[Values(3000, 1000)]
+			int requestTimeout,
+			[Values(true, false)]
+			bool sendAcksAsync,
+			[Values(true, false)]
+			bool dispatchAsync)
 		{
-			string connectionURI = "tcp://${activemqhost}:61616";
 			ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
-			
-			factory.AcknowledgementMode = AcknowledgementMode.ClientAcknowledge;
-			factory.AsyncSend = true;
-			factory.AlwaysSyncSend = true;
-			factory.AsyncClose = false;
-			factory.CopyMessageOnSend = false;
-			factory.RequestTimeout = 3000;
-			factory.SendAcksAsync = true;
-			factory.DispatchAsync = false;
-			
+
+			factory.AcknowledgementMode = ackMode;
+			factory.AsyncSend = asyncSend;
+			factory.AlwaysSyncSend = alwaysSyncSend;
+			factory.AsyncClose = asyncClose;
+			factory.CopyMessageOnSend = copyMessageOnSend;
+			factory.RequestTimeout = requestTimeout;
+			factory.SendAcksAsync = sendAcksAsync;
+			factory.DispatchAsync = dispatchAsync;
+
 			using(Connection connection = factory.CreateConnection() as Connection)
 			{
-				Assert.AreEqual(AcknowledgementMode.ClientAcknowledge, connection.AcknowledgementMode);
-				Assert.IsTrue(connection.AsyncSend);
-				Assert.IsTrue(connection.AlwaysSyncSend);
-				Assert.IsFalse(connection.AsyncClose);
-				Assert.IsFalse(connection.CopyMessageOnSend);
-				Assert.AreEqual(3000, connection.RequestTimeout.TotalMilliseconds);
-				Assert.IsTrue(connection.SendAcksAsync);
-				Assert.IsFalse(connection.DispatchAsync);
-			}
-			
-			factory.SendAcksAsync = false;
-			
-			using(Connection connection = factory.CreateConnection() as Connection)
-			{
-				Assert.AreEqual(AcknowledgementMode.ClientAcknowledge, connection.AcknowledgementMode);
-				Assert.IsTrue(connection.AsyncSend);
-				Assert.IsTrue(connection.AlwaysSyncSend);
-				Assert.IsFalse(connection.AsyncClose);
-				Assert.IsFalse(connection.CopyMessageOnSend);
-				Assert.AreEqual(3000, connection.RequestTimeout.TotalMilliseconds);
-				Assert.IsFalse(connection.SendAcksAsync);
-				Assert.IsFalse(connection.DispatchAsync);
-			}			
-		}
-	
-		[Test]
-		public void TestConnectionFactoryParseParams()
-		{
-			string connectionURI = "tcp://${activemqhost}:61616?" +
-								   "connection.AckMode=ClientAcknowledge&" +
-								   "connection.AsyncSend=true&" +
-								   "connection.AlwaysSyncSend=true&" +
-								   "connection.AsyncClose=false&" +
-								   "connection.CopyMessageOnSend=false&" +
-								   "connection.RequestTimeout=3000&" +
-								   "connection.SendAcksAsync=true&" +
-								   "connection.DispatchAsync=true";
-			
-			ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
-			
-			using(Connection connection = factory.CreateConnection() as Connection)
-			{
-				Assert.AreEqual(AcknowledgementMode.ClientAcknowledge, connection.AcknowledgementMode);
-				Assert.IsTrue(connection.AsyncSend);
-				Assert.IsTrue(connection.AlwaysSyncSend);
-				Assert.IsFalse(connection.AsyncClose);
-				Assert.IsFalse(connection.CopyMessageOnSend);
-				Assert.AreEqual(3000, connection.RequestTimeout.TotalMilliseconds);
-				Assert.IsTrue(connection.SendAcksAsync);
-				Assert.IsTrue(connection.DispatchAsync);
+				Assert.AreEqual(ackMode, connection.AcknowledgementMode);
+				Assert.AreEqual(asyncSend, connection.AsyncSend);
+				Assert.AreEqual(alwaysSyncSend, connection.AlwaysSyncSend);
+				Assert.AreEqual(asyncClose, connection.AsyncClose);
+				Assert.AreEqual(copyMessageOnSend, connection.CopyMessageOnSend);
+				Assert.AreEqual(requestTimeout, connection.RequestTimeout.TotalMilliseconds);
+				Assert.AreEqual(sendAcksAsync, connection.SendAcksAsync);
+				Assert.AreEqual(dispatchAsync, connection.DispatchAsync);
 			}
 		}
-		
-	}	
+
+		[Test, Sequential]
+		public void TestConnectionFactoryParseParams(
+			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
+			string baseConnectionURI,
+			[Values(AcknowledgementMode.ClientAcknowledge, AcknowledgementMode.AutoAcknowledge)]
+			AcknowledgementMode ackMode,
+			[Values(true, false)]
+			bool asyncSend,
+			[Values(true, false)]
+			bool alwaysSyncSend,
+			[Values(true, false)]
+			bool asyncClose,
+			[Values(true, false)]
+			bool copyMessageOnSend,
+			[Values(3000, 1000)]
+			int requestTimeout,
+			[Values(true, false)]
+			bool sendAcksAsync,
+			[Values(true, false)]
+			bool dispatchAsync)
+		{
+			string connectionURI = string.Format("{0}?" +
+								   "connection.AckMode={1}&" +
+								   "connection.AsyncSend={2}&" +
+								   "connection.AlwaysSyncSend={3}&" +
+								   "connection.AsyncClose={4}&" +
+								   "connection.CopyMessageOnSend={5}&" +
+								   "connection.RequestTimeout={6}&" +
+								   "connection.SendAcksAsync={7}&" +
+								   "connection.DispatchAsync={8}",
+								   baseConnectionURI, ackMode, asyncSend, alwaysSyncSend, asyncClose, copyMessageOnSend, requestTimeout, sendAcksAsync, dispatchAsync);
+
+			ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
+
+			using(Connection connection = factory.CreateConnection() as Connection)
+			{
+				Assert.AreEqual(ackMode, connection.AcknowledgementMode);
+				Assert.AreEqual(asyncSend, connection.AsyncSend);
+				Assert.AreEqual(alwaysSyncSend, connection.AlwaysSyncSend);
+				Assert.AreEqual(asyncClose, connection.AsyncClose);
+				Assert.AreEqual(copyMessageOnSend, connection.CopyMessageOnSend);
+				Assert.AreEqual(requestTimeout, connection.RequestTimeout.TotalMilliseconds);
+				Assert.AreEqual(sendAcksAsync, connection.SendAcksAsync);
+				Assert.AreEqual(dispatchAsync, connection.DispatchAsync);
+			}
+		}
+	}
 }
 
