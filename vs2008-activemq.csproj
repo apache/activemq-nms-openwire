@@ -1003,6 +1003,7 @@
     <Compile Include="src\main\csharp\Transport\WireFormatNegotiator.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Util\ActiveMQMessageTransformation.cs" />
     <Compile Include="src\main\csharp\Util\FifoMessageDispatchChannel.cs" />
     <Compile Include="src\main\csharp\Util\IdGenerator.cs" />
     <Compile Include="src\main\csharp\Util\MemoryUsage.cs" />
