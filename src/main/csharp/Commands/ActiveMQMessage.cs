@@ -182,6 +182,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public IDestination NMSDestination
 		{
 			get { return Destination; }
+            set { Destination = value as ActiveMQDestination; }
 		}
 
 		private TimeSpan timeToLive = TimeSpan.FromMilliseconds(0);
@@ -277,6 +278,24 @@ namespace Apache.NMS.ActiveMQ.Commands
 		public bool NMSRedelivered
 		{
 			get { return (RedeliveryCounter > 0); }
+
+            set
+            {
+                if(value == true)
+                {
+                    if(this.RedeliveryCounter <= 0)
+                    {
+                        this.RedeliveryCounter = 1;
+                    }
+                }
+                else
+                {
+                    if(this.RedeliveryCounter > 0)
+                    {
+                        this.RedeliveryCounter = 0;
+                    }
+                }
+            }
 		}
 
 		/// <summary>

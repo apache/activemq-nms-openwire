@@ -43,6 +43,8 @@ namespace Apache.NMS.ActiveMQ
         private bool disableMessageTimestamp = false;
         protected bool disposed = false;
 
+        private MessageTransformation messageTransformation;
+
         public MessageProducer(Session session, ProducerId id, ActiveMQDestination destination, TimeSpan requestTimeout)
         {
             this.session = session;            
@@ -52,6 +54,8 @@ namespace Apache.NMS.ActiveMQ
             this.info.ProducerId = id;
             this.info.Destination = destination;
             this.info.WindowSize = session.Connection.ProducerWindowSize;
+
+            this.messageTransformation = session.Connection.MessageTransformation;
             
             // If the destination contained a URI query, then use it to set public
             // properties on the ProducerInfo
@@ -198,7 +202,7 @@ namespace Apache.NMS.ActiveMQ
                 throw new NotSupportedException("This producer can only send messages to: " + this.info.Destination.PhysicalName);
             }
 
-            ActiveMQMessage activeMessage = (ActiveMQMessage) message;
+            ActiveMQMessage activeMessage = this.messageTransformation.TransformMessage<ActiveMQMessage>(message);
 
             activeMessage.ProducerId = info.ProducerId;
             activeMessage.Destination = dest;

@@ -71,6 +71,7 @@ namespace Apache.NMS.ActiveMQ
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
         private IdGenerator clientIdGenerator;
         private volatile CountDownLatch transportInterruptionProcessingComplete;
+        private MessageTransformation messageTransformation = null;
 
         public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
         {
@@ -89,6 +90,8 @@ namespace Apache.NMS.ActiveMQ
             this.info = new ConnectionInfo();
             this.info.ConnectionId = id;
             this.info.FaultTolerant = transport.IsFaultTolerant;
+
+            this.messageTransformation = new ActiveMQMessageTransformation(this);
         }
 
         ~Connection()
@@ -349,6 +352,11 @@ namespace Apache.NMS.ActiveMQ
         {
             get { return this.compressionPolicy; }
             set { this.compressionPolicy = value; }
+        }
+
+        internal MessageTransformation MessageTransformation
+        {
+            get { return this.messageTransformation; }
         }
 
         #endregion
