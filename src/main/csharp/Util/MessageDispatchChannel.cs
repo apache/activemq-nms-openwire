@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Util
 {
     /// <summary>
     /// Defines an interface for a Message Channel used to dispatch incoming

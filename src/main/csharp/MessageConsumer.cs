@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS;
 using Apache.NMS.Util;
 

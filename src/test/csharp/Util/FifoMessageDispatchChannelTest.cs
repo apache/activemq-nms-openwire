@@ -18,6 +18,7 @@
 using System;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
