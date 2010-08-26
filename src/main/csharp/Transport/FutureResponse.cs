@@ -52,11 +52,23 @@ namespace Apache.NMS.ActiveMQ.Transport
 
 				try
 				{
-					latch.await(maxWait);
+					if(!latch.await(maxWait) && response == null)
+					{
+						throw new RequestTimedOutException();
+					}
 				}
-				catch (Exception e)
+				catch(RequestTimedOutException e)
 				{
-					Tracer.Error("Caught while waiting on monitor: " + e);
+					Tracer.Error("Caught Timeout Exception while waiting on monitor: " + e);
+					throw;
+				}
+				catch(Exception e)
+				{
+					Tracer.Error("Caught Exception while waiting on monitor: " + e);
+				}
+				
+				if(response == null && maxWait.TotalMilliseconds > 0)
+				{
 				}
 
 				lock(latch)
