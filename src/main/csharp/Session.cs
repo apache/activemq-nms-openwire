@@ -217,6 +217,20 @@ namespace Apache.NMS.ActiveMQ
             set { this.closeStopTimeout = TimeSpan.FromMilliseconds(value); }
         }
 
+        private ConsumerTransformerDelegate consumerTransformer;
+        public ConsumerTransformerDelegate ConsumerTransformer
+        {
+            get { return this.consumerTransformer; }
+            set { this.consumerTransformer = value; }
+        }
+
+        private ProducerTransformerDelegate producerTransformer;
+        public ProducerTransformerDelegate ProducerTransformer
+        {
+            get { return this.producerTransformer; }
+            set { this.producerTransformer = value; }
+        }
+
         #endregion
 
         #region ISession Members
@@ -368,6 +382,8 @@ namespace Apache.NMS.ActiveMQ
 
                 producer = new MessageProducer(this, GetNextProducerId(), dest, this.RequestTimeout);
 
+                producer.ProducerTransformer = this.ProducerTransformer;
+
                 this.AddProducer(producer);
                 this.Connection.Oneway(producer.ProducerInfo);
             }
@@ -422,6 +438,8 @@ namespace Apache.NMS.ActiveMQ
                                                this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
                                                noLocal, false, this.connection.DispatchAsync);
 				
+				consumer.ConsumerTransformer = this.ConsumerTransformer;
+
                 this.AddConsumer(consumer);
                 this.Connection.SyncRequest(consumer.ConsumerInfo);
 
@@ -461,6 +479,8 @@ namespace Apache.NMS.ActiveMQ
                                                this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
                                                noLocal, false, this.connection.DispatchAsync);
 
+                consumer.ConsumerTransformer = this.ConsumerTransformer;
+			
                 this.AddConsumer(consumer);
                 this.Connection.SyncRequest(consumer.ConsumerInfo);
 

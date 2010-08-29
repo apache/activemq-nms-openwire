@@ -40,6 +40,7 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
+        private readonly MessageTransformation messageTransformation;
 		private readonly MessageDispatchChannel unconsumedMessages;
 		private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
 		private readonly ConsumerInfo info;
@@ -80,6 +81,7 @@ namespace Apache.NMS.ActiveMQ
             
 			this.session = session;
             this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
+            this.messageTransformation = this.session.Connection.MessageTransformation;
 
             if(session.Connection.MessagePrioritySupported)
             {
@@ -169,10 +171,17 @@ namespace Apache.NMS.ActiveMQ
 			get { return ignoreExpiration; }
 			set { ignoreExpiration = value; }
 		}
-
+		
 		#endregion
 
 		#region IMessageConsumer Members
+
+        private ConsumerTransformerDelegate consumerTransformer;
+        public ConsumerTransformerDelegate ConsumerTransformer
+        {
+            get { return this.consumerTransformer; }
+            set { this.consumerTransformer = value; }
+        }
 
 		public event MessageListener Listener
 		{
@@ -1064,6 +1073,15 @@ namespace Apache.NMS.ActiveMQ
 		{
 			ActiveMQMessage message = dispatch.Message.Clone() as ActiveMQMessage;
 
+			if(this.ConsumerTransformer != null)
+			{
+				IMessage newMessage = ConsumerTransformer(this.session, this, message);
+				if(newMessage != null)
+				{
+					message = this.messageTransformation.TransformMessage<ActiveMQMessage>(newMessage);
+				}
+			}
+			
 			message.Connection = this.session.Connection;
 
 			if(IsClientAcknowledge)

@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ
     public class Connection : IConnection
     {
         private static readonly IdGenerator CONNECTION_ID_GENERATOR = new IdGenerator();
-
+				
         // Uri configurable options.
         private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
         private bool asyncSend = false;
@@ -71,7 +71,7 @@ namespace Apache.NMS.ActiveMQ
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
         private IdGenerator clientIdGenerator;
         private volatile CountDownLatch transportInterruptionProcessingComplete;
-        private MessageTransformation messageTransformation = null;
+        private readonly MessageTransformation messageTransformation;
 
         public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
         {
@@ -116,8 +116,22 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public event ConnectionResumedListener ConnectionResumedListener;
 
-        #region Properties
+        private ConsumerTransformerDelegate consumerTransformer;
+        public ConsumerTransformerDelegate ConsumerTransformer
+        {
+            get { return this.consumerTransformer; }
+            set { this.consumerTransformer = value; }
+        }
 
+        private ProducerTransformerDelegate producerTransformer;
+        public ProducerTransformerDelegate ProducerTransformer
+        {
+            get { return this.producerTransformer; }
+            set { this.producerTransformer = value; }
+        }
+
+        #region Properties
+		
         public String UserName
         {
             get { return this.info.UserName; }
@@ -429,6 +443,9 @@ namespace Apache.NMS.ActiveMQ
 			StringDictionary options = URISupport.ParseQuery(this.brokerUri.Query);
 			options = URISupport.GetProperties(options, "session.");
             URISupport.SetProperties(session, options);
+
+			session.ConsumerTransformer = this.ConsumerTransformer;
+			session.ProducerTransformer = this.ProducerTransformer;
 
             if(IsStarted)
             {

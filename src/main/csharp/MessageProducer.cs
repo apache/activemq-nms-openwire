@@ -201,6 +201,15 @@ namespace Apache.NMS.ActiveMQ
             {
                 throw new NotSupportedException("This producer can only send messages to: " + this.info.Destination.PhysicalName);
             }
+			
+			if(this.ProducerTransformer != null)
+			{
+				IMessage transformed = this.ProducerTransformer(this.session, this, message);
+				if(transformed != null)
+				{
+					message = transformed;
+				}
+			}
 
             ActiveMQMessage activeMessage = this.messageTransformation.TransformMessage<ActiveMQMessage>(message);
 
@@ -287,6 +296,13 @@ namespace Apache.NMS.ActiveMQ
             get { return disableMessageTimestamp; }
             set { this.disableMessageTimestamp = value; }
         }
+		
+        private ProducerTransformerDelegate producerTransformer;
+        public ProducerTransformerDelegate ProducerTransformer
+        {
+            get { return this.producerTransformer; }
+            set { this.producerTransformer = value; }
+        }
 
         public IMessage CreateMessage()
         {
@@ -328,7 +344,7 @@ namespace Apache.NMS.ActiveMQ
             return session.CreateStreamMessage();
         }
 
-        public void OnProducerAck(ProducerAck ack)
+        internal void OnProducerAck(ProducerAck ack)
         {
             Tracer.Debug("Received ProducerAck for Message of Size = {" + ack.Size + "}" );
 
