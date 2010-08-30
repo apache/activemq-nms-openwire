@@ -40,7 +40,7 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
-        private readonly MessageTransformation messageTransformation;
+		private readonly MessageTransformation messageTransformation;
 		private readonly MessageDispatchChannel unconsumedMessages;
 		private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
 		private readonly ConsumerInfo info;
@@ -60,7 +60,7 @@ namespace Apache.NMS.ActiveMQ
 		private int dispatchedCount = 0;
 		private volatile bool synchronizationRegistered = false;
 		private bool clearDispatchList = false;
-        private bool inProgressClearRequiredFlag;
+		private bool inProgressClearRequiredFlag;
 
 		private const int DEFAULT_REDELIVERY_DELAY = 0;
 		private const int DEFAULT_MAX_REDELIVERIES = 5;
@@ -70,46 +70,46 @@ namespace Apache.NMS.ActiveMQ
 		private IRedeliveryPolicy redeliveryPolicy;
 
 		// Constructor internal to prevent clients from creating an instance.
-		internal MessageConsumer(Session session, ConsumerId id, ActiveMQDestination destination, 
-                                 String name, String selector, int prefetch, int maxPendingMessageCount, 
-                                 bool noLocal, bool browser, bool dispatchAsync )
+		internal MessageConsumer(Session session, ConsumerId id, ActiveMQDestination destination,
+								 String name, String selector, int prefetch, int maxPendingMessageCount,
+								 bool noLocal, bool browser, bool dispatchAsync )
 		{
-            if(destination == null)
-            {
-                throw new InvalidDestinationException("Consumer cannot receive on Null Destinations.");
-            }
-            
+			if(destination == null)
+			{
+				throw new InvalidDestinationException("Consumer cannot receive on Null Destinations.");
+			}
+
 			this.session = session;
-            this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
-            this.messageTransformation = this.session.Connection.MessageTransformation;
+			this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
+			this.messageTransformation = this.session.Connection.MessageTransformation;
 
-            if(session.Connection.MessagePrioritySupported)
-            {
-                this.unconsumedMessages = new SimplePriorityMessageDispatchChannel();
-            }
-            else
-            {
-                this.unconsumedMessages = new FifoMessageDispatchChannel();
-            }
+			if(session.Connection.MessagePrioritySupported)
+			{
+				this.unconsumedMessages = new SimplePriorityMessageDispatchChannel();
+			}
+			else
+			{
+				this.unconsumedMessages = new FifoMessageDispatchChannel();
+			}
 
-            this.info = new ConsumerInfo();
-            this.info.ConsumerId = id;
-            this.info.Destination = destination;
-            this.info.SubscriptionName = name;
-            this.info.Selector = selector;
-            this.info.PrefetchSize = prefetch;
-            this.info.MaximumPendingMessageLimit = maxPendingMessageCount;
-            this.info.NoLocal = noLocal;
-            this.info.Browser = browser;
-            this.info.DispatchAsync = dispatchAsync;
-            this.info.Retroactive = session.Retroactive;
-            this.info.Exclusive = session.Exclusive;
-            this.info.Priority = session.Priority;
-            
-            // If the destination contained a URI query, then use it to set public properties
-            // on the ConsumerInfo
-            if(destination.Options != null)
-            {
+			this.info = new ConsumerInfo();
+			this.info.ConsumerId = id;
+			this.info.Destination = destination;
+			this.info.SubscriptionName = name;
+			this.info.Selector = selector;
+			this.info.PrefetchSize = prefetch;
+			this.info.MaximumPendingMessageLimit = maxPendingMessageCount;
+			this.info.NoLocal = noLocal;
+			this.info.Browser = browser;
+			this.info.DispatchAsync = dispatchAsync;
+			this.info.Retroactive = session.Retroactive;
+			this.info.Exclusive = session.Exclusive;
+			this.info.Priority = session.Priority;
+
+			// If the destination contained a URI query, then use it to set public properties
+			// on the ConsumerInfo
+			if(destination.Options != null)
+			{
 				// Get options prefixed with "consumer.*"
 				StringDictionary options = URISupport.GetProperties(destination.Options, "consumer.");
 				// Extract out custom extension options "consumer.nms.*"
@@ -117,7 +117,7 @@ namespace Apache.NMS.ActiveMQ
 
 				URISupport.SetProperties(this.info, options);
 				URISupport.SetProperties(this, customConsumerOptions, "nms.");
-            }
+			}
 		}
 
 		~MessageConsumer()
@@ -137,10 +137,10 @@ namespace Apache.NMS.ActiveMQ
 			get { return this.info.ConsumerId; }
 		}
 
-        public ConsumerInfo ConsumerInfo
-        {
-            get { return this.info; }
-        }
+		public ConsumerInfo ConsumerInfo
+		{
+			get { return this.info; }
+		}
 
 		public int RedeliveryTimeout
 		{
@@ -158,11 +158,11 @@ namespace Apache.NMS.ActiveMQ
 			get { return this.redeliveryPolicy; }
 			set { this.redeliveryPolicy = value; }
 		}
-        
-        public long UnconsumedMessageCount
-        {
-            get { return this.unconsumedMessages.Count; }
-        }
+
+		public long UnconsumedMessageCount
+		{
+			get { return this.unconsumedMessages.Count; }
+		}
 
 		// Custom Options
 		private bool ignoreExpiration = false;
@@ -171,17 +171,21 @@ namespace Apache.NMS.ActiveMQ
 			get { return ignoreExpiration; }
 			set { ignoreExpiration = value; }
 		}
-		
+
 		#endregion
 
 		#region IMessageConsumer Members
 
-        private ConsumerTransformerDelegate consumerTransformer;
-        public ConsumerTransformerDelegate ConsumerTransformer
-        {
-            get { return this.consumerTransformer; }
-            set { this.consumerTransformer = value; }
-        }
+		private ConsumerTransformerDelegate consumerTransformer;
+		/// <summary>
+		/// A Delegate that is called each time a Message is dispatched to allow the client to do
+		/// any necessary transformations on the received message before it is delivered.
+		/// </summary>
+		public ConsumerTransformerDelegate ConsumerTransformer
+		{
+			get { return this.consumerTransformer; }
+			set { this.consumerTransformer = value; }
+		}
 
 		public event MessageListener Listener
 		{
@@ -336,8 +340,8 @@ namespace Apache.NMS.ActiveMQ
 		{
 			if(!this.unconsumedMessages.Closed)
 			{
-                Tracer.Debug("Closing down the Consumer");
-                
+				Tracer.Debug("Closing down the Consumer");
+
 				// Do we have any acks we need to send out before closing?
 				// Ack any delivered messages now.
 				if(!this.session.IsTransacted)
@@ -351,7 +355,7 @@ namespace Apache.NMS.ActiveMQ
 
 				if(!this.session.IsTransacted)
 				{
-                    lock(this.dispatchedMessages)
+					lock(this.dispatchedMessages)
 					{
 						dispatchedMessages.Clear();
 					}
@@ -360,15 +364,15 @@ namespace Apache.NMS.ActiveMQ
 				this.unconsumedMessages.Close();
 				this.session.RemoveConsumer(this.info.ConsumerId);
 
-                RemoveInfo removeCommand = new RemoveInfo();
+				RemoveInfo removeCommand = new RemoveInfo();
 				removeCommand.ObjectId = this.info.ConsumerId;
 				removeCommand.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
 
 				this.session.Connection.Oneway(removeCommand);
 				this.session = null;
 
-                Tracer.Debug("Consumer instance Closed.");
-            }
+				Tracer.Debug("Consumer instance Closed.");
+			}
 		}
 
 		#endregion
@@ -383,11 +387,11 @@ namespace Apache.NMS.ActiveMQ
 				messagePull.Timeout = timeout;
 				messagePull.ResponseRequired = false;
 
-                if(Tracer.IsDebugEnabled)
-                {                    
-				    Tracer.Debug("Sending MessagePull: " + messagePull);
-                }
-                
+				if(Tracer.IsDebugEnabled)
+				{
+					Tracer.Debug("Sending MessagePull: " + messagePull);
+				}
+
 				session.Connection.Oneway(messagePull);
 			}
 		}
@@ -408,8 +412,8 @@ namespace Apache.NMS.ActiveMQ
 					}
 				}
 			}
-			
-			if(dispatch == null) 
+
+			if(dispatch == null)
 			{
 				Tracer.DebugFormat("Attempt to Ack MessageId[{0}] failed because the original dispatch is not in the Dispatch List", message.MessageId);
 				return;
@@ -456,38 +460,38 @@ namespace Apache.NMS.ActiveMQ
 			this.unconsumedMessages.Stop();
 		}
 
-        internal void InProgressClearRequired()
-        {
-            inProgressClearRequiredFlag = true;
-            // deal with delivered messages async to avoid lock contention with in progress acks
-            clearDispatchList = true;
-        }
+		internal void InProgressClearRequired()
+		{
+			inProgressClearRequiredFlag = true;
+			// deal with delivered messages async to avoid lock contention with in progress acks
+			clearDispatchList = true;
+		}
 
-        internal void ClearMessagesInProgress()
-        {
-            if(inProgressClearRequiredFlag)
-            {
-                // Called from a thread in the ThreadPool, so we wait until we can
-                // get a lock on the unconsumed list then we clear it.
-                lock(this.unconsumedMessages)
-                {
-                    if(inProgressClearRequiredFlag)
-                    {
-                        if(Tracer.IsDebugEnabled)
-                        {
-                            Tracer.Debug(this.ConsumerId + " clearing dispatched list (" +
-                                         this.unconsumedMessages.Count + ") on transport interrupt");
-                        }
+		internal void ClearMessagesInProgress()
+		{
+			if(inProgressClearRequiredFlag)
+			{
+				// Called from a thread in the ThreadPool, so we wait until we can
+				// get a lock on the unconsumed list then we clear it.
+				lock(this.unconsumedMessages)
+				{
+					if(inProgressClearRequiredFlag)
+					{
+						if(Tracer.IsDebugEnabled)
+						{
+							Tracer.Debug(this.ConsumerId + " clearing dispatched list (" +
+										 this.unconsumedMessages.Count + ") on transport interrupt");
+						}
 
-                        this.unconsumedMessages.Clear();
+						this.unconsumedMessages.Clear();
 
-                        // allow dispatch on this connection to resume
-                        this.session.Connection.TransportInterruptionProcessingComplete();
-                        this.inProgressClearRequiredFlag = false;
-                    }
-                }
-            }
-        }
+						// allow dispatch on this connection to resume
+						this.session.Connection.TransportInterruptionProcessingComplete();
+						this.inProgressClearRequiredFlag = false;
+					}
+				}
+			}
+		}
 
 		public void DeliverAcks()
 		{
@@ -555,10 +559,10 @@ namespace Apache.NMS.ActiveMQ
 						{
 							// on resumption a pending delivered ack will be out of sync with
 							// re-deliveries.
-                            if(Tracer.IsDebugEnabled)
-                            {
-							    Tracer.Debug("removing pending delivered ack on transport interupt: " + pendingAck);
-                            }
+							if(Tracer.IsDebugEnabled)
+							{
+								Tracer.Debug("removing pending delivered ack on transport interupt: " + pendingAck);
+							}
 							this.pendingAck = null;
 						}
 					}
@@ -596,13 +600,13 @@ namespace Apache.NMS.ActiveMQ
 
 								Tracer.Error(this.info.ConsumerId + " Exception while processing message: " + e);
 
-                                // If aborted we stop the abort here and let normal processing resume.
-                                // This allows the session to shutdown normally and ack all messages
-                                // that have outstanding acks in this consumer.
-                                if( (Thread.CurrentThread.ThreadState & ThreadState.AbortRequested) == ThreadState.AbortRequested)
-                                {
-                                    Thread.ResetAbort();
-                                }
+								// If aborted we stop the abort here and let normal processing resume.
+								// This allows the session to shutdown normally and ack all messages
+								// that have outstanding acks in this consumer.
+								if( (Thread.CurrentThread.ThreadState & ThreadState.AbortRequested) == ThreadState.AbortRequested)
+								{
+									Thread.ResetAbort();
+								}
 							}
 						}
 						else
@@ -653,9 +657,9 @@ namespace Apache.NMS.ActiveMQ
 		/// <summary>
 		/// Used to get an enqueued message from the unconsumedMessages list. The
 		/// amount of time this method blocks is based on the timeout value.  if
-		/// timeout == Timeout.Infinite then it blocks until a message is received. 
-		/// if timeout == 0 then it it tries to not block at all, it returns a 
-		/// message if it is available if timeout > 0 then it blocks up to timeout 
+		/// timeout == Timeout.Infinite then it blocks until a message is received.
+		/// if timeout == 0 then it it tries to not block at all, it returns a
+		/// message if it is available if timeout > 0 then it blocks up to timeout
 		/// amount of time.  Expired messages will consumed by this method.
 		/// </summary>
 		/// <param name="timeout">
@@ -800,14 +804,14 @@ namespace Apache.NMS.ActiveMQ
 				else if(IsClientAcknowledge || IsIndividualAcknowledge)
 				{
 					bool messageAckedByConsumer = false;
-					
+
 					lock(this.dispatchedMessages)
 					{
 						messageAckedByConsumer = this.dispatchedMessages.Contains(dispatch);
 					}
-					
+
 					if(messageAckedByConsumer)
-					{					
+					{
 						AckLater(dispatch, AckType.DeliveredAck);
 					}
 				}
@@ -886,19 +890,19 @@ namespace Apache.NMS.ActiveMQ
 				// ack and hence important, send it now so it is not lost.
 				if(oldPendingAck.AckType != (byte) AckType.DeliveredAck)
 				{
-                    if(Tracer.IsDebugEnabled)
-                    {
-					    Tracer.Debug("Sending old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
-                    }
+					if(Tracer.IsDebugEnabled)
+					{
+						Tracer.Debug("Sending old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+					}
 
-                    this.session.Connection.Oneway(oldPendingAck);
+					this.session.Connection.Oneway(oldPendingAck);
 				}
 				else
 				{
-                    if(Tracer.IsDebugEnabled)
-                    {
-					    Tracer.Debug("dropping old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
-                    }
+					if(Tracer.IsDebugEnabled)
+					{
+						Tracer.Debug("dropping old pending ack " + oldPendingAck + ", new pending: " + pendingAck);
+					}
 				}
 			}
 
@@ -1081,7 +1085,7 @@ namespace Apache.NMS.ActiveMQ
 					message = this.messageTransformation.TransformMessage<ActiveMQMessage>(newMessage);
 				}
 			}
-			
+
 			message.Connection = this.session.Connection;
 
 			if(IsClientAcknowledge)
