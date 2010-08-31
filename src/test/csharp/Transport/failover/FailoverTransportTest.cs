@@ -436,7 +436,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				failover.Resumed = OnResumed;
 
 				transport.Start();
-				Thread.Sleep(1000);
+				Thread.Sleep(2000);
 				Assert.IsTrue(failover.IsConnected);
 
 				// Ensure the current mock transport has the correct outgoing command handler
@@ -454,7 +454,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				});
 
 				failover.Remove(true, "mock://localhost:61613");
-				Thread.Sleep(1000);
+				Thread.Sleep(2000);
 
 				mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
 				Assert.IsNotNull(mock, "Error reconnecting to failover broker.");
