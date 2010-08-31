@@ -15,7 +15,6 @@
 * limitations under the License.
 */
 
-using System;
 using System.Collections;
 using System.IO;
 
@@ -25,8 +24,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 #endif
 
 using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {

@@ -564,8 +564,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// </summary>
         private class LengthTrackerStream : Stream
         {
-            private ActiveMQBytesMessage parent;
-            private Stream sink;
+            private readonly ActiveMQBytesMessage parent;
+            private readonly Stream sink;
 
             public LengthTrackerStream(Stream sink, ActiveMQBytesMessage parent) : base()
             {

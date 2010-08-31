@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using Apache.NMS.ActiveMQ.Commands;
-
 namespace Apache.NMS.ActiveMQ.Commands
 {
     public class ActiveMQBlobMessage : ActiveMQMessage
