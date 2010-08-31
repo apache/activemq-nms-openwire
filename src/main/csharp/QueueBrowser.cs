@@ -39,8 +39,8 @@ namespace Apache.NMS.ActiveMQ
 		private readonly ConsumerId consumerId;
 		private readonly Atomic<bool> browseDone = new Atomic<bool>(true);
 		private readonly bool dispatchAsync;
-		private object semaphore = new object();
-		private object myLock = new object();
+		private readonly object semaphore = new object();
+		private readonly object myLock = new object();
 
 		internal QueueBrowser(Session session, ConsumerId consumerId, ActiveMQDestination destination, string selector, bool dispatchAsync)
 		{

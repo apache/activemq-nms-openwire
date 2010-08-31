@@ -25,7 +25,7 @@ namespace Apache.NMS.ActiveMQ
 {
     public class SessionExecutor : Threads.Task
     {
-        private MessageDispatchChannel messageQueue = null;
+        private readonly MessageDispatchChannel messageQueue = null;
         private TaskRunner taskRunner = null;
 
         private Session session = null;

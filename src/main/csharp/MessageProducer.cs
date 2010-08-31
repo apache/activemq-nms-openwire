@@ -29,9 +29,9 @@ namespace Apache.NMS.ActiveMQ
 	public class MessageProducer : IMessageProducer
 	{
 		private Session session;
-		private MemoryUsage usage = null;
+		private readonly MemoryUsage usage = null;
+		private readonly object closedLock = new object();
 		private bool closed = false;
-		private object closedLock = new object();
 		private readonly ProducerInfo info;
 		private int producerSequenceId = 0;
 

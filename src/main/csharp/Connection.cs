@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ
         private bool userSpecifiedClientID;
         private readonly Uri brokerUri;
         private ITransport transport;
-        private ConnectionInfo info;
+        private readonly ConnectionInfo info;
 		private TimeSpan requestTimeout; // from connection factory
         private BrokerInfo brokerInfo; // from broker
         private WireFormatInfo brokerWireFormatInfo; // from broker
@@ -69,7 +69,7 @@ namespace Apache.NMS.ActiveMQ
         private IRedeliveryPolicy redeliveryPolicy;
         private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
-        private IdGenerator clientIdGenerator;
+        private readonly IdGenerator clientIdGenerator;
         private volatile CountDownLatch transportInterruptionProcessingComplete;
         private readonly MessageTransformation messageTransformation;
 

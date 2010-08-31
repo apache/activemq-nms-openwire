@@ -48,8 +48,8 @@ namespace Apache.NMS.ActiveMQ
 
 		private MessageAck pendingAck = null;
 
-		private Atomic<bool> started = new Atomic<bool>();
-		private Atomic<bool> deliveringAcks = new Atomic<bool>();
+		private readonly Atomic<bool> started = new Atomic<bool>();
+		private readonly Atomic<bool> deliveringAcks = new Atomic<bool>();
 
 		private int redeliveryTimeout = 500;
 		protected bool disposed = false;

@@ -37,8 +37,9 @@ namespace Apache.NMS.ActiveMQ
 		private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
 		private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
 
-		private SessionExecutor executor;
-		private TransactionContext transactionContext;
+		private readonly SessionExecutor executor;
+		private readonly TransactionContext transactionContext;
+		
 		private Connection connection;
 
 		private bool dispatchAsync;
