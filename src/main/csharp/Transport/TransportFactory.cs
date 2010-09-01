@@ -68,7 +68,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			string scheme = location.Scheme;
 
-			if(null == scheme || 0 == scheme.Length)
+			if(string.IsNullOrEmpty(scheme))
 			{
 				throw new NMSConnectionException(String.Format("Transport scheme invalid: [{0}]", location.ToString()));
 			}

@@ -22,7 +22,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 {
     class BackupTransport
     {
-        private FailoverTransport failoverTransport;
+        private readonly FailoverTransport failoverTransport;
         private ITransport transport;
         private Uri uri;
         private bool disposed;

@@ -16,8 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Util

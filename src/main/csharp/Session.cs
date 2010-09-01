@@ -20,7 +20,6 @@ using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
-using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -58,7 +57,7 @@ namespace Apache.NMS.ActiveMQ
 		private TimeSpan disposeStopTimeout = TimeSpan.FromMilliseconds(30000);
 		private TimeSpan closeStopTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
 		private TimeSpan requestTimeout;
-		private AcknowledgementMode acknowledgementMode;
+		private readonly AcknowledgementMode acknowledgementMode;
 
 		public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode, bool dispatchAsync)
 		{

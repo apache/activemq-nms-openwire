@@ -43,7 +43,7 @@ namespace Apache.NMS.ActiveMQ
 		private bool disableMessageTimestamp = false;
 		protected bool disposed = false;
 
-		private MessageTransformation messageTransformation;
+		private readonly MessageTransformation messageTransformation;
 
 		public MessageProducer(Session session, ProducerId id, ActiveMQDestination destination, TimeSpan requestTimeout)
 		{

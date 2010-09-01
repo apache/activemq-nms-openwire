@@ -24,7 +24,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 	public class ConsumerState
 	{
-		ConsumerInfo info;
+	    readonly ConsumerInfo info;
 
 		public ConsumerState(ConsumerInfo info)
 		{

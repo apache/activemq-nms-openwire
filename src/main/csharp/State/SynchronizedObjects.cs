@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -24,7 +23,7 @@ namespace Apache.NMS.ActiveMQ.State
 	public class AtomicCollection<TValue>
 		where TValue : class
 	{
-		private ArrayList _collection = new ArrayList();
+		private readonly ArrayList _collection = new ArrayList();
 
 		public AtomicCollection()
 		{
@@ -151,7 +150,7 @@ namespace Apache.NMS.ActiveMQ.State
 		where TKey : class
 		where TValue : class
 	{
-		private Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
+		private readonly Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
 
 		public void Clear()
 		{

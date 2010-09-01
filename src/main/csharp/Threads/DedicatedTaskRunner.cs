@@ -26,8 +26,8 @@ namespace Apache.NMS.ActiveMQ.Threads
     public class DedicatedTaskRunner : TaskRunner
     {
         private readonly Mutex mutex = new Mutex();
-        private Thread theThread = null;
-        private Task task = null;
+        private readonly Thread theThread = null;
+        private readonly Task task = null;
 
         private bool terminated = false;
         private bool pending = false;
@@ -42,8 +42,7 @@ namespace Apache.NMS.ActiveMQ.Threads
             
             this.task = task;
 
-            this.theThread = new Thread(Run);
-            this.theThread.IsBackground = true;
+            this.theThread = new Thread(Run) {IsBackground = true};
             this.theThread.Start();
         }
 

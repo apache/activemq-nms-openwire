@@ -16,12 +16,9 @@
  */
 
 using System;
-using System.Collections;
 using System.Collections.Specialized;
 using Apache.NMS.ActiveMQ.Util;
-using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
-using Apache.NMS;
 using Apache.NMS.Util;
 using Apache.NMS.Policies;
 

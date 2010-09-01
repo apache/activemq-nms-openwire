@@ -27,8 +27,8 @@ namespace Apache.NMS.ActiveMQ.Threads
     public class CompositeTaskRunner : TaskRunner
     {
         private readonly Mutex mutex = new Mutex();
-        private Thread theThread = null;
-        private LinkedList<CompositeTask> tasks = new LinkedList<CompositeTask>();
+        private readonly Thread theThread = null;
+        private readonly LinkedList<CompositeTask> tasks = new LinkedList<CompositeTask>();
 
         private bool terminated = false;
         private bool pending = false;
@@ -36,8 +36,7 @@ namespace Apache.NMS.ActiveMQ.Threads
         
         public CompositeTaskRunner()
         {
-            this.theThread = new Thread(Run);
-            this.theThread.IsBackground = true;
+            this.theThread = new Thread(Run) {IsBackground = true};
             this.theThread.Start();
         }
 		

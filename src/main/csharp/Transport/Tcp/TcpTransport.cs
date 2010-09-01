@@ -37,9 +37,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private Thread readThread;
 		private bool started;
 		private bool disposed = false;
-		private Atomic<bool> closed = new Atomic<bool>(false);
+		private readonly Atomic<bool> closed = new Atomic<bool>(false);
 		private volatile bool seenShutdown;
-		private Uri connectedUri;
+		private readonly Uri connectedUri;
 
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
@@ -94,9 +94,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                     socketReader = new EndianBinaryReader(CreateSocketStream());
 
 					// now lets create the background read thread
-					readThread = new Thread(new ThreadStart(ReadLoop));
-					readThread.IsBackground = true;
-					readThread.Start();
+					readThread = new Thread(new ThreadStart(ReadLoop)) {IsBackground = true};
+				    readThread.Start();
 				}
 			}
 		}

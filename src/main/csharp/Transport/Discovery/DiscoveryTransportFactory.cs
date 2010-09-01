@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 		private const int TIMEOUT_IN_SECONDS = 20;
 
 		private static Uri discoveredUri;
-		private static MulticastDiscoveryAgent agent;
+		private static readonly MulticastDiscoveryAgent agent;
 		private static string currentServiceName;
 		private static readonly object uriLock = new object();
 		private static readonly AutoResetEvent discoveredUriEvent = new AutoResetEvent(false);

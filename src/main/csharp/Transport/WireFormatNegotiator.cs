@@ -26,12 +26,12 @@ namespace Apache.NMS.ActiveMQ.Transport
     /// </summary>
     public class WireFormatNegotiator : TransportFilter
     {
-        private OpenWireFormat wireFormat;
-        private TimeSpan negotiateTimeout = TimeSpan.FromSeconds(15);
+        private readonly OpenWireFormat wireFormat;
+        private readonly TimeSpan negotiateTimeout = TimeSpan.FromSeconds(15);
 
-        private Atomic<bool> firstStart=new Atomic<bool>(true);
-        private CountDownLatch readyCountDownLatch = new CountDownLatch(1);
-        private CountDownLatch wireInfoSentDownLatch = new CountDownLatch(1);
+        private readonly Atomic<bool> firstStart=new Atomic<bool>(true);
+        private readonly CountDownLatch readyCountDownLatch = new CountDownLatch(1);
+        private readonly CountDownLatch wireInfoSentDownLatch = new CountDownLatch(1);
 
         public WireFormatNegotiator(ITransport next, OpenWireFormat wireFormat)
             : base(next)

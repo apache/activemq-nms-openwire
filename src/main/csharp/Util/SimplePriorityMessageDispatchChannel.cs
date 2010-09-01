@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Util
         private readonly Mutex mutex = new Mutex();
         private bool closed;
         private bool running;
-        private LinkedList<MessageDispatch>[] channels = new LinkedList<MessageDispatch>[MAX_PRIORITY];
+        private readonly LinkedList<MessageDispatch>[] channels = new LinkedList<MessageDispatch>[MAX_PRIORITY];
         private int size;
 
         public SimplePriorityMessageDispatchChannel()

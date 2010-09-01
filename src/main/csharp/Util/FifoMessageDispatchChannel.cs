@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Util
         private readonly Mutex mutex = new Mutex();
         private bool closed;
         private bool running;
-        private LinkedList<MessageDispatch> channel = new LinkedList<MessageDispatch>();
+        private readonly LinkedList<MessageDispatch> channel = new LinkedList<MessageDispatch>();
 
         #region Properties
 

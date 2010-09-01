@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 
-using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 
@@ -31,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.State
     public class ConnectionStateTracker : CommandVisitorAdapter
     {
 
-        private static Tracked TRACKED_RESPONSE_MARKER = new Tracked(null);
+        private static readonly Tracked TRACKED_RESPONSE_MARKER = new Tracked(null);
 
         protected Dictionary<ConnectionId, ConnectionState> connectionStates = new Dictionary<ConnectionId, ConnectionState>();
 
@@ -43,8 +42,8 @@ namespace Apache.NMS.ActiveMQ.State
         private bool _trackMessages = true;
         private int _maxCacheSize = 256;
         private int currentCacheSize;
-        private Dictionary<MessageId, Message> messageCache = new Dictionary<MessageId, Message>();
-        private Queue<MessageId> messageCacheFIFO = new Queue<MessageId>();
+        private readonly Dictionary<MessageId, Message> messageCache = new Dictionary<MessageId, Message>();
+        private readonly Queue<MessageId> messageCacheFIFO = new Queue<MessageId>();
 
         protected void RemoveEldestInCache()
         {
@@ -61,8 +60,8 @@ namespace Apache.NMS.ActiveMQ.State
 
         private class RemoveTransactionAction : ThreadSimulator
         {
-            private TransactionInfo info;
-            private ConnectionStateTracker cst;
+            private readonly TransactionInfo info;
+            private readonly ConnectionStateTracker cst;
 
             public RemoveTransactionAction(TransactionInfo info, ConnectionStateTracker aCst)
             {

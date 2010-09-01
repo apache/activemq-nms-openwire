@@ -17,10 +17,6 @@
 
 using System;
 
-using Apache.NMS.ActiveMQ.Commands;
-using System.Text;
-using Apache.NMS;
-
 namespace Apache.NMS.ActiveMQ
 {
 

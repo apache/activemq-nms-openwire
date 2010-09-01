@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		private int numSentKeepAliveInfosBeforeFail = 0;
 		private int numSentKeppAliveInfos = 0;
 		private int nextCommandId = 0;
-		private Uri connectedUri;
+		private readonly Uri connectedUri;
 		private CommandHandler commandHandler;
         private CommandHandler outgoingCommandHandler;
 		private ExceptionHandler exceptionHandler;
@@ -57,9 +57,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		private ResumedHandler resumedHandler;
 		private bool disposed = false;
 		private bool started = false;
-		private TaskRunner asyncResponseTask;
-		private Queue<Command> receiveQueue = new Queue<Command>();
-		private IResponseBuilder responseBuilder = new OpenWireResponseBuilder();
+		private readonly TaskRunner asyncResponseTask;
+		private readonly Queue<Command> receiveQueue = new Queue<Command>();
+		private readonly IResponseBuilder responseBuilder = new OpenWireResponseBuilder();
 
 		#endregion
 
@@ -67,7 +67,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 		private class AsyncResponseTask : Task
 		{
-			private MockTransport parent;
+			private readonly MockTransport parent;
 
 			public AsyncResponseTask(MockTransport parent)
 			{
@@ -280,15 +280,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 		public Object Narrow(Type type)
 		{
-			if(this.GetType().Equals(type))
-			{
-				return this;
-			}
-
-			return null;
+		    return this.GetType().Equals(type) ? this : null;
 		}
 
-		#region Property Accessors
+	    #region Property Accessors
 
 		public string Name
 		{

@@ -24,10 +24,10 @@ namespace Apache.NMS.ActiveMQ.Util
 {
     public class IdGenerator
     {
-        private static String UNIQUE_STUB;
+        private static readonly String UNIQUE_STUB;
         private static int instanceCount;
-        private static String hostName;
-        private String seed;
+        private static readonly String hostName;
+        private readonly String seed;
         private long sequence;
     
         static IdGenerator()

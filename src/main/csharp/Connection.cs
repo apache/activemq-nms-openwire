@@ -706,8 +706,8 @@ namespace Apache.NMS.ActiveMQ
             }
             else if(command is ProducerAck)
             {
-                ProducerAck ack = (ProducerAck) command;
-                if(ack != null && ack.ProducerId != null) 
+                ProducerAck ack = (ProducerAck) command as ProducerAck;
+                if(ack.ProducerId != null) 
 				{
                     MessageProducer producer = producers[ack.ProducerId] as MessageProducer;
                     if(producer != null) 

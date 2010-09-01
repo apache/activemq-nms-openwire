@@ -26,12 +26,12 @@ namespace Apache.NMS.ActiveMQ.State
 	{
 
 		ConnectionInfo info;
-		private AtomicDictionary<TransactionId, TransactionState> transactions = new AtomicDictionary<TransactionId, TransactionState>();
-		private AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
-		private AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
-		private Atomic<bool> _shutdown = new Atomic<bool>(false);
+		private readonly AtomicDictionary<TransactionId, TransactionState> transactions = new AtomicDictionary<TransactionId, TransactionState>();
+		private readonly AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
+		private readonly AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
+		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
 	    private bool connectionInterruptProcessingComplete = true;
-		private Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = 
+		private readonly Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = 
 			new Dictionary<ConsumerId, ConsumerInfo>();
 
 		public ConnectionState(ConnectionInfo info)
@@ -116,7 +116,7 @@ namespace Apache.NMS.ActiveMQ.State
 					}
 					System.Diagnostics.Debug.Assert(false,
 						string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
-					throw ex;
+					throw;
 				}
 				#endif
 			}

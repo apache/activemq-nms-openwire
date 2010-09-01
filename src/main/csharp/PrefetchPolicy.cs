@@ -82,7 +82,7 @@ namespace Apache.NMS.ActiveMQ
             this.durableTopicPrefetch = value;
         }
 
-        private int RestrictToMaximum(int value)
+        private static int RestrictToMaximum(int value)
         {
             return System.Math.Min(value, MAX_PREFETCH_SIZE);
         }

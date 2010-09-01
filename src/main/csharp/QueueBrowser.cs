@@ -17,13 +17,9 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using Apache.NMS.ActiveMQ.Commands;
 using System.Threading;
 using Apache.NMS.Util;
-using System.Runtime.CompilerServices;
-using System.Diagnostics;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -306,7 +302,7 @@ namespace Apache.NMS.ActiveMQ
 
 		public class BrowsingMessageConsumer : MessageConsumer
 		{
-			private QueueBrowser parent;
+			private readonly QueueBrowser parent;
 
 			public BrowsingMessageConsumer(QueueBrowser parent, Session session, ConsumerId id, ActiveMQDestination destination,
 										   String name, String selector, int prefetch, int maxPendingMessageCount,

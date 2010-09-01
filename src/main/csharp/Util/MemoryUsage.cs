@@ -16,7 +16,6 @@
  */
 using System;
 using System.Threading;
-using Apache.NMS;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Util

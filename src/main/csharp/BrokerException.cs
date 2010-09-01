@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ
 	[Serializable]
 	public class BrokerException : NMSException
 	{
-		private BrokerError brokerError = null;
+		private readonly BrokerError brokerError = null;
 
 		public BrokerException()
 			: base("Broker failed with missing exception log")

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-using System;
 using System.IO;
 
 namespace Apache.NMS.ActiveMQ

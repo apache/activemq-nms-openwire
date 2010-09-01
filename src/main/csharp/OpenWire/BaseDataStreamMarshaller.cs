@@ -16,7 +16,6 @@
  */
 using Apache.NMS.ActiveMQ.Commands;
 using System;
-using System.Collections;
 using System.IO;
 using System.Text;
 
@@ -30,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
     public abstract class BaseDataStreamMarshaller
     {
         
-        private static String[] HEX_TABLE = new String[]{
+        private static readonly String[] HEX_TABLE = new String[]{
             "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
             "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b", "1c", "1d", "1e", "1f",
             "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "2a", "2b", "2c", "2d", "2e", "2f",
@@ -103,21 +102,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             BinaryReader dataIn,
             BooleanStream bs)
         {
-            /*
-             if (wireFormat.isCacheEnabled()) {
-             if (bs.ReadBoolean()) {
-             short index = dataIndataIn.ReadInt16()Int16();
-             DataStructure value = wireFormat.UnmarshalNestedObject(dataIn, bs);
-             wireFormat.setInUnmarshallCache(index, value);
-             return value;
-             } else {
-             short index = dataIn.ReadInt16();
-             return wireFormat.getFromUnmarshallCache(index);
-             }
-             } else {
-             return wireFormat.UnmarshalNestedObject(dataIn, bs);
-             }
-             */
             return wireFormat.TightUnmarshalNestedObject(dataIn, bs);
         }
         
@@ -126,21 +110,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             DataStructure o,
             BooleanStream bs)
         {
-            /*
-             if (wireFormat.isCacheEnabled()) {
-             Short index = wireFormat.getMarshallCacheIndex(o);
-             bs.WriteBoolean(index == null);
-             if (index == null) {
-             int rc = wireFormat.Marshal1NestedObject(o, bs);
-             wireFormat.addToMarshallCache(o);
-             return 2 + rc;
-             } else {
-             return 2;
-             }
-             } else {
-             return wireFormat.Marshal1NestedObject(o, bs);
-             }
-             */
             return wireFormat.TightMarshalNestedObject1(o, bs);
         }
         
@@ -150,29 +119,14 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             BinaryWriter dataOut,
             BooleanStream bs)
         {
-            /*
-             if (wireFormat.isCacheEnabled()) {
-             Short index = wireFormat.getMarshallCacheIndex(o);
-             if (bs.ReadBoolean()) {
-             dataOut.Write(index.shortValue(), dataOut);
-             wireFormat.Marshal2NestedObject(o, dataOut, bs);
-             } else {
-             dataOut.Write(index.shortValue(), dataOut);
-             }
-             } else {
-             wireFormat.Marshal2NestedObject(o, dataOut, bs);
-             }
-             */
             wireFormat.TightMarshalNestedObject2(o, dataOut, bs);
         }
         
-        
-        
         protected virtual String TightUnmarshalString(BinaryReader dataIn, BooleanStream bs)
         {
-            if (bs.ReadBoolean())
+            if(bs.ReadBoolean())
             {
-                if (bs.ReadBoolean())
+                if(bs.ReadBoolean())
                 {
                     return ReadAsciiString(dataIn);
                 }

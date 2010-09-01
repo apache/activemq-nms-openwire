@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Net;
 using System.Net.Sockets;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp

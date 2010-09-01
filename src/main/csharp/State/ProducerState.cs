@@ -23,7 +23,7 @@ namespace Apache.NMS.ActiveMQ.State
 {
 	public class ProducerState
 	{
-		ProducerInfo info;
+	    readonly ProducerInfo info;
 
 		public ProducerState(ProducerInfo info)
 		{

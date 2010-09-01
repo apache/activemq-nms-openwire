@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		private const int SOCKET_TIMEOUT_MILLISECONDS = 500;
 
 		private string group;
-		private object stopstartSemaphore = new object();
+		private readonly object stopstartSemaphore = new object();
 		private bool isStarted = false;
 		private Uri discoveryUri;
 		private Socket multicastSocket;

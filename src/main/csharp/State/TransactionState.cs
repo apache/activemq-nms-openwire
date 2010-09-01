@@ -25,9 +25,9 @@ namespace Apache.NMS.ActiveMQ.State
 	public class TransactionState
 	{
 
-		private List<Command> commands = new List<Command>();
-		private TransactionId id;
-		private Atomic<bool> _shutdown = new Atomic<bool>(false);
+		private readonly List<Command> commands = new List<Command>();
+		private readonly TransactionId id;
+		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
 		private bool prepared;
 		private int preparedResult;
 

@@ -30,20 +30,20 @@ namespace Apache.NMS.ActiveMQ.Transport
     /// </summary>
     public class InactivityMonitor : TransportFilter
     {
-        private Atomic<bool> monitorStarted = new Atomic<bool>(false);
+        private readonly Atomic<bool> monitorStarted = new Atomic<bool>(false);
 
-        private Atomic<bool> commandSent = new Atomic<bool>(false);
-        private Atomic<bool> commandReceived = new Atomic<bool>(false);
+        private readonly Atomic<bool> commandSent = new Atomic<bool>(false);
+        private readonly Atomic<bool> commandReceived = new Atomic<bool>(false);
 
-        private Atomic<bool> failed = new Atomic<bool>(false);
-        private Atomic<bool> inRead = new Atomic<bool>(false);
-        private Atomic<bool> inWrite = new Atomic<bool>(false);
+        private readonly Atomic<bool> failed = new Atomic<bool>(false);
+        private readonly Atomic<bool> inRead = new Atomic<bool>(false);
+        private readonly Atomic<bool> inWrite = new Atomic<bool>(false);
 
         private CompositeTaskRunner asyncTasks;
         private AsyncSignalReadErrorkTask asyncErrorTask;
         private AsyncWriteTask asyncWriteTask;
 
-        private Mutex monitor = new Mutex();
+        private readonly Mutex monitor = new Mutex();
 
         private Timer connectionCheckTimer;
 
@@ -70,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             set { this.initialDelayTime = value; }
         }
 
-        private Atomic<bool> keepAliveResponseRequired = new Atomic<bool>(false);
+        private readonly Atomic<bool> keepAliveResponseRequired = new Atomic<bool>(false);
         public bool KeepAliveResponseRequired
         {
             get { return this.keepAliveResponseRequired.Value; }
@@ -365,9 +365,9 @@ namespace Apache.NMS.ActiveMQ.Transport
         // Task that fires when the TaskRunner is signaled by the ReadCheck Timer Task.
         class AsyncSignalReadErrorkTask : CompositeTask
         {
-            private InactivityMonitor parent;
-            private Uri remote;
-            private Atomic<bool> pending = new Atomic<bool>(false);
+            private readonly InactivityMonitor parent;
+            private readonly Uri remote;
+            private readonly Atomic<bool> pending = new Atomic<bool>(false);
 
             public AsyncSignalReadErrorkTask(InactivityMonitor parent, Uri remote)
             {
@@ -396,8 +396,8 @@ namespace Apache.NMS.ActiveMQ.Transport
         // Task that fires when the TaskRunner is signaled by the WriteCheck Timer Task.
         class AsyncWriteTask : CompositeTask
         {
-            private InactivityMonitor parent;
-            private Atomic<bool> pending = new Atomic<bool>(false);
+            private readonly InactivityMonitor parent;
+            private readonly Atomic<bool> pending = new Atomic<bool>(false);
 
             public AsyncWriteTask(InactivityMonitor parent)
             {

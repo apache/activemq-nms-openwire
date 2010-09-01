@@ -30,8 +30,8 @@ namespace Apache.NMS.ActiveMQ
 	public class TransactionContext
     {
         private TransactionId transactionId;
-        private Session session;
-        private ArrayList synchronizations = ArrayList.Synchronized(new ArrayList());
+        private readonly Session session;
+        private readonly ArrayList synchronizations = ArrayList.Synchronized(new ArrayList());
         
         public TransactionContext(Session session)
 		{

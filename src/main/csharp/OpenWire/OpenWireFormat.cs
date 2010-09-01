@@ -31,7 +31,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 	public class OpenWireFormat : IWireFormat
 	{
 		private readonly object marshalLock = new object();
-		private BaseDataStreamMarshaller[] dataMarshallers;
+		private readonly BaseDataStreamMarshaller[] dataMarshallers;
 		private const byte NULL_TYPE = 0;
 
 		private int version;
@@ -43,7 +43,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 		private long maxInactivityDuration = 0;
 		private long maxInactivityDurationInitialDelay = 0;
 		private int cacheSize = 0;
-		private int minimumVersion = 1;
+		private const int minimumVersion = 1;
 
 		private WireFormatInfo preferredWireFormatInfo = new WireFormatInfo();
 		private ITransport transport;

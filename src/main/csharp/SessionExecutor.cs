@@ -28,8 +28,8 @@ namespace Apache.NMS.ActiveMQ
         private readonly MessageDispatchChannel messageQueue = null;
         private TaskRunner taskRunner = null;
 
-        private Session session = null;
-        private IDictionary consumers = null;
+        private readonly Session session = null;
+        private readonly IDictionary consumers = null;
 
         public SessionExecutor(Session session, IDictionary consumers)
         {

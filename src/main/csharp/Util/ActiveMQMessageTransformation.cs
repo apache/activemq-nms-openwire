@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-using System;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 
@@ -23,7 +22,7 @@ namespace Apache.NMS.ActiveMQ.Util
 {
     public class ActiveMQMessageTransformation : MessageTransformation
     {
-        private Connection connection;
+        private readonly Connection connection;
 
         public ActiveMQMessageTransformation(Connection connection) : base()
         {

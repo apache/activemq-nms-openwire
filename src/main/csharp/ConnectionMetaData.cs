@@ -25,17 +25,17 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class ConnectionMetaData : IConnectionMetaData
 	{
-		private int nmsMajorVersion;
-		private int nmsMinorVersion;
+		private readonly int nmsMajorVersion;
+		private readonly int nmsMinorVersion;
 
-		private string nmsProviderName;
-		private string nmsVersion;
+		private readonly string nmsProviderName;
+		private readonly string nmsVersion;
 
-		private int providerMajorVersion;
-		private int providerMinorVersion;
-		private string providerVersion;
+		private readonly int providerMajorVersion;
+		private readonly int providerMinorVersion;
+		private readonly string providerVersion;
 
-		private string[] nmsxProperties;
+		private readonly string[] nmsxProperties;
 
 		public ConnectionMetaData()
 		{

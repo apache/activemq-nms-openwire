@@ -33,26 +33,26 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	public class FailoverTransport : ICompositeTransport, IComparable
 	{
 		private static int idCounter = 0;
-		private int id;
+		private readonly int id;
 
 		private bool disposed;
 		private bool connected;
-		private List<Uri> uris = new List<Uri>();
-		private List<Uri> updated = new List<Uri>();
+		private readonly List<Uri> uris = new List<Uri>();
+		private readonly List<Uri> updated = new List<Uri>();
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
 		private InterruptedHandler interruptedHandler;
 		private ResumedHandler resumedHandler;
 
-		private Mutex reconnectMutex = new Mutex();
-		private Mutex backupMutex = new Mutex();
-		private Mutex sleepMutex = new Mutex();
-		private ConnectionStateTracker stateTracker = new ConnectionStateTracker();
-		private Dictionary<int, Command> requestMap = new Dictionary<int, Command>();
+		private readonly Mutex reconnectMutex = new Mutex();
+		private readonly Mutex backupMutex = new Mutex();
+		private readonly Mutex sleepMutex = new Mutex();
+		private readonly ConnectionStateTracker stateTracker = new ConnectionStateTracker();
+		private readonly Dictionary<int, Command> requestMap = new Dictionary<int, Command>();
 
 		private Uri connectedTransportURI;
 		private Uri failedConnectTransportURI;
-		private AtomicReference<ITransport> connectedTransport = new AtomicReference<ITransport>(null);
+		private readonly AtomicReference<ITransport> connectedTransport = new AtomicReference<ITransport>(null);
 		private TaskRunner reconnectTask = null;
 		private bool started;
 
@@ -71,7 +71,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		private Exception connectionFailure;
 		private bool firstConnection = true;
 		private bool backup = false;
-		private List<BackupTransport> backups = new List<BackupTransport>();
+		private readonly List<BackupTransport> backups = new List<BackupTransport>();
 		private int backupPoolSize = 1;
 		private bool trackMessages = false;
 		private int maxCacheSize = 256;
@@ -96,7 +96,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		private class FailoverTask : Task
 		{
-			private FailoverTransport parent;
+			private readonly FailoverTransport parent;
 
 			public FailoverTask(FailoverTransport p)
 			{
@@ -321,7 +321,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		/// </summary>
 		/// <param name="command"></param>
 		/// <returns>Returns true if the command is one sent when a connection is being closed.</returns>
-		private bool IsShutdownCommand(Command command)
+		private static bool IsShutdownCommand(Command command)
 		{
 			return (command != null && (command.IsShutdownInfo || command is RemoveInfo));
 		}
@@ -958,9 +958,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 										}, uri, this);
 
 									// initiate a thread to try connecting to broker
-									Thread thread = new Thread(connector.DoConnect);
-									thread.Name = uri.ToString();
-									thread.Start();
+									Thread thread = new Thread(connector.DoConnect) {Name = uri.ToString()};
+								    thread.Start();
 								}
 								else
 								{
@@ -1080,17 +1079,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			/// <summary>
 			/// callback to properly set chosen transport
 			/// </summary>
-			SetTransport _setTransport;
+			readonly SetTransport _setTransport;
 
 			/// <summary>
 			/// Uri to try connecting to
 			/// </summary>
-			Uri _uri;
+			readonly Uri _uri;
 
 			/// <summary>
 			/// Failover transport issuing the connection attempt
 			/// </summary>
-			private FailoverTransport _transport;
+			private readonly FailoverTransport _transport;
 
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Connector"/> class.

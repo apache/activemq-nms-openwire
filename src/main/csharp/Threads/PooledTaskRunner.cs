@@ -22,9 +22,9 @@ namespace Apache.NMS.ActiveMQ.Threads
 {
 	class PooledTaskRunner : TaskRunner
 	{
-		private int maxIterationsPerRun;
-		private Task task;
-		private Object runable = new Object();
+		private readonly int maxIterationsPerRun;
+		private readonly Task task;
+		private readonly Object runable = new Object();
 		private bool queued;
 		private bool _shutdown;
 		private bool iterating;
