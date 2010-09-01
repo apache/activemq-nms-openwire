@@ -44,26 +44,21 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.BOOLEAN_TYPE)
-					{
-						return this.dataIn.ReadBoolean();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Boolean.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a bool");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Boolean type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.BOOLEAN_TYPE:
+				            return this.dataIn.ReadBoolean();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Boolean.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a bool");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Boolean type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -90,26 +85,21 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.BYTE_TYPE)
-					{
-						return this.dataIn.ReadByte();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Byte.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a byte");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Byte type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.BYTE_TYPE:
+				            return this.dataIn.ReadByte();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Byte.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a byte");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Byte type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -136,22 +126,19 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.CHAR_TYPE)
-					{
-						return this.dataIn.ReadChar();
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a char");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Char type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.CHAR_TYPE:
+				            return this.dataIn.ReadChar();
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a char");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Char type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -178,30 +165,23 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.SHORT_TYPE)
-					{
-						return this.dataIn.ReadInt16();
-					}
-					else if(type == PrimitiveMap.BYTE_TYPE)
-					{
-						return this.dataIn.ReadByte();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Int16.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a short");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Int16 type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.SHORT_TYPE:
+				            return this.dataIn.ReadInt16();
+				        case PrimitiveMap.BYTE_TYPE:
+				            return this.dataIn.ReadByte();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Int16.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a short");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Int16 type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -228,34 +208,25 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.INTEGER_TYPE)
-					{
-						return this.dataIn.ReadInt32();
-					}
-					else if(type == PrimitiveMap.SHORT_TYPE)
-					{
-						return this.dataIn.ReadInt16();
-					}
-					else if(type == PrimitiveMap.BYTE_TYPE)
-					{
-						return this.dataIn.ReadByte();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Int32.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a int");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Int32 type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.INTEGER_TYPE:
+				            return this.dataIn.ReadInt32();
+				        case PrimitiveMap.SHORT_TYPE:
+				            return this.dataIn.ReadInt16();
+				        case PrimitiveMap.BYTE_TYPE:
+				            return this.dataIn.ReadByte();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Int32.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a int");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Int32 type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -282,38 +253,27 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.LONG_TYPE)
-					{
-						return this.dataIn.ReadInt64();
-					}
-					else if(type == PrimitiveMap.INTEGER_TYPE)
-					{
-						return this.dataIn.ReadInt32();
-					}
-					else if(type == PrimitiveMap.SHORT_TYPE)
-					{
-						return this.dataIn.ReadInt16();
-					}
-					else if(type == PrimitiveMap.BYTE_TYPE)
-					{
-						return this.dataIn.ReadByte();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Int64.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a long");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Int64 type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.LONG_TYPE:
+				            return this.dataIn.ReadInt64();
+				        case PrimitiveMap.INTEGER_TYPE:
+				            return this.dataIn.ReadInt32();
+				        case PrimitiveMap.SHORT_TYPE:
+				            return this.dataIn.ReadInt16();
+				        case PrimitiveMap.BYTE_TYPE:
+				            return this.dataIn.ReadByte();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Int64.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a long");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Int64 type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -340,26 +300,21 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.FLOAT_TYPE)
-					{
-						return this.dataIn.ReadSingle();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Single.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a float");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Single type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.FLOAT_TYPE:
+				            return this.dataIn.ReadSingle();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Single.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a float");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Single type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -386,30 +341,23 @@ namespace Apache.NMS.ActiveMQ.Commands
 				long startingPos = this.byteBuffer.Position;
 				try
 				{
-					int type = this.dataIn.ReadByte();
+				    int type = this.dataIn.ReadByte();
 
-					if(type == PrimitiveMap.DOUBLE_TYPE)
-					{
-						return this.dataIn.ReadDouble();
-					}
-					else if(type == PrimitiveMap.FLOAT_TYPE)
-					{
-						return this.dataIn.ReadSingle();
-					}
-					else if(type == PrimitiveMap.STRING_TYPE)
-					{
-						return Single.Parse(this.dataIn.ReadString16());
-					}
-					else if(type == PrimitiveMap.NULL)
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new NMSException("Cannot convert Null type to a double");
-					}
-					else
-					{
-						this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-						throw new MessageFormatException("Value is not a Double type.");
-					}
+				    switch (type)
+				    {
+				        case PrimitiveMap.DOUBLE_TYPE:
+				            return this.dataIn.ReadDouble();
+				        case PrimitiveMap.FLOAT_TYPE:
+				            return this.dataIn.ReadSingle();
+				        case PrimitiveMap.STRING_TYPE:
+				            return Single.Parse(this.dataIn.ReadString16());
+				        case PrimitiveMap.NULL:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new NMSException("Cannot convert Null type to a double");
+				        default:
+				            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+				            throw new MessageFormatException("Value is not a Double type.");
+				    }
 				}
 				catch(FormatException e)
 				{
@@ -435,57 +383,36 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 			try
 			{
-				int type = this.dataIn.ReadByte();
+			    int type = this.dataIn.ReadByte();
 
-				if(type == PrimitiveMap.BIG_STRING_TYPE)
-				{
-					return this.dataIn.ReadString32();
-				}
-				else if(type == PrimitiveMap.STRING_TYPE)
-				{
-					return this.dataIn.ReadString16();
-				}
-				else if(type == PrimitiveMap.LONG_TYPE)
-				{
-					return this.dataIn.ReadInt64().ToString();
-				}
-				else if(type == PrimitiveMap.INTEGER_TYPE)
-				{
-					return this.dataIn.ReadInt32().ToString();
-				}
-				else if(type == PrimitiveMap.SHORT_TYPE)
-				{
-					return this.dataIn.ReadInt16().ToString();
-				}
-				else if(type == PrimitiveMap.FLOAT_TYPE)
-				{
-					return this.dataIn.ReadSingle().ToString();
-				}
-				else if(type == PrimitiveMap.DOUBLE_TYPE)
-				{
-					return this.dataIn.ReadDouble().ToString();
-				}
-				else if(type == PrimitiveMap.CHAR_TYPE)
-				{
-					return this.dataIn.ReadChar().ToString();
-				}
-				else if(type == PrimitiveMap.BYTE_TYPE)
-				{
-					return this.dataIn.ReadByte().ToString();
-				}
-				else if(type == PrimitiveMap.BOOLEAN_TYPE)
-				{
-					return this.dataIn.ReadBoolean().ToString();
-				}
-				else if(type == PrimitiveMap.NULL)
-				{
-					return null;
-				}
-				else
-				{
-					this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-					throw new MessageFormatException("Value is not a known type.");
-				}
+			    switch (type)
+			    {
+			        case PrimitiveMap.BIG_STRING_TYPE:
+			            return this.dataIn.ReadString32();
+			        case PrimitiveMap.STRING_TYPE:
+			            return this.dataIn.ReadString16();
+			        case PrimitiveMap.LONG_TYPE:
+			            return this.dataIn.ReadInt64().ToString();
+			        case PrimitiveMap.INTEGER_TYPE:
+			            return this.dataIn.ReadInt32().ToString();
+			        case PrimitiveMap.SHORT_TYPE:
+			            return this.dataIn.ReadInt16().ToString();
+			        case PrimitiveMap.FLOAT_TYPE:
+			            return this.dataIn.ReadSingle().ToString();
+			        case PrimitiveMap.DOUBLE_TYPE:
+			            return this.dataIn.ReadDouble().ToString();
+			        case PrimitiveMap.CHAR_TYPE:
+			            return this.dataIn.ReadChar().ToString();
+			        case PrimitiveMap.BYTE_TYPE:
+			            return this.dataIn.ReadByte().ToString();
+			        case PrimitiveMap.BOOLEAN_TYPE:
+			            return this.dataIn.ReadBoolean().ToString();
+			        case PrimitiveMap.NULL:
+			            return null;
+			        default:
+			            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+			            throw new MessageFormatException("Value is not a known type.");
+			    }
 			}
 			catch(FormatException e)
 			{
@@ -565,64 +492,43 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 			try
 			{
-				int type = this.dataIn.ReadByte();
+			    int type = this.dataIn.ReadByte();
 
-				if(type == PrimitiveMap.BIG_STRING_TYPE)
-				{
-					return this.dataIn.ReadString32();
-				}
-				else if(type == PrimitiveMap.STRING_TYPE)
-				{
-					return this.dataIn.ReadString16();
-				}
-				else if(type == PrimitiveMap.LONG_TYPE)
-				{
-					return this.dataIn.ReadInt64();
-				}
-				else if(type == PrimitiveMap.INTEGER_TYPE)
-				{
-					return this.dataIn.ReadInt32();
-				}
-				else if(type == PrimitiveMap.SHORT_TYPE)
-				{
-					return this.dataIn.ReadInt16();
-				}
-				else if(type == PrimitiveMap.FLOAT_TYPE)
-				{
-					return this.dataIn.ReadSingle();
-				}
-				else if(type == PrimitiveMap.DOUBLE_TYPE)
-				{
-					return this.dataIn.ReadDouble();
-				}
-				else if(type == PrimitiveMap.CHAR_TYPE)
-				{
-					return this.dataIn.ReadChar();
-				}
-				else if(type == PrimitiveMap.BYTE_TYPE)
-				{
-					return this.dataIn.ReadByte();
-				}
-				else if(type == PrimitiveMap.BOOLEAN_TYPE)
-				{
-					return this.dataIn.ReadBoolean();
-				}
-				else if(type == PrimitiveMap.BYTE_ARRAY_TYPE)
-				{
-					int length = this.dataIn.ReadInt32();
-					byte[] data = new byte[length];
-					this.dataIn.Read(data, 0, length);
-					return data;
-				}
-				else if(type == PrimitiveMap.NULL)
-				{
-					return null;
-				}
-				else
-				{
-					this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
-					throw new MessageFormatException("Value is not a known type.");
-				}
+			    switch (type)
+			    {
+			        case PrimitiveMap.BIG_STRING_TYPE:
+			            return this.dataIn.ReadString32();
+			        case PrimitiveMap.STRING_TYPE:
+			            return this.dataIn.ReadString16();
+			        case PrimitiveMap.LONG_TYPE:
+			            return this.dataIn.ReadInt64();
+			        case PrimitiveMap.INTEGER_TYPE:
+			            return this.dataIn.ReadInt32();
+			        case PrimitiveMap.SHORT_TYPE:
+			            return this.dataIn.ReadInt16();
+			        case PrimitiveMap.FLOAT_TYPE:
+			            return this.dataIn.ReadSingle();
+			        case PrimitiveMap.DOUBLE_TYPE:
+			            return this.dataIn.ReadDouble();
+			        case PrimitiveMap.CHAR_TYPE:
+			            return this.dataIn.ReadChar();
+			        case PrimitiveMap.BYTE_TYPE:
+			            return this.dataIn.ReadByte();
+			        case PrimitiveMap.BOOLEAN_TYPE:
+			            return this.dataIn.ReadBoolean();
+			        case PrimitiveMap.BYTE_ARRAY_TYPE:
+			            {
+			                int length = this.dataIn.ReadInt32();
+			                byte[] data = new byte[length];
+			                this.dataIn.Read(data, 0, length);
+			                return data;
+			            }
+			        case PrimitiveMap.NULL:
+			            return null;
+			        default:
+			            this.byteBuffer.Seek(startingPos, SeekOrigin.Begin);
+			            throw new MessageFormatException("Value is not a known type.");
+			    }
 			}
 			catch(FormatException e)
 			{
@@ -920,7 +826,6 @@ namespace Apache.NMS.ActiveMQ.Commands
 				this.byteBuffer = null;
 			}
 		}
-
 	}
 }
 

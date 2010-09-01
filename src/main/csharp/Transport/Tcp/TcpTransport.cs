@@ -356,12 +356,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public Object Narrow(Type type)
 		{
-			if(this.GetType().Equals(type))
-			{
-				return this;
-			}
-
-			return null;
+		    return this.GetType().Equals(type) ? this : null;
 		}
 
 	    public bool IsReconnectSupported

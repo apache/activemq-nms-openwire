@@ -301,21 +301,20 @@ namespace Apache.NMS.ActiveMQ.Commands
 			{
 				return null;
 			}
-			else if(type == ACTIVEMQ_TOPIC)
+			else switch(type)
 			{
-				result = new ActiveMQTopic(pyhsicalName);
-			}
-			else if(type == ACTIVEMQ_TEMPORARY_TOPIC)
-			{
-				result = new ActiveMQTempTopic(pyhsicalName);
-			}
-			else if(type == ACTIVEMQ_QUEUE)
-			{
-				result = new ActiveMQQueue(pyhsicalName);
-			}
-			else
-			{
-				result = new ActiveMQTempQueue(pyhsicalName);
+			    case ACTIVEMQ_TOPIC:
+			        result = new ActiveMQTopic(pyhsicalName);
+			        break;
+			    case ACTIVEMQ_TEMPORARY_TOPIC:
+			        result = new ActiveMQTempTopic(pyhsicalName);
+			        break;
+			    case ACTIVEMQ_QUEUE:
+			        result = new ActiveMQQueue(pyhsicalName);
+			        break;
+			    default:
+			        result = new ActiveMQTempQueue(pyhsicalName);
+			        break;
 			}
 			return result;
 		}

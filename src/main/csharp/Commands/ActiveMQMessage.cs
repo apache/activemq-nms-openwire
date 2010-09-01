@@ -45,20 +45,13 @@ namespace Apache.NMS.ActiveMQ.Commands
 		}
 
         public override int GetHashCode()
-        {            
+        {
             MessageId id = this.MessageId;
 
-            if(id != null)
-            {
-                return id.GetHashCode();
-            }
-            else
-            {
-                return base.GetHashCode();
-            }
+            return id != null ? id.GetHashCode() : base.GetHashCode();
         }
 
-        public override byte GetDataStructureType()
+	    public override byte GetDataStructureType()
 		{
 			return ID_ACTIVEMQMESSAGE;
 		}
@@ -82,17 +75,15 @@ namespace Apache.NMS.ActiveMQ.Commands
         
 		public void Acknowledge()
 		{
-			if(null == Acknowledger)
+		    if(null == Acknowledger)
 			{
 				throw new NMSException("No Acknowledger has been associated with this message: " + this);
 			}
-			else
-			{
-				Acknowledger(this);
-			}
+		    
+            Acknowledger(this);
 		}
 
-		public virtual void ClearBody()
+	    public virtual void ClearBody()
 		{
 			this.ReadOnlyBody = false;
 			this.Content = null;
@@ -144,11 +135,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 				if(null == properties)
 				{
 					properties = PrimitiveMap.Unmarshal(MarshalledProperties);
-					propertyHelper = new MessagePropertyIntercepter(this, properties, this.ReadOnlyProperties);
+					propertyHelper = new MessagePropertyIntercepter(this, properties, this.ReadOnlyProperties)
+					                     {AllowByteArrays = false};
 					
 					// Since JMS doesn't define a Byte array interface for properties we
 					// disable them here to prevent sending invalid data to the broker.
-					propertyHelper.AllowByteArrays = false;
 				}
 
 				return propertyHelper;
@@ -222,15 +213,10 @@ namespace Apache.NMS.ActiveMQ.Commands
 		{
 			get
 			{
-				if(null != MessageId)
-				{
-					return BaseDataStreamMarshaller.ToString(MessageId);
-				}
-
-				return String.Empty;
+			    return null != MessageId ? BaseDataStreamMarshaller.ToString(MessageId) : String.Empty;
 			}
 
-            set
+		    set
             {
                 if(value != null) 
                 {
