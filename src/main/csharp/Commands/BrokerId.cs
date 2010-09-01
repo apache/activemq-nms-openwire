@@ -76,6 +76,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((BrokerId) that);
             }
+
             return false;
         }
 

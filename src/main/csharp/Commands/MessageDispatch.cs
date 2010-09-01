@@ -108,6 +108,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((MessageDispatch) that);
             }
+
             return false;
         }
 
@@ -151,7 +152,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override Response visit(ICommandVisitor visitor)
         {
-            return visitor.processMessageDispatch( this );
+            return visitor.processMessageDispatch(this);
         }
 
     };

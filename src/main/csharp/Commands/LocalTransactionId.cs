@@ -84,6 +84,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((LocalTransactionId) that);
             }
+
             return false;
         }
 

@@ -95,6 +95,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((ConnectionId) that);
             }
+
             return false;
         }
 

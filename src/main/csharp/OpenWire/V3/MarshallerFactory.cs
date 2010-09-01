@@ -24,14 +24,6 @@
  *
  */
 
-using System;
-using System.Collections;
-using System.IO;
-
-using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.ActiveMQ.OpenWire;
-using Apache.NMS.ActiveMQ.OpenWire.V3;
-
 namespace Apache.NMS.ActiveMQ.OpenWire.V3
 {
     /// <summary>

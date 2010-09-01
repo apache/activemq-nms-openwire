@@ -95,6 +95,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((XATransactionId) that);
             }
+
             return false;
         }
 

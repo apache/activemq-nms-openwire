@@ -101,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override Response visit(ICommandVisitor visitor)
         {
-            return visitor.processRemoveSubscriptionInfo( this );
+            return visitor.processRemoveSubscriptionInfo(this);
         }
 
     };

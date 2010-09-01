@@ -50,16 +50,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[ " + 
-" ]";
+            return GetType().Name + "[ ]";
         }
 
         public override int GetHashCode()
         {
-            int answer = 0;
-
-
-            return answer;
+            return HashCode(this);
         }
 
         public override bool Equals(object that)
@@ -68,12 +64,12 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((TransactionId) that);
             }
+
             return false;
         }
 
         public virtual bool Equals(TransactionId that)
         {
-
             return true;
         }
     };

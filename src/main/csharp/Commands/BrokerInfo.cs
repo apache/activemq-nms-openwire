@@ -173,7 +173,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override Response visit(ICommandVisitor visitor)
         {
-            return visitor.processBrokerInfo( this );
+            return visitor.processBrokerInfo(this);
         }
 
     };

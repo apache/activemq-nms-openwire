@@ -119,6 +119,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((SessionId) that);
             }
+
             return false;
         }
 

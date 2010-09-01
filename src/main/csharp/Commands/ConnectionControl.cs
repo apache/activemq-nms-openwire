@@ -141,7 +141,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override Response visit(ICommandVisitor visitor)
         {
-            return visitor.processConnectionControl( this );
+            return visitor.processConnectionControl(this);
         }
 
     };

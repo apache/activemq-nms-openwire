@@ -85,7 +85,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override Response visit(ICommandVisitor visitor)
         {
-            return visitor.processResponse( this );
+            return visitor.processResponse(this);
         }
 
     };

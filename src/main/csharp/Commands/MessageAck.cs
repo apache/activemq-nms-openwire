@@ -133,7 +133,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override Response visit(ICommandVisitor visitor)
         {
-            return visitor.processMessageAck( this );
+            return visitor.processMessageAck(this);
         }
 
     };

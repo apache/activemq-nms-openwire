@@ -116,6 +116,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return Equals((ConsumerId) that);
             }
+
             return false;
         }
 
