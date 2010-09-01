@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Commands
     public class WireFormatInfo : BaseCommand, Command, MarshallAware
     {
         public const byte ID_WIREFORMATINFO = 1;
-        static private byte[] MAGIC = new byte[] {
+        static private readonly byte[] MAGIC = new byte[] {
                         'A'&0xFF,
                         'c'&0xFF,
                         't'&0xFF,
@@ -48,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "["
-                    + " Magic=" + ASCIIEncoding.ASCII.GetString(magic)
+                    + " Magic=" + Encoding.ASCII.GetString(magic)
                     + " Version=" + Version
                     + " MarshalledProperties=" + Properties.ToString()
                     + " ]";
