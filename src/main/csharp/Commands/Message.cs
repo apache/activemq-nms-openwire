@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
 
 using Apache.NMS.ActiveMQ.State;
+using System;
+
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Commands
@@ -370,10 +370,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override bool IsMessage
         {
-            get
-            {
-                return true;
-            }
+            get { return true; }
         }
 
         ///

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
 
 using Apache.NMS.ActiveMQ.State;
 
@@ -123,10 +121,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override bool IsConsumerControl
         {
-            get
-            {
-                return true;
-            }
+            get { return true; }
         }
 
         ///

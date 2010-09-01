@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
