@@ -164,10 +164,14 @@ namespace Apache.NMS.ActiveMQ
 			set
 			{
 				brokerUri = new Uri(URISupport.StripPrefix(value.OriginalString, "activemq:"));
-
-				if(brokerUri.Query != null)
+				
+				if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
 				{
-					StringDictionary properties = URISupport.ParseQuery(brokerUri.Query);
+					// Since the Uri class will return the end of a Query string found in a Composite
+					// URI we must ensure that we trim that off before we proceed.
+					string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);						
+					
+					StringDictionary properties = URISupport.ParseQuery(query);
 
 					StringDictionary connection = URISupport.ExtractProperties(properties, "connection.");
 					StringDictionary nms = URISupport.ExtractProperties(properties, "nms.");
