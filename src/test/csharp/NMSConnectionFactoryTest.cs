@@ -43,6 +43,9 @@ namespace Apache.NMS.ActiveMQ.Test
 		[TestCase("activemq:failover://(tcp://${activemqhost}:61616)?transport.initialReconnectDelay=100")]
 		[TestCase("activemq:failover:(tcp://${activemqhost}:61616)?connection.asyncSend=true")]
 		[TestCase("activemq:failover:(tcp://${activemqhost}:61616)?transport.timeout=100&connection.asyncSend=true")]
+		[TestCase("activemq:failover:tcp://${activemqhost}:61616?keepAlive=false&wireFormat.maxInactivityDuration=1000")]
+		[TestCase("activemq:failover:(tcp://${activemqhost}:61616?keepAlive=false&wireFormat.maxInactivityDuration=1000)")]
+		[TestCase("activemq:failover:(tcp://${activemqhost}:61616?keepAlive=false&wireFormat.maxInactivityDuration=1000)?connection.asyncclose=false")]
 
 #if false
 		[TestCase("activemq:discovery:multicast://default")]
@@ -81,6 +84,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(IConnection connection = factory.CreateConnection("", ""))
 			{
 				Assert.IsNotNull(connection);
+				connection.Close();
 			}
 		}
 
@@ -105,6 +109,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.IsNotNull(this.info);
                 Assert.AreEqual(username, info.UserName);
                 Assert.AreEqual(password, info.Password);
+				
+				connection.Close();
             }
         }
 
@@ -143,7 +149,9 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.AreEqual(topicPrefetch, amqConnection.PrefetchPolicy.TopicPrefetch);
                 Assert.AreEqual(durableTopicPrefetch, amqConnection.PrefetchPolicy.DurableTopicPrefetch);
                 Assert.AreEqual(maximumPendingMessageLimit, amqConnection.PrefetchPolicy.MaximumPendingMessageLimit);
-            }
+
+				connection.Close();
+			}
         }
     }
 }
