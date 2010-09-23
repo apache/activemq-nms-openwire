@@ -18,6 +18,7 @@
 using System;
 
 using Apache.NMS.Test;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ;
 
 using NUnit.Framework;
@@ -27,6 +28,45 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class ConnectionFactoryTest : NMSTestSupport
 	{
+		[Test]
+		[TestCase("tcp://${activemqhost}:61616")]
+		[TestCase("tcp://${activemqhost}:61616")]
+		[TestCase("tcp://${activemqhost}:61616/0.0.0.0:0")]
+		[TestCase("tcp://${activemqhost}:61616?connection.asyncclose=false")]
+		[TestCase("failover:tcp://${activemqhost}:61616")]
+		[TestCase("failover:(tcp://${activemqhost}:61616)")]
+		[TestCase("failover:(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
+		[TestCase("failover://(tcp://${activemqhost}:61616)?transport.initialReconnectDelay=100")]
+		[TestCase("failover:(tcp://${activemqhost}:61616)?connection.asyncSend=true")]
+		[TestCase("failover:(tcp://${activemqhost}:61616)?transport.timeout=100&connection.asyncSend=true")]
+		[TestCase("failover:tcp://${activemqhost}:61616?keepAlive=false&wireFormat.maxInactivityDuration=1000")]
+		[TestCase("failover:(tcp://${activemqhost}:61616?keepAlive=false&wireFormat.maxInactivityDuration=1000)")]
+		[TestCase("failover:(tcp://${activemqhost}:61616?keepAlive=false&wireFormat.maxInactivityDuration=1000)?connection.asyncclose=false")]
+		[TestCase("failover:(tcp://${activemqhost}:61616?keepAlive=true&wireFormat.maxInactivityDuration=300000&wireFormat.tcpNoDelayEnabled=true)?initialReconnectDelay=100&randomize=false&timeout=15000")]
+		public void TestURI(string connectionURI)
+		{
+			{
+				Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));
+				ConnectionFactory factory = new ConnectionFactory(uri);
+				Assert.IsNotNull(factory);
+				using(IConnection connection = factory.CreateConnection("", ""))
+				{
+					Assert.IsNotNull(connection);
+					connection.Close();
+				}
+			}
+
+			{
+				ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
+				Assert.IsNotNull(factory);
+				using(IConnection connection = factory.CreateConnection("", ""))
+				{
+					Assert.IsNotNull(connection);
+					connection.Close();
+				}
+			}
+		}		
+		
 		[Test, Sequential]
 		public void TestConnectionFactorySetParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
