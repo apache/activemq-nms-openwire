@@ -1164,7 +1164,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							}
 						}
 
-						if(backups.Count < BackupPoolSize)
+						if(backups.Count == BackupPoolSize)
 						{
 							break;
 						}
