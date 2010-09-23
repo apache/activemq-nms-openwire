@@ -440,10 +440,14 @@ namespace Apache.NMS.ActiveMQ
             Session session = new Session(this, info, sessionAcknowledgementMode, this.dispatchAsync);
 
             // Set propertieDs on session using parameters prefixed with "session."
-			StringDictionary options = URISupport.ParseQuery(this.brokerUri.Query);
-			options = URISupport.GetProperties(options, "session.");
-            URISupport.SetProperties(session, options);
-
+			if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
+			{
+				string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);						
+				StringDictionary options = URISupport.ParseQuery(query);
+				options = URISupport.GetProperties(options, "session.");
+	            URISupport.SetProperties(session, options);
+			}
+			
 			session.ConsumerTransformer = this.ConsumerTransformer;
 			session.ProducerTransformer = this.ProducerTransformer;
 

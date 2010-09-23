@@ -52,6 +52,23 @@ namespace Apache.NMS.ActiveMQ.Test
 				using(IConnection connection = factory.CreateConnection("", ""))
 				{
 					Assert.IsNotNull(connection);
+					
+					using(ISession session = connection.CreateSession())
+					{
+						IDestination destination = session.CreateTemporaryTopic();
+						using(IMessageProducer producer = session.CreateProducer(destination))
+						{
+							producer.Close();
+						}
+						
+						using(IMessageConsumer consumer = session.CreateConsumer(destination))
+						{
+							consumer.Close();
+						}
+						
+						session.Close();
+					}
+					
 					connection.Close();
 				}
 			}
@@ -62,6 +79,23 @@ namespace Apache.NMS.ActiveMQ.Test
 				using(IConnection connection = factory.CreateConnection("", ""))
 				{
 					Assert.IsNotNull(connection);
+
+					using(ISession session = connection.CreateSession())
+					{
+						IDestination destination = session.CreateTemporaryTopic();
+						using(IMessageProducer producer = session.CreateProducer(destination))
+						{
+							producer.Close();
+						}
+						
+						using(IMessageConsumer consumer = session.CreateConsumer(destination))
+						{
+							consumer.Close();
+						}
+						
+						session.Close();
+					}
+					
 					connection.Close();
 				}
 			}

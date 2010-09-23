@@ -163,6 +163,8 @@ namespace Apache.NMS.ActiveMQ
 			get { return brokerUri; }
 			set
 			{
+				Tracer.Info("BrokerUri set = " + value.OriginalString);
+				
 				brokerUri = new Uri(URISupport.StripPrefix(value.OriginalString, "activemq:"));
 				
 				if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
