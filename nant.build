@@ -22,7 +22,7 @@
     <property name="basedir" value="${project::get-base-directory()}" />
     <property name="project.name" value="Apache.NMS.ActiveMQ" />
     <property name="project.group" value="org.apache.activemq" />
-    <property name="project.version" value="1.4.1" unless="${property::exists('project.version')}" />
+    <property name="project.version" value="1.4.2" unless="${property::exists('project.version')}" />
     <property name="project.release.type" value="SNAPSHOT" unless="${property::exists('project.release.type')}" />
     <property name="project.short_description" value="Apache NMS for ActiveMQ Class Library" />
     <property name="project.description" value="Apache NMS for ActiveMQ Class Library (.Net Messaging Library Implementation): An implementation of the NMS API for ActiveMQ" />
