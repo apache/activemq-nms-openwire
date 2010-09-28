@@ -932,6 +932,7 @@
     <Compile Include="src\main\csharp\OpenWire\V6\XATransactionIdMarshaller.cs" />
     <Compile Include="src\main\csharp\PrefetchPolicy.cs" />
     <Compile Include="src\main\csharp\QueueBrowser.cs" />
+    <Compile Include="src\main\csharp\RequestTimedOutException.cs" />
     <Compile Include="src\main\csharp\Session.cs">
       <SubType>Code</SubType>
     </Compile>
