@@ -79,8 +79,8 @@ public class TestMain
             {
                 // Start the connection so that messages will be processed.
                 connection.Start();
-                producer.Persistent = true;
-
+				producer.DeliveryMode = MsgDeliveryMode.Persistent;
+					
                 // Send a message
                 ITextMessage request = session.CreateTextMessage("Hello World!");
                 request.NMSCorrelationID = "abc";

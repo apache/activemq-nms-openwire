@@ -84,7 +84,7 @@ public class TestMain
             {
                 // Start the connection so that messages will be processed.
                 connection.Start();
-                producer.Persistent = true;
+				producer.DeliveryMode = MsgDeliveryMode.Persistent;
                 producer.RequestTimeout = receiveTimeout;
                 consumer.Listener += new MessageListener(OnMessage);
 
