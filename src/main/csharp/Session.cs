@@ -17,7 +17,9 @@
 
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Threading;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
 
@@ -59,20 +61,44 @@ namespace Apache.NMS.ActiveMQ
 		private TimeSpan requestTimeout;
 		private readonly AcknowledgementMode acknowledgementMode;
 
-		public Session(Connection connection, SessionInfo info, AcknowledgementMode acknowledgementMode, bool dispatchAsync)
+		public Session(Connection connection, SessionId sessionId, AcknowledgementMode acknowledgementMode)
 		{
+            this.info = new SessionInfo();
+            this.info.SessionId = sessionId;
 			this.connection = connection;
-			this.info = info;
+            this.connection.Oneway(this.info);
+
 			this.acknowledgementMode = acknowledgementMode;
 			this.requestTimeout = connection.RequestTimeout;
-			this.dispatchAsync = dispatchAsync;
+			this.dispatchAsync = connection.DispatchAsync;
 
 			if(acknowledgementMode == AcknowledgementMode.Transactional)
 			{
 				this.transactionContext = new TransactionContext(this);
 			}
 
+            Uri brokerUri = connection.BrokerUri;
+
+            // Set propertieDs on session using parameters prefixed with "session."
+            if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
+            {
+                string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);
+                StringDictionary options = URISupport.ParseQuery(query);
+                options = URISupport.GetProperties(options, "session.");
+                URISupport.SetProperties(this, options);
+            }
+
+            this.ConsumerTransformer = connection.ConsumerTransformer;
+            this.ProducerTransformer = connection.ProducerTransformer;
+
 			this.executor = new SessionExecutor(this, this.consumers);
+
+            if(connection.IsStarted)
+            {
+                this.Start();
+            }
+
+            connection.AddSession(this);
 		}
 
 		~Session()

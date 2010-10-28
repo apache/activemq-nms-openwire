@@ -98,60 +98,75 @@ namespace Apache.NMS.ActiveMQ
 
 		public IConnection CreateConnection()
 		{
-			return CreateConnection(connectionUserName, connectionPassword);
+			return CreateActiveMQConnection();
 		}
 
 		public IConnection CreateConnection(string userName, string password)
 		{
-			Connection connection = null;
-
-			try
-			{
-				Tracer.InfoFormat("Connecting to: {0}", brokerUri.ToString());
-
-				ITransport transport = TransportFactory.CreateTransport(brokerUri);
-
-				connection = new Connection(brokerUri, transport, this.ClientIdGenerator);
-
-				ConfigureConnection(connection);
-
-				connection.UserName = userName;
-				connection.Password = password;
-
-				if(this.clientId != null)
-				{
-					connection.DefaultClientId = this.clientId;
-				}
-
-				connection.ITransport.Start();
-
-				return connection;
-			}
-			catch(NMSException e)
-			{
-				try
-				{
-					connection.Close();
-				}
-				catch
-				{
-				}
-
-				throw e;
-			}
-			catch(Exception e)
-			{
-				try
-				{
-					connection.Close();
-				}
-				catch
-				{
-				}
-
-				throw NMSExceptionSupport.Create("Could not connect to broker URL: " + this.brokerUri + ". Reason: " + e.Message, e);
-			}
+            return CreateActiveMQConnection(userName, password);
 		}
+
+        protected virtual Connection CreateActiveMQConnection()
+        {
+            return CreateActiveMQConnection(connectionUserName, connectionPassword);
+        }
+
+        protected virtual Connection CreateActiveMQConnection(string userName, string password)
+        {
+            Connection connection = null;
+
+            try
+            {
+                Tracer.InfoFormat("Connecting to: {0}", brokerUri.ToString());
+
+                ITransport transport = TransportFactory.CreateTransport(brokerUri);
+
+                connection = CreateActiveMQConnection(transport);
+
+                ConfigureConnection(connection);
+
+                connection.UserName = userName;
+                connection.Password = password;
+
+                if(this.clientId != null)
+                {
+                    connection.DefaultClientId = this.clientId;
+                }
+
+                connection.ITransport.Start();
+
+                return connection;
+            }
+            catch(NMSException e)
+            {
+                try
+                {
+                    connection.Close();
+                }
+                catch
+                {
+                }
+
+                throw e;
+            }
+            catch(Exception e)
+            {
+                try
+                {
+                    connection.Close();
+                }
+                catch
+                {
+                }
+
+                throw NMSExceptionSupport.Create("Could not connect to broker URL: " + this.brokerUri + ". Reason: " + e.Message, e);
+            }
+        }
+
+        protected virtual Connection CreateActiveMQConnection(ITransport transport)
+        {
+            return new Connection(this.brokerUri, transport, this.ClientIdGenerator);
+        }
 
 		#region ConnectionFactory Properties
 

@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections;
-using System.Collections.Specialized;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
@@ -52,6 +51,7 @@ namespace Apache.NMS.ActiveMQ
         private readonly ConnectionInfo info;
 		private TimeSpan requestTimeout; // from connection factory
         private BrokerInfo brokerInfo; // from broker
+        private readonly CountDownLatch brokerInfoReceived = new CountDownLatch(1);
         private WireFormatInfo brokerWireFormatInfo; // from broker
         private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
@@ -347,6 +347,15 @@ namespace Apache.NMS.ActiveMQ
             get { return brokerWireFormatInfo; }
         }
 
+        public String ResourceManagerId
+        {
+            get
+            {
+                this.brokerInfoReceived.await();
+                return brokerInfo.BrokerId.Value;
+            }
+        }
+
         /// <summary>
         /// Get/or set the redelivery policy for this connection.
         /// </summary>
@@ -427,7 +436,7 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public ISession CreateSession()
         {
-            return CreateSession(acknowledgementMode);
+            return CreateAtiveMQSession(acknowledgementMode);
         }
 
         /// <summary>
@@ -435,29 +444,21 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode)
         {
-            SessionInfo info = CreateSessionInfo(sessionAcknowledgementMode);
-            SyncRequest(info, this.RequestTimeout);
-            Session session = new Session(this, info, sessionAcknowledgementMode, this.dispatchAsync);
+            return CreateAtiveMQSession(sessionAcknowledgementMode);
+        }
 
-            // Set propertieDs on session using parameters prefixed with "session."
-			if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
-			{
-				string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);						
-				StringDictionary options = URISupport.ParseQuery(query);
-				options = URISupport.GetProperties(options, "session.");
-	            URISupport.SetProperties(session, options);
-			}
-			
-			session.ConsumerTransformer = this.ConsumerTransformer;
-			session.ProducerTransformer = this.ProducerTransformer;
+        protected virtual Session CreateAtiveMQSession(AcknowledgementMode ackMode)
+        {
+            CheckConnected();
+            return new Session(this, NextSessionId, ackMode);
+        }
 
-            if(IsStarted)
+        internal void AddSession(Session session)
+        {
+            if(!this.closing)
             {
-                session.Start();
+                sessions.Add(session);
             }
-
-            sessions.Add(session);
-            return session;
         }
 
         internal void RemoveSession(Session session)
@@ -700,6 +701,7 @@ namespace Apache.NMS.ActiveMQ
             else if(command is BrokerInfo)
             {
                 this.brokerInfo = (BrokerInfo) command;
+                this.brokerInfoReceived.countDown();
             }
             else if(command is ShutdownInfo)
             {
@@ -803,6 +805,8 @@ namespace Apache.NMS.ActiveMQ
 
         protected void OnException(ITransport sender, Exception exception)
         {
+            this.brokerInfoReceived.countDown();
+
             if(ExceptionListener != null && !this.closing)
             {
                 try
@@ -893,14 +897,9 @@ namespace Apache.NMS.ActiveMQ
             return id;
         }
 
-        private SessionInfo CreateSessionInfo(AcknowledgementMode sessionAcknowledgementMode)
+        protected SessionId NextSessionId
         {
-            SessionInfo answer = new SessionInfo();
-            SessionId sessionId = new SessionId();
-            sessionId.ConnectionId = info.ConnectionId.Value;
-            sessionId.Value = Interlocked.Increment(ref sessionCounter);
-            answer.SessionId = sessionId;
-            return answer;
+            get { return new SessionId(this.info.ConnectionId, Interlocked.Increment(ref this.sessionCounter)); }
         }
 
         public ActiveMQTempDestination CreateTemporaryDestination(bool topic)
