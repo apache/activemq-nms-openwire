@@ -62,7 +62,7 @@
         <!-- Property grouping for 'vendor.nunit.org' -->
         <property name="vendor.nunit.org.name" value="NUnit" />
         <property name="vendor.nunit.org.group" value="org.nunit" />
-        <property name="vendor.nunit.org.version" value="2.5.5" />
+        <property name="vendor.nunit.org.version" value="2.5.8" />
         <property name="vendor.nunit.org.filenames" value="nunit.framework.dll" />
 
         <!-- Property grouping for 'vendor.nunit.org' -->
@@ -77,6 +77,7 @@
             <include name="${current.build.framework.assembly.dir}/mscorlib.dll" />
             <include name="${current.build.framework.assembly.dir}/System.dll" />
             <include name="${current.build.framework.assembly.dir}/System.Xml.dll" />
+            <include name="${current.build.framework.assembly.dir}/System.Transactions.dll" />
             <include name="${Apache.NMS.dll}" />
             <include name="${dotnetzip.dll}" />
         </assemblyfileset>
@@ -85,6 +86,7 @@
             <include name="${current.build.framework.assembly.dir}/mscorlib.dll" />
             <include name="${current.build.framework.assembly.dir}/System.dll" />
             <include name="${current.build.framework.assembly.dir}/System.Xml.dll" />
+            <include name="${current.build.framework.assembly.dir}/System.Transactions.dll" />
             <include name="${Apache.NMS.dll}" />
             <include name="${Apache.NMS.Test.dll}" />
             <include name="${build.bin.dir}/${project.name}.dll" />
