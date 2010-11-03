@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ
     public class Connection : IConnection
     {
         private static readonly IdGenerator CONNECTION_ID_GENERATOR = new IdGenerator();
-				
+
         // Uri configurable options.
         private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
         private bool asyncSend = false;
@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ
         private readonly Uri brokerUri;
         private ITransport transport;
         private readonly ConnectionInfo info;
-		private TimeSpan requestTimeout; // from connection factory
+        private TimeSpan requestTimeout; // from connection factory
         private BrokerInfo brokerInfo; // from broker
         private readonly CountDownLatch brokerInfoReceived = new CountDownLatch(1);
         private WireFormatInfo brokerWireFormatInfo; // from broker
@@ -131,7 +131,7 @@ namespace Apache.NMS.ActiveMQ
         }
 
         #region Properties
-		
+
         public String UserName
         {
             get { return this.info.UserName; }
@@ -653,7 +653,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        protected void CheckConnected()
+        internal void CheckConnected()
         {
             if(closed)
             {
@@ -713,16 +713,16 @@ namespace Apache.NMS.ActiveMQ
             else if(command is ProducerAck)
             {
                 ProducerAck ack = (ProducerAck) command as ProducerAck;
-                if(ack.ProducerId != null) 
-				{
+                if(ack.ProducerId != null)
+                {
                     MessageProducer producer = producers[ack.ProducerId] as MessageProducer;
-                    if(producer != null) 
-					{						
-						if(Tracer.IsDebugEnabled)
-						{
-							Tracer.Debug("Connection: Received a new ProducerAck -> " + ack);
-						}
-						
+                    if(producer != null)
+                    {
+                        if(Tracer.IsDebugEnabled)
+                        {
+                            Tracer.Debug("Connection: Received a new ProducerAck -> " + ack);
+                        }
+
                         producer.OnProducerAck(ack);
                     }
                 }
