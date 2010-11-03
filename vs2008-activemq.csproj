@@ -307,6 +307,9 @@
     <Compile Include="src\main\csharp\MessageProducer.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\NetTxConnection.cs" />
+    <Compile Include="src\main\csharp\NetTxConnectionFactory.cs" />
+    <Compile Include="src\main\csharp\NetTxSession.cs" />
     <Compile Include="src\main\csharp\OpenWire\BaseDataStreamMarshaller.cs">
       <SubType>Code</SubType>
     </Compile>
