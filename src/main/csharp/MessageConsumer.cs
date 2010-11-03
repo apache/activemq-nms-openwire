@@ -504,6 +504,7 @@ namespace Apache.NMS.ActiveMQ
 						ack = MakeAckForAllDeliveredMessages(AckType.DeliveredAck);
 						if(ack != null)
 						{
+                            Tracer.Debug("Consumer - DeliverAcks clearing the Dispatch list");
 							this.dispatchedMessages.Clear();
 						}
 						else
@@ -853,6 +854,8 @@ namespace Apache.NMS.ActiveMQ
 
 				if(!synchronizationRegistered)
 				{
+                    Tracer.DebugFormat("Consumer {0} Registering new MessageConsumerSynchronization",
+                                       this.info.ConsumerId);
 					this.synchronizationRegistered = true;
 					this.session.TransactionContext.AddSynchronization(new MessageConsumerSynchronization(this));
 				}
@@ -963,6 +966,8 @@ namespace Apache.NMS.ActiveMQ
 				{
 					if(this.dispatchedMessages.Count == 0)
 					{
+                        Tracer.DebugFormat("Consumer {0} Rolled Back, no dispatched Messages",
+                                           this.info.ConsumerId);
 						return;
 					}
 
@@ -1020,9 +1025,15 @@ namespace Apache.NMS.ActiveMQ
 						// stop the delivery of messages.
 						this.unconsumedMessages.Stop();
 
+                        if(Tracer.IsDebugEnabled)
+                        {
+                            Tracer.DebugFormat("Consumer {0} Rolled Back, Re-enque {1} messages",
+                                               this.info.ConsumerId, this.dispatchedMessages.Count);
+                        }
+
 						foreach(MessageDispatch dispatch in this.dispatchedMessages)
 						{
-							this.unconsumedMessages.EnqueueFirst(dispatch);
+                            this.unconsumedMessages.EnqueueFirst(dispatch);
 						}
 
 						if(redeliveryDelay > 0 && !this.unconsumedMessages.Closed)
@@ -1155,18 +1166,24 @@ namespace Apache.NMS.ActiveMQ
 
 			public void BeforeEnd()
 			{
+                Tracer.DebugFormat("MessageConsumerSynchronization - BeforeEnd Called for Consumer {0}.",
+                                   this.consumer.ConsumerId);
 				this.consumer.Acknowledge();
 				this.consumer.synchronizationRegistered = false;
 			}
 
 			public void AfterCommit()
 			{
+                Tracer.DebugFormat("MessageConsumerSynchronization - AfterCommit Called for Consumer {0}.",
+                                   this.consumer.ConsumerId);
 				this.consumer.Commit();
 				this.consumer.synchronizationRegistered = false;
 			}
 
 			public void AfterRollback()
 			{
+                Tracer.DebugFormat("MessageConsumerSynchronization - AfterRollback Called for Consumer {0}.",
+                                   this.consumer.ConsumerId);
 				this.consumer.Rollback();
 				this.consumer.synchronizationRegistered = false;
 			}

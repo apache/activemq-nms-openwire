@@ -71,11 +71,7 @@ namespace Apache.NMS.ActiveMQ
 			this.acknowledgementMode = acknowledgementMode;
 			this.requestTimeout = connection.RequestTimeout;
 			this.dispatchAsync = connection.DispatchAsync;
-
-			if(acknowledgementMode == AcknowledgementMode.Transactional)
-			{
-				this.transactionContext = new TransactionContext(this);
-			}
+		    this.transactionContext = new TransactionContext(this);
 
             Uri brokerUri = connection.BrokerUri;
 
@@ -186,39 +182,39 @@ namespace Apache.NMS.ActiveMQ
 			set { this.requestTimeout = value; }
 		}
 
-		public bool Transacted
-		{
-			get { return this.AcknowledgementMode == AcknowledgementMode.Transactional; }
-		}
+        public bool Transacted
+        {
+            get { return this.IsTransacted; }
+        }
 
-		public AcknowledgementMode AcknowledgementMode
+		public virtual AcknowledgementMode AcknowledgementMode
 		{
 			get { return this.acknowledgementMode; }
 		}
 
-		public bool IsClientAcknowledge
+		public virtual bool IsClientAcknowledge
 		{
 			get { return this.acknowledgementMode == AcknowledgementMode.ClientAcknowledge; }
 		}
 
-		public bool IsAutoAcknowledge
+		public virtual bool IsAutoAcknowledge
 		{
 			get { return this.acknowledgementMode == AcknowledgementMode.AutoAcknowledge; }
 		}
 
-		public bool IsDupsOkAcknowledge
+		public virtual bool IsDupsOkAcknowledge
 		{
 			get { return this.acknowledgementMode == AcknowledgementMode.DupsOkAcknowledge; }
 		}
 
-		public bool IsIndividualAcknowledge
+		public virtual bool IsIndividualAcknowledge
 		{
 			get { return this.acknowledgementMode == AcknowledgementMode.IndividualAcknowledge; }
 		}
 
-		public bool IsTransacted
+		public virtual bool IsTransacted
 		{
-			get { return this.acknowledgementMode == AcknowledgementMode.Transactional; }
+			get{ return this.acknowledgementMode == AcknowledgementMode.Transactional; }
 		}
 
 		public SessionExecutor Executor
@@ -315,24 +311,20 @@ namespace Apache.NMS.ActiveMQ
 
 				try
 				{
-					Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId.ToString());
-					DoClose();
-					Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId.ToString());
+                    if(transactionContext.InNetTransaction)
+                    {
+                        this.transactionContext.AddSynchronization(new SessionCloseSynchronization(this));
+                    }
+                    else
+                    {
+    					Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId.ToString());
+    					DoClose();
+    					Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId.ToString());
+                    }
 				}
 				catch(Exception ex)
 				{
 					Tracer.ErrorFormat("Error during session close: {0}", ex);
-				}
-				finally
-				{
-					// Make sure we attempt to inform the broker this Session is done.
-					RemoveInfo info = new RemoveInfo();
-					info.ObjectId = this.info.SessionId;
-					info.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
-					this.connection.Oneway(info);
-					this.connection = null;
-					this.closed = true;
-					this.closing = false;
 				}
 			}
 		}
@@ -393,8 +385,14 @@ namespace Apache.NMS.ActiveMQ
 				}
 				finally
 				{
-					this.closed = true;
-					this.closing = false;
+                    // Make sure we attempt to inform the broker this Session is done.
+                    RemoveInfo info = new RemoveInfo();
+                    info.ObjectId = this.info.SessionId;
+                    info.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
+                    this.connection.Oneway(info);
+                    this.connection = null;
+                    this.closed = true;
+                    this.closing = false;
 				}
 			}
 		}
@@ -657,35 +655,21 @@ namespace Apache.NMS.ActiveMQ
 
 		public void Commit()
 		{
-			if(!Transacted)
-			{
-				throw new InvalidOperationException(
-						"You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
-						+ this.AcknowledgementMode);
-			}
-
-			this.TransactionContext.Commit();
+            this.DoCommit();
 		}
 
 		public void Rollback()
 		{
-			if(!Transacted)
-			{
-				throw new InvalidOperationException(
-						"You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
-						+ this.AcknowledgementMode);
-			}
-
-			this.TransactionContext.Rollback();
+            this.DoRollback();
 		}
 
 		#endregion
 
-		public void DoSend( ActiveMQMessage message, MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout )
+		internal void DoSend( ActiveMQMessage message, MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout )
 		{
 			ActiveMQMessage msg = message;
 
-			if(Transacted)
+			if(IsTransacted)
 			{
 				DoStartTransaction();
 				msg.TransactionId = TransactionContext.TransactionId;
@@ -729,12 +713,36 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
+        internal virtual void DoCommit()
+        {
+            if(!IsTransacted)
+            {
+                throw new InvalidOperationException(
+                        "You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
+                        + this.AcknowledgementMode);
+            }
+
+            this.TransactionContext.Commit();
+        }
+
+        internal virtual void DoRollback()
+        {
+            if(!IsTransacted)
+            {
+                throw new InvalidOperationException(
+                        "You cannot perform a Commit() on a non-transacted session. Acknowlegement mode is: "
+                        + this.AcknowledgementMode);
+            }
+
+            this.TransactionContext.Rollback();
+        }
+
 		/// <summary>
 		/// Ensures that a transaction is started
 		/// </summary>
-		public void DoStartTransaction()
+		internal virtual void DoStartTransaction()
 		{
-			if(Transacted)
+			if(IsTransacted)
 			{
 				this.TransactionContext.Begin();
 			}
@@ -928,6 +936,30 @@ namespace Apache.NMS.ActiveMQ
 		private void DoNothingAcknowledge(ActiveMQMessage message)
 		{
 		}
+
+        class SessionCloseSynchronization : ISynchronization
+        {
+            private readonly Session session;
+
+            public SessionCloseSynchronization(Session session)
+            {
+                this.session = session;
+            }
+
+            public void BeforeEnd()
+            {
+            }
+
+            public void AfterCommit()
+            {
+                this.session.DoClose();
+            }
+
+            public void AfterRollback()
+            {
+                this.session.DoClose();
+            }
+        }
 
 	}
 }
