@@ -65,6 +65,7 @@
       <HintPath>lib\DotNetZip\net-2.0\Ionic.Zlib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\main\csharp\BrokerException.cs">
