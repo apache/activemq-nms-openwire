@@ -65,7 +65,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void shutdown()
 		{
-			_shutdown.Value = false;
+			_shutdown.Value = true;
 		}
 
 		public TransactionId getId()
