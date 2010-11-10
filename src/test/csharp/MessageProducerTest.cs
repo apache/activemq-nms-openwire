@@ -59,6 +59,61 @@ namespace Apache.NMS.ActiveMQ.Test
 				}
 			}
 		}
+
+		[Test]
+		public void TestCopyOnSend()
+		{
+			Uri uri = new Uri("mock://localhost:61616?connection.CopyMessageOnSend=true");
+
+			ConnectionFactory factory = new ConnectionFactory(uri);
+			using(IConnection connection = factory.CreateConnection())
+			using(ISession session = connection.CreateSession())
+			{
+				IDestination destination = session.GetTopic("Test");
+				using(IMessageProducer producer = session.CreateProducer(destination))
+				{
+					ITextMessage message = session.CreateTextMessage();
+
+					for(int i = 0; i < 10; ++i)
+					{
+						message.Properties["TribbleName"] = "Tribble" + i.ToString();
+						message.Text = "The Trouble with Tribbles - " + i.ToString();
+						producer.Send(message);
+					}
+				}
+			}
+		}
+
+		[Test]
+		public void TestNoCopyOnSend()
+		{
+			Uri uri = new Uri("mock://localhost:61616?connection.CopyMessageOnSend=false");
+
+			ConnectionFactory factory = new ConnectionFactory(uri);
+			using(IConnection connection = factory.CreateConnection())
+			using(ISession session = connection.CreateSession())
+			{
+				IDestination destination = session.GetTopic("Test");
+				using(IMessageProducer producer = session.CreateProducer(destination))
+				{
+					ITextMessage message = session.CreateTextMessage();
+
+					for(int i = 0; i < 10; ++i)
+					{
+						try
+						{
+							message.Properties["TribbleName"] = "Tribble" + i.ToString();
+							message.Text = "The Trouble with Tribbles - " + i.ToString();
+							producer.Send(message);
+						}
+						catch(MessageNotWriteableException)
+						{
+							Assert.Greater(i, 0);
+							Assert.Less(i, 10);
+						}
+					}
+				}
+			}
+		}
 	}
 }
-

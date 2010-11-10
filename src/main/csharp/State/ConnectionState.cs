@@ -106,7 +106,7 @@ namespace Apache.NMS.ActiveMQ.State
 					return sessions[id];
 				#if DEBUG
 				}
-				catch(System.Collections.Generic.KeyNotFoundException ex)
+				catch(System.Collections.Generic.KeyNotFoundException)
 				{
 					// Useful for dignosing missing session ids
 					string sessionList = string.Empty;

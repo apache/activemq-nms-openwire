@@ -56,6 +56,14 @@ namespace Apache.NMS.ActiveMQ.Commands
 			return ID_ACTIVEMQMESSAGE;
 		}
 
+		public override object Clone()
+		{
+			ActiveMQMessage cloneMessage = (ActiveMQMessage) base.Clone();
+
+			cloneMessage.propertyHelper = new MessagePropertyIntercepter(cloneMessage, cloneMessage.properties, this.ReadOnlyProperties) { AllowByteArrays = false };
+			return cloneMessage;
+		}
+
         public override bool Equals(object that)
         {
             if(that is ActiveMQMessage)
