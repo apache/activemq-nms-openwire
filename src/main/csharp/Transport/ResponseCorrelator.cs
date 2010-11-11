@@ -112,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         protected override void OnCommand(ITransport sender, Command command)
         {
-            if(command is Response)
+            if(command.IsResponse)
             {
                 Response response = (Response) command;
                 int correlationId = response.CorrelationId;

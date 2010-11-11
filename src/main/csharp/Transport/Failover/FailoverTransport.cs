@@ -538,7 +538,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						return;
 					}
 
-					if(command is RemoveInfo)
+					if(command.IsRemoveInfo)
 					{
 						// Simulate response to RemoveInfo command
 						OnCommand(this, new Response() { CorrelationId = command.CommandId });

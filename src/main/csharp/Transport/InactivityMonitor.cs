@@ -201,7 +201,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             inRead.Value = true;
             try
             {
-                if(command is KeepAliveInfo)
+                if(command.IsKeepAliveInfo)
                 {
                     KeepAliveInfo info = command as KeepAliveInfo;
                     if(info.ResponseRequired)
@@ -217,7 +217,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                         }
                     }
                 }
-                else if(command is WireFormatInfo)
+                else if(command.IsWireFormatInfo)
                 {
                     lock(monitor)
                     {
@@ -255,7 +255,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                     {
                         throw new IOException("Channel was inactive for too long: " + next.RemoteAddress.ToString());
                     }
-                    if(command is WireFormatInfo)
+                    if(command.IsWireFormatInfo)
                     {
                         lock(monitor)
                         {
