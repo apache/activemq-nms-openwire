@@ -471,22 +471,34 @@ namespace Apache.NMS.ActiveMQ
 
         internal void addDispatcher( ConsumerId id, IDispatcher dispatcher )
         {
-            this.dispatchers.Add( id, dispatcher );
+            if(!this.closing)
+            {
+                this.dispatchers.Add( id, dispatcher );
+            }
         }
 
         internal void removeDispatcher( ConsumerId id )
         {
-            this.dispatchers.Remove( id );
+            if(!this.closing)
+            {
+                this.dispatchers.Remove( id );
+            }
         }
 
         internal void addProducer( ProducerId id, MessageProducer producer )
         {
-            this.producers.Add( id, producer );
+            if(!this.closing)
+            {
+                this.producers.Add( id, producer );
+            }
         }
 
         internal void removeProducer( ProducerId id )
         {
-            this.producers.Remove( id );
+            if(!this.closing)
+            {
+                this.producers.Remove( id );
+            }
         }
 
         public void Close()
@@ -685,32 +697,32 @@ namespace Apache.NMS.ActiveMQ
         /// <param name="command">A  Command</param>
         protected void OnCommand(ITransport commandTransport, Command command)
         {
-            if(command is MessageDispatch)
+            if(command.IsMessageDispatch)
             {
                 WaitForTransportInterruptionProcessingToComplete();
                 DispatchMessage((MessageDispatch) command);
             }
-            else if(command is KeepAliveInfo)
+            else if(command.IsKeepAliveInfo)
             {
                 OnKeepAliveCommand(commandTransport, (KeepAliveInfo) command);
             }
-            else if(command is WireFormatInfo)
+            else if(command.IsWireFormatInfo)
             {
                 this.brokerWireFormatInfo = (WireFormatInfo) command;
             }
-            else if(command is BrokerInfo)
+            else if(command.IsBrokerInfo)
             {
                 this.brokerInfo = (BrokerInfo) command;
                 this.brokerInfoReceived.countDown();
             }
-            else if(command is ShutdownInfo)
+            else if(command.IsShutdownInfo)
             {
                 if(!closing && !closed)
                 {
                     OnException(commandTransport, new NMSException("Broker closed this connection."));
                 }
             }
-            else if(command is ProducerAck)
+            else if(command.IsProducerAck)
             {
                 ProducerAck ack = (ProducerAck) command as ProducerAck;
                 if(ack.ProducerId != null)
@@ -727,7 +739,7 @@ namespace Apache.NMS.ActiveMQ
                     }
                 }
             }
-            else if(command is ConnectionError)
+            else if(command.IsConnectionError)
             {
                 if(!closing && !closed)
                 {
@@ -904,18 +916,18 @@ namespace Apache.NMS.ActiveMQ
 
         public ActiveMQTempDestination CreateTemporaryDestination(bool topic)
         {
-           ActiveMQTempDestination destination = null;
+            ActiveMQTempDestination destination = null;
 
-           if(topic)
-           {
-               destination = new ActiveMQTempTopic(
-                   info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter));
-           }
-           else
-           {
-               destination = new ActiveMQTempQueue(
-                   info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter));
-           }
+            if(topic)
+            {
+                destination = new ActiveMQTempTopic(
+                    info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter));
+            }
+            else
+            {
+                destination = new ActiveMQTempQueue(
+                    info.ConnectionId.Value + ":" + Interlocked.Increment(ref temporaryDestinationCounter));
+            }
 
             DestinationInfo command = new DestinationInfo();
             command.ConnectionId = ConnectionId;
