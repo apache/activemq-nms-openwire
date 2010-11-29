@@ -63,7 +63,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		private bool useExponentialBackOff = true;
 		private bool randomize = true;
 		private bool initialized;
-		private int maxReconnectAttempts;
+        private int maxReconnectAttempts;
+        private int startupMaxReconnectAttempts;
 		private int connectFailures;
 		private int reconnectDelay = 10;
 		private int asyncTimeout = 45000;
@@ -230,6 +231,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			get { return maxReconnectAttempts; }
 			set { maxReconnectAttempts = value; }
 		}
+
+        public int StartupMaxReconnectAttempts
+        {
+            get { return startupMaxReconnectAttempts; }
+            set { startupMaxReconnectAttempts = value; }
+        }
 
 		public bool Randomize
 		{
@@ -1034,7 +1041,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						}
 					}
 
-					if(MaxReconnectAttempts > 0 && ++connectFailures >= MaxReconnectAttempts)
+                    int reconnectAttempts = 0;
+                    if( firstConnection ) {
+                        if( StartupMaxReconnectAttempts != 0 ) {
+                            reconnectAttempts = StartupMaxReconnectAttempts;
+                        }
+                    }
+                    if( reconnectAttempts == 0 ) {
+                        reconnectAttempts = MaxReconnectAttempts;
+                    }
+        
+					if(reconnectAttempts > 0 && ++connectFailures >= reconnectAttempts)
 					{
 						Tracer.ErrorFormat("Failed to connect to transport after {0} attempt(s)", connectFailures);
 						connectionFailure = Failure;

@@ -160,6 +160,32 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
+        [Test]
+        public void FailoverTransportCreateFailOnCreateTest2()
+        {
+            Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
+                              "transport.useExponentialBackOff=false&transport.startupMaxReconnectAttempts=3&transport.initialReconnectDelay=100");
+            FailoverTransportFactory factory = new FailoverTransportFactory();
+
+            using(ITransport transport = factory.CreateTransport(uri))
+            {
+                Assert.IsNotNull(transport);
+                transport.Command = OnCommand;
+                transport.Exception = OnException;
+
+                FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+                Assert.IsNotNull(failover);
+                Assert.IsFalse(failover.UseExponentialBackOff);
+                Assert.AreEqual(3, failover.StartupMaxReconnectAttempts);
+                Assert.AreEqual(100, failover.InitialReconnectDelay);
+
+                transport.Start();
+                Thread.Sleep(2000);
+                Assert.IsNotEmpty(this.exceptions);
+                Assert.IsFalse(failover.IsConnected);
+            }
+        }
+
 		[Test]
 		public void FailoverTransportFailOnSendMessageTest()
 		{
