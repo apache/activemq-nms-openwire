@@ -718,11 +718,12 @@ namespace Apache.NMS.ActiveMQ.State
             }
         }
 
-        public void TransportInterrupted()
+        public void TransportInterrupted(ConnectionId id)
         {
-            foreach(ConnectionState connectionState in connectionStates.Values)
+            ConnectionState connection = connectionStates[id];
+            if(connection != null)
             {
-                connectionState.ConnectionInterruptProcessingComplete = false;
+                connection.ConnectionInterruptProcessingComplete = false;
             }
         }
     }

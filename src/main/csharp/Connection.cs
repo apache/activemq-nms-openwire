@@ -842,6 +842,8 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("transport interrupted, dispatchers: " + dispatchers.Count);
             }
 
+            SignalInterruptionProcessingNeeded();
+
             foreach(Session session in this.sessions)
             {
                 try
@@ -1001,6 +1003,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.Debug("transportInterruptionProcessingComplete for: " + this.info.ConnectionId);
                 }
+
                 this.transportInterruptionProcessingComplete = null;
 
                 FailoverTransport failoverTransport = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
@@ -1013,9 +1016,22 @@ namespace Apache.NMS.ActiveMQ
                                      ") of interruption completion for: " + this.info.ConnectionId);
                     }
                 }
-
             }
         }
 
+        private void SignalInterruptionProcessingNeeded()
+        {
+            FailoverTransport failoverTransport = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+
+            if(failoverTransport != null)
+            {
+                failoverTransport.StateTracker.TransportInterrupted(this.info.ConnectionId);
+                if(Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("notified failover transport (" + failoverTransport +
+                                 ") of pending interruption processing for: " + this.info.ConnectionId);
+                }
+            }
+        }
     }
 }

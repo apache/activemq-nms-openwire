@@ -292,6 +292,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			set { asyncTimeout = value; }
 		}
 
+        public ConnectionStateTracker StateTracker
+        {
+            get { return this.stateTracker; }
+        }
+
 		#endregion
 
 		public bool IsFaultTolerant
@@ -383,8 +388,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					failedConnectTransportURI = ConnectedTransportURI;
 					ConnectedTransportURI = null;
 					connected = false;
-
-					stateTracker.TransportInterrupted();
 
 					if(this.Interrupted != null)
 					{

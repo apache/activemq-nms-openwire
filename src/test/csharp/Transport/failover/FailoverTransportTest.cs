@@ -18,9 +18,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Apache.NMS;
+using Apache.NMS.Util;
+using Apache.NMS.Test;
+using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Failover;
+using Apache.NMS.ActiveMQ.Transport.Tcp;
 using Apache.NMS.ActiveMQ.Transport.Mock;
 using NUnit.Framework;
 
@@ -33,7 +38,14 @@ namespace Apache.NMS.ActiveMQ.Test
 		private List<Command> received;
 		private List<Exception> exceptions;
 
-		int sessionIdx = 1;
+        private const int MESSAGE_COUNT = 5;
+        private Connection connection;
+        private int msgCount = 5;
+        private bool interrupted = false;
+        private bool resumed = false;
+        protected AutoResetEvent semaphore = new AutoResetEvent(false);
+
+        int sessionIdx = 1;
 		int consumerIdx = 1;
 		int producerIdx = 1;
 
@@ -85,6 +97,10 @@ namespace Apache.NMS.ActiveMQ.Test
 			sessionIdx = 1;
 			consumerIdx = 1;
 			producerIdx = 1;
+            this.connection = null;
+            this.msgCount = MESSAGE_COUNT;
+            this.interrupted = false;
+            this.resumed = false;
 		}
 
 		[Test]
@@ -633,5 +649,109 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			transport.Oneway(new RemoveInfo() { ObjectId = producer.ProducerId });
 		}
+
+        [Test]
+        public void FailoverTransportFailOnProcessingReceivedMessageTest()
+        {
+            string uri = "failover:(tcp://${activemqhost}:61616)";
+            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            using(connection = factory.CreateConnection() as Connection )
+            {
+                connection.ConnectionInterruptedListener +=
+                    new ConnectionInterruptedListener(TransportInterrupted);
+                connection.ConnectionResumedListener +=
+                    new ConnectionResumedListener(TransportResumed);
+
+                connection.Start();
+                using(ISession session = connection.CreateSession())
+                {
+                    IDestination destination = session.GetQueue("Test?consumer.prefetchSize=1");
+                    PurgeQueue(connection, destination);
+                    PutMsgIntoQueue(session, destination);
+
+                    using(IMessageConsumer consumer = session.CreateConsumer(destination))
+                    {
+                        consumer.Listener += OnMessage;
+                        BreakConnection();
+                        WaitForMessagesToArrive();
+                    }
+                }
+            }
+
+            Assert.IsTrue(this.interrupted);
+            Assert.IsTrue(this.resumed);
+        }
+
+        public void TransportInterrupted()
+        {
+            this.interrupted = true;
+        }
+
+        public void TransportResumed()
+        {
+            this.resumed = true;
+        }
+
+        public void OnMessage(IMessage message)
+        {
+            var textMsg = message as ITextMessage;
+
+            if(textMsg == null)
+            {
+                return;
+            }
+
+            msgCount--;
+
+            // just process the first message for 10 seconds to give some time main thread
+            // to restart ActiveMq broker
+            if(msgCount == MESSAGE_COUNT - 1)
+            {
+                Thread.Sleep(10000);
+            }
+
+            if(msgCount == 0)
+            {
+                // if all messages were consumed then we are fine
+                semaphore.Set();
+            }
+        }
+
+        private void PutMsgIntoQueue(ISession session, IDestination destination)
+        {
+            using(IMessageProducer producer = session.CreateProducer(destination))
+            {
+                ITextMessage message = session.CreateTextMessage();
+                for(int i = 0; i < msgCount; ++i)
+                {
+                    message.Text = "Test message " + (i + 1);
+                    producer.Send(message);
+                }
+            }
+        }
+
+        public void PurgeQueue(IConnection conn, IDestination queue)
+        {
+            ISession session = conn.CreateSession();
+            IMessageConsumer consumer = session.CreateConsumer(queue);
+            while(consumer.Receive(TimeSpan.FromMilliseconds(500)) != null)
+            {
+            }
+            consumer.Close();
+            session.Close();
+        }
+
+        private void BreakConnection()
+        {
+            TcpTransport transport = this.connection.ITransport.Narrow(typeof(TcpTransport)) as TcpTransport;
+            Assert.IsNotNull(transport);
+            transport.Close();
+        }
+
+        protected void WaitForMessagesToArrive()
+        {
+            semaphore.WaitOne(30000, true);
+            Assert.AreEqual(0, msgCount);
+        }
 	}
 }
