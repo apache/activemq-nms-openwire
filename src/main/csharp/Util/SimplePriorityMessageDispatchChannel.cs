@@ -246,9 +246,9 @@ namespace Apache.NMS.ActiveMQ.Util
             return result;
         }
 
-        protected int getPriority(MessageDispatch message)
+        protected int GetPriority(MessageDispatch message)
         {
-            int priority = (int) NMSConstants.defaultPriority;
+            int priority = (int) MsgPriority.Lowest;
 
             if(message.Message != null)
             {
@@ -261,7 +261,7 @@ namespace Apache.NMS.ActiveMQ.Util
 
         protected LinkedList<MessageDispatch> GetList(MessageDispatch md)
         {
-            return channels[getPriority(md)];
+            return channels[GetPriority(md)];
         }
 
         private MessageDispatch RemoveFirst()

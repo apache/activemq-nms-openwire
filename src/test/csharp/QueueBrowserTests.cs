@@ -16,7 +16,9 @@
  */
 
 using System;
+using System.Threading;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.Test;
@@ -111,6 +113,37 @@ namespace Apache.NMS.ActiveMQ.Test
 				}
 			}
 		}
+
+        [Test]
+        public void TestBroserIteratively()
+        {
+            using (IConnection connection = CreateConnection())
+            using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            {
+                connection.Start();
+
+                IQueue queue = session.CreateTemporaryQueue();
+                // enqueue a message
+                using (IMessageProducer producer = session.CreateProducer(queue))
+                {
+                    IMessage message = producer.CreateMessage();
+                    producer.Send(message);
+                }
+
+                Thread.Sleep(2000);
+
+                // browse queue several times
+                for (int j = 0; j < 1000; j++)
+                {
+                    using(QueueBrowser browser = session.CreateBrowser(queue) as QueueBrowser)
+                    {
+                        Tracer.DebugFormat("Running Iterative QueueBrowser sample #{0}", j);
+                        IEnumerator enumeration = browser.GetEnumerator();
+                        Assert.IsTrue(enumeration.MoveNext(), "should have received the second message");
+                    }
+                }
+            }
+        }
 
 		[Test]
 		public void TestBrowseReceive()

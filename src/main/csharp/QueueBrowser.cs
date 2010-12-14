@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ
 		private bool disposed;
 		private bool closed;
 		private readonly ConsumerId consumerId;
-		private readonly Atomic<bool> browseDone = new Atomic<bool>(true);
+		private readonly Atomic<bool> browseDone = new Atomic<bool>(false);
 		private readonly bool dispatchAsync;
 		private readonly object semaphore = new object();
 		private readonly object myLock = new object();
@@ -168,16 +168,19 @@ namespace Apache.NMS.ActiveMQ
 				{
 					if(consumer == null)
 					{
+                        Tracer.Debug("QB-MoveNext: Consumer was null, returning false.");
 						return false;
 					}
 
 					if(consumer.UnconsumedMessageCount > 0)
 					{
+                        Tracer.Debug("QB-MoveNext: Consumer has unconsumed Messages, returning true.");
 						return true;
 					}
 
 					if(browseDone.Value || !session.Started)
 					{
+                        Tracer.Debug("QB-MoveNext: Browse done or session not started, return false.");
 						DestroyConsumer();
 						return false;
 					}
@@ -316,10 +319,12 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(md.Message == null)
 				{
+                    Tracer.Debug("QueueBrowser recieved Null Message in Dispatch, Browse Done.");
 					parent.browseDone.Value = true;
 				}
 				else
 				{
+                    Tracer.Debug("QueueBrowser dispatching next Message to Consumer.");
 					base.Dispatch(md);
 				}
 
