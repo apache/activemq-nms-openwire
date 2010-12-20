@@ -28,9 +28,14 @@ namespace Apache.NMS.ActiveMQ
 	public class RequestTimedOutException : IOException
 	{
 		public RequestTimedOutException()
-			: base("IO Exception failed with missing exception log")
+			: base("Synchronous Request Timed out")
 		{
 		}
+
+        public RequestTimedOutException(TimeSpan interval)
+            : base("Synchronous Request Timed out after [" + interval.TotalMilliseconds + "] milliseconds")
+        {
+        }
 
 		public RequestTimedOutException(String msg)
 			: base(msg)

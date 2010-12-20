@@ -54,7 +54,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 				{
 					if(!latch.await(maxWait) && response == null)
 					{
-						throw new RequestTimedOutException();
+						throw new RequestTimedOutException(maxWait);
 					}
 				}
 				catch(RequestTimedOutException e)
