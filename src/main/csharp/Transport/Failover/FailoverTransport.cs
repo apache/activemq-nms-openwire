@@ -329,15 +329,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			get { return this.updateURIsSupported; }
 		}
 
-		/// <summary>
-		/// </summary>
-		/// <param name="command"></param>
-		/// <returns>Returns true if the command is one sent when a connection is being closed.</returns>
-		private static bool IsShutdownCommand(Command command)
-		{
-			return (command != null && (command.IsShutdownInfo || command is RemoveInfo));
-		}
-
 		public void OnException(ITransport sender, Exception error)
 		{
 			try
@@ -540,7 +531,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 			lock(reconnectMutex)
 			{
-				if(IsShutdownCommand(command) && ConnectedTransport == null)
+				if(command != null && ConnectedTransport == null)
 				{
 					if(command.IsShutdownInfo)
 					{
@@ -548,9 +539,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						return;
 					}
 
-					if(command.IsRemoveInfo)
+					if(command.IsRemoveInfo || command.IsMessageAck)
 					{
-						// Simulate response to RemoveInfo command
+						// Simulate response to RemoveInfo command or a MessageAck
+                        // since it would be stale at this point.
 						OnCommand(this, new Response() { CorrelationId = command.CommandId });
 						return;
 					}
