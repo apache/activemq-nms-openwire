@@ -54,15 +54,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			this.wireformat = wireformat;
 		}
 
-		~TcpTransport() 
+		~TcpTransport()
 		{
 			Dispose(false);
 		}
-		
-        protected virtual Stream CreateSocketStream()
-        {
-            return new NetworkStream(socket);
-        }
+
+		protected virtual Stream CreateSocketStream()
+		{
+			return new NetworkStream(socket);
+		}
 
 		/// <summary>
 		/// Method Start
@@ -87,15 +87,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 					started = true;
 
-                    // Initialize our Read and Writer instances.  Its not actually necessary
-                    // to have two distinct NetworkStream instances but for now the TcpTransport
-                    // will continue to do so for legacy reasons.
-                    socketWriter = new EndianBinaryWriter(CreateSocketStream());
-                    socketReader = new EndianBinaryReader(CreateSocketStream());
+					// Initialize our Read and Writer instances.  Its not actually necessary
+					// to have two distinct NetworkStream instances but for now the TcpTransport
+					// will continue to do so for legacy reasons.
+					socketWriter = new EndianBinaryWriter(CreateSocketStream());
+					socketReader = new EndianBinaryReader(CreateSocketStream());
 
 					// now lets create the background read thread
-					readThread = new Thread(new ThreadStart(ReadLoop)) {IsBackground = true};
-				    readThread.Start();
+					readThread = new Thread(new ThreadStart(ReadLoop)) { IsBackground = true };
+					readThread.Start();
 				}
 			}
 		}
@@ -120,7 +120,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			{
 				if(closed.Value)
 				{
-					throw new InvalidOperationException("Error writing to broker.  Transport connection is closed.");
+					this.exceptionHandler(this, new InvalidOperationException("Error writing to broker.  Transport connection is closed."));
+					return;
 				}
 
 				if(command is ShutdownInfo)
@@ -165,9 +166,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public void Close()
 		{
-			if(closed.CompareAndSet(false, true))
+			lock(myLock)
 			{
-				lock(myLock)
+				if(closed.CompareAndSet(false, true))
 				{
 					try
 					{
@@ -224,7 +225,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 								readThread.Abort();
 							}
 						}
-						
+
 						readThread = null;
 					}
 
@@ -356,23 +357,23 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public Object Narrow(Type type)
 		{
-		    return this.GetType().Equals(type) ? this : null;
+			return this.GetType().Equals(type) ? this : null;
 		}
 
-	    public bool IsReconnectSupported
+		public bool IsReconnectSupported
 		{
-			get{ return false; }
+			get { return false; }
 		}
-	    
-	    public bool IsUpdateURIsSupported
+
+		public bool IsUpdateURIsSupported
 		{
-			get{ return false; }
+			get { return false; }
 		}
-		
+
 		public void UpdateURIs(bool rebalance, Uri[] updatedURIs)
 		{
 			throw new IOException();
-		}		
+		}
 	}
 }
 
