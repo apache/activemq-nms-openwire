@@ -33,9 +33,18 @@ namespace Apache.NMS.ActiveMQ.Threads
         private bool terminated = false;
         private bool pending = false;
         private bool shutdown = false;
-        
+
+        private string name = "CompositeTaskRunner";
+
         public CompositeTaskRunner()
         {
+            this.theThread = new Thread(Run) {IsBackground = true};
+            this.theThread.Start();
+        }
+
+        public CompositeTaskRunner(string name)
+        {
+            this.name = name;
             this.theThread = new Thread(Run) {IsBackground = true};
             this.theThread.Start();
         }
@@ -60,7 +69,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 
         public void Shutdown(TimeSpan timeout)
         {
-            lock(mutex) 
+            lock(mutex)
             {
                 this.shutdown = true;
                 this.pending = true;
@@ -74,6 +83,8 @@ namespace Apache.NMS.ActiveMQ.Threads
                     Monitor.Wait(this.mutex, timeout);
                 }
             }
+
+            Tracer.Debug(name + ": Task Runner Shut Down");
         }
 
         public void Shutdown()

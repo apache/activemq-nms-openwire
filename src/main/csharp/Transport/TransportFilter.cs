@@ -151,6 +151,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			if(disposing)
 			{
+                Tracer.Debug("TransportFilter disposing of next Transport: " +
+                             this.next.GetType().Name);
 				this.next.Dispose();
 			}
 			disposed = true;
@@ -190,6 +192,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		
 		public virtual void Stop()
 		{
+            this.next.Stop();
 		}
 
         public Object Narrow(Type type)
