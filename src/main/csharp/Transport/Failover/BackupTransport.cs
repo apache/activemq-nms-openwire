@@ -78,6 +78,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             set
             {
                 disposed = value;
+                if(disposed && transport != null)
+                {
+                    transport.Dispose();
+                }
             }
         }
 
