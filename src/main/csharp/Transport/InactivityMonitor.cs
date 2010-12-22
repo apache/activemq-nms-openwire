@@ -51,6 +51,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         private static int id = 0;
         private readonly int instanceId = 0;
+        private bool disposing = false;
 
         private long readCheckTime;
         public long ReadCheckTime
@@ -107,11 +108,9 @@ namespace Apache.NMS.ActiveMQ.Transport
                 // get rid of unmanaged stuff
             }
 
-            lock(monitor)
-            {
-                StopMonitorThreads();
-                base.Dispose(disposing);
-            }
+            this.disposing = true;
+            StopMonitorThreads();
+            base.Dispose(disposing);
         }
 		
 		public void CheckConnection(object state)
@@ -281,7 +280,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         protected override void OnException(ITransport sender, Exception command)
         {
-            if(failed.CompareAndSet(false, true))
+            if(failed.CompareAndSet(false, true) && !this.disposing)
             {
                 Tracer.Debug("Exception received in the Inactivity Monitor: " + command.ToString());
                 StopMonitorThreads();
@@ -293,7 +292,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         {
             lock(monitor)
             {
-                if(this.IsDisposed)
+                if(this.IsDisposed || this.disposing)
                 {
                     return;
                 }
