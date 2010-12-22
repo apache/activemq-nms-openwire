@@ -543,7 +543,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					{
 						// Simulate response to RemoveInfo command or a MessageAck
                         // since it would be stale at this point.
-						OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                        if(command.ResponseRequired)
+                        {
+						    OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                        }
 						return;
 					}
 				}
@@ -553,6 +556,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 					try
 					{
+                        // Any Ack that was being sent when the connection dropped is now
+                        // stale so we don't send it here as it would cause an unmatched ack
+                        // on the broker side and probably prevent a consumer from getting
+                        // any new messages.
+                        if(command.IsMessageAck && i > 0)
+                        {
+                            Tracer.Debug("Inflight MessageAck being dropped as stale.");
+                            if(command.ResponseRequired)
+                            {
+                                OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                            }
+                            return;
+                        }
+
 						// Wait for transport to be connected.
 						ITransport transport = ConnectedTransport;
 						DateTime start = DateTime.Now;
@@ -829,7 +846,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 			foreach(Command command in tmpMap.Values)
 			{
-				t.Oneway(command);
+                if(command.IsMessageAck)
+                {
+                    Tracer.Debug("Stored MessageAck being dropped as stale.");
+                    OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                    continue;
+                }
+
+                t.Oneway(command);
 			}
 		}
 
@@ -1319,6 +1343,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				// get rid of unmanaged stuff
 			}
+
+            this.Stop();
 
 			disposed = true;
 		}
