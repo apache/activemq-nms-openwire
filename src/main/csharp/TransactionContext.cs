@@ -371,18 +371,30 @@ namespace Apache.NMS.ActiveMQ
 
         public void InDoubt(Enlistment enlistment)
         {
-            Tracer.Debug("In doubt notification received");
+            Tracer.Debug("In doubt notification received, Rolling Back TX");
+
+            // Now notify the broker that Rollback should be performed.
+            TransactionInfo info = new TransactionInfo();
+            info.ConnectionId = this.session.Connection.ConnectionId;
+            info.TransactionId = this.transactionId;
 
             try
             {
-                // Now notify the broker that it should forget this TX.
-                TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = this.session.Connection.ConnectionId;
-                info.TransactionId = this.transactionId;
-                info.Type = (int) TransactionType.Forget;
-    
-                //Declare done on the enlistment
+                BeforeEnd();
+
+                info.Type = (int)TransactionType.End;
+                this.connection.SyncRequest(info);
+
+                info.Type = (int)TransactionType.Rollback;
+                this.connection.CheckConnected();
+                this.connection.SyncRequest(info);
+
+                Tracer.Debug("Transaction Rollback Reports Done: ");
+
+                // if server responds that nothing needs to be done, then reply done.
                 enlistment.Done();
+
+                AfterRollback();
             }
             finally
             {
