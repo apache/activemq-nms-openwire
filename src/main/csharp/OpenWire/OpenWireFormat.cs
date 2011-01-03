@@ -363,7 +363,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             return null;
 		}
 
-		public void renegotiateWireFormat(WireFormatInfo info)
+		public void RenegotiateWireFormat(WireFormatInfo info)
 		{
 			if(info.Version < minimumVersion)
 			{

@@ -274,6 +274,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			set { useExponentialBackOff = value; }
 		}
 
+        public IWireFormat WireFormat
+        {
+            get
+            {
+                ITransport transport = ConnectedTransport;
+                if(transport != null)
+                {
+                    return transport.WireFormat;
+                }
+
+                return null;
+            }
+        }
+
 		/// <summary>
 		/// Gets or sets a value indicating whether to asynchronously connect to sockets
 		/// </summary>
@@ -625,7 +639,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						// If it was a request and it was not being tracked by
 						// the state tracker, then hold it in the requestMap so
 						// that we can replay it later.
-						Tracked tracked = stateTracker.track(command);
+						Tracked tracked = stateTracker.Track(command);
 						lock(((ICollection) requestMap).SyncRoot)
 						{
 							if(tracked != null && tracked.WaitingForResponse)
@@ -642,7 +656,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						try
 						{
 							transport.Oneway(command);
-							stateTracker.trackBack(command);
+							stateTracker.TrackBack(command);
 						}
 						catch(Exception e)
 						{
@@ -1219,7 +1233,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				stateTracker.ConnectionInterruptProcessingComplete(this, connectionId);
 			}
 		}
-
 
 		public void UpdateURIs(bool rebalance, Uri[] updatedURIs)
 		{

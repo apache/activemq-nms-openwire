@@ -235,7 +235,11 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			next.UpdateURIs(rebalance, updatedURIs);
 		}
-		
+
+        public IWireFormat WireFormat
+        {
+            get { return next.WireFormat; }
+        }
     }
 }
 

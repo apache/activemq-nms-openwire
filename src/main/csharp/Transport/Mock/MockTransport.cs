@@ -433,6 +433,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			throw new IOException();
 		}
 
+        public IWireFormat WireFormat
+        {
+            get { return null; }
+        }
+
 		#endregion
 	}
 }

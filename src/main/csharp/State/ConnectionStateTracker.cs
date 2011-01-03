@@ -29,7 +29,6 @@ namespace Apache.NMS.ActiveMQ.State
     /// </summary>
     public class ConnectionStateTracker : CommandVisitorAdapter
     {
-
         private static readonly Tracked TRACKED_RESPONSE_MARKER = new Tracked(null);
 
         protected Dictionary<ConnectionId, ConnectionState> connectionStates = new Dictionary<ConnectionId, ConnectionState>();
@@ -81,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.State
         /// </summary>
         /// <param name="command"></param>
         /// <returns>null if the command is not state tracked.</returns>
-        public Tracked track(Command command)
+        public Tracked Track(Command command)
         {
             try
             {
@@ -97,7 +96,7 @@ namespace Apache.NMS.ActiveMQ.State
             }
         }
 
-        public void trackBack(Command command)
+        public void TrackBack(Command command)
         {
             if(TrackMessages && command != null && command.IsMessage)
             {
@@ -190,7 +189,7 @@ namespace Apache.NMS.ActiveMQ.State
             {
                 ConsumerInfo infoToSend = consumerState.Info;
 
-                if(!connectionInterruptionProcessingComplete && infoToSend.PrefetchSize > 0)
+                if(!connectionInterruptionProcessingComplete && infoToSend.PrefetchSize > 0 && transport.WireFormat.Version > 5)
                 {
                     infoToSend = consumerState.Info.Clone() as ConsumerInfo;
                     connectionState.RecoveringPullConsumers.Add(infoToSend.ConsumerId, consumerState.Info);

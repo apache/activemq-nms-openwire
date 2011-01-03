@@ -34,9 +34,24 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// </summary>
         Object Unmarshal(BinaryReader dis);
 
-		ITransport Transport {
-			get; set;
+        /// <summary>
+        /// Gets the Transport that own this WireFormat instnace.
+        /// </summary>
+		ITransport Transport
+        {
+			get;
+            set;
 		}
+
+        /// <summary>
+        /// Gets the current version of the protocol that this WireFormat instance
+        /// supports
+        /// </summary>
+        int Version
+        {
+            get;
+        }
+        
     }
 }
 

@@ -186,6 +186,15 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// </param>
 		void UpdateURIs(bool rebalance, Uri[] updatedURIs);
 
+        /// <summary>
+        /// Returns the IWireFormat object that this transport uses to marshal and
+        /// unmarshal Command objects.
+        /// </summary>
+        IWireFormat WireFormat
+        {
+            get;
+        }
+
 	}
 }
 

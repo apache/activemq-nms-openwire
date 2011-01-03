@@ -129,7 +129,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					seenShutdown = true;
 				}
 
-				Wireformat.Marshal(command, socketWriter);
+				WireFormat.Marshal(command, socketWriter);
 			}
 		}
 
@@ -276,7 +276,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 				try
 				{
-					command = (Command) Wireformat.Unmarshal(socketReader);
+					command = (Command) WireFormat.Unmarshal(socketReader);
 				}
 				catch(Exception ex)
 				{
@@ -334,7 +334,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { this.resumedHandler = value; }
 		}
 
-		public IWireFormat Wireformat
+		public IWireFormat WireFormat
 		{
 			get { return wireformat; }
 			set { wireformat = value; }

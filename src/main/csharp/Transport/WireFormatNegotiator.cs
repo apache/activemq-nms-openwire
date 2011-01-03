@@ -80,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                         throw new IOException("Remote wire format magic is invalid");
                     }
                     wireInfoSentDownLatch.await(negotiateTimeout);
-                    wireFormat.renegotiateWireFormat(info);
+                    wireFormat.RenegotiateWireFormat(info);
                 }
                 catch (Exception e)
                 {
