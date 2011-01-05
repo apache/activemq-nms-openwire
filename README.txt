@@ -1,23 +1,24 @@
 =======================================================================
 Welcome to:
- * Apache.NMS.ActiveMQ : Apache NMS for ActiveMQ Class Library
+ * Apache.NMS.ActiveMQ : Apache NMS for ActiveMQ Client Library
 =======================================================================
 
 For more information see http://activemq.apache.org/nms
 
 =======================================================================
-Building With NAnt 0.86-Beta2 http://nant.sourceforge.net/
+Building With NAnt 0.86 see http://nant.sourceforge.net/
 =======================================================================
 
-A recent nightly build of the NAnt 0.86 beta 2 is required to build Apache.NMS.
+NAnt version 0.86 or newer is required to build Apache.NMS.ActiveMQ.  Version 0.90
+or newer is highly recommended.
 To build the code using NAnt, run:
 
   nant
-  
+
 To run the unit tests you need to run an Apache ActiveMQ Broker first then run:
 
   nant test
-  
+
 To generate the documentation, run:
 
   nant doc
@@ -39,5 +40,7 @@ under "Build"->"Configuration Manager"
 If you have the Resharper plugin installed in Visual Studio, you can run 
 all the Unit Tests by using the "ReSharper"->"Unit Testing"->"Run All 
 Tests from Solution" menu option.  Please note that you must run an 
-Apache ActiveMQ Broker before kicking off the unit tests.
+Apache ActiveMQ Broker before kicking off the unit tests.  Otherwise,
+the standalone NUnit test runner can be used.  NUnit version 2.5.8
+is required to build and run the unit tests.
 
