@@ -205,9 +205,13 @@ namespace Apache.NMS.ActiveMQ
                 throw new TransactionInProgressException("A Transaction is already in Progress");
             }
 
+            Guid rmId = GuidFromId(this.connection.ResourceManagerId);
+
             // Enlist this object in the transaction.
             this.currentEnlistment =
-                transaction.EnlistVolatile(this, EnlistmentOptions.None);
+                transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
+
+            Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId.ToString());
 
             System.Transactions.TransactionInformation txInfo = transaction.TransactionInformation;
 
@@ -401,6 +405,29 @@ namespace Apache.NMS.ActiveMQ
                 this.currentEnlistment = null;
                 this.transactionId = null;
             }
+        }
+
+        public XATransactionId[] Recover()
+        {
+            TransactionInfo info = new TransactionInfo();
+            info.ConnectionId = this.session.Connection.ConnectionId;
+            info.Type = (int)TransactionType.Recover;
+
+            this.connection.CheckConnected();
+            DataArrayResponse response = this.connection.SyncRequest(info) as DataArrayResponse;
+            
+            if(response != null && response.Data.Length > 0)
+            {
+                XATransactionId[] result = null;
+                if (response.Data is XATransactionId[])
+                {
+                    result = new XATransactionId[response.Data.Length];
+                    System.Array.Copy(response.Data, result, response.Data.Length);
+                    return result;
+                }
+            }
+
+            return new XATransactionId[0];
         }
 
         #endregion
