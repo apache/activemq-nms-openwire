@@ -19,9 +19,21 @@ To run the unit tests you need to run an Apache ActiveMQ Broker first then run:
 
   nant test
 
+The NMS documentation can be generated into three different formats using
+Microsoft's Sandcastle open source product. The Sandcastle Styles project
+was used to enhance the output generated from the current release of Sandcastle.
+
+The Sandcastle project is located here:
+
+http://sandcastle.codeplex.com/
+
+The Sandcastle Styles project is located here:
+
+http://sandcastlestyles.codeplex.com/
+
 To generate the documentation, run:
 
-  nant doc
+  nant sandcastle-all
 
 =======================================================================
 Building With Visual Studio 2008
