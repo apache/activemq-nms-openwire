@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ
 
 namespace Apache.NMS.ActiveMQ
 {
-	public class TransactionContext : IEnlistmentNotification
+	public class TransactionContext : ISinglePhaseNotification
     {
         private const int XA_OK = 0;
         private const int XA_READONLY = 3;
@@ -301,11 +301,11 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(this.transactionId != null)
                 {
-                    // Now notify the broker that a new XA'ish transaction has started.
+                    // Now notify the broker that a new XA'ish transaction has completed.
                     TransactionInfo info = new TransactionInfo();
                     info.ConnectionId = this.session.Connection.ConnectionId;
                     info.TransactionId = this.transactionId;
-                    info.Type = (int) TransactionType.CommitOnePhase;
+                    info.Type = (int) TransactionType.CommitTwoPhase;
 
                     this.connection.CheckConnected();
                     this.connection.SyncRequest(info);
@@ -332,6 +332,47 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        public void SinglePhaseCommit(SinglePhaseEnlistment enlistment)
+        {
+            Tracer.Debug("Single Phase Commit notification received");
+
+            try
+            {
+                if(this.transactionId != null)
+                {
+                	BeforeEnd();
+
+					// Now notify the broker that a new XA'ish transaction has completed.
+                    TransactionInfo info = new TransactionInfo();
+                    info.ConnectionId = this.session.Connection.ConnectionId;
+                    info.TransactionId = this.transactionId;
+                    info.Type = (int) TransactionType.CommitOnePhase;
+
+                    this.connection.CheckConnected();
+                    this.connection.SyncRequest(info);
+
+                    Tracer.Debug("Transaction Single Phase Commit Reports Done: ");
+
+                    // if server responds that nothing needs to be done, then reply done.
+                    enlistment.Done();
+
+                    AfterCommit();
+                }
+            }
+            catch(Exception ex)
+            {
+                Tracer.Debug("Transaction Single Phase Commit failed with error: " + ex.Message);
+                AfterRollback();
+                enlistment.Done();
+                throw;
+            }
+            finally
+            {
+                this.currentEnlistment = null;
+                this.transactionId = null;
+            }
+        }
+		
         public void Rollback(Enlistment enlistment)
         {
             Tracer.Debug("Rollback notification received");
