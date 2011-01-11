@@ -239,26 +239,26 @@ namespace Apache.NMS.ActiveMQ
 
             if(Tracer.IsDebugEnabled)
             {
-                Tracer.Debug("Begin XA'ish Transaction:" + xaId.GlobalTransactionId.ToString());
+                Tracer.Debug("Began XA'ish Transaction:" + xaId.GlobalTransactionId.ToString());
             }
         }
 
         public void Prepare(PreparingEnlistment preparingEnlistment)
         {
-            Tracer.Debug("Prepare notification received");
-
-            // Now notify the broker that a new XA'ish transaction has started.
-            TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.session.Connection.ConnectionId;
-            info.TransactionId = this.transactionId;
-
             try
             {
+	            Tracer.Debug("Prepare notification received");
+				
                 BeforeEnd();
 
-                // End the current branch
+	            // Now notify the broker that a new XA'ish transaction has started.
+	            TransactionInfo info = new TransactionInfo();
+	            info.ConnectionId = this.session.Connection.ConnectionId;
+	            info.TransactionId = this.transactionId;
                 info.Type = (int) TransactionType.End;
-                this.connection.SyncRequest(info);
+
+                this.connection.CheckConnected();
+				this.connection.SyncRequest(info);
 
                 // Prepare the Transaction for commit.
                 info.Type = (int) TransactionType.Prepare;
@@ -322,12 +322,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 Tracer.Debug("Transaction Commit failed with error: " + ex.Message);
                 AfterRollback();
-                Transaction tx = Transaction.Current;
-                if(tx != null)
-                {
-                    tx.Rollback(ex);
-                }
-
+                enlistment.Done();
                 throw;
             }
             finally
@@ -380,10 +375,10 @@ namespace Apache.NMS.ActiveMQ
 		
         public void Rollback(Enlistment enlistment)
         {
-            Tracer.Debug("Rollback notification received");
-
             try
             {
+	            Tracer.Debug("Rollback notification received");
+
                 BeforeEnd();
 
                 // Now notify the broker that a new XA'ish transaction has started.
@@ -422,10 +417,10 @@ namespace Apache.NMS.ActiveMQ
 
         public void InDoubt(Enlistment enlistment)
         {
-            Tracer.Debug("In doubt notification received, Rolling Back TX");
-
             try
             {
+	            Tracer.Debug("In doubt notification received, Rolling Back TX");
+				
                 BeforeEnd();
 
                 // Now notify the broker that Rollback should be performed.
