@@ -295,11 +295,11 @@ namespace Apache.NMS.ActiveMQ
 
         public void Commit(Enlistment enlistment)
         {
-            Tracer.Debug("Commit notification received");
-
             try
             {
-                if(this.transactionId != null)
+                Tracer.Debug("Commit notification received");
+
+                if (this.transactionId != null)
                 {
                     // Now notify the broker that a new XA'ish transaction has completed.
                     TransactionInfo info = new TransactionInfo();
@@ -322,7 +322,12 @@ namespace Apache.NMS.ActiveMQ
             {
                 Tracer.Debug("Transaction Commit failed with error: " + ex.Message);
                 AfterRollback();
-                enlistment.Done();
+                Transaction tx = Transaction.Current;
+                if(tx != null)
+                {
+                    tx.Rollback(ex);
+                }
+
                 throw;
             }
             finally
@@ -377,16 +382,17 @@ namespace Apache.NMS.ActiveMQ
         {
             Tracer.Debug("Rollback notification received");
 
-            // Now notify the broker that a new XA'ish transaction has started.
-            TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.session.Connection.ConnectionId;
-            info.TransactionId = this.transactionId;
-
             try
             {
                 BeforeEnd();
 
-                info.Type = (int) TransactionType.End;
+                // Now notify the broker that a new XA'ish transaction has started.
+                TransactionInfo info = new TransactionInfo();
+                info.ConnectionId = this.session.Connection.ConnectionId;
+                info.TransactionId = this.transactionId;
+                info.Type = (int)TransactionType.End;
+
+                this.connection.CheckConnected();
                 this.connection.SyncRequest(info);
 
                 info.Type = (int) TransactionType.Rollback;
@@ -418,23 +424,24 @@ namespace Apache.NMS.ActiveMQ
         {
             Tracer.Debug("In doubt notification received, Rolling Back TX");
 
-            // Now notify the broker that Rollback should be performed.
-            TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.session.Connection.ConnectionId;
-            info.TransactionId = this.transactionId;
-
             try
             {
                 BeforeEnd();
 
+                // Now notify the broker that Rollback should be performed.
+                TransactionInfo info = new TransactionInfo();
+                info.ConnectionId = this.session.Connection.ConnectionId;
+                info.TransactionId = this.transactionId;
                 info.Type = (int)TransactionType.End;
+
+                this.connection.CheckConnected();
                 this.connection.SyncRequest(info);
 
                 info.Type = (int)TransactionType.Rollback;
                 this.connection.CheckConnected();
                 this.connection.SyncRequest(info);
 
-                Tracer.Debug("Transaction Rollback Reports Done: ");
+                Tracer.Debug("InDoubt Transaction Rollback Reports Done: ");
 
                 // if server responds that nothing needs to be done, then reply done.
                 enlistment.Done();
