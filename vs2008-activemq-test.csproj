@@ -97,6 +97,9 @@
     <Compile Include="src\test\csharp\Transport\Inactivity\InactivityMonitorTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportTest.cs" />
+    <Compile Include="src\test\csharp\Transport\Tcp\TcpFaultyTransport.cs" />
+    <Compile Include="src\test\csharp\Transport\Tcp\TcpFaultyTransportFactory.cs" />
+    <Compile Include="src\test\csharp\Transport\Tcp\TcpFaultyTransportTest.cs" />
     <Compile Include="src\test\csharp\Util\ActiveMQMessageTransformationTest.cs" />
     <Compile Include="src\test\csharp\Util\FifoMessageDispatchChannelTest.cs" />
     <Compile Include="src\test\csharp\Util\MemoryUsageTest.cs" />
