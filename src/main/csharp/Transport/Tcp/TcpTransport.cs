@@ -114,7 +114,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			}
 		}
 
-		public void Oneway(Command command)
+		public virtual void Oneway(Command command)
 		{
 			lock(myLock)
 			{
