@@ -323,7 +323,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Commit failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                throw;
+                this.session.Connection.OnSessionException(this.session, ex);
             }
             finally
             {
@@ -364,7 +364,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Single Phase Commit failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                throw;
+                this.session.Connection.OnSessionException(this.session, ex);
             }
             finally
             {
@@ -406,7 +406,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Rollback failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                throw;
+                this.session.Connection.OnSessionException(this.session, ex);
             }
             finally
             {
