@@ -108,8 +108,14 @@ namespace Apache.NMS.ActiveMQ.Transport
                 // get rid of unmanaged stuff
             }
 
-            this.disposing = true;
-            StopMonitorThreads();
+            lock(monitor)
+            {
+                this.localWireFormatInfo = null;
+                this.remoteWireFormatInfo = null;
+                this.disposing = true;
+                StopMonitorThreads();
+            }
+
             base.Dispose(disposing);
         }
 		
@@ -364,7 +370,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                     // Attempt to wait for the Timer to shutdown, but don't wait
                     // forever, if they don't shutdown after two seconds, just quit.
                     this.connectionCheckTimer.Dispose(shutdownEvent);
-                    if(!shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(2000), false))
+                    if(!shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(3000), false))
                     {
                         Tracer.WarnFormat("InactivityMonitor[{0}]: Timer Task didn't shutdown properly.", instanceId);
                     }

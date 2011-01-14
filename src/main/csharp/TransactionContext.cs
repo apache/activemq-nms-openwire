@@ -53,7 +53,12 @@ namespace Apache.NMS.ActiveMQ
         {
             get{ return this.transactionId != null; }
         }
-        
+
+        public bool InLocalTransaction
+        {
+            get{ return this.transactionId != null && this.currentEnlistment == null; }
+        }
+
         public TransactionId TransactionId
         {
             get { return transactionId; }
@@ -323,7 +328,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Commit failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                this.session.Connection.OnSessionException(this.session, ex);
+                this.session.Connection.OnException(ex);
             }
             finally
             {
@@ -364,7 +369,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Single Phase Commit failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                this.session.Connection.OnSessionException(this.session, ex);
+                this.session.Connection.OnException(ex);
             }
             finally
             {
@@ -406,7 +411,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Rollback failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                this.session.Connection.OnSessionException(this.session, ex);
+                this.session.Connection.OnException(ex);
             }
             finally
             {

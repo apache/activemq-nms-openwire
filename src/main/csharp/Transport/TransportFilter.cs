@@ -149,7 +149,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
 		protected virtual void Dispose(bool disposing)
 		{
-			if(disposing)
+			if(disposing && !disposed)
 			{
                 Tracer.Debug("TransportFilter disposing of next Transport: " +
                              this.next.GetType().Name);

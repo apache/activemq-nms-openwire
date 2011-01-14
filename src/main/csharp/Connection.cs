@@ -57,9 +57,11 @@ namespace Apache.NMS.ActiveMQ
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
         private readonly IDictionary dispatchers = Hashtable.Synchronized(new Hashtable());
         private readonly object myLock = new object();
-        private bool connected = false;
-        private bool closed = false;
-        private bool closing = false;
+        private readonly Atomic<bool> connected = new Atomic<bool>(false);
+        private readonly Atomic<bool> closed = new Atomic<bool>(false);
+        private readonly Atomic<bool> closing = new Atomic<bool>(false);
+        private readonly Atomic<bool> transportFailed = new Atomic<bool>(false);
+        private Exception firstFailureError = null;
         private int sessionCounter = 0;
         private int temporaryDestinationCounter = 0;
         private int localTransactionCounter;
@@ -80,7 +82,7 @@ namespace Apache.NMS.ActiveMQ
 
             this.transport = transport;
             this.transport.Command = new CommandHandler(OnCommand);
-            this.transport.Exception = new ExceptionHandler(OnException);
+            this.transport.Exception = new ExceptionHandler(OnTransportException);
             this.transport.Interrupted = new InterruptedHandler(OnTransportInterrupted);
             this.transport.Resumed = new ResumedHandler(OnTransportResumed);
 
@@ -283,6 +285,16 @@ namespace Apache.NMS.ActiveMQ
             set { this.transport = value; }
         }
 
+        public bool TransportFailed
+        {
+            get { return this.transportFailed.Value; }
+        }
+
+        public Exception FirstFailureError
+        {
+            get { return this.firstFailureError; }
+        }
+
         public TimeSpan RequestTimeout
         {
             get { return this.requestTimeout; }
@@ -309,7 +321,7 @@ namespace Apache.NMS.ActiveMQ
             get { return info.ClientId; }
             set
             {
-                if(this.connected)
+                if(this.connected.Value)
                 {
                     throw new NMSException("You cannot change the ClientId once the Connection is connected");
                 }
@@ -455,7 +467,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal void AddSession(Session session)
         {
-            if(!this.closing)
+            if(!this.closing.Value)
             {
                 sessions.Add(session);
             }
@@ -463,7 +475,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal void RemoveSession(Session session)
         {
-            if(!this.closing)
+            if(!this.closing.Value)
             {
                 sessions.Remove(session);
             }
@@ -471,7 +483,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal void addDispatcher( ConsumerId id, IDispatcher dispatcher )
         {
-            if(!this.closing)
+            if(!this.closing.Value)
             {
                 this.dispatchers.Add( id, dispatcher );
             }
@@ -479,7 +491,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal void removeDispatcher( ConsumerId id )
         {
-            if(!this.closing)
+            if(!this.closing.Value)
             {
                 this.dispatchers.Remove( id );
             }
@@ -487,7 +499,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal void addProducer( ProducerId id, MessageProducer producer )
         {
-            if(!this.closing)
+            if(!this.closing.Value)
             {
                 this.producers.Add( id, producer );
             }
@@ -495,7 +507,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal void removeProducer( ProducerId id )
         {
-            if(!this.closing)
+            if(!this.closing.Value)
             {
                 this.producers.Remove( id );
             }
@@ -505,7 +517,7 @@ namespace Apache.NMS.ActiveMQ
         {
             lock(myLock)
             {
-                if(this.closed)
+                if(this.closed.Value)
                 {
                     return;
                 }
@@ -513,7 +525,7 @@ namespace Apache.NMS.ActiveMQ
                 try
                 {
                     Tracer.Info("Closing Connection.");
-                    this.closing = true;
+                    this.closing.Value = true;
                     lock(sessions.SyncRoot)
                     {
                         foreach(Session session in sessions)
@@ -523,7 +535,7 @@ namespace Apache.NMS.ActiveMQ
                     }
                     sessions.Clear();
 
-                    if(connected)
+                    if(connected.Value)
                     {
                         DisposeOf(ConnectionId);
                         ShutdownInfo shutdowninfo = new ShutdownInfo();
@@ -540,9 +552,9 @@ namespace Apache.NMS.ActiveMQ
                 finally
                 {
                     this.transport = null;
-                    this.closed = true;
-                    this.connected = false;
-                    this.closing = false;
+                    this.closed.Value = true;
+                    this.connected.Value = false;
+                    this.closing.Value = false;
                 }
             }
         }
@@ -643,7 +655,7 @@ namespace Apache.NMS.ActiveMQ
                 if(asyncClose)
                 {
                     Tracer.Info("Asynchronously disposing of Connection.");
-                    if(connected)
+                    if(connected.Value)
                     {
                         transport.Oneway(command);
                     }
@@ -667,24 +679,24 @@ namespace Apache.NMS.ActiveMQ
 
         internal void CheckConnected()
         {
-            if(closed)
+            if(closed.Value)
             {
                 throw new ConnectionClosedException();
             }
 
-            if(!connected)
+            if(!connected.Value)
             {
                 if(!this.userSpecifiedClientID)
                 {
                     this.info.ClientId = this.clientIdGenerator.GenerateId();
                 }
 
-                connected = true;
+                connected.Value = true;
                 // now lets send the connection and see if we get an ack/nak
                 if(null == SyncRequest(info))
                 {
-                    closed = true;
-                    connected = false;
+                    closed.Value = true;
+                    connected.Value = false;
                     throw new ConnectionClosedException();
                 }
             }
@@ -717,9 +729,9 @@ namespace Apache.NMS.ActiveMQ
             }
             else if(command.IsShutdownInfo)
             {
-                if(!closing && !closed)
+                if(!closing.Value && !closed.Value)
                 {
-                    OnException(commandTransport, new NMSException("Broker closed this connection."));
+                    OnException(new NMSException("Broker closed this connection."));
                 }
             }
             else if(command.IsProducerAck)
@@ -741,7 +753,7 @@ namespace Apache.NMS.ActiveMQ
             }
             else if(command.IsConnectionError)
             {
-                if(!closing && !closed)
+                if(!closing.Value && !closed.Value)
                 {
                     ConnectionError connectionError = (ConnectionError) command;
                     BrokerError brokerError = connectionError.Exception;
@@ -757,7 +769,7 @@ namespace Apache.NMS.ActiveMQ
                         }
                     }
 
-                    OnException(commandTransport, new NMSConnectionException(message, cause));
+                    OnException(new NMSConnectionException(message, cause));
                 }
             }
             else
@@ -799,7 +811,7 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
-                if(connected)
+                if(connected.Value)
                 {
                     Tracer.Info("Returning KeepAliveInfo Response.");
                     info.ResponseRequired = false;
@@ -808,27 +820,95 @@ namespace Apache.NMS.ActiveMQ
             }
             catch(Exception ex)
             {
-                if(!closing && !closed)
+                if(!closing.Value && !closed.Value)
                 {
-                    OnException(commandTransport, ex);
+                    OnException(ex);
                 }
             }
         }
 
-        protected void OnException(ITransport sender, Exception exception)
+        internal void OnAsyncException(Exception error)
         {
+            if(!this.closed.Value && !this.closing.Value)
+            {
+                if(this.ExceptionListener != null)
+                {
+                    if(!(error is NMSException))
+                    {
+                        error = NMSExceptionSupport.Create(error);
+                    }
+                    NMSException e = (NMSException)error;
+
+                    // Called in another thread so that processing can continue
+                    // here, ensures no lock contention.
+                    ThreadPool.QueueUserWorkItem(AsyncCallExceptionListener, e);
+                }
+                else
+                {
+                    Tracer.Debug("Async exception with no exception listener: " + error);
+                }
+            }
+        }
+
+        private void AsyncCallExceptionListener(object error)
+        {
+            NMSException exception = error as NMSException;
+            this.ExceptionListener(exception);
+        }
+
+        internal void OnTransportException(ITransport source, Exception cause)
+        {
+            this.OnException(cause);
+        }
+
+        internal void OnException(Exception error)
+        {
+            OnAsyncException(error);
+
+            if(!this.closing.Value && !this.closed.Value)
+            {
+                // Perform the actual work in another thread to avoid lock contention
+                // and allow the caller to continue on in its error cleanup.
+                ThreadPool.QueueUserWorkItem(AsyncOnExceptionHandler, error);
+            }
+        }
+
+        private void AsyncOnExceptionHandler(object error)
+        {
+            Exception cause = error as Exception;
+
+            MarkTransportFailed(cause);
+
+            try
+            {
+                this.transport.Dispose();
+            }
+            catch(Exception ex)
+            {
+                Tracer.Debug("Caught Exception While disposing of Transport: " + ex);
+            }
+
             this.brokerInfoReceived.countDown();
 
-            if(ExceptionListener != null && !this.closing)
+            foreach(Session session in this.sessions)
             {
                 try
                 {
-                    ExceptionListener(exception);
+                    session.Dispose();
                 }
-                catch
+                catch(Exception ex)
                 {
-                    sender.Dispose();
+                    Tracer.Debug("Caught Exception While disposing of Sessions: " + ex);
                 }
+            }
+        }
+
+        private void MarkTransportFailed(Exception error)
+        {
+            this.transportFailed.Value = true;
+            if(this.firstFailureError == null)
+            {
+                this.firstFailureError = error;
             }
         }
 
@@ -857,7 +937,7 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
 
-            if(this.ConnectionInterruptedListener != null && !this.closing )
+            if(this.ConnectionInterruptedListener != null && !this.closing.Value)
             {
                 try
                 {
@@ -873,7 +953,7 @@ namespace Apache.NMS.ActiveMQ
         {
             Tracer.Debug("Transport has resumed normal operation.");
 
-            if(this.ConnectionResumedListener != null && !this.closing )
+            if(this.ConnectionResumedListener != null && !this.closing.Value)
             {
                 try
                 {
@@ -967,7 +1047,7 @@ namespace Apache.NMS.ActiveMQ
             CountDownLatch cdl = this.transportInterruptionProcessingComplete;
             if(cdl != null)
             {
-                if(!closed && cdl.Remaining > 0)
+                if(!closed.Value && cdl.Remaining > 0)
                 {
                     Tracer.Warn("dispatch paused, waiting for outstanding dispatch interruption " +
                                 "processing (" + cdl.Remaining + ") to complete..");

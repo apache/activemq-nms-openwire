@@ -60,6 +60,8 @@ namespace Apache.NMS.ActiveMQ
 		private bool clearDispatchList = false;
 		private bool inProgressClearRequiredFlag;
 
+        private Exception failureError;
+
 		private const int DEFAULT_REDELIVERY_DELAY = 0;
 		private const int DEFAULT_MAX_REDELIVERIES = 5;
 
@@ -169,6 +171,12 @@ namespace Apache.NMS.ActiveMQ
 			get { return ignoreExpiration; }
 			set { ignoreExpiration = value; }
 		}
+
+        public Exception FailureError
+        {
+            get { return this.failureError; }
+            set { this.failureError = value; }
+        }
 
 		#endregion
 
@@ -700,6 +708,13 @@ namespace Apache.NMS.ActiveMQ
 					}
 					else
 					{
+                        // Informs the caller of an error in the event that an async exception
+                        // took down the parent connection.
+                        if(this.failureError != null)
+                        {
+                            throw NMSExceptionSupport.Create(this.failureError);
+                        }
+
 						return null;
 					}
 				}

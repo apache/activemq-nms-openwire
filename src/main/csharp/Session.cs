@@ -349,6 +349,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         foreach(MessageConsumer consumer in consumers.Values)
                         {
+                            consumer.FailureError = this.connection.FirstFailureError;
                             consumer.DoClose();
                             this.lastDeliveredSequenceId =
                                 Math.Min(this.lastDeliveredSequenceId, consumer.LastDeliveredSequenceId);
@@ -366,7 +367,7 @@ namespace Apache.NMS.ActiveMQ
                     producers.Clear();
 
                     // If in a transaction roll it back
-                    if(this.IsTransacted && this.transactionContext.InTransaction)
+                    if(this.IsTransacted && this.transactionContext.InLocalTransaction)
                     {
                         try
                         {
