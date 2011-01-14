@@ -23,6 +23,7 @@ using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Discovery
 {
+    [ActiveMQTransportFactory("discovery")]
 	public class DiscoveryTransportFactory : ITransportFactory
 	{
 		private const int TIMEOUT_IN_SECONDS = 20;

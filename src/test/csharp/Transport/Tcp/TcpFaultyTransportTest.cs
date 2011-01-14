@@ -39,7 +39,6 @@ namespace Apache.NMS.ActiveMQ.Test
         public override void SetUp()
         {
             base.SetUp();
-            TransportFactory.RegisterTransport("tcpFaulty", typeof(TcpFaultyTransportFactory));
 
             preProcessorFired = false;
             postProcessorFired = false;

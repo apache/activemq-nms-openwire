@@ -20,6 +20,7 @@ using System.Net.Sockets;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
+    [ActiveMQTransportFactory("ssl")]
 	public class SslTransportFactory : TcpTransportFactory
 	{
         private string serverName;

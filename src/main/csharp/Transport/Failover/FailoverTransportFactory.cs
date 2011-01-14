@@ -21,6 +21,7 @@ using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Failover
 {
+    [ActiveMQTransportFactory("failover")]
 	public class FailoverTransportFactory : ITransportFactory
 	{
 		private ITransport doConnect(Uri location)

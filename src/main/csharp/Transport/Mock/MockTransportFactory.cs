@@ -18,12 +18,14 @@
 using System;
 using System.Collections.Specialized;
 using Apache.NMS.Util;
+using Apache.NMS.ActiveMQ.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Mock
 {
 	/// <summary>
 	/// Factory class to create the MockTransport when given on a URI as mock://XXX
 	/// </summary>
+    [ActiveMQTransportFactory("mock")]
 	public class MockTransportFactory : ITransportFactory
 	{
 		public MockTransportFactory()

@@ -18,6 +18,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Transport.Discovery;
 using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Transport.Mock;
@@ -29,8 +30,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 	{
 		public static event ExceptionListener OnException;
 
-        private static IDictionary<String, String> schemeToClassName = new Dictionary<String, String>();
-        private static IDictionary<String, Type> schemeToTypeName = new Dictionary<String, Type>();
+        private static readonly FactoryFinder<ActiveMQTransportFactoryAttribute, ITransportFactory> FACTORY_FINDER =
+            new FactoryFinder<ActiveMQTransportFactoryAttribute, ITransportFactory>();
+
+        private static IDictionary<String, Type> TRANSPORT_FACTORY_TYPES = new Dictionary<String, Type>();
 
 		public static void HandleException(Exception ex)
 		{
@@ -40,34 +43,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 			}
 		}
 
-        public static void RegisterTransport(string scheme, string className)
+        public void RegisterTransportFactory(string scheme, Type factoryType)
         {
-            if(String.IsNullOrEmpty(scheme))
-            {
-                throw new NMSException("Cannot register a transport with an empty scheme.");
-            }
-
-            if(String.IsNullOrEmpty(className))
-            {
-                throw new NMSException("Cannot register a transport with an empty className.");
-            }
-
-            TransportFactory.schemeToClassName[scheme.ToLower()] = className;
-        }
-
-        public static void RegisterTransport(string scheme, Type factoryType)
-        {
-            if(String.IsNullOrEmpty(scheme))
-            {
-                throw new NMSException("Cannot register a transport with an empty scheme.");
-            }
-
-            if(factoryType == null)
-            {
-                throw new NMSException("Cannot register a transport with an empty type name.");
-            }
-
-            TransportFactory.schemeToTypeName[scheme.ToLower()] = factoryType;
+            TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
         }
 
 		/// <summary>
@@ -112,44 +90,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
 			try
 			{
-				switch(scheme.ToLower())
-				{
-				case "tcp":
-					factory = new TcpTransportFactory();
-					break;
-                case "ssl":
-                    factory = new SslTransportFactory();
-                    break;
-                case "discovery":
-					factory = new DiscoveryTransportFactory();
-					break;
-				case "failover":
-					factory = new FailoverTransportFactory();
-					break;
-				case "mock":
-					factory = new MockTransportFactory();
-					break;
-				default:
-
-                    // Types are easier lets check them first.
-                    if(TransportFactory.schemeToTypeName.ContainsKey(scheme))
-                    {
-                        Type objectType = schemeToTypeName[scheme];
-                        factory = CreateTransportByObjectType(objectType);
-                        break;
-                    }
-
-                    // Now we can look for Class names, may have to search lots of assemblies
-                    // for this one.
-                    if(TransportFactory.schemeToClassName.ContainsKey(scheme))
-                    {
-                        String className = schemeToClassName[scheme];
-                        factory = CreateTransportByClassName(className);
-                        break;
-                    }
-
-					throw new NMSConnectionException(String.Format("The transport {0} is not supported.", scheme));
-				}
+                factory = NewInstance(scheme.ToLower());
 			}
 			catch(NMSConnectionException)
 			{
@@ -168,50 +109,42 @@ namespace Apache.NMS.ActiveMQ.Transport
 			return factory;
 		}
 
-        private static ITransportFactory CreateTransportByObjectType(Type objectType)
+        private static ITransportFactory NewInstance(string scheme)
         {
-            Tracer.Debug("Attempting to create a Transport by its Object Type: " + objectType.FullName);
-
             try
             {
-                return Activator.CreateInstance(objectType) as ITransportFactory;
+                Type factoryType = FindTransportFactory(scheme);
+
+                if(factoryType == null)
+                {
+                    throw new Exception("NewInstance failed to find a match for id = " + scheme);
+                }
+
+                return (ITransportFactory) Activator.CreateInstance(factoryType);
             }
-            catch
+            catch(Exception ex)
             {
-                throw new NMSConnectionException("Could not create the transport with type name: " + objectType);
+                Tracer.WarnFormat("NewInstance failed to create an ITransportFactory with error: {1}", ex.Message);
+                throw;
             }
         }
 
-        private static ITransportFactory CreateTransportByClassName(String className)
+        private static Type FindTransportFactory(string scheme)
         {
-            Tracer.Debug("Attempting to create a Transport by its Class Name: " + className);
+            if(TRANSPORT_FACTORY_TYPES.ContainsKey(scheme))
+            {
+                return TRANSPORT_FACTORY_TYPES[scheme];
+            }
 
             try
             {
-                Assembly assembly = Assembly.GetExecutingAssembly();
-                Type type = assembly.GetType(className, false);
-
-                if(type == null)
-                {
-                    Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-                    foreach(Assembly dll in loadedAssemblies)
-                    {
-                        Tracer.DebugFormat("Checking assembly {0} for class named {1}.", dll.FullName, className);
-                        type = dll.GetType(className, false);
-
-                        if(type != null)
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                return Activator.CreateInstance(type) as ITransportFactory;
+                Type factoryType = FACTORY_FINDER.FindFactoryType(scheme);
+                TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+                return factoryType;
             }
             catch
             {
-                throw new NMSConnectionException("Could not create the transport with type name: " + className);
+                throw new NMSConnectionException("Failed to find Factory for Transport type: " + scheme);
             }
         }
 	}

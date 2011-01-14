@@ -19,11 +19,13 @@ using System;
 using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
+    [ActiveMQTransportFactory("tcp")]
     public class TcpTransportFactory : ITransportFactory
     {
         public TcpTransportFactory()

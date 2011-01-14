@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,24 +16,21 @@
  */
 
 using System;
-using System.Net.Sockets;
+
 using Apache.NMS.ActiveMQ.Util;
 
-namespace Apache.NMS.ActiveMQ.Transport.Tcp
+namespace Apache.NMS.ActiveMQ.Transport
 {
-    [ActiveMQTransportFactory("tcpfaulty")]
-	public class TcpFaultyTransportFactory : TcpTransportFactory
-	{        
-        public TcpFaultyTransportFactory() : base()
+    /// <summary>
+    /// Attribute that decorates ITransportFactory implementations to allow
+    /// the TransportFactory to find all the available factories dynamically.
+    /// </summary>
+
+    public class ActiveMQTransportFactoryAttribute : FactoryAttribute
+    {
+        public ActiveMQTransportFactoryAttribute(string scheme) : base(scheme)
         {
         }
-
-		protected override ITransport DoCreateTransport(Uri location, Socket socket, IWireFormat wireFormat )
-		{
-            Tracer.Debug("Creating new instance of the TcpFaulty Transport.");
-			TcpFaultyTransport transport = new TcpFaultyTransport(location, socket, wireFormat);
-            
-            return transport;
-		}		
-	}
+    }
 }
+
