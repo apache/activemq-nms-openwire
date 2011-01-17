@@ -890,7 +890,15 @@ namespace Apache.NMS.ActiveMQ
 
             this.brokerInfoReceived.countDown();
 
-            foreach(Session session in this.sessions)
+            IList sessionsCopy = null;
+            lock(this.sessions.SyncRoot)
+            {
+                sessionsCopy = new ArrayList(this.sessions);
+            }
+
+            // Use a copy so we don't concurrently modify the Sessions list if the
+            // client is closing at the same time.
+            foreach(Session session in sessionsCopy)
             {
                 try
                 {
