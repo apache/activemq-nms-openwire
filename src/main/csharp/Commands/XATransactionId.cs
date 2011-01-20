@@ -56,8 +56,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             return GetType().Name + "[ " + 
                 "FormatId = " + FormatId + ", " + 
-                "GlobalTransactionId = " + GlobalTransactionId + ", " + 
-                "BranchQualifier = " + BranchQualifier + " ]";
+                "GlobalTransactionId = " + System.Text.ASCIIEncoding.ASCII.GetString(GlobalTransactionId) + ", " + 
+                "BranchQualifier = " + System.Text.ASCIIEncoding.ASCII.GetString(BranchQualifier) + " ]";
         }
 
         public int FormatId
@@ -105,11 +105,11 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
                 return false;
             }
-            if(!Equals(this.GlobalTransactionId, that.GlobalTransactionId))
+            if(!ArrayEquals(this.GlobalTransactionId, that.GlobalTransactionId))
             {
                 return false;
             }
-            if(!Equals(this.BranchQualifier, that.BranchQualifier))
+            if(!ArrayEquals(this.BranchQualifier, that.BranchQualifier))
             {
                 return false;
             }

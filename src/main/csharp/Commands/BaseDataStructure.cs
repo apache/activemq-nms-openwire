@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 using System;
+using System.Collections.Generic;
+
 using Apache.NMS.ActiveMQ.OpenWire;
 
 namespace Apache.NMS.ActiveMQ.Commands
@@ -81,5 +83,26 @@ namespace Apache.NMS.ActiveMQ.Commands
 			// if we had any.
 			return this.MemberwiseClone();
 		}
+
+
+        internal static bool ArrayEquals<T>(T[] a, T[] b) where T : IEquatable<T>
+        {
+            if(a.Length != b.Length)
+            {
+                return false;
+            }
+
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+
+            for(int i = 0; i < a.Length; i++)
+            {
+                if(!comparer.Equals(a[i], b[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 	}
 }

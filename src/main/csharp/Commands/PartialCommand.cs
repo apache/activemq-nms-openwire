@@ -55,7 +55,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             return GetType().Name + "[ " + 
                 "CommandId = " + CommandId + ", " + 
-                "Data = " + Data + " ]";
+                "Data = " + System.Text.ASCIIEncoding.ASCII.GetString(Data) + " ]";
         }
 
         public int CommandId
