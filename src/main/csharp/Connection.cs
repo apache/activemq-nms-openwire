@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
@@ -73,6 +74,7 @@ namespace Apache.NMS.ActiveMQ
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
         private readonly IdGenerator clientIdGenerator;
         private volatile CountDownLatch transportInterruptionProcessingComplete;
+        private volatile CountDownLatch asyncExceptionHandlerComplete;
         private readonly MessageTransformation messageTransformation;
 
         public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
@@ -524,8 +526,16 @@ namespace Apache.NMS.ActiveMQ
 
                 try
                 {
-                    Tracer.Info("Closing Connection.");
+                    Tracer.Info("Connection.Close(): Closing Connection Now.");
                     this.closing.Value = true;
+
+                    // Wait for an async exception event to complete
+                    CountDownLatch latch = this.asyncExceptionHandlerComplete;
+                    if (latch != null)
+                    {
+                        latch.await();
+                    }
+
                     lock(sessions.SyncRoot)
                     {
                         foreach(Session session in sessions)
@@ -863,10 +873,13 @@ namespace Apache.NMS.ActiveMQ
 
         internal void OnException(Exception error)
         {
+            // Will fire an exception listener callback if there's any set.
             OnAsyncException(error);
 
             if(!this.closing.Value && !this.closed.Value)
             {
+                this.asyncExceptionHandlerComplete = new CountDownLatch(1);
+
                 // Perform the actual work in another thread to avoid lock contention
                 // and allow the caller to continue on in its error cleanup.
                 ThreadPool.QueueUserWorkItem(AsyncOnExceptionHandler, error);
@@ -909,6 +922,8 @@ namespace Apache.NMS.ActiveMQ
                     Tracer.Debug("Caught Exception While disposing of Sessions: " + ex);
                 }
             }
+
+            this.asyncExceptionHandlerComplete.countDown();
         }
 
         private void MarkTransportFailed(Exception error)

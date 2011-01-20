@@ -27,6 +27,7 @@ namespace Apache.NMS.ActiveMQ
         public NetTxSession(Connection connection, SessionId id)
             : base(connection, id, AcknowledgementMode.AutoAcknowledge)
         {
+            TransactionContext.CheckForAndRecoverFailedTransactions();
         }
 
         /// <summary>
