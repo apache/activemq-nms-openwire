@@ -24,6 +24,7 @@ using System.Net;
 using System.Transactions;
 using System.Collections;
 using System.Collections.Generic;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
@@ -202,7 +203,7 @@ namespace Apache.NMS.ActiveMQ
 
         public bool InNetTransaction
         {
-            get{ return this.currentEnlistment != null; }
+            get{ return this.transactionId != null && this.transactionId is XATransactionId; }
         }
 
         public void Begin(Transaction transaction)
@@ -349,6 +350,12 @@ namespace Apache.NMS.ActiveMQ
             {
                 this.currentEnlistment = null;
                 this.transactionId = null;
+
+                CountDownLatch latch = this.recoveryComplete;
+                if(latch != null)
+                {
+                    latch.countDown();
+                }
             }
         }
 
@@ -433,6 +440,12 @@ namespace Apache.NMS.ActiveMQ
             {
                 this.currentEnlistment = null;
                 this.transactionId = null;
+
+                CountDownLatch latch = this.recoveryComplete;
+                if (latch != null)
+                {
+                    latch.countDown();
+                }
             }
         }
 
@@ -470,6 +483,12 @@ namespace Apache.NMS.ActiveMQ
             {
                 this.currentEnlistment = null;
                 this.transactionId = null;
+
+                CountDownLatch latch = this.recoveryComplete;
+                if (latch != null)
+                {
+                    latch.countDown();
+                }
             }
         }
 
@@ -477,7 +496,8 @@ namespace Apache.NMS.ActiveMQ
 
         #region Distributed Transaction Recovery Bits
 
-        private object logFileLock = new object();
+        private readonly object logFileLock = new object();
+	    private volatile CountDownLatch recoveryComplete = null;
 
         /// <summary>
         /// Should be called from NetTxSession when created to check if any TX
@@ -514,10 +534,15 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.DebugFormat("Found a matching TX on Broker to stored Id: {0} reenlisting.", xid);
 
+                    this.recoveryComplete = new CountDownLatch(1);
+
                     // Reenlist the recovered transaction with the TX Manager.
                     this.transactionId = xid;
                     this.currentEnlistment = TransactionManager.Reenlist(ResourceManagerGuid, info.TxRecoveryInfo, this);
                     TransactionManager.RecoveryComplete(ResourceManagerGuid);
+
+                    this.recoveryComplete.await();
+
                     return;
                 }
             }
@@ -535,10 +560,6 @@ namespace Apache.NMS.ActiveMQ
             private byte[] branchId;
             private int formatId;
 
-            public RecoveryInformation()
-            {
-            }
-
             public RecoveryInformation(XATransactionId xaId, byte[] recoveryInfo)
             {
                 this.Xid = xaId;
@@ -548,6 +569,7 @@ namespace Apache.NMS.ActiveMQ
             public byte[] TxRecoveryInfo
             {
                 get { return this.txRecoveryInfo; }
+                set { this.txRecoveryInfo = value; }
             }
 
             public XATransactionId Xid
@@ -700,7 +722,7 @@ namespace Apache.NMS.ActiveMQ
             get { return GuidFromId(this.connection.ResourceManagerId); }
         }
 
-        private Guid GuidFromId(string id)
+        private static Guid GuidFromId(string id)
         {
             // Remove the ID: prefix, that's non-unique to be sure
             string resId = id.TrimStart("ID:".ToCharArray());
@@ -717,7 +739,7 @@ namespace Apache.NMS.ActiveMQ
             return new Guid(a, b, c, d);
         }
 
-        private string IdFromGuid(Guid guid)
+        private static string IdFromGuid(Guid guid)
         {
             byte[] bytes = guid.ToByteArray();
 
