@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string keyStoreName;
         private string keyStoreLocation;
         private bool acceptInvalidBrokerCert = false;
-        
+
         private SslStream sslStream;
 
         public SslTransport(Uri location, Socket socket, IWireFormat wireFormat) :
@@ -82,7 +82,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             get { return this.clientCertPassword; }
             set { this.clientCertPassword = value; }
         }
-       
+
         /// <summary>
         /// Indicates if the SslTransport should ignore any errors in the supplied Broker
         /// certificate and connect anyway, this is useful in testing with a default AMQ
@@ -114,7 +114,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             }
 
             this.sslStream = new SslStream(
-                new NetworkStream(this.socket), 
+                new NetworkStream(this.socket),
                 false,
                 new RemoteCertificateValidationCallback(ValidateServerCertificate),
                 new LocalCertificateSelectionCallback(SelectLocalCertificate) );
@@ -126,7 +126,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                 Tracer.Debug("Authorizing as Client for Server: " + remoteCertName);
                 sslStream.AuthenticateAsClient(remoteCertName, LoadCertificates(), SslProtocols.Default, false);
                 Tracer.Debug("Server is Authenticated = " + sslStream.IsAuthenticated);
-                Tracer.Debug("Server is Encrypted = " + sslStream.IsEncrypted);                
+                Tracer.Debug("Server is Encrypted = " + sslStream.IsEncrypted);
             }
             catch(Exception e)
             {
@@ -176,13 +176,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             // Configuration may or may not allow us to connect with an invliad broker cert.
             return AcceptInvalidBrokerCert;
         }
-        
+
         private X509Certificate SelectLocalCertificate(object sender,
-                                                       string targetHost, 
-                                                       X509CertificateCollection localCertificates, 
-                                                       X509Certificate remoteCertificate, 
+                                                       string targetHost,
+                                                       X509CertificateCollection localCertificates,
+                                                       X509Certificate remoteCertificate,
                                                        string[] acceptableIssuers)
-        {    
+        {
             Tracer.DebugFormat("Client is selecting a local certificate from {0} possibilities.", localCertificates.Count);
 
             if(localCertificates.Count == 1)
@@ -242,12 +242,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                 }
 
                 X509Store store = new X509Store(name, location);
-
                 collection = store.Certificates;
+                store.Close();
             }
 
             return collection;
         }
-        
+
     }
 }
