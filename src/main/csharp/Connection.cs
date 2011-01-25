@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Util;
@@ -74,8 +75,8 @@ namespace Apache.NMS.ActiveMQ
         private ICompressionPolicy compressionPolicy = new CompressionPolicy();
         private readonly IdGenerator clientIdGenerator;
         private volatile CountDownLatch transportInterruptionProcessingComplete;
-        private volatile CountDownLatch asyncExceptionHandlerComplete;
         private readonly MessageTransformation messageTransformation;
+        private readonly ThreadPoolExecutor executor = new ThreadPoolExecutor();
 
         public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
         {
@@ -529,13 +530,6 @@ namespace Apache.NMS.ActiveMQ
                     Tracer.Info("Connection.Close(): Closing Connection Now.");
                     this.closing.Value = true;
 
-                    // Wait for an async exception event to complete
-                    CountDownLatch latch = this.asyncExceptionHandlerComplete;
-                    if (latch != null)
-                    {
-                        latch.await();
-                    }
-
                     lock(sessions.SyncRoot)
                     {
                         foreach(Session session in sessions)
@@ -551,6 +545,8 @@ namespace Apache.NMS.ActiveMQ
                         ShutdownInfo shutdowninfo = new ShutdownInfo();
                         transport.Oneway(shutdowninfo);
                     }
+
+                    executor.Shutdown();
 
                     Tracer.Info("Disposing of the Transport.");
                     transport.Dispose();
@@ -851,7 +847,7 @@ namespace Apache.NMS.ActiveMQ
 
                     // Called in another thread so that processing can continue
                     // here, ensures no lock contention.
-                    ThreadPool.QueueUserWorkItem(AsyncCallExceptionListener, e);
+                    executor.QueueUserWorkItem(AsyncCallExceptionListener, e);
                 }
                 else
                 {
@@ -878,11 +874,9 @@ namespace Apache.NMS.ActiveMQ
 
             if(!this.closing.Value && !this.closed.Value)
             {
-                this.asyncExceptionHandlerComplete = new CountDownLatch(1);
-
                 // Perform the actual work in another thread to avoid lock contention
                 // and allow the caller to continue on in its error cleanup.
-                ThreadPool.QueueUserWorkItem(AsyncOnExceptionHandler, error);
+                executor.QueueUserWorkItem(AsyncOnExceptionHandler, error);
             }
         }
 
@@ -922,8 +916,6 @@ namespace Apache.NMS.ActiveMQ
                     Tracer.Debug("Caught Exception While disposing of Sessions: " + ex);
                 }
             }
-
-            this.asyncExceptionHandlerComplete.countDown();
         }
 
         private void MarkTransportFailed(Exception error)
