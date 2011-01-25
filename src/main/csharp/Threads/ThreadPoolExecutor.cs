@@ -42,8 +42,8 @@ namespace Apache.NMS.ActiveMQ.Threads
         /// </summary>
         internal class Future
         {
-            private WaitCallback callback;
-            private object callbackArg;
+            private readonly WaitCallback callback;
+            private readonly object callbackArg;
 
             public Future(WaitCallback callback, object arg)
             {
@@ -58,7 +58,13 @@ namespace Apache.NMS.ActiveMQ.Threads
                     throw new Exception("Future executed with null WaitCallback");
                 }
 
-                this.callback(callbackArg);
+                try
+                {
+                    this.callback(callbackArg);
+                }
+                catch
+                {
+                }
             }
         }
 
