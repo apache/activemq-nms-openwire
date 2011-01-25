@@ -93,6 +93,7 @@
     <Compile Include="src\test\csharp\RollbackRedeliveryTest.cs" />
     <Compile Include="src\test\csharp\Threads\CompositeTaskRunnerTest.cs" />
     <Compile Include="src\test\csharp\Threads\DedicatedTaskRunnerTest.cs" />
+    <Compile Include="src\test\csharp\Threads\ThreadPoolExecutorTest.cs" />
     <Compile Include="src\test\csharp\Transport\failover\FailoverTransportTest.cs" />
     <Compile Include="src\test\csharp\Transport\Inactivity\InactivityMonitorTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />

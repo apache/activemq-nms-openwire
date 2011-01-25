@@ -960,6 +960,7 @@
     <Compile Include="src\main\csharp\Threads\Task.cs" />
     <Compile Include="src\main\csharp\Threads\TaskRunner.cs" />
     <Compile Include="src\main\csharp\Threads\TaskRunnerFactory.cs" />
+    <Compile Include="src\main\csharp\Threads\ThreadPoolExecutor.cs" />
     <Compile Include="src\main\csharp\TransactionContext.cs">
       <SubType>Code</SubType>
     </Compile>
