@@ -30,13 +30,13 @@ namespace Apache.NMS.ActiveMQ.Transactions
     {
         private string location;
         private string resourceManagerId;
-        private object syncRoot = new object();
+        private readonly object syncRoot = new object();
 
         public RecoveryFileLogger()
         {
             // Set the path by default to the location of the executing assembly.
             // May need to change this to current working directory, not sure.
-            this.location = Assembly.GetExecutingAssembly().Location;
+            this.location = "";
         }
 
         /// <summary>
@@ -70,12 +70,11 @@ namespace Apache.NMS.ActiveMQ.Transactions
             {
                 lock (syncRoot)
                 {
-                    string filename = Location + ResourceManagerId + ".bin";
                     RecoveryInformation info = new RecoveryInformation(xid, recoveryInformation);
-                    Tracer.Debug("Serializing Recovery Info to file: " + filename);
+                    Tracer.Debug("Serializing Recovery Info to file: " + Filename);
 
                     IFormatter formatter = new BinaryFormatter();
-                    using (FileStream recoveryLog = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write))
+                    using (FileStream recoveryLog = new FileStream(Filename, FileMode.OpenOrCreate, FileAccess.Write))
                     {
                         formatter.Serialize(recoveryLog, info);
                     }
@@ -93,7 +92,7 @@ namespace Apache.NMS.ActiveMQ.Transactions
             KeyValuePair<XATransactionId, byte[]>[] result = new KeyValuePair<XATransactionId, byte[]>[0];
             RecoveryInformation info = TryOpenRecoveryInfoFile();
 
-            if(result != null)
+            if (info != null)
             {
                 result = new KeyValuePair<XATransactionId, byte[]>[1];
                 result[0] = new KeyValuePair<XATransactionId, byte[]>(info.Xid, info.TxRecoveryInfo);
@@ -106,12 +105,10 @@ namespace Apache.NMS.ActiveMQ.Transactions
         {
             lock (syncRoot)
             {
-                string filename = Location + ResourceManagerId + ".bin";
-
                 try
                 {
-                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + filename);
-                    File.Delete(filename);
+                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + Filename);
+                    File.Delete(Filename);
                 }
                 catch(Exception ex)
                 {
@@ -125,12 +122,10 @@ namespace Apache.NMS.ActiveMQ.Transactions
         {
             lock (syncRoot)
             {
-                string filename = Location + ResourceManagerId + ".bin";
-
                 try
                 {
-                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + filename);
-                    File.Delete(filename);
+                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + Filename);
+                    File.Delete(Filename);
                 }
                 catch(Exception ex)
                 {
@@ -146,6 +141,11 @@ namespace Apache.NMS.ActiveMQ.Transactions
         }
 
         #region Recovery File Opeations
+
+        private string Filename
+        {
+            get { return Location + ResourceManagerId + ".bin"; }
+        }
 
         [Serializable]
         private sealed class RecoveryInformation
