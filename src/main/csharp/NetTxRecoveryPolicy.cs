@@ -33,13 +33,9 @@ namespace Apache.NMS.ActiveMQ
         private static readonly FactoryFinder<RecoveryLoggerFactoryAttribute, IRecoveryLoggerFactory> FACTORY_FINDER =
             new FactoryFinder<RecoveryLoggerFactoryAttribute, IRecoveryLoggerFactory>();
 
-        private static IDictionary<String, Type> LOGGER_FACTORY_TYPES = new Dictionary<String, Type>();
+        private static readonly IDictionary<String, Type> LOGGER_FACTORY_TYPES = new Dictionary<String, Type>();
 
-        private IRecoveryLogger recoveryLogger;
-
-        public NetTxRecoveryPolicy()
-        {
-        }
+        private IRecoveryLogger recoveryLogger = new RecoveryFileLogger();
 
         public void RegisterRecoveryLoggerFactory(string scheme, Type factoryType)
         {
