@@ -16,8 +16,6 @@
  */
 
 using System;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Text;
 using System.Net;
@@ -26,6 +24,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Transactions;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -261,6 +260,11 @@ namespace Apache.NMS.ActiveMQ
 				
                 BeforeEnd();
 
+                // Before sending the request to the broker, log the recovery bits, if
+                // this fails we can't prepare and the TX should be rolled back.
+                RecoveryLogger.LogRecoveryInfo(this.transactionId as XATransactionId,
+                                               preparingEnlistment.RecoveryInformation());
+
 	            // Now notify the broker that a new XA'ish transaction has started.
 	            TransactionInfo info = new TransactionInfo();
 	            info.ConnectionId = this.session.Connection.ConnectionId;
@@ -280,6 +284,10 @@ namespace Apache.NMS.ActiveMQ
                     this.transactionId = null;
                     this.currentEnlistment = null;
 
+                    // Read Only means there's nothing to recover because there was no
+                    // change on the broker.
+                    RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+
                     // if server responds that nothing needs to be done, then reply prepared
                     // but clear the current state data so we appear done to the commit method.
                     preparingEnlistment.Prepared();
@@ -293,8 +301,6 @@ namespace Apache.NMS.ActiveMQ
 
                     // If work finished correctly, reply prepared
                     preparingEnlistment.Prepared();
-
-                    StoreRecoveryInformation(preparingEnlistment.RecoveryInformation());
                 }
             }
             catch(Exception ex)
@@ -302,7 +308,7 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Prepare failed with error: " + ex.Message);
                 AfterRollback();
                 preparingEnlistment.ForceRollback();
-                ClearStoredRecoveryInformation();
+                RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
             }
         }
 
@@ -325,7 +331,7 @@ namespace Apache.NMS.ActiveMQ
 
                     Tracer.Debug("Transaction Commit Reports Done: ");
 
-                    ClearStoredRecoveryInformation();
+                    RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
                     // if server responds that nothing needs to be done, then reply done.
                     enlistment.Done();
@@ -423,7 +429,7 @@ namespace Apache.NMS.ActiveMQ
 
                 Tracer.Debug("Transaction Rollback Reports Done: ");
 
-                ClearStoredRecoveryInformation();
+                RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
                 // if server responds that nothing needs to be done, then reply done.
                 enlistment.Done();
@@ -472,7 +478,7 @@ namespace Apache.NMS.ActiveMQ
 
                 Tracer.Debug("InDoubt Transaction Rollback Reports Done: ");
 
-                ClearStoredRecoveryInformation();
+                RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
                 // if server responds that nothing needs to be done, then reply done.
                 enlistment.Done();
@@ -496,7 +502,6 @@ namespace Apache.NMS.ActiveMQ
 
         #region Distributed Transaction Recovery Bits
 
-        private readonly object logFileLock = new object();
 	    private volatile CountDownLatch recoveryComplete = null;
 
         /// <summary>
@@ -508,8 +513,11 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public void CheckForAndRecoverFailedTransactions()
         {
-            RecoveryInformation info = TryOpenRecoveryInfoFile();
-            if (info == null)
+            // initialize the logger with the current Resource Manager Id
+            RecoveryLogger.ResourceManagerId = ResourceManagerId;
+
+            KeyValuePair<XATransactionId, byte[]>[] localRecoverables = RecoveryLogger.GetRecoverables();
+            if (localRecoverables.Length == 0)
             {
                 Tracer.Debug("Did not detect any open DTC transaction records on disk.");
                 // No local data so anything stored on the broker can't be recovered here.
@@ -522,109 +530,43 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Did not detect any recoverable transactions at Broker.");
                 // Broker has no recoverable data so nothing to do here, delete the 
                 // old recovery log as its stale.
-                ClearStoredRecoveryInformation();
+                RecoveryLogger.Purge();
                 return;
             }
 
-            XATransactionId xid = info.Xid;
+            //XATransactionId xid = info.Xid;
+
+            int matched = 0;
 
             foreach(XATransactionId recoverable in recoverables)
             {
-                if(xid.Equals(recoverable))
+                foreach(KeyValuePair<XATransactionId, byte[]> entry in localRecoverables)
                 {
-                    Tracer.DebugFormat("Found a matching TX on Broker to stored Id: {0} reenlisting.", xid);
+                    if(entry.Key.Equals(recoverable))
+                    {
+                        Tracer.DebugFormat("Found a matching TX on Broker to stored Id: {0} reenlisting.", entry.Key);
 
-                    this.recoveryComplete = new CountDownLatch(1);
+                        matched++;
 
-                    // Reenlist the recovered transaction with the TX Manager.
-                    this.transactionId = xid;
-                    this.currentEnlistment = TransactionManager.Reenlist(ResourceManagerGuid, info.TxRecoveryInfo, this);
-                    TransactionManager.RecoveryComplete(ResourceManagerGuid);
-
-                    this.recoveryComplete.await();
-
-                    return;
+                        // Reenlist the recovered transaction with the TX Manager.
+                        // TODO - Hack for now, we really only support one recoverable with this.
+                        this.transactionId = entry.Key;
+                        this.currentEnlistment = TransactionManager.Reenlist(ResourceManagerGuid, entry.Value, this);
+                    }
                 }
+            }
+
+            if(matched > 0)
+            {
+                this.recoveryComplete = new CountDownLatch(matched);
+                TransactionManager.RecoveryComplete(ResourceManagerGuid);
+                this.recoveryComplete.await();
+                return;
             }
 
             // The old recovery information doesn't match what's on the broker so we
             // should discard it as its stale now.
-            ClearStoredRecoveryInformation();
-        }
-
-        [Serializable]
-        private sealed class RecoveryInformation
-        {
-            private byte[] txRecoveryInfo;
-            private byte[] globalTxId;
-            private byte[] branchId;
-            private int formatId;
-
-            public RecoveryInformation(XATransactionId xaId, byte[] recoveryInfo)
-            {
-                this.Xid = xaId;
-                this.txRecoveryInfo = recoveryInfo;
-            }
-
-            public byte[] TxRecoveryInfo
-            {
-                get { return this.txRecoveryInfo; }
-                set { this.txRecoveryInfo = value; }
-            }
-
-            public XATransactionId Xid
-            {
-                get
-                {
-                    XATransactionId xid = new XATransactionId();
-                    xid.BranchQualifier = this.branchId;
-                    xid.GlobalTransactionId = this.globalTxId;
-                    xid.FormatId = this.formatId;
-
-                    return xid;
-                }
-
-                set
-                {
-                    this.branchId = value.BranchQualifier;
-                    this.globalTxId = value.GlobalTransactionId;
-                    this.formatId = value.FormatId;
-                }
-            }
-        }
-
-        private RecoveryInformation TryOpenRecoveryInfoFile()
-        {
-            string filename = ResourceManagerId + ".bin";
-            RecoveryInformation result = null;
-
-            Tracer.Debug("Checking for Recoverable Transactions filename: " + filename);
-
-            lock (logFileLock)
-            {
-                try
-                {
-                    if (!File.Exists(filename))
-                    {
-                        return null;
-                    }
-
-                    using(FileStream recoveryLog = new FileStream(filename, FileMode.Open, FileAccess.Read))
-                    {
-                        Tracer.Debug("Found Recovery Log File: " + filename);
-                        IFormatter formatter = new BinaryFormatter();
-                        result = formatter.Deserialize(recoveryLog) as RecoveryInformation;
-                    }
-                }
-                catch(Exception ex)
-                {
-                    Tracer.InfoFormat("Error while opening Recovery file {0} error message: {1}", filename, ex.Message);
-                    // Nothing to restore.
-                    return null;
-                }
-            }
-
-            return result;
+            RecoveryLogger.Purge();
         }
 
         private XATransactionId[] TryRecoverBrokerTXIds()
@@ -659,118 +601,22 @@ namespace Apache.NMS.ActiveMQ
             return new XATransactionId[0];
         }
 
-        private void StoreRecoveryInformation(byte[] recoveryInfo)
-        {
-            if (recoveryInfo == null || recoveryInfo.Length == 0)
-            {
-                return;
-            }
-
-            try
-            {
-                lock (logFileLock)
-                {
-                    string filename = ResourceManagerId + ".bin";
-                    XATransactionId xid = this.transactionId as XATransactionId;
-
-                    RecoveryInformation info = new RecoveryInformation(xid, recoveryInfo);
-
-                    Tracer.Debug("Serializing Recovery Info to file: " + filename);
-
-                    IFormatter formatter = new BinaryFormatter();
-                    using (FileStream recoveryLog = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write))
-                    {
-                        formatter.Serialize(recoveryLog, info);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Tracer.Error("Error while storing TX Recovery Info, message: " + ex.Message);
-                throw;
-            }
-        }
-
-        private void ClearStoredRecoveryInformation()
-        {
-            lock (logFileLock)
-            {
-                string filename = ResourceManagerId + ".bin";
-
-                try
-                {
-                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + filename);
-                    File.Delete(filename);
-                }
-                catch(Exception ex)
-                {
-                    Tracer.Debug("Caught Exception while removing stale RecoveryInfo file: " + ex.Message);
-                    return;
-                }
-            }
-        }
-
         #endregion
 
-        public string ResourceManagerId
+        internal IRecoveryLogger RecoveryLogger
         {
-            get { return GuidFromId(this.connection.ResourceManagerId).ToString(); }
+            get { return (this.connection as NetTxConnection).RecoveryPolicy.RecoveryLogger; }
+        }
+
+        internal string ResourceManagerId
+        {
+            get { return (this.connection as NetTxConnection).ResourceManagerGuid.ToString(); }
         }
 
         internal Guid ResourceManagerGuid
         {
-            get { return GuidFromId(this.connection.ResourceManagerId); }
+            get { return (this.connection as NetTxConnection).ResourceManagerGuid; }
         }
 
-        private static Guid GuidFromId(string id)
-        {
-            // Remove the ID: prefix, that's non-unique to be sure
-            string resId = id.TrimStart("ID:".ToCharArray());
-
-            // Remaing parts should be host-port-timestamp-instance:sequence
-            string[] parts = resId.Split(":-".ToCharArray());
-
-            // We don't use the hostname here, just the remaining bits.
-            int a = Int32.Parse(parts[1]);
-            short b = Int16.Parse(parts[3]);
-            short c = Int16.Parse(parts[4]);
-            byte[] d = System.BitConverter.GetBytes(Int64.Parse(parts[2]));
-
-            return new Guid(a, b, c, d);
-        }
-
-        private static string IdFromGuid(Guid guid)
-        {
-            byte[] bytes = guid.ToByteArray();
-
-            int port = System.BitConverter.ToInt32(bytes, 0);
-            int instance = System.BitConverter.ToInt16(bytes, 4);
-            int sequence = System.BitConverter.ToInt16(bytes, 6);
-            long timestamp = System.BitConverter.ToInt64(bytes, 8);
-
-            StringBuilder builder = new StringBuilder("ID:");
-
-            string hostname = "localhost";
-
-            try
-            {
-                hostname = Dns.GetHostName();
-            }
-            catch
-            {
-            }
-
-            builder.Append(hostname);
-            builder.Append("-");
-            builder.Append(port);
-            builder.Append("-");
-            builder.Append(timestamp);
-            builder.Append("-");
-            builder.Append(instance);
-            builder.Append(":");
-            builder.Append(sequence);
-
-            return builder.ToString();
-        }
     }
 }

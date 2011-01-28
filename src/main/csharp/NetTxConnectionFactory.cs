@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Collections.Specialized;
 using Apache.NMS;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Transport;
@@ -24,6 +25,8 @@ namespace Apache.NMS.ActiveMQ
 {
     public class NetTxConnectionFactory : ConnectionFactory, INetTxConnectionFactory
     {
+        private NetTxRecoveryPolicy txRecoveryPolicy;
+
         public NetTxConnectionFactory() : base(GetDefaultBrokerUrl())
         {
         }
@@ -59,9 +62,27 @@ namespace Apache.NMS.ActiveMQ
 
         protected override Connection CreateActiveMQConnection(ITransport transport)
         {
-            return new NetTxConnection(this.BrokerUri, transport, this.ClientIdGenerator);
+            NetTxConnection connection = new NetTxConnection(this.BrokerUri, transport, this.ClientIdGenerator);
+
+            Uri brokerUri = this.BrokerUri;
+
+            // Set properties on the Receovery Policy using parameters prefixed with "nms.RecoveryPolicy."
+            if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
+            {
+                string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);
+                StringDictionary options = URISupport.ParseQuery(query);
+                options = URISupport.GetProperties(options, "nms.RecoveryPolicy.");
+                URISupport.SetProperties(this.txRecoveryPolicy, options);
+            }
+
+            return connection;
         }
 
+        public NetTxRecoveryPolicy TxRecoveryPolicy
+        {
+            get { return this.txRecoveryPolicy; }
+            set { this.txRecoveryPolicy = value; }
+        }
     }
 }
 
