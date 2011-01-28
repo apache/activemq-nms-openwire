@@ -554,11 +554,13 @@ namespace Apache.NMS.ActiveMQ
 
                 foreach (KeyValuePair<XATransactionId, byte[]> recoverable in matches)
                 {
-                    TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
+                    this.transactionId = recoverable.Key;
+                    this.currentEnlistment = 
+                        TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
                 }
 
-                TransactionManager.RecoveryComplete(ResourceManagerGuid);
                 this.recoveryComplete.await();
+                TransactionManager.RecoveryComplete(ResourceManagerGuid);
                 return;
             }
 
