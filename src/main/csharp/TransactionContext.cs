@@ -534,9 +534,7 @@ namespace Apache.NMS.ActiveMQ
                 return;
             }
 
-            //XATransactionId xid = info.Xid;
-
-            int matched = 0;
+            List<KeyValuePair<XATransactionId, byte[]>> matches = new List<KeyValuePair<XATransactionId, byte[]>>();
 
             foreach(XATransactionId recoverable in recoverables)
             {
@@ -545,20 +543,20 @@ namespace Apache.NMS.ActiveMQ
                     if(entry.Key.Equals(recoverable))
                     {
                         Tracer.DebugFormat("Found a matching TX on Broker to stored Id: {0} reenlisting.", entry.Key);
-
-                        matched++;
-
-                        // Reenlist the recovered transaction with the TX Manager.
-                        // TODO - Hack for now, we really only support one recoverable with this.
-                        this.transactionId = entry.Key;
-                        this.currentEnlistment = TransactionManager.Reenlist(ResourceManagerGuid, entry.Value, this);
+                        matches.Add(entry);
                     }
                 }
             }
 
-            if(matched > 0)
+            if (matches.Count != 0)
             {
-                this.recoveryComplete = new CountDownLatch(matched);
+                this.recoveryComplete = new CountDownLatch(matches.Count);
+
+                foreach (KeyValuePair<XATransactionId, byte[]> recoverable in matches)
+                {
+                    TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
+                }
+
                 TransactionManager.RecoveryComplete(ResourceManagerGuid);
                 this.recoveryComplete.await();
                 return;
