@@ -25,7 +25,7 @@ namespace Apache.NMS.ActiveMQ
 {
     public class NetTxConnectionFactory : ConnectionFactory, INetTxConnectionFactory
     {
-        private NetTxRecoveryPolicy txRecoveryPolicy;
+        private NetTxRecoveryPolicy recoveryPolicy = new NetTxRecoveryPolicy();
 
         public NetTxConnectionFactory() : base(GetDefaultBrokerUrl())
         {
@@ -72,16 +72,18 @@ namespace Apache.NMS.ActiveMQ
                 string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);
                 StringDictionary options = URISupport.ParseQuery(query);
                 options = URISupport.GetProperties(options, "nms.RecoveryPolicy.");
-                URISupport.SetProperties(this.txRecoveryPolicy, options);
+                URISupport.SetProperties(this.recoveryPolicy, options);
             }
+
+            connection.RecoveryPolicy = this.recoveryPolicy;
 
             return connection;
         }
 
-        public NetTxRecoveryPolicy TxRecoveryPolicy
+        public NetTxRecoveryPolicy RecoveryPolicy
         {
-            get { return this.txRecoveryPolicy; }
-            set { this.txRecoveryPolicy = value; }
+            get { return this.recoveryPolicy; }
+            set { this.recoveryPolicy = value; }
         }
     }
 }
