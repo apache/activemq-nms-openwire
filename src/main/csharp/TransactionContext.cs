@@ -511,10 +511,10 @@ namespace Apache.NMS.ActiveMQ
         /// still alive on the Broker it will be recovered, otherwise the stored 
         /// data should be cleared.
         /// </summary>
-        public void CheckForAndRecoverFailedTransactions()
+        public void InitializeDtcTxContext()
         {
             // initialize the logger with the current Resource Manager Id
-            RecoveryLogger.ResourceManagerId = ResourceManagerId;
+            RecoveryLogger.Initialize(ResourceManagerId);
 
             KeyValuePair<XATransactionId, byte[]>[] localRecoverables = RecoveryLogger.GetRecoverables();
             if (localRecoverables.Length == 0)

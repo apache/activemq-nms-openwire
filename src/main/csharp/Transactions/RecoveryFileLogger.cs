@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transactions
@@ -29,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Transactions
     public class RecoveryFileLogger : IRecoveryLogger
     {
         private string location;
+        private bool autoCreateLocation;
         private string resourceManagerId;
         private readonly object syncRoot = new object();
 
@@ -46,7 +48,6 @@ namespace Apache.NMS.ActiveMQ.Transactions
         public string ResourceManagerId
         {
             get { return this.resourceManagerId; }
-            set { this.resourceManagerId = value; }
         }
 
         /// <summary>
@@ -57,6 +58,49 @@ namespace Apache.NMS.ActiveMQ.Transactions
         {
             get { return this.location; }
             set { this.location = value; }
+        }
+
+        /// <summary>
+        /// Indiciate that the Logger should create and sibdirs of the
+        /// given location that don't currently exist.
+        /// </summary>
+        public bool AutoCreateLocation
+        {
+            get { return this.autoCreateLocation; }
+            set { this.autoCreateLocation = value; }
+        }
+
+        public void Initialize(string resourceManagerId)
+        {
+            this.resourceManagerId = resourceManagerId;
+
+            if(String.IsNullOrEmpty(location))
+            {
+                this.location = Directory.GetCurrentDirectory();
+            }
+            else
+            {
+                // Test if the location configured is valid.
+                if(!Directory.Exists(location))
+                {
+                    if(AutoCreateLocation)
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(Location);
+                        }
+                        catch(Exception ex)
+                        {
+                            Tracer.Error("Failed to create log directory: " + ex.Message);
+                            throw NMSExceptionSupport.Create(ex);
+                        }
+                    }
+                    else
+                    {
+                        throw new NMSException("Configured Recovery Log Location does not exist: " + location);
+                    }
+                }
+            }
         }
 
         public void LogRecoveryInfo(XATransactionId xid, byte[] recoveryInformation)
@@ -144,7 +188,7 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
         private string Filename
         {
-            get { return Location + ResourceManagerId + ".bin"; }
+            get { return Location + Path.DirectorySeparatorChar + ResourceManagerId + ".bin"; }
         }
 
         [Serializable]
@@ -190,30 +234,29 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
         private RecoveryInformation TryOpenRecoveryInfoFile()
         {
-            string filename = Location + ResourceManagerId + ".bin";
             RecoveryInformation result = null;
 
-            Tracer.Debug("Checking for Recoverable Transactions filename: " + filename);
+            Tracer.Debug("Checking for Recoverable Transactions filename: " + Filename);
 
             lock (syncRoot)
             {
                 try
                 {
-                    if (!File.Exists(filename))
+                    if (!File.Exists(Filename))
                     {
                         return null;
                     }
 
-                    using(FileStream recoveryLog = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                    using(FileStream recoveryLog = new FileStream(Filename, FileMode.Open, FileAccess.Read))
                     {
-                        Tracer.Debug("Found Recovery Log File: " + filename);
+                        Tracer.Debug("Found Recovery Log File: " + Filename);
                         IFormatter formatter = new BinaryFormatter();
                         result = formatter.Deserialize(recoveryLog) as RecoveryInformation;
                     }
                 }
                 catch(Exception ex)
                 {
-                    Tracer.InfoFormat("Error while opening Recovery file {0} error message: {1}", filename, ex.Message);
+                    Tracer.InfoFormat("Error while opening Recovery file {0} error message: {1}", Filename, ex.Message);
                     // Nothing to restore.
                     return null;
                 }

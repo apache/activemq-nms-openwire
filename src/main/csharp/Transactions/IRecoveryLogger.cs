@@ -30,6 +30,8 @@ namespace Apache.NMS.ActiveMQ.Transactions
     /// </summary>
     public interface IRecoveryLogger
     {
+        void Initialize(string resourceManagerId);
+
         void LogRecoveryInfo(XATransactionId xid, byte[] recoveryInformation);
 
         KeyValuePair<XATransactionId, byte[]>[] GetRecoverables();
@@ -38,7 +40,7 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
         string LoggerType{ get; }
 
-        string ResourceManagerId{ get; set; }
+        string ResourceManagerId{ get; }
 
         void Purge();
     }
