@@ -24,7 +24,7 @@ using NUnit.Framework;
 using Apache.NMS.ActiveMQ.Transactions;
 using Apache.NMS.ActiveMQ.Commands;
 
-namespace Apache.NMS.ActiveMQ.Transactions.Test
+namespace Apache.NMS.ActiveMQ.Test.Transactions
 {
     [TestFixture]
     public class RecoveryFileLoggerTest

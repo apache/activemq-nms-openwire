@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ
     /// Policy class used to configure the options associated with TX
     /// recovery.
     /// </summary>
-    public class NetTxRecoveryPolicy
+    public class NetTxRecoveryPolicy : ICloneable
     {
         private static readonly FactoryFinder<RecoveryLoggerFactoryAttribute, IRecoveryLoggerFactory> FACTORY_FINDER =
             new FactoryFinder<RecoveryLoggerFactoryAttribute, IRecoveryLoggerFactory>();
@@ -115,6 +115,11 @@ namespace Apache.NMS.ActiveMQ
                 throw new NMSException("Failed to find Factory for Recovery Logger type: " + scheme);
             }
         }
+
+        public Object Clone()
+        {
+            return this.MemberwiseClone();
+        }        
     }
 }
 

@@ -16,10 +16,13 @@
  */
 
 using System;
+using System.IO;
+
 using NUnit.Framework;
 using Apache.NMS.Test;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ;
+using Apache.NMS.ActiveMQ.Transactions;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
@@ -191,6 +194,71 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.AreEqual(sendAcksAsync, connection.SendAcksAsync);
                 Assert.AreEqual(dispatchAsync, connection.DispatchAsync);
             }
+        }
+
+        [Test]
+        public void TestConfigureRecoveryPolicyLoggerType(
+            [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=file")]
+            string baseConnectionURI)
+        {
+            INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
+
+            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            {
+                NetTxConnection netTxConnection = connection as NetTxConnection;
+
+                Assert.IsNotNull(netTxConnection);
+                NetTxRecoveryPolicy policy = netTxConnection.RecoveryPolicy;
+
+                Assert.AreEqual("file", policy.RecoveryLoggerType);
+
+                RecoveryFileLogger logger = policy.RecoveryLogger as RecoveryFileLogger;
+
+                Assert.IsNotNull(logger);
+                Assert.AreEqual(Directory.GetCurrentDirectory(), logger.Location);
+            }
+        }
+
+        [Test]
+        [TestCase("/var/log/nms/recovery/", true)]
+        [TestCase("/var/temp/log/nms/recovery/", false)]
+        public void TestConfigureRecoveryPolicyLogger(string location, bool autoCreate)
+        {
+            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
+                                           "?nms.RecoveryPolicy.RecoveryLoggerType=file" +
+                                           "&nms.RecoveryPolicy.RecoveryLogger.Location={0}" +
+                                           "&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={1}",
+                                           location, autoCreate);
+
+            INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
+
+            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            {
+                NetTxConnection netTxConnection = connection as NetTxConnection;
+
+                Assert.IsNotNull(netTxConnection);
+                NetTxRecoveryPolicy policy = netTxConnection.RecoveryPolicy;
+
+                Assert.AreEqual("file", policy.RecoveryLoggerType);
+
+                RecoveryFileLogger logger = policy.RecoveryLogger as RecoveryFileLogger;
+
+                Assert.IsNotNull(logger);
+                Assert.AreEqual(location, logger.Location);
+                Assert.AreEqual(autoCreate, logger.AutoCreateLocation);
+            }
+        }
+
+        [Test]
+        [ExpectedException( "Apache.NMS.NMSException" )]
+        public void TestConfigureRecoveryPolicyLoggerTypeWithInvalidType(
+            [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=invalid")]
+            string baseConnectionURI)
+        {
+            INetTxConnectionFactory factory =
+                new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
+
+            using(IConnection connection = factory.CreateConnection()){}
         }
     }
 }

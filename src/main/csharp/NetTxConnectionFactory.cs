@@ -64,18 +64,7 @@ namespace Apache.NMS.ActiveMQ
         {
             NetTxConnection connection = new NetTxConnection(this.BrokerUri, transport, this.ClientIdGenerator);
 
-            Uri brokerUri = this.BrokerUri;
-
-            // Set properties on the Receovery Policy using parameters prefixed with "nms.RecoveryPolicy."
-            if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
-            {
-                string query = brokerUri.Query.Substring(brokerUri.Query.LastIndexOf(")") + 1);
-                StringDictionary options = URISupport.ParseQuery(query);
-                options = URISupport.GetProperties(options, "nms.RecoveryPolicy.");
-                URISupport.SetProperties(this.recoveryPolicy, options);
-            }
-
-            connection.RecoveryPolicy = this.recoveryPolicy;
+            connection.RecoveryPolicy = this.recoveryPolicy.Clone() as NetTxRecoveryPolicy;
 
             return connection;
         }

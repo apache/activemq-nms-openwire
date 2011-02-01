@@ -56,7 +56,15 @@ namespace Apache.NMS.ActiveMQ.Transactions
         /// </summary>
         public string Location
         {
-            get { return this.location; }
+            get
+            {
+                if(String.IsNullOrEmpty(this.location))
+                {
+                    return Directory.GetCurrentDirectory();
+                }
+
+                return this.location;
+            }
             set { this.location = value; }
         }
 
@@ -74,31 +82,24 @@ namespace Apache.NMS.ActiveMQ.Transactions
         {
             this.resourceManagerId = resourceManagerId;
 
-            if(String.IsNullOrEmpty(location))
+            // Test if the location configured is valid.
+            if(!Directory.Exists(Location))
             {
-                this.location = Directory.GetCurrentDirectory();
-            }
-            else
-            {
-                // Test if the location configured is valid.
-                if(!Directory.Exists(location))
+                if(AutoCreateLocation)
                 {
-                    if(AutoCreateLocation)
+                    try
                     {
-                        try
-                        {
-                            Directory.CreateDirectory(Location);
-                        }
-                        catch(Exception ex)
-                        {
-                            Tracer.Error("Failed to create log directory: " + ex.Message);
-                            throw NMSExceptionSupport.Create(ex);
-                        }
+                        Directory.CreateDirectory(Location);
                     }
-                    else
+                    catch(Exception ex)
                     {
-                        throw new NMSException("Configured Recovery Log Location does not exist: " + location);
+                        Tracer.Error("Failed to create log directory: " + ex.Message);
+                        throw NMSExceptionSupport.Create(ex);
                     }
+                }
+                else
+                {
+                    throw new NMSException("Configured Recovery Log Location does not exist: " + location);
                 }
             }
         }

@@ -193,16 +193,8 @@ namespace Apache.NMS.ActiveMQ
 					StringDictionary connection = URISupport.ExtractProperties(properties, "connection.");
 					StringDictionary nms = URISupport.ExtractProperties(properties, "nms.");
 
-					if(connection != null)
-					{
-						URISupport.SetProperties(this, connection, "connection.");
-					}
-
-					if(nms != null)
-					{
-						URISupport.SetProperties(this.PrefetchPolicy, nms, "nms.PrefetchPolicy.");
-						URISupport.SetProperties(this.RedeliveryPolicy, nms, "nms.RedeliveryPolicy.");
-					}
+			        IntrospectionSupport.SetProperties(this, connection, "connection.");
+                    IntrospectionSupport.SetProperties(this, nms, "nms.");
 
 					brokerUri = URISupport.CreateRemainingUri(brokerUri, properties);
 				}
