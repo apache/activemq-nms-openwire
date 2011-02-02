@@ -345,7 +345,7 @@ namespace Apache.NMS.ActiveMQ
                 AfterRollback();
                 try
                 {
-                    this.session.Connection.OnException(ex);
+                    this.connection.OnException(ex);
                 }
                 catch (Exception error)
                 {
@@ -397,7 +397,14 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Single Phase Commit failed with error: " + ex.Message);
                 AfterRollback();
                 enlistment.Done();
-                this.session.Connection.OnException(ex);
+                try
+                {
+                    this.connection.OnException(ex);
+                }
+                catch (Exception error)
+                {
+                    Tracer.Error(error.ToString());
+                }
             }
             finally
             {
@@ -412,35 +419,45 @@ namespace Apache.NMS.ActiveMQ
             {
 	            Tracer.Debug("Rollback notification received");
 
-                BeforeEnd();
+                if (this.transactionId != null)
+                {
+                    BeforeEnd();
 
-                // Now notify the broker that a new XA'ish transaction has started.
-                TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = this.session.Connection.ConnectionId;
-                info.TransactionId = this.transactionId;
-                info.Type = (int)TransactionType.End;
+                    // Now notify the broker that a new XA'ish transaction has started.
+                    TransactionInfo info = new TransactionInfo();
+                    info.ConnectionId = this.session.Connection.ConnectionId;
+                    info.TransactionId = this.transactionId;
+                    info.Type = (int) TransactionType.End;
 
-                this.connection.CheckConnected();
-                this.connection.SyncRequest(info);
+                    this.connection.CheckConnected();
+                    this.connection.SyncRequest(info);
 
-                info.Type = (int) TransactionType.Rollback;
-                this.connection.CheckConnected();
-                this.connection.SyncRequest(info);
+                    info.Type = (int) TransactionType.Rollback;
+                    this.connection.CheckConnected();
+                    this.connection.SyncRequest(info);
 
-                Tracer.Debug("Transaction Rollback Reports Done: ");
+                    Tracer.Debug("Transaction Rollback Reports Done: ");
 
-                RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+                    RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
-                // if server responds that nothing needs to be done, then reply done.
-                enlistment.Done();
+                    // if server responds that nothing needs to be done, then reply done.
+                    enlistment.Done();
 
-                AfterRollback();
+                    AfterRollback();
+                }
             }
             catch(Exception ex)
             {
                 Tracer.Debug("Transaction Rollback failed with error: " + ex.Message);
                 AfterRollback();
-                this.session.Connection.OnException(ex);
+                try
+                {
+                    this.connection.OnException(ex);
+                }
+                catch (Exception error)
+                {
+                    Tracer.Error(error.ToString());
+                }
             }
             finally
             {
