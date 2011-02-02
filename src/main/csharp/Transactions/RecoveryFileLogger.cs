@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Net;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
@@ -65,7 +66,7 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
                 return this.location;
             }
-            set { this.location = value; }
+            set { this.location = Uri.UnescapeDataString(value); }
         }
 
         /// <summary>

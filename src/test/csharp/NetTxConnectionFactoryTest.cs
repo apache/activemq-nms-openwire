@@ -222,6 +222,8 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
+        [TestCase("C:\\Transactions\\ReceoveryLogs", true)]
+        [TestCase("\\\\ServerName\\Transactions\\ReceoveryLogs", true)]
         public void TestConfigureRecoveryPolicyLogger(string location, bool autoCreate)
         {
             string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
@@ -248,8 +250,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.AreEqual(autoCreate, logger.AutoCreateLocation);
             }
         }
-
-        [Test]
+				
+    	[Test]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
         public void TestConfigureRecoveryPolicyLoggerUsingDefaultLogger(string location, bool autoCreate)
