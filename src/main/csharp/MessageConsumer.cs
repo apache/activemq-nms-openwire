@@ -344,9 +344,32 @@ namespace Apache.NMS.ActiveMQ
 
 		internal void DoClose()
 		{
+	        Shutdown();
+			RemoveInfo removeCommand = new RemoveInfo();
+			removeCommand.ObjectId = this.ConsumerId;
+	        if (Tracer.IsDebugEnabled) 
+			{
+				Tracer.DebugFormat("Remove of Consumer[{0}] sent last delivered Id[{1}].", 
+				                   this.ConsumerId, this.lastDeliveredSequenceId);
+	        }
+	        removeCommand.LastDeliveredSequenceId = lastDeliveredSequenceId;
+	        this.session.Connection.Oneway(removeCommand);
+		}
+		
+		/// <summary>
+		/// Called from the parent Session of this Consumer to indicate that its
+		/// parent session is closing and this Consumer should close down but not
+		/// send any message to the Broker as the parent close will take care of
+		/// removing its child resources at the broker.
+		/// </summary>
+		internal void Shutdown()
+		{
 			if(!this.unconsumedMessages.Closed)
 			{
-				Tracer.Debug("Closing down the Consumer");
+				if(Tracer.IsDebugEnabled)
+				{
+					Tracer.DebugFormat("Shutdown of Consumer[{0}] started.", ConsumerId);
+				}
 
 				// Do we have any acks we need to send out before closing?
 				// Ack any delivered messages now.
@@ -367,18 +390,14 @@ namespace Apache.NMS.ActiveMQ
 					}
 				}
 
+				this.session.RemoveConsumer(this.ConsumerId);
 				this.unconsumedMessages.Close();
-				this.session.RemoveConsumer(this.info.ConsumerId);
 
-				RemoveInfo removeCommand = new RemoveInfo();
-				removeCommand.ObjectId = this.info.ConsumerId;
-				removeCommand.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
-
-				this.session.Connection.Oneway(removeCommand);
-				this.session = null;
-
-				Tracer.Debug("Consumer instance Closed.");
-			}
+				if(Tracer.IsDebugEnabled)
+				{
+					Tracer.DebugFormat("Shutdown of Consumer[{0}] completed.", ConsumerId);
+				}
+			}			
 		}
 
 		#endregion

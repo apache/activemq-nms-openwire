@@ -331,6 +331,15 @@ namespace Apache.NMS.ActiveMQ
 
         internal void DoClose()
         {
+			Shutdown();
+            RemoveInfo info = new RemoveInfo();
+            info.ObjectId = this.info.SessionId;
+            info.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
+            this.connection.Oneway(info);
+		}
+		
+        internal void Shutdown()
+        {
             lock(myLock)
             {
                 if(this.closed)
@@ -350,7 +359,7 @@ namespace Apache.NMS.ActiveMQ
                         foreach(MessageConsumer consumer in consumers.Values)
                         {
                             consumer.FailureError = this.connection.FirstFailureError;
-                            consumer.DoClose();
+                            consumer.Shutdown();
                             this.lastDeliveredSequenceId =
                                 Math.Min(this.lastDeliveredSequenceId, consumer.LastDeliveredSequenceId);
                         }
@@ -361,7 +370,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         foreach(MessageProducer producer in producers.Values)
                         {
-                            producer.DoClose();
+                            producer.Shutdown();
                         }
                     }
                     producers.Clear();
@@ -386,12 +395,6 @@ namespace Apache.NMS.ActiveMQ
                 }
                 finally
                 {
-                    // Make sure we attempt to inform the broker this Session is done.
-                    RemoveInfo info = new RemoveInfo();
-                    info.ObjectId = this.info.SessionId;
-                    info.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
-                    this.connection.Oneway(info);
-                    this.connection = null;
                     this.closed = true;
                     this.closing = false;
                 }

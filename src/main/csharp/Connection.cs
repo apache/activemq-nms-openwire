@@ -518,13 +518,18 @@ namespace Apache.NMS.ActiveMQ
 
         public void Close()
         {
+			if(!this.closed.Value && !transportFailed.Value)
+			{
+				this.Stop();
+			}
+						
             lock(myLock)
             {
                 if(this.closed.Value)
                 {
                     return;
                 }
-
+				
                 try
                 {
                     Tracer.Info("Connection.Close(): Closing Connection Now.");
@@ -534,7 +539,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         foreach(Session session in sessions)
                         {
-                            session.DoClose();
+                            session.Shutdown();
                         }
                     }
                     sessions.Clear();
@@ -548,7 +553,7 @@ namespace Apache.NMS.ActiveMQ
 
                     executor.Shutdown();
 
-                    Tracer.Info("Disposing of the Transport.");
+                    Tracer.Info("Connection: Disposing of the Transport.");
                     transport.Dispose();
                 }
                 catch(Exception ex)
@@ -557,6 +562,11 @@ namespace Apache.NMS.ActiveMQ
                 }
                 finally
                 {
+					if(executor != null)
+					{
+                    	executor.Shutdown();
+					}
+					
                     this.transport = null;
                     this.closed.Value = true;
                     this.connected.Value = false;
@@ -585,9 +595,6 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
-                // For now we do not distinguish between Dispose() and Close().
-                // In theory Dispose should possibly be lighter-weight and perform a (faster)
-                // disorderly close.
                 Close();
             }
             catch
@@ -909,7 +916,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 try
                 {
-                    session.Dispose();
+                    session.Shutdown();
                 }
                 catch(Exception ex)
                 {

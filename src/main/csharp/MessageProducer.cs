@@ -117,15 +117,23 @@ namespace Apache.NMS.ActiveMQ
 					return;
 				}
 
-				DoClose();
+				Shutdown();
 				RemoveInfo removeInfo = new RemoveInfo();
 				removeInfo.ObjectId = this.info.ProducerId;
 				this.session.Connection.Oneway(removeInfo);
-				this.session = null;
+				if(Tracer.IsDebugEnabled)
+				{
+					Tracer.DebugFormat("Remove of Producer[{0}] sent.", this.ProducerId);
+				}
 			}
 		}
 
-		internal void DoClose()
+		/// <summary>
+		/// Called from the Parent session to deactivate this Producer, when a parent
+		/// is closed all children are automatically removed from the broker so this
+		/// method circumvents the need to send a Remove command to the broker.
+		/// </summary>
+		internal void Shutdown()
 		{
 			lock(closedLock)
 			{
