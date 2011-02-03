@@ -544,7 +544,10 @@ namespace Apache.NMS.ActiveMQ
                     }
                     sessions.Clear();
 
-                    if(connected.Value)
+                    // Connected is true only when we've successfully sent our ConnectionInfo
+                    // to the broker, so if we haven't announced ourselves there's no need to
+                    // inform the broker of a remove, and if the transport is failed, why bother.
+                    if(connected.Value && !transportFailed.Value)
                     {
                         DisposeOf(ConnectionId);
                         ShutdownInfo shutdowninfo = new ShutdownInfo();
