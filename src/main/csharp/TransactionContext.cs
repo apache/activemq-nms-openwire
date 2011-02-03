@@ -16,9 +16,7 @@
  */
 
 using System;
-using System.IO;
 using System.Text;
-using System.Net;
 using System.Transactions;
 using System.Collections;
 using System.Collections.Generic;
@@ -220,9 +218,9 @@ namespace Apache.NMS.ActiveMQ
             this.currentEnlistment =
                 transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
 
-            Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId.ToString());
+            Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId);
 
-            System.Transactions.TransactionInformation txInfo = transaction.TransactionInformation;
+            TransactionInformation txInfo = transaction.TransactionInformation;
 
             XATransactionId xaId = new XATransactionId();
             this.transactionId = xaId;
@@ -230,7 +228,7 @@ namespace Apache.NMS.ActiveMQ
             if(txInfo.DistributedIdentifier != Guid.Empty)
             {
                 xaId.GlobalTransactionId = txInfo.DistributedIdentifier.ToByteArray();
-                xaId.BranchQualifier = Encoding.UTF8.GetBytes(txInfo.LocalIdentifier);
+                xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
             }
             else
             {
@@ -240,7 +238,7 @@ namespace Apache.NMS.ActiveMQ
 
             // Now notify the broker that a new XA'ish transaction has started.
             TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.session.Connection.ConnectionId;
+            info.ConnectionId = this.connection.ConnectionId;
             info.TransactionId = this.transactionId;
             info.Type = (int) TransactionType.Begin;
 
@@ -265,9 +263,9 @@ namespace Apache.NMS.ActiveMQ
                 RecoveryLogger.LogRecoveryInfo(this.transactionId as XATransactionId,
                                                preparingEnlistment.RecoveryInformation());
 
-	            // Now notify the broker that a new XA'ish transaction has started.
+	            // Inform the broker that work on the XA'sh TX Branch is complete.
 	            TransactionInfo info = new TransactionInfo();
-	            info.ConnectionId = this.session.Connection.ConnectionId;
+	            info.ConnectionId = this.connection.ConnectionId;
 	            info.TransactionId = this.transactionId;
                 info.Type = (int) TransactionType.End;
 
@@ -308,7 +306,17 @@ namespace Apache.NMS.ActiveMQ
                 Tracer.Debug("Transaction Prepare failed with error: " + ex.Message);
                 AfterRollback();
                 preparingEnlistment.ForceRollback();
-                RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+                try
+                {
+                    this.connection.OnException(ex);
+                }
+                catch (Exception error)
+                {
+                    Tracer.Error(error.ToString());
+                }
+
+                this.currentEnlistment = null;
+                this.transactionId = null;
             }
         }
 
@@ -322,7 +330,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     // Now notify the broker that a new XA'ish transaction has completed.
                     TransactionInfo info = new TransactionInfo();
-                    info.ConnectionId = this.session.Connection.ConnectionId;
+                    info.ConnectionId = this.connection.ConnectionId;
                     info.TransactionId = this.transactionId;
                     info.Type = (int) TransactionType.CommitTwoPhase;
 
@@ -377,7 +385,7 @@ namespace Apache.NMS.ActiveMQ
 
 					// Now notify the broker that a new XA'ish transaction has completed.
                     TransactionInfo info = new TransactionInfo();
-                    info.ConnectionId = this.session.Connection.ConnectionId;
+                    info.ConnectionId = this.connection.ConnectionId;
                     info.TransactionId = this.transactionId;
                     info.Type = (int) TransactionType.CommitOnePhase;
 
@@ -425,7 +433,7 @@ namespace Apache.NMS.ActiveMQ
 
                     // Now notify the broker that a new XA'ish transaction has started.
                     TransactionInfo info = new TransactionInfo();
-                    info.ConnectionId = this.session.Connection.ConnectionId;
+                    info.ConnectionId = this.connection.ConnectionId;
                     info.TransactionId = this.transactionId;
                     info.Type = (int) TransactionType.End;
 
@@ -482,7 +490,7 @@ namespace Apache.NMS.ActiveMQ
 
                 // Now notify the broker that Rollback should be performed.
                 TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = this.session.Connection.ConnectionId;
+                info.ConnectionId = this.connection.ConnectionId;
                 info.TransactionId = this.transactionId;
                 info.Type = (int)TransactionType.End;
 
