@@ -17,6 +17,7 @@
 
 using System;
 using System.Text;
+using System.Threading;
 using System.Transactions;
 using System.Collections;
 using System.Collections.Generic;
@@ -198,10 +199,17 @@ namespace Apache.NMS.ActiveMQ
 
         #region Transaction Members used when dealing with .NET System Transactions.
 
+        private readonly ManualResetEvent dtcControlEvent = new ManualResetEvent(false);
+
         public bool InNetTransaction
         {
             get{ return this.transactionId != null && this.transactionId is XATransactionId; }
         }
+
+	    public WaitHandle DtcWaitHandle
+	    {
+            get { return dtcControlEvent; }
+	    }
 
         public void Begin(Transaction transaction)
         {
@@ -254,7 +262,9 @@ namespace Apache.NMS.ActiveMQ
         {
             try
             {
-	            Tracer.Debug("Prepare notification received");
+                dtcControlEvent.Reset();
+
+                Tracer.Debug("Prepare notification received for TX id: " + this.transactionId);
 				
                 BeforeEnd();
 
@@ -277,7 +287,7 @@ namespace Apache.NMS.ActiveMQ
                 IntegerResponse response = (IntegerResponse) this.connection.SyncRequest(info);
                 if(response.Result == XA_READONLY)
                 {
-                    Tracer.Debug("Transaction Prepare Reports Done with no need to Commit: ");
+                    Tracer.Debug("Transaction Prepare done and doesn't need a commit, TX id: " + this.transactionId);
 
                     this.transactionId = null;
                     this.currentEnlistment = null;
@@ -295,7 +305,7 @@ namespace Apache.NMS.ActiveMQ
                 }
                 else
                 {
-                    Tracer.Debug("Transaction Prepare finished Successfully: ");
+                    Tracer.Debug("Transaction Prepare succeeded TX id: " + this.transactionId);
 
                     // If work finished correctly, reply prepared
                     preparingEnlistment.Prepared();
@@ -303,7 +313,9 @@ namespace Apache.NMS.ActiveMQ
             }
             catch(Exception ex)
             {
-                Tracer.Debug("Transaction Prepare failed with error: " + ex.Message);
+                Tracer.DebugFormat("Transaction[{0}] Prepare failed with error: {1}",
+                                   this.transactionId, ex.Message);
+
                 AfterRollback();
                 preparingEnlistment.ForceRollback();
                 try
@@ -318,13 +330,19 @@ namespace Apache.NMS.ActiveMQ
                 this.currentEnlistment = null;
                 this.transactionId = null;
             }
+            finally
+            {
+                this.dtcControlEvent.Set();
+            }   
         }
 
         public void Commit(Enlistment enlistment)
         {
             try
             {
-                Tracer.Debug("Commit notification received");
+                dtcControlEvent.Reset();
+
+                Tracer.Debug("Commit notification received for TX id: " + this.transactionId);
 
                 if (this.transactionId != null)
                 {
@@ -337,7 +355,7 @@ namespace Apache.NMS.ActiveMQ
                     this.connection.CheckConnected();
                     this.connection.SyncRequest(info);
 
-                    Tracer.Debug("Transaction Commit Reports Done: ");
+                    Tracer.Debug("Transaction Commit Done TX id: " + this.transactionId);
 
                     RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
@@ -349,7 +367,8 @@ namespace Apache.NMS.ActiveMQ
             }
             catch(Exception ex)
             {
-                Tracer.Debug("Transaction Commit failed with error: " + ex.Message);
+                Tracer.DebugFormat("Transaction[{0}] Commit failed with error: {1}",
+                                   this.transactionId, ex.Message);
                 AfterRollback();
                 try
                 {
@@ -370,16 +389,20 @@ namespace Apache.NMS.ActiveMQ
                 {
                     latch.countDown();
                 }
+
+                this.dtcControlEvent.Set();
             }
         }
 
         public void SinglePhaseCommit(SinglePhaseEnlistment enlistment)
         {
-            Tracer.Debug("Single Phase Commit notification received");
-
             try
             {
-                if(this.transactionId != null)
+                dtcControlEvent.Reset();
+
+                Tracer.Debug("Single Phase Commit notification received for TX id: " + this.transactionId);
+
+                if (this.transactionId != null)
                 {
                 	BeforeEnd();
 
@@ -392,7 +415,7 @@ namespace Apache.NMS.ActiveMQ
                     this.connection.CheckConnected();
                     this.connection.SyncRequest(info);
 
-                    Tracer.Debug("Transaction Single Phase Commit Reports Done: ");
+                    Tracer.Debug("Transaction Single Phase Commit Done TX id: " + this.transactionId);
 
                     // if server responds that nothing needs to be done, then reply done.
                     enlistment.Done();
@@ -402,7 +425,8 @@ namespace Apache.NMS.ActiveMQ
             }
             catch(Exception ex)
             {
-                Tracer.Debug("Transaction Single Phase Commit failed with error: " + ex.Message);
+                Tracer.DebugFormat("Transaction[{0}] Single Phase Commit failed with error: {1}",
+                                   this.transactionId, ex.Message);
                 AfterRollback();
                 enlistment.Done();
                 try
@@ -418,6 +442,8 @@ namespace Apache.NMS.ActiveMQ
             {
                 this.currentEnlistment = null;
                 this.transactionId = null;
+
+                this.dtcControlEvent.Set();
             }
         }
 		
@@ -425,7 +451,9 @@ namespace Apache.NMS.ActiveMQ
         {
             try
             {
-	            Tracer.Debug("Rollback notification received");
+                dtcControlEvent.Reset();
+                
+                Tracer.Debug("Rollback notification received for TX id: " + this.transactionId);
 
                 if (this.transactionId != null)
                 {
@@ -444,7 +472,7 @@ namespace Apache.NMS.ActiveMQ
                     this.connection.CheckConnected();
                     this.connection.SyncRequest(info);
 
-                    Tracer.Debug("Transaction Rollback Reports Done: ");
+                    Tracer.Debug("Transaction Rollback Done TX id: " + this.transactionId);
 
                     RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
@@ -456,7 +484,8 @@ namespace Apache.NMS.ActiveMQ
             }
             catch(Exception ex)
             {
-                Tracer.Debug("Transaction Rollback failed with error: " + ex.Message);
+                Tracer.DebugFormat("Transaction[{0}] Rollback failed with error: {1}",
+                                   this.transactionId, ex.Message);
                 AfterRollback();
                 try
                 {
@@ -477,6 +506,8 @@ namespace Apache.NMS.ActiveMQ
                 {
                     latch.countDown();
                 }
+
+                this.dtcControlEvent.Set();
             }
         }
 
@@ -484,7 +515,9 @@ namespace Apache.NMS.ActiveMQ
         {
             try
             {
-	            Tracer.Debug("In doubt notification received, Rolling Back TX");
+                dtcControlEvent.Reset();
+                
+                Tracer.Debug("In Doubt notification received for TX id: " + this.transactionId);
 				
                 BeforeEnd();
 
@@ -501,7 +534,7 @@ namespace Apache.NMS.ActiveMQ
                 this.connection.CheckConnected();
                 this.connection.SyncRequest(info);
 
-                Tracer.Debug("InDoubt Transaction Rollback Reports Done: ");
+                Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.transactionId);
 
                 RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
@@ -520,6 +553,8 @@ namespace Apache.NMS.ActiveMQ
                 {
                     latch.countDown();
                 }
+
+                this.dtcControlEvent.Set();
             }
         }
 
@@ -580,11 +615,13 @@ namespace Apache.NMS.ActiveMQ
                 foreach (KeyValuePair<XATransactionId, byte[]> recoverable in matches)
                 {
                     this.transactionId = recoverable.Key;
+                    Tracer.Info("Reenlisting recovered TX with Id: " + this.transactionId);
                     this.currentEnlistment = 
                         TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
                 }
 
                 this.recoveryComplete.await();
+                Tracer.Debug("All Recovered TX enlistments Reports complete, Recovery Complete.");
                 TransactionManager.RecoveryComplete(ResourceManagerGuid);
                 return;
             }

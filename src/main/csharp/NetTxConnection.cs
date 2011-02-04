@@ -16,7 +16,6 @@
  */
 
 using System;
-using Apache.NMS;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Util;
 

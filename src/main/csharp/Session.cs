@@ -882,7 +882,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void ClearMessages(object value)
+        private static void ClearMessages(object value)
         {
             MessageConsumer consumer = value as MessageConsumer;
 
@@ -944,7 +944,7 @@ namespace Apache.NMS.ActiveMQ
         /// <param name="message">
         /// A <see cref="ActiveMQMessage"/>
         /// </param>
-        private void DoNothingAcknowledge(ActiveMQMessage message)
+        private static void DoNothingAcknowledge(ActiveMQMessage message)
         {
         }
 
