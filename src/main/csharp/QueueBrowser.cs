@@ -127,6 +127,11 @@ namespace Apache.NMS.ActiveMQ
 
 			try
 			{
+            	if(session.IsTransacted && session.TransactionContext.InLocalTransaction)
+				{
+                	session.Commit();
+            	}
+				
 				consumer.Close();
 				consumer = null;
 			}
