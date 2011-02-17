@@ -54,7 +54,7 @@ namespace Apache.NMS.ActiveMQ.Test
 						
 						TimeSpan elapsed = DateTime.Now - start;
 						// Make sure we timed out.
-						Assert.GreaterOrEqual((int) elapsed.TotalMilliseconds, timeout - 10, "Did not reach timeout limit.");
+						Assert.GreaterOrEqual((int) elapsed.TotalMilliseconds, timeout - 75, "Did not reach timeout limit.");
 					}
 				}
 			}
