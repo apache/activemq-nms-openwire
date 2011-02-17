@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Mock;
@@ -33,11 +34,14 @@ namespace Apache.NMS.ActiveMQ.Test
         private List<Exception> exceptions;
         private MockTransport transport = null;
         private WireFormatInfo localWireFormatInfo = null;
+		private CountDownLatch asyncErrorLatch;
 
         public void OnException(ITransport transport, Exception exception)
         {
             Tracer.Debug("Test: Received Exception from Transport: " + exception );
             exceptions.Add( exception );
+			
+			asyncErrorLatch.countDown();
         }
 
         public void OnCommand(ITransport transport, Command command)
@@ -62,6 +66,8 @@ namespace Apache.NMS.ActiveMQ.Test
             this.localWireFormatInfo.Version = 5;
             this.localWireFormatInfo.MaxInactivityDuration = 3000;
             this.localWireFormatInfo.TightEncodingEnabled = false;
+			
+			this.asyncErrorLatch = new CountDownLatch(1);
         }
 
         [Test]
@@ -87,12 +93,10 @@ namespace Apache.NMS.ActiveMQ.Test
             // Send the local one for the monitor to record.
             monitor.Oneway( this.localWireFormatInfo );
 
-            Thread.Sleep( 2000 );
-
             // Should not have timed out on Read yet.
             Assert.IsTrue( this.exceptions.Count == 0 );
 
-            Thread.Sleep( 5000 );
+			this.asyncErrorLatch.await(TimeSpan.FromSeconds(10));
 
             // Channel should have been inactive for to long.
             Assert.IsTrue( this.exceptions.Count > 0 );
@@ -112,25 +116,20 @@ namespace Apache.NMS.ActiveMQ.Test
 
             // Send the local one for the monitor to record.
             monitor.Oneway( this.localWireFormatInfo );
-
-            Thread.Sleep( 2000 );
-
-            ActiveMQMessage message = new ActiveMQMessage();
-            this.transport.InjectCommand( message );
-
-            Thread.Sleep( 2000 );
-
-            // Should not have timed out on Read yet.
-            Assert.IsTrue( this.exceptions.Count == 0 );
-
-            for(int ix = 0; ix < 4; ix++)
-            {
-                this.transport.InjectCommand( message );
-                Thread.Sleep( 2000 );
-            }
+			
+			this.asyncErrorLatch.await(TimeSpan.FromSeconds(10));
 			
             // Channel should have been inactive for to long.
             Assert.IsTrue( this.exceptions.Count > 0 );
+			
+			try
+			{
+            	monitor.Oneway(new ActiveMQMessage());
+				Assert.Fail("Should have thrown an exception");
+			}			
+			catch
+			{
+			}
         }
 
         [Test]
