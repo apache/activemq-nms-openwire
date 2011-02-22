@@ -85,6 +85,7 @@
         <assemblyfileset failonempty="true" id="test.dependencies">
             <include name="${current.build.framework.assembly.dir}/mscorlib.dll" />
             <include name="${current.build.framework.assembly.dir}/System.dll" />
+            <include name="${current.build.framework.assembly.dir}/System.Data.dll" />
             <include name="${current.build.framework.assembly.dir}/System.Xml.dll" />
             <include name="${current.build.framework.assembly.dir}/System.Transactions.dll" />
             <include name="${Apache.NMS.dll}" />
