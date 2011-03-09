@@ -45,7 +45,7 @@ namespace Apache.NMS.ActiveMQ
         private bool sendAcksAsync = false;
         private bool dispatchAsync = true;
         private int producerWindowSize = 0;
-        private bool messagePrioritySupported=true;
+        private bool messagePrioritySupported = true;
 
         private bool userSpecifiedClientID;
         private readonly Uri brokerUri;
@@ -484,52 +484,52 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        internal void addDispatcher( ConsumerId id, IDispatcher dispatcher )
+        internal void addDispatcher(ConsumerId id, IDispatcher dispatcher)
         {
             if(!this.closing.Value)
             {
-                this.dispatchers.Add( id, dispatcher );
+                this.dispatchers.Add(id, dispatcher);
             }
         }
 
-        internal void removeDispatcher( ConsumerId id )
+        internal void removeDispatcher(ConsumerId id)
         {
             if(!this.closing.Value)
             {
-                this.dispatchers.Remove( id );
+                this.dispatchers.Remove(id);
             }
         }
 
-        internal void addProducer( ProducerId id, MessageProducer producer )
+        internal void addProducer(ProducerId id, MessageProducer producer)
         {
             if(!this.closing.Value)
             {
-                this.producers.Add( id, producer );
+                this.producers.Add(id, producer);
             }
         }
 
-        internal void removeProducer( ProducerId id )
+        internal void removeProducer(ProducerId id)
         {
             if(!this.closing.Value)
             {
-                this.producers.Remove( id );
+                this.producers.Remove(id);
             }
         }
 
         public void Close()
         {
-			if(!this.closed.Value && !transportFailed.Value)
-			{
-				this.Stop();
-			}
-						
+            if(!this.closed.Value && !transportFailed.Value)
+            {
+                this.Stop();
+            }
+
             lock(myLock)
             {
                 if(this.closed.Value)
                 {
                     return;
                 }
-				
+
                 try
                 {
                     Tracer.Info("Connection.Close(): Closing Connection Now.");
@@ -565,11 +565,11 @@ namespace Apache.NMS.ActiveMQ
                 }
                 finally
                 {
-					if(executor != null)
-					{
-                    	executor.Shutdown();
-					}
-					
+                    if(executor != null)
+                    {
+                        executor.Shutdown();
+                    }
+
                     this.transport = null;
                     this.closed.Value = true;
                     this.connected.Value = false;
@@ -636,7 +636,7 @@ namespace Apache.NMS.ActiveMQ
                 Response response = transport.Request(command, requestTimeout);
                 if(response is ExceptionResponse)
                 {
-                    ExceptionResponse exceptionResponse = (ExceptionResponse) response;
+                    ExceptionResponse exceptionResponse = (ExceptionResponse)response;
                     BrokerError brokerError = exceptionResponse.Exception;
                     throw new BrokerException(brokerError);
                 }
@@ -695,25 +695,28 @@ namespace Apache.NMS.ActiveMQ
 
         internal void CheckConnected()
         {
-            if(closed.Value)
+            lock(myLock)
             {
-                throw new ConnectionClosedException();
-            }
-
-            if(!connected.Value)
-            {
-                if(!this.userSpecifiedClientID)
+                if(closed.Value)
                 {
-                    this.info.ClientId = this.clientIdGenerator.GenerateId();
+                    throw new ConnectionClosedException();
                 }
 
-                connected.Value = true;
-                // now lets send the connection and see if we get an ack/nak
-                if(null == SyncRequest(info))
+                if(!connected.Value)
                 {
-                    closed.Value = true;
-                    connected.Value = false;
-                    throw new ConnectionClosedException();
+                    if(!this.userSpecifiedClientID)
+                    {
+                        this.info.ClientId = this.clientIdGenerator.GenerateId();
+                    }
+
+                    connected.Value = true;
+                    // now lets send the connection and see if we get an ack/nak
+                    if(null == SyncRequest(info))
+                    {
+                        closed.Value = true;
+                        connected.Value = false;
+                        throw new ConnectionClosedException();
+                    }
                 }
             }
         }
@@ -728,19 +731,19 @@ namespace Apache.NMS.ActiveMQ
             if(command.IsMessageDispatch)
             {
                 WaitForTransportInterruptionProcessingToComplete();
-                DispatchMessage((MessageDispatch) command);
+                DispatchMessage((MessageDispatch)command);
             }
             else if(command.IsKeepAliveInfo)
             {
-                OnKeepAliveCommand(commandTransport, (KeepAliveInfo) command);
+                OnKeepAliveCommand(commandTransport, (KeepAliveInfo)command);
             }
             else if(command.IsWireFormatInfo)
             {
-                this.brokerWireFormatInfo = (WireFormatInfo) command;
+                this.brokerWireFormatInfo = (WireFormatInfo)command;
             }
             else if(command.IsBrokerInfo)
             {
-                this.brokerInfo = (BrokerInfo) command;
+                this.brokerInfo = (BrokerInfo)command;
                 this.brokerInfoReceived.countDown();
             }
             else if(command.IsShutdownInfo)
@@ -752,7 +755,7 @@ namespace Apache.NMS.ActiveMQ
             }
             else if(command.IsProducerAck)
             {
-                ProducerAck ack = (ProducerAck) command as ProducerAck;
+                ProducerAck ack = (ProducerAck)command as ProducerAck;
                 if(ack.ProducerId != null)
                 {
                     MessageProducer producer = producers[ack.ProducerId] as MessageProducer;
@@ -771,7 +774,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(!closing.Value && !closed.Value)
                 {
-                    ConnectionError connectionError = (ConnectionError) command;
+                    ConnectionError connectionError = (ConnectionError)command;
                     BrokerError brokerError = connectionError.Exception;
                     string message = "Broker connection error.";
                     string cause = "";
@@ -800,7 +803,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(dispatchers.Contains(dispatch.ConsumerId))
                 {
-                    IDispatcher dispatcher = (IDispatcher) dispatchers[dispatch.ConsumerId];
+                    IDispatcher dispatcher = (IDispatcher)dispatchers[dispatch.ConsumerId];
 
                     // Can be null when a consumer has sent a MessagePull and there was
                     // no available message at the broker to dispatch or when signalled
@@ -1062,7 +1065,7 @@ namespace Apache.NMS.ActiveMQ
             DestinationInfo command = new DestinationInfo();
             command.ConnectionId = this.ConnectionId;
             command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE; // 1 is remove
-            command.Destination = (ActiveMQDestination) destination;
+            command.Destination = (ActiveMQDestination)destination;
 
             this.Oneway(command);
         }
