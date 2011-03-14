@@ -153,5 +153,32 @@ namespace Apache.NMS.ActiveMQ.Test
 				connection.Close();
 			}
         }
+		
+        [Test]
+		[TestCase(0)]
+		[TestCase(1)]
+		[TestCase(1000)]
+        public void TestURIForPrefetchHandlingOfAll(int allPreFetch)
+        {
+            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
+                          				   "?nms.PrefetchPolicy.all={0}", allPreFetch);
+
+            NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
+
+            Assert.IsNotNull(factory);
+            Assert.IsNotNull(factory.ConnectionFactory);
+            using(IConnection connection = factory.CreateConnection("", ""))
+            {
+                Assert.IsNotNull(connection);
+
+                Connection amqConnection = connection as Connection;
+                Assert.AreEqual(allPreFetch, amqConnection.PrefetchPolicy.QueuePrefetch);
+                Assert.AreEqual(allPreFetch, amqConnection.PrefetchPolicy.QueueBrowserPrefetch);
+                Assert.AreEqual(allPreFetch, amqConnection.PrefetchPolicy.TopicPrefetch);
+                Assert.AreEqual(allPreFetch, amqConnection.PrefetchPolicy.DurableTopicPrefetch);
+
+				connection.Close();
+			}
+        }		
     }
 }

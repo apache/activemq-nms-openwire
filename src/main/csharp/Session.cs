@@ -105,15 +105,6 @@ namespace Apache.NMS.ActiveMQ
         #region Property Accessors
 
         /// <summary>
-        /// Sets the prefetch size, the maximum number of messages a broker will dispatch to consumers
-        /// until acknowledgements are received.
-        /// </summary>
-        public int PrefetchSize
-        {
-            set{ this.connection.PrefetchPolicy.SetAll(value); }
-        }
-
-        /// <summary>
         /// Sets the maximum number of messages to keep around per consumer
         /// in addition to the prefetch window for non-durable topics until messages
         /// will start to be evicted for slow consumers.

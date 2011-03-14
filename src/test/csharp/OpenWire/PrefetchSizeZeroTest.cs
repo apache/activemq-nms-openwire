@@ -18,6 +18,7 @@
 using System;
 using Apache.NMS.Test;
 using Apache.NMS.Util;
+using Apache.NMS.ActiveMQ;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -32,11 +33,12 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			using(IConnection connection = CreateConnection())
 			{
+				(connection as Apache.NMS.ActiveMQ.Connection).PrefetchPolicy.All = 0;
+
 				connection.Start();
 				using(Session session = (Session)connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
 				{
 					IDestination destination = SessionUtil.GetDestination(session, DESTINATION_NAME);
-                    session.PrefetchSize = 0;
 					using(IMessageConsumer consumer = session.CreateConsumer(destination))
 					using(IMessageProducer producer = session.CreateProducer(destination))
 					{
