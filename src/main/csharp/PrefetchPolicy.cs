@@ -73,6 +73,11 @@ namespace Apache.NMS.ActiveMQ
             get { return this.maximumPendingMessageLimit; }
             set { this.maximumPendingMessageLimit = value; }
         }
+		
+		public int All
+		{
+			set { this.SetAll(value); }
+		}
         
         public void SetAll(int value)
         {
