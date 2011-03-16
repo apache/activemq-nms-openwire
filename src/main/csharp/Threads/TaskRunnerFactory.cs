@@ -26,47 +26,41 @@ namespace Apache.NMS.ActiveMQ.Threads
 	/// processing for them to become idle. The manager ensures that each task is
 	/// processes but that no one task overtakes the system. This is kina like
 	/// cooperative multitasking.
- 	/// </summary>
+    ///
+    /// If your OS/JVM combination has a good thread model, you may want to avoid
+    /// using a thread pool to run tasks and use a DedicatedTaskRunner instead.
+    /// </summary>
 	public class TaskRunnerFactory
 	{
-		protected int maxIterationsPerRun;
-		protected String name;
-		protected ThreadPriority priority;
-		protected bool daemon;
+		public string name = "ActiveMQ Task";
+        public ThreadPriority priority = ThreadPriority.Normal;
+        public int maxIterationsPerRun = 1000;
+        public bool dedicatedTaskRunner = true;
 
 		public TaskRunnerFactory()
 		{
-			InitTaskRunnerFactory("ActiveMQ Task", ThreadPriority.Normal, true, 1000, false);
 		}
 
-		public TaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun)
-		{
-			InitTaskRunnerFactory(name, priority, daemon, maxIterationsPerRun, false);
-		}
+        public TaskRunner CreateTaskRunner(Task task)
+        {
+            return CreateTaskRunner(task, this.name);
+        }
 
-		public TaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun, bool dedicatedTaskRunner)
-		{
-			InitTaskRunnerFactory(name, priority, daemon, maxIterationsPerRun, dedicatedTaskRunner);
-		}
+        public TaskRunner CreateTaskRunner(Task task, string name)
+        {
+            return CreateTaskRunner(task, name, this.priority);
+        }
 
-		public void InitTaskRunnerFactory(String name, ThreadPriority priority, bool daemon, int maxIterationsPerRun, bool dedicatedTaskRunner)
+		public TaskRunner CreateTaskRunner(Task task, string name, ThreadPriority taskPriority)
 		{
-			this.name = name;
-			this.priority = priority;
-			this.daemon = daemon;
-			this.maxIterationsPerRun = maxIterationsPerRun;
-
-			// If your OS/JVM combination has a good thread model, you may want to avoid
-			// using a thread pool to run tasks and use a DedicatedTaskRunner instead.
-		}
-
-		public void Shutdown()
-		{
-		}
-
-		public TaskRunner CreateTaskRunner(Task task, String name)
-		{
-			return new PooledTaskRunner(task, maxIterationsPerRun);
+            if(this.dedicatedTaskRunner)
+            {
+                return new DedicatedTaskRunner(task, name, taskPriority);
+            }
+            else
+            {
+                return new PooledTaskRunner(task, this.maxIterationsPerRun);
+            }
 		}
 	}
 }
