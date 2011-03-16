@@ -81,7 +81,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(this.taskRunner == null)
                 {
-                    this.taskRunner = new DedicatedTaskRunner(this);
+                    this.taskRunner = DefaultThreadPools.DefaultTaskRunnerFactory.CreateTaskRunner(this);
                 }
 
                 taskRunner = this.taskRunner;

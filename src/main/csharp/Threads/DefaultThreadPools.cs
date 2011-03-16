@@ -19,7 +19,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 {
 	public class DefaultThreadPools
 	{
-		private static readonly TaskRunnerFactory DEFAULT_TASK_RUNNER_FACTORY = new TaskRunnerFactory();
+		private static readonly TaskRunnerFactory taskRunnerFactory = new TaskRunnerFactory();
 
 		private DefaultThreadPools()
 		{
@@ -27,11 +27,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 
 		public static TaskRunnerFactory DefaultTaskRunnerFactory
 		{
-			get
-			{
-				return DEFAULT_TASK_RUNNER_FACTORY;
-			}
+			get { return taskRunnerFactory; }
 		}
-
 	}
 }

@@ -32,17 +32,25 @@ namespace Apache.NMS.ActiveMQ.Threads
         private bool terminated = false;
         private bool pending = false;
         private bool shutdown = false;
-        
+
         public DedicatedTaskRunner(Task task)
+            : this(task, "ActiveMQ Task", ThreadPriority.Normal)
+        {
+        }
+
+        public DedicatedTaskRunner(Task task, string taskName, ThreadPriority taskPriority)
         {
             if(task == null)
             {
                 throw new NullReferenceException("Task was null");
             }
-            
+
             this.task = task;
 
-            this.theThread = new Thread(Run) {IsBackground = true};
+            this.theThread = new Thread(Run);
+            this.theThread.IsBackground = true;
+            this.theThread.Priority = taskPriority;
+            this.theThread.Name = taskName;
             this.theThread.Start();
         }
 
@@ -100,23 +108,22 @@ namespace Apache.NMS.ActiveMQ.Threads
                 {
                     return;
                 }
-                
+
                 this.pending = true;
-                
+
                 Monitor.PulseAll(this.mutex);
-            }            
+            }
         }
 
         internal void Run()
         {
-            try 
+            try
             {
-                while(true) 
+                while(true)
                 {
-                    lock(this.mutex) 
+                    lock(this.mutex)
                     {
                         pending = false;
-                        
                         if(this.shutdown)
                         {
                             return;
@@ -128,12 +135,12 @@ namespace Apache.NMS.ActiveMQ.Threads
                         // wait to be notified.
                         lock(this.mutex)
                         {
-                            if(this.shutdown) 
+                            if(this.shutdown)
                             {
                                 return;
                             }
-                            
-                            while(!this.pending) 
+
+                            while(!this.pending)
                             {
                                 Monitor.Wait(this.mutex);
                             }
@@ -141,7 +148,7 @@ namespace Apache.NMS.ActiveMQ.Threads
                     }
                 }
             }
-            catch( ThreadAbortException )
+            catch(ThreadAbortException)
             {
                 // Prevent the ThreadAbortedException for propogating.
                 Thread.ResetAbort();
@@ -150,7 +157,7 @@ namespace Apache.NMS.ActiveMQ.Threads
             {
             }
             finally
-            {        
+            {
                 // Make sure we notify any waiting threads that thread
                 // has terminated.
                 lock(this.mutex)

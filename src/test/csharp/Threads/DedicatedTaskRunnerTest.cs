@@ -18,6 +18,7 @@
 using System.Threading;
 using Apache.NMS.ActiveMQ.Threads;
 using NUnit.Framework;
+using System;
 
 namespace Apache.NMS.ActiveMQ.Test.Threads
 {
@@ -25,28 +26,28 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
     public class DedicatedTaskRunnerTest
     {
 
-        class SimpleCountingTask : Task 
-        {        
+        class SimpleCountingTask : Task
+        {
             private uint count;
-                
-            public SimpleCountingTask() 
+
+            public SimpleCountingTask()
             {
                 this.count = 0;
             }
-        
-            public bool Iterate() 
-            {        
+
+            public bool Iterate()
+            {
                 count++;
                 return false;
             }
-        
+
             public uint Count
-            { 
-                get{ return count; }
+            {
+                get { return count; }
             }
         }
-        
-        class InfiniteCountingTask : Task 
+
+        class InfiniteCountingTask : Task
         {
             private uint count;
 
@@ -55,52 +56,50 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
                 this.count = 0;
             }
 
-            public bool Iterate() 
-            {        
+            public bool Iterate()
+            {
                 count++;
                 return true;
             }
 
             public uint Count
-            { 
-                get{ return count; }
+            {
+                get { return count; }
             }
         }
 
         [Test]
-        public void TestSimple() 
+        public void TestSimple()
         {
             try
             {
                 new DedicatedTaskRunner(null);
                 Assert.Fail("Should throw a NullReferenceException");
             }
-            catch
+            catch(NullReferenceException)
             {
             }
-        
-            SimpleCountingTask simpleTask = new SimpleCountingTask();            
-            Assert.IsTrue( simpleTask.Count == 0 );
+
+            SimpleCountingTask simpleTask = new SimpleCountingTask();
+            Assert.IsTrue(simpleTask.Count == 0);
             DedicatedTaskRunner simpleTaskRunner = new DedicatedTaskRunner(simpleTask);
 
             simpleTaskRunner.Wakeup();
-            Thread.Sleep( 500 );
-            Assert.IsTrue( simpleTask.Count >= 1 );
+            Thread.Sleep(500);
+            Assert.IsTrue(simpleTask.Count >= 1);
             simpleTaskRunner.Wakeup();
-            Thread.Sleep( 500 );
-            Assert.IsTrue( simpleTask.Count >= 2 );
-        
+            Thread.Sleep(500);
+            Assert.IsTrue(simpleTask.Count >= 2);
+
             InfiniteCountingTask infiniteTask = new InfiniteCountingTask();
-            Assert.IsTrue( infiniteTask.Count == 0 );
+            Assert.IsTrue(infiniteTask.Count == 0);
             DedicatedTaskRunner infiniteTaskRunner = new DedicatedTaskRunner(infiniteTask);
-            Thread.Sleep( 500 );
-            Assert.IsTrue( infiniteTask.Count != 0 );
+            Thread.Sleep(500);
+            Assert.IsTrue(infiniteTask.Count != 0);
             infiniteTaskRunner.Shutdown();
             uint count = infiniteTask.Count;
-            Thread.Sleep( 500 );
-            Assert.IsTrue( infiniteTask.Count == count );
-        
+            Thread.Sleep(500);
+            Assert.IsTrue(infiniteTask.Count == count);
         }
-
     }
 }
