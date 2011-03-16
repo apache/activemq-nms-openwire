@@ -192,5 +192,18 @@ namespace Apache.NMS.ActiveMQ.Test
 				}
 			}
 		}
+		
+        [Test]
+        [ExpectedException("Apache.NMS.NMSException")]
+        public void TestCreateBrowserFailsWithZeroPrefetch()
+        {
+            using (Connection connection = CreateConnection() as Connection)
+            using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            {
+                connection.PrefetchPolicy.QueueBrowserPrefetch = 0;
+                IQueue queue = session.CreateTemporaryQueue();
+                IQueueBrowser browser = session.CreateBrowser(queue);
+            }
+        }		
 	}
 }

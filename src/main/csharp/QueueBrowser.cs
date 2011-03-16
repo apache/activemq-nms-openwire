@@ -88,6 +88,12 @@ namespace Apache.NMS.ActiveMQ
 			this.browseDone.Value = false;
 			BrowsingMessageConsumer consumer = null;
 
+			if(this.session.Connection.PrefetchPolicy.QueueBrowserPrefetch == 0)
+			{
+				Tracer.Warn("Attempted to create a Queue Browser with Zero sized prefetch buffer.");
+				throw new NMSException("Cannot create a Queue Browser with Zero sized prefetch buffer");
+			}
+			
 			try
 			{
 				consumer = new BrowsingMessageConsumer(
