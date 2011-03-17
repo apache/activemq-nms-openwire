@@ -203,6 +203,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 connection.PrefetchPolicy.QueueBrowserPrefetch = 0;
                 IQueue queue = session.CreateTemporaryQueue();
                 IQueueBrowser browser = session.CreateBrowser(queue);
+				browser.Close();
             }
         }		
 	}
