@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-using System;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Transactions;
 using NUnit.Framework;
 
-namespace Apache.NMS.ActiveMQ.Test.src.test.csharp
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
     [Category("Manual")]

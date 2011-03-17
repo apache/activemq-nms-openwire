@@ -220,8 +220,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 using (ISession session = connection.CreateSession())
                 using (IMessageConsumer consumer = session.CreateConsumer(session.GetQueue(testQueueName)))
                 {
-                    IMessage recvd = consumer.Receive(TimeSpan.FromMilliseconds(3000));
-                    while (recvd != null)
+                    IMessage recvd;
+                    while ((recvd = consumer.Receive(TimeSpan.FromMilliseconds(3000))) != null)
                     {
                         Tracer.Debug("Setup Purged Message: " + recvd);
                     }
@@ -363,6 +363,67 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             VerifyBrokerQueueCount(0);
         }
+
+        protected static void VerifyBrokerStateNoRecover(int expectedNumberOfMessages)
+        {
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+
+            using (IConnection connection = factory.CreateConnection())
+            {
+                // check messages are present in the queue
+                using (ISession session = connection.CreateSession())
+                {
+                    IDestination queue = session.GetQueue(testQueueName);
+
+                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    {
+                        connection.Start();
+                        IMessage msg;
+
+                        for (int i = 0; i < expectedNumberOfMessages; ++i)
+                        {
+                            msg = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+                            Assert.IsNotNull(msg, "message is not in the queue !");
+                        }
+
+                        // next message should be empty
+                        msg = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+                        Assert.IsNull(msg, "message found but not expected !");
+                        consumer.Close();
+                    }
+                }
+
+                connection.Close();
+            }
+        }
+
+        protected static void VerifyBrokerHasMessagesInQueue(string connectionURI)
+        {
+            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+
+            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            {
+                // check messages are present in the queue
+                using (INetTxSession session = connection.CreateNetTxSession())
+                {
+                    IDestination queue = session.GetQueue(testQueueName);
+
+                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    {
+                        connection.Start();
+
+                        for (int i = 0; i < MSG_COUNT; ++i)
+                        {
+                            IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+                            Assert.IsNotNull(msg, "message is not in the queue !");
+                        }
+
+                        consumer.Close();
+                    }
+                }
+            }
+        }
+
 
         #endregion
 

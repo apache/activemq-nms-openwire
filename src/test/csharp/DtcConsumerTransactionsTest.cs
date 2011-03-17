@@ -25,7 +25,7 @@ using Apache.NMS.ActiveMQ.Transport.Tcp;
 using Apache.NMS.Util;
 using NUnit.Framework;
 
-namespace Apache.NMS.ActiveMQ.Test.src.test.csharp
+namespace Apache.NMS.ActiveMQ.Test
 {
     [TestFixture]
     [Category("Manual")]
