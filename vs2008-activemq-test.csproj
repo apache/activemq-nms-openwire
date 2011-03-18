@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
+    <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EB943C69-2C9B-45E7-B95B-FB916E7057ED}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -56,6 +56,7 @@
       <HintPath>lib\NUnit\net-2.0\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
@@ -75,6 +76,10 @@
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
     <Compile Include="src\test\csharp\ConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\ConnectionMetaDataTest.cs" />
+    <Compile Include="src\test\csharp\DtcBasicTransactionsTest.cs" />
+    <Compile Include="src\test\csharp\DtcConsumerTransactionsTest.cs" />
+    <Compile Include="src\test\csharp\DtcProducerTransactionsTest.cs" />
+    <Compile Include="src\test\csharp\DtcTransactionsTestSupport.cs" />
     <Compile Include="src\test\csharp\MessageConsumerTest.cs" />
     <Compile Include="src\test\csharp\ExclusiveConsumerTest.cs" />
     <Compile Include="src\test\csharp\IndividualAckTest.cs" />
@@ -96,6 +101,8 @@
     <Compile Include="src\test\csharp\Threads\DedicatedTaskRunnerTest.cs" />
     <Compile Include="src\test\csharp\Threads\ThreadPoolExecutorTest.cs" />
     <Compile Include="src\test\csharp\Transactions\RecoveryFileLoggerTest.cs" />
+    <Compile Include="src\test\csharp\Transactions\RecoveryLoggerHarness.cs" />
+    <Compile Include="src\test\csharp\Transactions\RecoveryLoggerHarnessFactory.cs" />
     <Compile Include="src\test\csharp\Transport\failover\FailoverTransportTest.cs" />
     <Compile Include="src\test\csharp\Transport\Inactivity\InactivityMonitorTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />
