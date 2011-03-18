@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Transactions;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Util;
 
@@ -40,6 +41,13 @@ namespace Apache.NMS.ActiveMQ
         public INetTxSession CreateNetTxSession()
         {
             return (INetTxSession) CreateSession(AcknowledgementMode.Transactional);
+        }
+
+        public INetTxSession CreateNetTxSession(Transaction tx)
+        {
+            NetTxSession session = (NetTxSession)CreateSession(AcknowledgementMode.Transactional);
+            session.Enlist(tx);
+            return session;
         }
 
         protected override Session CreateAtiveMQSession(AcknowledgementMode ackMode)
