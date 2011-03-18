@@ -316,22 +316,33 @@ namespace Apache.NMS.ActiveMQ.Test
             INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
-            using (INetTxSession session = connection.CreateNetTxSession())
+            using (NetTxSession session = connection.CreateNetTxSession() as NetTxSession)
             {
                 IQueue queue = session.GetQueue(testQueueName);
                 IMessageConsumer consumer = session.CreateConsumer(queue);
                 consumer.Listener += AsyncTxAwareOnMessage;
 
+                // Be carefull, message are dispatched once this is done, so you could receive
+                // a Message outside a TX.  We use the awaitBatchProcessingStart event here to
+                // gate te OnMessage callback, once that method returns the Message is ack'd and
+                // no longer has a chance to participate in a TX.
                 connection.Start();
 
                 for (int i = 0; i < BATCH_COUNT; ++i)
                 {
                     using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
                     {
+                        session.Enlist(Transaction.Current);
+
                         batchTxControl = Transaction.Current.DependentClone(DependentCloneOption.BlockCommitUntilComplete);
                         awaitBatchProcessingStart.Set();
                         scoped.Complete();
-                    }                    
+                    }
+
+                    // Reenlisting to fast seems to annoy the DTC.  Also since DTC operations are
+                    // async we need to allow a little time for lag so that the last TX actually 
+                    // completes before we start a new one.
+                    Thread.Sleep(250);
                 }
             }
 

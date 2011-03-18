@@ -17,7 +17,6 @@
 
 using System;
 using System.Transactions;
-using Apache.NMS;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
@@ -28,6 +27,23 @@ namespace Apache.NMS.ActiveMQ
             : base(connection, id, AcknowledgementMode.AutoAcknowledge)
         {
             TransactionContext.InitializeDtcTxContext();
+        }
+
+        /// <summary>
+        /// Manually Enlists in the given Transaction.  This can be used to when the
+        /// client is using the Session in Asynchronous listener mode since the Session
+        /// cannot atuomatically join in this case as there is no Ambient transaction in
+        /// the Message Dispatch thread.  This also allows for clients to use the explicit
+        /// exception model when necessary.  
+        /// </summary>
+        public void Enlist(Transaction tx)
+        {
+            if(tx == null)
+            {
+                throw new NullReferenceException("Specified Transaction cannot be null");
+            }
+
+            this.EnrollInSpecifiedTransaction(tx);
         }
 
         /// <summary>
@@ -61,20 +77,38 @@ namespace Apache.NMS.ActiveMQ
 
         internal override void DoStartTransaction()
         {
-            if(!TransactionContext.InNetTransaction)
+            if(!TransactionContext.InNetTransaction && Transaction.Current != null)
             {
-                if(Transaction.Current != null)
-                {
-                    Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
+                Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
 
-                    // Start a new .NET style transaction, this could be distributed
-                    // or it could just be a Local transaction that could become
-                    // distributed later.
-                    TransactionContext.Begin(Transaction.Current);
-                }
+                EnrollInSpecifiedTransaction(Transaction.Current);
             }
         }
 
+        private void EnrollInSpecifiedTransaction(Transaction tx)
+        {
+            // If an Async DTC operation is in progress such as Commit or Rollback
+            // we need to let it complete before deciding if the Session is in a TX
+            // otherwise we might error out for no reason.
+            TransactionContext.DtcWaitHandle.WaitOne(TimeSpan.FromMilliseconds(1000), true);
+
+            if(TransactionContext.InNetTransaction)
+            {
+                Tracer.Warn("Enlist attempted while a Net TX was Active.");
+                throw new InvalidOperationException("Session is Already enlisted in a Transaction");
+            }
+
+            if(Transaction.Current != null && !Transaction.Current.Equals(tx))
+            {
+                Tracer.Warn("Enlist attempted with a TX that doesn't match the Ambient TX.");
+                throw new ArgumentException("Specified TX must match the ambient TX if set.");
+            }
+            
+            // Start a new .NET style transaction, this could be distributed
+            // or it could just be a Local transaction that could become
+            // distributed later.
+            TransactionContext.Begin(tx);
+        }
     }
 }
 
