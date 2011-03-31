@@ -661,18 +661,7 @@ namespace Apache.NMS.ActiveMQ
 				MessageDispatch dispatch = this.unconsumedMessages.DequeueNoWait();
 				if(dispatch != null)
 				{
-					try
-					{
-						ActiveMQMessage message = CreateActiveMQMessage(dispatch);
-						BeforeMessageIsConsumed(dispatch);
-						listener(message);
-						AfterMessageIsConsumed(dispatch, false);
-					}
-					catch(NMSException e)
-					{
-						this.session.Connection.OnSessionException(this.session, e);
-					}
-
+					this.Dispatch(dispatch);
 					return true;
 				}
 			}
