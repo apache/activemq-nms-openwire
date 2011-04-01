@@ -96,9 +96,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 			{
 				throw;
 			}
-			catch
+			catch(Exception e)
 			{
-				throw new NMSConnectionException("Error creating transport.");
+				throw new NMSConnectionException("Error creating transport.", e);
 			}
 
 			if(null == factory)
