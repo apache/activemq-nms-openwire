@@ -42,7 +42,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly MessageDispatchChannel unconsumedMessages;
 		private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
 		private readonly ConsumerInfo info;
-		private Session session;
+		private readonly Session session;
 
 		private MessageAck pendingAck = null;
 
@@ -61,9 +61,6 @@ namespace Apache.NMS.ActiveMQ
 		private bool inProgressClearRequiredFlag;
 
         private Exception failureError;
-
-		private const int DEFAULT_REDELIVERY_DELAY = 0;
-		private const int DEFAULT_MAX_REDELIVERIES = 5;
 
 		private event MessageListener listener;
 
@@ -1227,12 +1224,16 @@ namespace Apache.NMS.ActiveMQ
 
 			public void AfterCommit()
 			{
-				this.consumer.DoClose();
+                Tracer.DebugFormat("ConsumerCloseSynchronization - AfterCommit Called for Consumer {0}.",
+                                   this.consumer.ConsumerId);
+                this.consumer.DoClose();
 			}
 
 			public void AfterRollback()
 			{
-				this.consumer.DoClose();
+                Tracer.DebugFormat("ConsumerCloseSynchronization - AfterRollback Called for Consumer {0}.",
+                                   this.consumer.ConsumerId);
+                this.consumer.DoClose();
 			}
 		}
 

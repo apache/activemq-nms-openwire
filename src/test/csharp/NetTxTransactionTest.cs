@@ -21,8 +21,6 @@ using System.Transactions;
 
 using NUnit.Framework;
 using Apache.NMS.Test;
-using Apache.NMS.Util;
-using Apache.NMS.ActiveMQ;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
@@ -236,10 +234,10 @@ namespace Apache.NMS.ActiveMQ.Test
                                 producer.Send(session.CreateTextMessage("Hello World"));
                             }
 
-                            session.Close();
-
                             scoped.Complete();
                         }
+
+                        session.Close();
                     }
                 }
 
@@ -255,10 +253,10 @@ namespace Apache.NMS.ActiveMQ.Test
                                 Assert.IsNotNull(msg, "Message was null for index: " + i);
                             }
 
-                            session.Close();
-
                             scoped.Complete();
                         }
+
+                        session.Close();
                     }
                 }
 
