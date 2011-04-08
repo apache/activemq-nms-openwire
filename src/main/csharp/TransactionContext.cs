@@ -220,41 +220,51 @@ namespace Apache.NMS.ActiveMQ
                 throw new TransactionInProgressException("A Transaction is already in Progress");
             }
 
-            Guid rmId = ResourceManagerGuid;
+            dtcControlEvent.Reset();
 
-            // Enlist this object in the transaction.
-            this.currentEnlistment =
-                transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
-
-            Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId);
-
-            TransactionInformation txInfo = transaction.TransactionInformation;
-
-            XATransactionId xaId = new XATransactionId();
-            this.transactionId = xaId;
-
-            if(txInfo.DistributedIdentifier != Guid.Empty)
+            try
             {
-                xaId.GlobalTransactionId = txInfo.DistributedIdentifier.ToByteArray();
-                xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                Guid rmId = ResourceManagerGuid;
+
+                // Enlist this object in the transaction.
+                this.currentEnlistment =
+                    transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
+
+                Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId);
+
+                TransactionInformation txInfo = transaction.TransactionInformation;
+
+                XATransactionId xaId = new XATransactionId();
+                this.transactionId = xaId;
+
+                if (txInfo.DistributedIdentifier != Guid.Empty)
+                {
+                    xaId.GlobalTransactionId = txInfo.DistributedIdentifier.ToByteArray();
+                    xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                }
+                else
+                {
+                    xaId.GlobalTransactionId = Encoding.UTF8.GetBytes(txInfo.LocalIdentifier);
+                    xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                }
+
+                // Now notify the broker that a new XA'ish transaction has started.
+                TransactionInfo info = new TransactionInfo();
+                info.ConnectionId = this.connection.ConnectionId;
+                info.TransactionId = this.transactionId;
+                info.Type = (int) TransactionType.Begin;
+
+                this.session.Connection.Oneway(info);
+
+                if (Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Began XA'ish Transaction:" + xaId.GlobalTransactionId.ToString());
+                }
             }
-            else
+            catch(Exception)
             {
-                xaId.GlobalTransactionId = Encoding.UTF8.GetBytes(txInfo.LocalIdentifier);
-                xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
-            }
-
-            // Now notify the broker that a new XA'ish transaction has started.
-            TransactionInfo info = new TransactionInfo();
-            info.ConnectionId = this.connection.ConnectionId;
-            info.TransactionId = this.transactionId;
-            info.Type = (int) TransactionType.Begin;
-
-            this.session.Connection.Oneway(info);
-
-            if(Tracer.IsDebugEnabled)
-            {
-                Tracer.Debug("Began XA'ish Transaction:" + xaId.GlobalTransactionId.ToString());
+                dtcControlEvent.Set();
+                throw;
             }
         }
 
@@ -262,8 +272,6 @@ namespace Apache.NMS.ActiveMQ
         {
             try
             {
-                dtcControlEvent.Reset();
-
                 Tracer.Debug("Prepare notification received for TX id: " + this.transactionId);
 				
                 BeforeEnd();
@@ -302,6 +310,9 @@ namespace Apache.NMS.ActiveMQ
 
                     // Done so commit won't be called.
                     AfterCommit();
+
+                    // A Read-Only TX is considered closed at this point, DTC won't call us again.
+                    this.dtcControlEvent.Set();
                 }
                 else
                 {
@@ -329,19 +340,14 @@ namespace Apache.NMS.ActiveMQ
 
                 this.currentEnlistment = null;
                 this.transactionId = null;
-            }
-            finally
-            {
                 this.dtcControlEvent.Set();
-            }   
+            }
         }
 
         public void Commit(Enlistment enlistment)
         {
             try
             {
-                dtcControlEvent.Reset();
-
                 Tracer.Debug("Commit notification received for TX id: " + this.transactionId);
 
                 if (this.transactionId != null)
@@ -398,8 +404,6 @@ namespace Apache.NMS.ActiveMQ
         {
             try
             {
-                dtcControlEvent.Reset();
-
                 Tracer.Debug("Single Phase Commit notification received for TX id: " + this.transactionId);
 
                 if (this.transactionId != null)
@@ -450,9 +454,7 @@ namespace Apache.NMS.ActiveMQ
         public void Rollback(Enlistment enlistment)
         {
             try
-            {
-                dtcControlEvent.Reset();
-                
+            {                
                 Tracer.Debug("Rollback notification received for TX id: " + this.transactionId);
 
                 if (this.transactionId != null)
@@ -515,8 +517,6 @@ namespace Apache.NMS.ActiveMQ
         {
             try
             {
-                dtcControlEvent.Reset();
-                
                 Tracer.Debug("In Doubt notification received for TX id: " + this.transactionId);
 				
                 BeforeEnd();

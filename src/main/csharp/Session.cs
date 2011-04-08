@@ -41,7 +41,7 @@ namespace Apache.NMS.ActiveMQ
         private readonly SessionExecutor executor;
         private readonly TransactionContext transactionContext;
 
-        private Connection connection;
+        private readonly Connection connection;
 
         private bool dispatchAsync;
         private bool exclusive;
@@ -293,30 +293,28 @@ namespace Apache.NMS.ActiveMQ
 
         public void Close()
         {
-            lock(myLock)
+            if(this.closed)
             {
-                if(this.closed)
-                {
-                    return;
-                }
+                return;
+            }
 
-                try
+            try
+            {
+                if(transactionContext.InNetTransaction)
                 {
-                    if(transactionContext.InNetTransaction)
-                    {
-                        this.transactionContext.AddSynchronization(new SessionCloseSynchronization(this));
-                    }
-                    else
-                    {
-                        Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId.ToString());
-                        DoClose();
-                        Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId.ToString());
-                    }
+                    this.transactionContext.AddSynchronization(new SessionCloseSynchronization(this));
+                    this.transactionContext.DtcWaitHandle.WaitOne();
                 }
-                catch(Exception ex)
+                else
                 {
-                    Tracer.ErrorFormat("Error during session close: {0}", ex);
+                    Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
+                    DoClose();
+                    Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId);
                 }
+            }
+            catch(Exception ex)
+            {
+                Tracer.ErrorFormat("Error during session close: {0}", ex);
             }
         }
 
@@ -331,9 +329,16 @@ namespace Apache.NMS.ActiveMQ
 		
         internal void Shutdown()
         {
+            Tracer.InfoFormat("Executing Shutdown on Session with Id {0}", this.info.SessionId);
+
+            if(this.closed)
+            {
+                return;
+            }
+
             lock(myLock)
             {
-                if(this.closed)
+                if(this.closed || this.closing)
                 {
                     return;
                 }
@@ -366,8 +371,8 @@ namespace Apache.NMS.ActiveMQ
                     }
                     producers.Clear();
 
-                    // If in a transaction roll it back
-                    if(this.IsTransacted && this.transactionContext.InLocalTransaction)
+                    // If in a local transaction we just roll back at this point.
+                    if (this.IsTransacted && this.transactionContext.InLocalTransaction)
                     {
                         try
                         {
@@ -954,12 +959,14 @@ namespace Apache.NMS.ActiveMQ
 
             public void AfterCommit()
             {
-                this.session.DoClose();
+                Tracer.Debug("SessionCloseSynchronization AfterCommit called for Session: " + session.SessionId);
+                session.DoClose();
             }
 
             public void AfterRollback()
             {
-                this.session.DoClose();
+                Tracer.Debug("SessionCloseSynchronization AfterRollback called for Session: " + session.SessionId);
+                session.DoClose();
             }
         }
 
