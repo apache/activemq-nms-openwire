@@ -199,7 +199,7 @@ namespace Apache.NMS.ActiveMQ
 
         #region Transaction Members used when dealing with .NET System Transactions.
 
-        private readonly ManualResetEvent dtcControlEvent = new ManualResetEvent(false);
+        private readonly ManualResetEvent dtcControlEvent = new ManualResetEvent(true);
 
         public bool InNetTransaction
         {

@@ -90,7 +90,7 @@ namespace Apache.NMS.ActiveMQ
             // If an Async DTC operation is in progress such as Commit or Rollback
             // we need to let it complete before deciding if the Session is in a TX
             // otherwise we might error out for no reason.
-            TransactionContext.DtcWaitHandle.WaitOne(TimeSpan.FromMilliseconds(1000), true);
+            TransactionContext.DtcWaitHandle.WaitOne();
 
             if(TransactionContext.InNetTransaction)
             {
