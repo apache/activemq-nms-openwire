@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Commands;
 
@@ -77,7 +78,18 @@ namespace Apache.NMS.ActiveMQ
 
         internal override void DoStartTransaction()
         {
-            if(!TransactionContext.InNetTransaction && Transaction.Current != null)
+            TransactionContext.SyncRoot.WaitOne();
+
+            if (TransactionContext.InNetTransaction && TransactionContext.NetTxState == TransactionContext.TxState.Pending)
+            {
+                // To late to participate in this TX, we have to wait for it to complete then
+                // we can create a new TX and start from there.
+                TransactionContext.SyncRoot.ReleaseMutex();
+                TransactionContext.DtcWaitHandle.WaitOne();
+                TransactionContext.SyncRoot.WaitOne();
+            }
+
+            if (!TransactionContext.InNetTransaction && Transaction.Current != null)
             {
                 Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
 
@@ -90,7 +102,7 @@ namespace Apache.NMS.ActiveMQ
             // If an Async DTC operation is in progress such as Commit or Rollback
             // we need to let it complete before deciding if the Session is in a TX
             // otherwise we might error out for no reason.
-            TransactionContext.DtcWaitHandle.WaitOne(TimeSpan.FromMilliseconds(1000), true);
+            //TransactionContext.DtcWaitHandle.WaitOne();
 
             if(TransactionContext.InNetTransaction)
             {
