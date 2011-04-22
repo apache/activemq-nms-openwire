@@ -300,17 +300,21 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
-                if(transactionContext.InNetTransaction)
+                TransactionContext.SyncRoot.WaitOne();
+                
+                if (transactionContext.InNetTransaction)
                 {
-                    this.transactionContext.AddSynchronization(new SessionCloseSynchronization(this));
+                    TransactionContext.SyncRoot.ReleaseMutex();
+
+                    //this.transactionContext.AddSynchronization(new SessionCloseSynchronization(this));)
                     this.transactionContext.DtcWaitHandle.WaitOne();
                 }
-                else
-                {
-                    Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
-                    DoClose();
-                    Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId);
-                }
+
+                TransactionContext.SyncRoot.ReleaseMutex();
+
+                Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
+                DoClose();
+                Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId);
             }
             catch(Exception ex)
             {

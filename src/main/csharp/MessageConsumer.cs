@@ -763,13 +763,24 @@ namespace Apache.NMS.ActiveMQ
 
 			if(!IsAutoAcknowledgeBatch)
 			{
-				lock(this.dispatchedMessages)
+                if (this.session.IsTransacted)
+                {
+                    // In the case where the consumer is operating in concert with 
+                    // a distributed TX manager we need to wait whenever the TX
+                    // is controlled by the DTC as it completes all operations
+                    // async and we cannot start consumption again until all its
+                    // tasks have completed.
+                    this.session.TransactionContext.DtcWaitHandle.WaitOne();
+                }
+
+			    lock(this.dispatchedMessages)
 				{
 					this.dispatchedMessages.AddFirst(dispatch);
 				}
 
 				if(this.session.IsTransacted)
 				{
+				    this.session.TransactionContext.DtcWaitHandle.WaitOne();
 					this.AckLater(dispatch, AckType.DeliveredAck);
 				}
 			}
@@ -950,8 +961,11 @@ namespace Apache.NMS.ActiveMQ
 
 				if(this.session.IsTransacted)
 				{
-					this.session.DoStartTransaction();
-					ack.TransactionId = this.session.TransactionContext.TransactionId;
+                    if (!this.session.TransactionContext.InTransaction)
+                    {
+                        this.session.DoStartTransaction();
+                    }
+				    ack.TransactionId = this.session.TransactionContext.TransactionId;
 				}
 
 				this.session.SendAck(ack);

@@ -199,11 +199,38 @@ namespace Apache.NMS.ActiveMQ
 
         #region Transaction Members used when dealing with .NET System Transactions.
 
+        // When DTC calls prepare we must then wait for either the TX to commit, rollback or
+        // be canceled because its in doubt.
         private readonly ManualResetEvent dtcControlEvent = new ManualResetEvent(true);
+
+        // Once the DTC calls prepare we lock this object and don't unlock it again until
+        // the TX has either completed or terminated, the users of this class should use
+        // this sync point when the TX is a DTC version as opposed to a local one.
+        private readonly Mutex syncObject = new Mutex();
+
+	    public enum TxState
+	    {
+	        None = 0, Active = 1, Pending = 2
+	    }
+
+	    private TxState netTxState = TxState.None;
+
+        public Mutex SyncRoot
+	    {
+            get { return this.syncObject; }
+	    }
 
         public bool InNetTransaction
         {
             get{ return this.transactionId != null && this.transactionId is XATransactionId; }
+        }
+
+        public TxState NetTxState
+        {
+            get
+            {
+                return this.netTxState; 
+            }
         }
 
 	    public WaitHandle DtcWaitHandle
@@ -213,255 +240,340 @@ namespace Apache.NMS.ActiveMQ
 
         public void Begin(Transaction transaction)
         {
-            Tracer.Debug("Begin notification received");
-
-            if(InNetTransaction)
+            lock (syncObject)
             {
-                throw new TransactionInProgressException("A Transaction is already in Progress");
-            }
+                this.netTxState = TxState.Active;
 
-            dtcControlEvent.Reset();
+                Tracer.Debug("Begin notification received");
 
-            try
-            {
-                Guid rmId = ResourceManagerGuid;
-
-                // Enlist this object in the transaction.
-                this.currentEnlistment =
-                    transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
-
-                Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId);
-
-                TransactionInformation txInfo = transaction.TransactionInformation;
-
-                XATransactionId xaId = new XATransactionId();
-                this.transactionId = xaId;
-
-                if (txInfo.DistributedIdentifier != Guid.Empty)
+                if (InNetTransaction)
                 {
-                    xaId.GlobalTransactionId = txInfo.DistributedIdentifier.ToByteArray();
-                    xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
-                }
-                else
-                {
-                    xaId.GlobalTransactionId = Encoding.UTF8.GetBytes(txInfo.LocalIdentifier);
-                    xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                    throw new TransactionInProgressException("A Transaction is already in Progress");
                 }
 
-                // Now notify the broker that a new XA'ish transaction has started.
-                TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = this.connection.ConnectionId;
-                info.TransactionId = this.transactionId;
-                info.Type = (int) TransactionType.Begin;
-
-                this.session.Connection.Oneway(info);
-
-                if (Tracer.IsDebugEnabled)
+                try
                 {
-                    Tracer.Debug("Began XA'ish Transaction:" + xaId.GlobalTransactionId.ToString());
+                    Guid rmId = ResourceManagerGuid;
+
+                    // Enlist this object in the transaction.
+                    this.currentEnlistment =
+                        transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
+
+                    Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId);
+
+                    TransactionInformation txInfo = transaction.TransactionInformation;
+
+                    XATransactionId xaId = new XATransactionId();
+                    this.transactionId = xaId;
+
+                    if (txInfo.DistributedIdentifier != Guid.Empty)
+                    {
+                        xaId.GlobalTransactionId = txInfo.DistributedIdentifier.ToByteArray();
+                        xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                    }
+                    else
+                    {
+                        xaId.GlobalTransactionId = Encoding.UTF8.GetBytes(txInfo.LocalIdentifier);
+                        xaId.BranchQualifier = Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                    }
+
+                    // Now notify the broker that a new XA'ish transaction has started.
+                    TransactionInfo info = new TransactionInfo();
+                    info.ConnectionId = this.connection.ConnectionId;
+                    info.TransactionId = this.transactionId;
+                    info.Type = (int) TransactionType.Begin;
+
+                    this.session.Connection.Oneway(info);
+
+                    if (Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("Began XA'ish Transaction:" + xaId.GlobalTransactionId.ToString());
+                    }
                 }
-            }
-            catch(Exception)
-            {
-                dtcControlEvent.Set();
-                throw;
+                catch (Exception)
+                {
+                    dtcControlEvent.Set();
+                    throw;
+                }
             }
         }
 
         public void Prepare(PreparingEnlistment preparingEnlistment)
         {
-            try
+            lock (this.syncObject)
             {
-                Tracer.Debug("Prepare notification received for TX id: " + this.transactionId);
-				
-                BeforeEnd();
+                this.netTxState = TxState.Pending;
 
-                // Before sending the request to the broker, log the recovery bits, if
-                // this fails we can't prepare and the TX should be rolled back.
-                RecoveryLogger.LogRecoveryInfo(this.transactionId as XATransactionId,
-                                               preparingEnlistment.RecoveryInformation());
-
-	            // Inform the broker that work on the XA'sh TX Branch is complete.
-	            TransactionInfo info = new TransactionInfo();
-	            info.ConnectionId = this.connection.ConnectionId;
-	            info.TransactionId = this.transactionId;
-                info.Type = (int) TransactionType.End;
-
-                this.connection.CheckConnected();
-				this.connection.SyncRequest(info);
-
-                // Prepare the Transaction for commit.
-                info.Type = (int) TransactionType.Prepare;
-                IntegerResponse response = (IntegerResponse) this.connection.SyncRequest(info);
-                if(response.Result == XA_READONLY)
-                {
-                    Tracer.Debug("Transaction Prepare done and doesn't need a commit, TX id: " + this.transactionId);
-
-                    this.transactionId = null;
-                    this.currentEnlistment = null;
-
-                    // Read Only means there's nothing to recover because there was no
-                    // change on the broker.
-                    RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
-
-                    // if server responds that nothing needs to be done, then reply prepared
-                    // but clear the current state data so we appear done to the commit method.
-                    preparingEnlistment.Prepared();
-
-                    // Done so commit won't be called.
-                    AfterCommit();
-
-                    // A Read-Only TX is considered closed at this point, DTC won't call us again.
-                    this.dtcControlEvent.Set();
-                }
-                else
-                {
-                    Tracer.Debug("Transaction Prepare succeeded TX id: " + this.transactionId);
-
-                    // If work finished correctly, reply prepared
-                    preparingEnlistment.Prepared();
-                }
-            }
-            catch(Exception ex)
-            {
-                Tracer.DebugFormat("Transaction[{0}] Prepare failed with error: {1}",
-                                   this.transactionId, ex.Message);
-
-                AfterRollback();
-                preparingEnlistment.ForceRollback();
                 try
                 {
-                    this.connection.OnException(ex);
-                }
-                catch (Exception error)
-                {
-                    Tracer.Error(error.ToString());
-                }
+                    dtcControlEvent.Reset();
 
-                this.currentEnlistment = null;
-                this.transactionId = null;
-                this.dtcControlEvent.Set();
+                    Tracer.Debug("Prepare notification received for TX id: " + this.transactionId);
+
+                    BeforeEnd();
+
+                    // Before sending the request to the broker, log the recovery bits, if
+                    // this fails we can't prepare and the TX should be rolled back.
+                    RecoveryLogger.LogRecoveryInfo(this.transactionId as XATransactionId,
+                                                   preparingEnlistment.RecoveryInformation());
+
+                    // Inform the broker that work on the XA'sh TX Branch is complete.
+                    TransactionInfo info = new TransactionInfo();
+                    info.ConnectionId = this.connection.ConnectionId;
+                    info.TransactionId = this.transactionId;
+                    info.Type = (int) TransactionType.End;
+
+                    this.connection.CheckConnected();
+                    this.connection.SyncRequest(info);
+
+                    // Prepare the Transaction for commit.
+                    info.Type = (int) TransactionType.Prepare;
+                    IntegerResponse response = (IntegerResponse) this.connection.SyncRequest(info);
+                    if (response.Result == XA_READONLY)
+                    {
+                        Tracer.Debug("Transaction Prepare done and doesn't need a commit, TX id: " + this.transactionId);
+
+                        this.transactionId = null;
+                        this.currentEnlistment = null;
+
+                        // Read Only means there's nothing to recover because there was no
+                        // change on the broker.
+                        RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+
+                        // if server responds that nothing needs to be done, then reply prepared
+                        // but clear the current state data so we appear done to the commit method.
+                        preparingEnlistment.Prepared();
+
+                        // Done so commit won't be called.
+                        AfterCommit();
+
+                        // A Read-Only TX is considered closed at this point, DTC won't call us again.
+                        this.dtcControlEvent.Set();
+                    }
+                    else
+                    {
+                        Tracer.Debug("Transaction Prepare succeeded TX id: " + this.transactionId);
+
+                        // If work finished correctly, reply prepared
+                        preparingEnlistment.Prepared();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tracer.DebugFormat("Transaction[{0}] Prepare failed with error: {1}",
+                                       this.transactionId, ex.Message);
+
+                    AfterRollback();
+                    preparingEnlistment.ForceRollback();
+                    try
+                    {
+                        this.connection.OnException(ex);
+                    }
+                    catch (Exception error)
+                    {
+                        Tracer.Error(error.ToString());
+                    }
+
+                    this.currentEnlistment = null;
+                    this.transactionId = null;
+                    this.netTxState = TxState.None;
+                    this.dtcControlEvent.Set();
+                }
             }
         }
 
         public void Commit(Enlistment enlistment)
         {
-            try
+            lock (this.syncObject)
             {
-                Tracer.Debug("Commit notification received for TX id: " + this.transactionId);
-
-                if (this.transactionId != null)
-                {
-                    // Now notify the broker that a new XA'ish transaction has completed.
-                    TransactionInfo info = new TransactionInfo();
-                    info.ConnectionId = this.connection.ConnectionId;
-                    info.TransactionId = this.transactionId;
-                    info.Type = (int) TransactionType.CommitTwoPhase;
-
-                    this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
-
-                    Tracer.Debug("Transaction Commit Done TX id: " + this.transactionId);
-
-                    RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
-
-                    // if server responds that nothing needs to be done, then reply done.
-                    enlistment.Done();
-
-                    AfterCommit();
-                }
-            }
-            catch(Exception ex)
-            {
-                Tracer.DebugFormat("Transaction[{0}] Commit failed with error: {1}",
-                                   this.transactionId, ex.Message);
-                AfterRollback();
                 try
                 {
-                    this.connection.OnException(ex);
-                }
-                catch (Exception error)
-                {
-                    Tracer.Error(error.ToString());
-                }
-            }
-            finally
-            {
-                this.currentEnlistment = null;
-                this.transactionId = null;
+                    Tracer.Debug("Commit notification received for TX id: " + this.transactionId);
 
-                CountDownLatch latch = this.recoveryComplete;
-                if(latch != null)
-                {
-                    latch.countDown();
-                }
+                    if (this.transactionId != null)
+                    {
+                        // Now notify the broker that a new XA'ish transaction has completed.
+                        TransactionInfo info = new TransactionInfo();
+                        info.ConnectionId = this.connection.ConnectionId;
+                        info.TransactionId = this.transactionId;
+                        info.Type = (int) TransactionType.CommitTwoPhase;
 
-                this.dtcControlEvent.Set();
+                        this.connection.CheckConnected();
+                        this.connection.SyncRequest(info);
+
+                        Tracer.Debug("Transaction Commit Done TX id: " + this.transactionId);
+
+                        RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+
+                        // if server responds that nothing needs to be done, then reply done.
+                        enlistment.Done();
+
+                        AfterCommit();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tracer.DebugFormat("Transaction[{0}] Commit failed with error: {1}",
+                                       this.transactionId, ex.Message);
+                    AfterRollback();
+                    try
+                    {
+                        this.connection.OnException(ex);
+                    }
+                    catch (Exception error)
+                    {
+                        Tracer.Error(error.ToString());
+                    }
+                }
+                finally
+                {
+                    this.currentEnlistment = null;
+                    this.transactionId = null;
+                    this.netTxState = TxState.None;
+
+                    CountDownLatch latch = this.recoveryComplete;
+                    if (latch != null)
+                    {
+                        latch.countDown();
+                    }
+
+                    this.dtcControlEvent.Set();
+                }
             }
         }
 
         public void SinglePhaseCommit(SinglePhaseEnlistment enlistment)
         {
-            try
+            lock (this.syncObject)
             {
-                Tracer.Debug("Single Phase Commit notification received for TX id: " + this.transactionId);
-
-                if (this.transactionId != null)
-                {
-                	BeforeEnd();
-
-					// Now notify the broker that a new XA'ish transaction has completed.
-                    TransactionInfo info = new TransactionInfo();
-                    info.ConnectionId = this.connection.ConnectionId;
-                    info.TransactionId = this.transactionId;
-                    info.Type = (int) TransactionType.CommitOnePhase;
-
-                    this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
-
-                    Tracer.Debug("Transaction Single Phase Commit Done TX id: " + this.transactionId);
-
-                    // if server responds that nothing needs to be done, then reply done.
-                    enlistment.Done();
-
-                    AfterCommit();
-                }
-            }
-            catch(Exception ex)
-            {
-                Tracer.DebugFormat("Transaction[{0}] Single Phase Commit failed with error: {1}",
-                                   this.transactionId, ex.Message);
-                AfterRollback();
-                enlistment.Done();
                 try
                 {
-                    this.connection.OnException(ex);
-                }
-                catch (Exception error)
-                {
-                    Tracer.Error(error.ToString());
-                }
-            }
-            finally
-            {
-                this.currentEnlistment = null;
-                this.transactionId = null;
+                    Tracer.Debug("Single Phase Commit notification received for TX id: " + this.transactionId);
 
-                this.dtcControlEvent.Set();
+                    if (this.transactionId != null)
+                    {
+                        BeforeEnd();
+
+                        // Now notify the broker that a new XA'ish transaction has completed.
+                        TransactionInfo info = new TransactionInfo();
+                        info.ConnectionId = this.connection.ConnectionId;
+                        info.TransactionId = this.transactionId;
+                        info.Type = (int) TransactionType.CommitOnePhase;
+
+                        this.connection.CheckConnected();
+                        this.connection.SyncRequest(info);
+
+                        Tracer.Debug("Transaction Single Phase Commit Done TX id: " + this.transactionId);
+
+                        // if server responds that nothing needs to be done, then reply done.
+                        enlistment.Done();
+
+                        AfterCommit();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tracer.DebugFormat("Transaction[{0}] Single Phase Commit failed with error: {1}",
+                                       this.transactionId, ex.Message);
+                    AfterRollback();
+                    enlistment.Done();
+                    try
+                    {
+                        this.connection.OnException(ex);
+                    }
+                    catch (Exception error)
+                    {
+                        Tracer.Error(error.ToString());
+                    }
+                }
+                finally
+                {
+                    this.currentEnlistment = null;
+                    this.transactionId = null;
+                    this.netTxState = TxState.None;
+
+                    this.dtcControlEvent.Set();
+                }
             }
         }
 		
         public void Rollback(Enlistment enlistment)
         {
-            try
-            {                
-                Tracer.Debug("Rollback notification received for TX id: " + this.transactionId);
-
-                if (this.transactionId != null)
+            lock (this.syncObject)
+            {
+                try
                 {
+                    Tracer.Debug("Rollback notification received for TX id: " + this.transactionId);
+
+                    if (this.transactionId != null)
+                    {
+                        BeforeEnd();
+
+                        // Now notify the broker that a new XA'ish transaction has started.
+                        TransactionInfo info = new TransactionInfo();
+                        info.ConnectionId = this.connection.ConnectionId;
+                        info.TransactionId = this.transactionId;
+                        info.Type = (int) TransactionType.End;
+
+                        this.connection.CheckConnected();
+                        this.connection.SyncRequest(info);
+
+                        info.Type = (int) TransactionType.Rollback;
+                        this.connection.CheckConnected();
+                        this.connection.SyncRequest(info);
+
+                        Tracer.Debug("Transaction Rollback Done TX id: " + this.transactionId);
+
+                        RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+
+                        // if server responds that nothing needs to be done, then reply done.
+                        enlistment.Done();
+
+                        AfterRollback();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Tracer.DebugFormat("Transaction[{0}] Rollback failed with error: {1}",
+                                       this.transactionId, ex.Message);
+                    AfterRollback();
+                    try
+                    {
+                        this.connection.OnException(ex);
+                    }
+                    catch (Exception error)
+                    {
+                        Tracer.Error(error.ToString());
+                    }
+                }
+                finally
+                {
+                    this.currentEnlistment = null;
+                    this.transactionId = null;
+                    this.netTxState = TxState.None;
+
+                    CountDownLatch latch = this.recoveryComplete;
+                    if (latch != null)
+                    {
+                        latch.countDown();
+                    }
+
+                    this.dtcControlEvent.Set();
+                }
+            }
+        }
+
+        public void InDoubt(Enlistment enlistment)
+        {
+            lock (syncObject)
+            {
+                try
+                {
+                    Tracer.Debug("In Doubt notification received for TX id: " + this.transactionId);
+
                     BeforeEnd();
 
-                    // Now notify the broker that a new XA'ish transaction has started.
+                    // Now notify the broker that Rollback should be performed.
                     TransactionInfo info = new TransactionInfo();
                     info.ConnectionId = this.connection.ConnectionId;
                     info.TransactionId = this.transactionId;
@@ -474,7 +586,7 @@ namespace Apache.NMS.ActiveMQ
                     this.connection.CheckConnected();
                     this.connection.SyncRequest(info);
 
-                    Tracer.Debug("Transaction Rollback Done TX id: " + this.transactionId);
+                    Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.transactionId);
 
                     RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
@@ -483,78 +595,20 @@ namespace Apache.NMS.ActiveMQ
 
                     AfterRollback();
                 }
-            }
-            catch(Exception ex)
-            {
-                Tracer.DebugFormat("Transaction[{0}] Rollback failed with error: {1}",
-                                   this.transactionId, ex.Message);
-                AfterRollback();
-                try
+                finally
                 {
-                    this.connection.OnException(ex);
+                    this.currentEnlistment = null;
+                    this.transactionId = null;
+                    this.netTxState = TxState.None;
+
+                    CountDownLatch latch = this.recoveryComplete;
+                    if (latch != null)
+                    {
+                        latch.countDown();
+                    }
+
+                    this.dtcControlEvent.Set();
                 }
-                catch (Exception error)
-                {
-                    Tracer.Error(error.ToString());
-                }
-            }
-            finally
-            {
-                this.currentEnlistment = null;
-                this.transactionId = null;
-
-                CountDownLatch latch = this.recoveryComplete;
-                if (latch != null)
-                {
-                    latch.countDown();
-                }
-
-                this.dtcControlEvent.Set();
-            }
-        }
-
-        public void InDoubt(Enlistment enlistment)
-        {
-            try
-            {
-                Tracer.Debug("In Doubt notification received for TX id: " + this.transactionId);
-				
-                BeforeEnd();
-
-                // Now notify the broker that Rollback should be performed.
-                TransactionInfo info = new TransactionInfo();
-                info.ConnectionId = this.connection.ConnectionId;
-                info.TransactionId = this.transactionId;
-                info.Type = (int)TransactionType.End;
-
-                this.connection.CheckConnected();
-                this.connection.SyncRequest(info);
-
-                info.Type = (int)TransactionType.Rollback;
-                this.connection.CheckConnected();
-                this.connection.SyncRequest(info);
-
-                Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.transactionId);
-
-                RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
-
-                // if server responds that nothing needs to be done, then reply done.
-                enlistment.Done();
-
-                AfterRollback();
-            }
-            finally
-            {
-                this.currentEnlistment = null;
-                this.transactionId = null;
-
-                CountDownLatch latch = this.recoveryComplete;
-                if (latch != null)
-                {
-                    latch.countDown();
-                }
-
-                this.dtcControlEvent.Set();
             }
         }
 
