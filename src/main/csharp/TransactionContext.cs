@@ -243,6 +243,7 @@ namespace Apache.NMS.ActiveMQ
             lock (syncObject)
             {
                 this.netTxState = TxState.Active;
+                dtcControlEvent.Reset();
 
                 Tracer.Debug("Begin notification received");
 
@@ -306,8 +307,6 @@ namespace Apache.NMS.ActiveMQ
 
                 try
                 {
-                    dtcControlEvent.Reset();
-
                     Tracer.Debug("Prepare notification received for TX id: " + this.transactionId);
 
                     BeforeEnd();

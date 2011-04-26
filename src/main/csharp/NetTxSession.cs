@@ -92,18 +92,14 @@ namespace Apache.NMS.ActiveMQ
             if (!TransactionContext.InNetTransaction && Transaction.Current != null)
             {
                 Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
-
                 EnrollInSpecifiedTransaction(Transaction.Current);
             }
+
+            TransactionContext.SyncRoot.ReleaseMutex();
         }
 
         private void EnrollInSpecifiedTransaction(Transaction tx)
         {
-            // If an Async DTC operation is in progress such as Commit or Rollback
-            // we need to let it complete before deciding if the Session is in a TX
-            // otherwise we might error out for no reason.
-            //TransactionContext.DtcWaitHandle.WaitOne();
-
             if(TransactionContext.InNetTransaction)
             {
                 Tracer.Warn("Enlist attempted while a Net TX was Active.");

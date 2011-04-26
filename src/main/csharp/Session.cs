@@ -306,8 +306,11 @@ namespace Apache.NMS.ActiveMQ
                 {
                     TransactionContext.SyncRoot.ReleaseMutex();
 
-                    //this.transactionContext.AddSynchronization(new SessionCloseSynchronization(this));)
+                    // Must wait for all the DTC operations to complete before
+                    // moving on from this close call.
                     this.transactionContext.DtcWaitHandle.WaitOne();
+
+                    TransactionContext.SyncRoot.WaitOne();
                 }
 
                 TransactionContext.SyncRoot.ReleaseMutex();

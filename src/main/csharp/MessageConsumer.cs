@@ -330,11 +330,15 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(this.session.IsTransacted && this.session.TransactionContext.InTransaction)
 				{
-					this.session.TransactionContext.AddSynchronization(new ConsumerCloseSynchronization(this));
+                    Tracer.DebugFormat("Consumer {0} Registering new ConsumerCloseSynchronization",
+                                       this.info.ConsumerId);
+                    this.session.TransactionContext.AddSynchronization(new ConsumerCloseSynchronization(this));
 				}
 				else
 				{
-					this.DoClose();
+                    Tracer.DebugFormat("Consumer {0} No Active TX closing normally.",
+                                       this.info.ConsumerId);
+                    this.DoClose();
 				}
 			}
 		}
@@ -765,12 +769,18 @@ namespace Apache.NMS.ActiveMQ
 			{
                 if (this.session.IsTransacted)
                 {
-                    // In the case where the consumer is operating in concert with 
-                    // a distributed TX manager we need to wait whenever the TX
-                    // is controlled by the DTC as it completes all operations
-                    // async and we cannot start consumption again until all its
-                    // tasks have completed.
-                    this.session.TransactionContext.DtcWaitHandle.WaitOne();
+                    this.session.TransactionContext.SyncRoot.WaitOne();
+
+                    // In the case where the consumer is operating in concert with a
+                    // distributed TX manager we need to wait whenever the TX is being
+                    // controlled by the DTC as it completes all operations async and
+                    // we cannot start consumption again until all its tasks have completed.)
+                    if (this.session.TransactionContext.InNetTransaction && 
+                        this.session.TransactionContext.NetTxState == TransactionContext.TxState.Pending)
+                    {
+                        this.session.TransactionContext.SyncRoot.ReleaseMutex();
+                        this.session.TransactionContext.DtcWaitHandle.WaitOne();                        
+                    }
                 }
 
 			    lock(this.dispatchedMessages)
@@ -780,7 +790,7 @@ namespace Apache.NMS.ActiveMQ
 
 				if(this.session.IsTransacted)
 				{
-				    this.session.TransactionContext.DtcWaitHandle.WaitOne();
+				    //this.session.TransactionContext.DtcWaitHandle.WaitOne();
 					this.AckLater(dispatch, AckType.DeliveredAck);
 				}
 			}
