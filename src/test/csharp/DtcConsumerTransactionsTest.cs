@@ -23,7 +23,6 @@ using System.Threading;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
-using Apache.NMS.Util;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -227,6 +226,77 @@ namespace Apache.NMS.ActiveMQ.Test
                 {
                     IEnumerator enumerator = browser.GetEnumerator();
 
+                    while (enumerator.MoveNext())
+                    {
+                        IMessage msg = enumerator.Current as IMessage;
+                        Assert.IsNotNull(msg, "message is not in the queue!");
+                        Assert.IsFalse(msg.NMSRedelivered, "message is redelivered!");
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void TestRedeliveredNoComplete()
+        {
+            const int messageCount = 300;
+            const int receiveCount = 150;
+
+            // enqueue several messages
+            PurgeDatabase();
+            PurgeAndFillQueue(messageCount);
+
+            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            {
+                // allow no redelivery so that message immediatly goes to the DLQ if first read fails
+                connection.RedeliveryPolicy.MaximumRedeliveries = 0;
+                connection.Start();
+
+                // receive half of total messages
+                using (INetTxSession session = connection.CreateNetTxSession())
+                {
+                    IQueue queue = session.GetQueue(testQueueName);
+
+                    // read message from queue and insert into db table
+                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    {
+                        for (int i = 0; i < receiveCount; i++)
+                        {
+                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                            using (SqlCommand sqlInsertCommand = new SqlCommand())
+                            {
+                                sqlConnection.Open();
+                                sqlInsertCommand.Connection = sqlConnection;
+
+                                ITextMessage message =
+                                    consumer.Receive(TimeSpan.FromMilliseconds(10000)) as ITextMessage;
+                                sqlInsertCommand.CommandText =
+                                    string.Format("INSERT INTO {0} VALUES ({1})", testTable,
+                                                  Convert.ToInt32(message.Text));
+                                sqlInsertCommand.ExecuteNonQuery();
+                            }
+                        }
+                    }
+
+                    session.Close();
+                }
+            }
+
+            Tracer.Debug("First stage ok");
+
+            // check that others message have status redelivered = false
+            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+
+            using (IConnection connection = checkFactory.CreateConnection())
+            {
+                connection.Start();
+
+                using (ISession session = connection.CreateSession())
+                using (IQueueBrowser browser = session.CreateBrowser(session.GetQueue(testQueueName)))
+                {
+                    IEnumerator enumerator = browser.GetEnumerator();
                     while (enumerator.MoveNext())
                     {
                         IMessage msg = enumerator.Current as IMessage;
