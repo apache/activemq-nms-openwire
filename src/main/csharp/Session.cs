@@ -299,21 +299,22 @@ namespace Apache.NMS.ActiveMQ
             }
 
             try
-            {
-                TransactionContext.SyncRoot.WaitOne();
-                
+            {                
                 if (transactionContext.InNetTransaction)
                 {
-                    TransactionContext.SyncRoot.ReleaseMutex();
-
-                    // Must wait for all the DTC operations to complete before
-                    // moving on from this close call.
-                    this.transactionContext.DtcWaitHandle.WaitOne();
-
                     TransactionContext.SyncRoot.WaitOne();
-                }
 
-                TransactionContext.SyncRoot.ReleaseMutex();
+                    if (transactionContext.InNetTransaction)
+                    {
+                        // Must wait for all the DTC operations to complete before
+                        // moving on from this close call.
+                        TransactionContext.SyncRoot.ReleaseMutex();
+                        this.transactionContext.DtcWaitHandle.WaitOne();
+                        TransactionContext.SyncRoot.WaitOne();
+                    }
+
+                    TransactionContext.SyncRoot.ReleaseMutex();
+                }
 
                 Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
                 DoClose();
