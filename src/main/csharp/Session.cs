@@ -53,9 +53,9 @@ namespace Apache.NMS.ActiveMQ
         private int producerCounter;
         private long nextDeliveryId;
         private long lastDeliveredSequenceId;
-        private bool disposed = false;
-        private bool closed = false;
-        private bool closing = false;
+        protected bool disposed = false;
+        protected bool closed = false;
+        protected bool closing = false;
         private TimeSpan disposeStopTimeout = TimeSpan.FromMilliseconds(30000);
         private TimeSpan closeStopTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
         private TimeSpan requestTimeout;
@@ -300,38 +300,20 @@ namespace Apache.NMS.ActiveMQ
             this.disposed = true;
         }
 
-        public void Close()
+        public virtual void Close()
         {
-            if(this.closed)
+            if (!this.closed)
             {
-                return;
-            }
-
-            try
-            {                
-                if (transactionContext.InNetTransaction)
+                try
                 {
-                    TransactionContext.SyncRoot.WaitOne();
-
-                    if (transactionContext.InNetTransaction)
-                    {
-                        // Must wait for all the DTC operations to complete before
-                        // moving on from this close call.
-                        TransactionContext.SyncRoot.ReleaseMutex();
-                        this.transactionContext.DtcWaitHandle.WaitOne();
-                        TransactionContext.SyncRoot.WaitOne();
-                    }
-
-                    TransactionContext.SyncRoot.ReleaseMutex();
+                    Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
+                    DoClose();
+                    Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId);
                 }
-
-                Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
-                DoClose();
-                Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId);
-            }
-            catch(Exception ex)
-            {
-                Tracer.ErrorFormat("Error during session close: {0}", ex);
+                catch (Exception ex)
+                {
+                    Tracer.ErrorFormat("Error during session close: {0}", ex);
+                }
             }
         }
 
