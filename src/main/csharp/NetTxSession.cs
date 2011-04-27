@@ -64,6 +64,39 @@ namespace Apache.NMS.ActiveMQ
             get { return true; }
         }
 
+        public override void Close()
+        {
+            if (this.closed)
+            {
+                return;
+            }
+
+            try
+            {
+                if (TransactionContext.InNetTransaction)
+                {
+                    TransactionContext.SyncRoot.WaitOne();
+
+                    if (TransactionContext.InNetTransaction)
+                    {
+                        // Must wait for all the DTC operations to complete before
+                        // moving on from this close call.
+                        TransactionContext.SyncRoot.ReleaseMutex();
+                        this.TransactionContext.DtcWaitHandle.WaitOne();
+                        TransactionContext.SyncRoot.WaitOne();
+                    }
+
+                    TransactionContext.SyncRoot.ReleaseMutex();
+                }
+
+                base.Close();
+            }
+            catch (Exception ex)
+            {
+                Tracer.ErrorFormat("Error during session close: {0}", ex);
+            }
+        }
+
         internal override void DoRollback()
         {
             // Only the Transaction Manager can do this when in a .NET Transaction.
