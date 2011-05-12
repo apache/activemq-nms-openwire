@@ -414,7 +414,6 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.DebugFormat("Transaction[{0}] Commit failed with error: {1}",
                                        this.transactionId, ex.Message);
-                    AfterRollback();
                     try
                     {
                         this.connection.OnException(ex);
