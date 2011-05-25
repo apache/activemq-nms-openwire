@@ -781,7 +781,11 @@ namespace Apache.NMS.ActiveMQ
                         this.session.TransactionContext.SyncRoot.ReleaseMutex();
                         this.session.TransactionContext.DtcWaitHandle.WaitOne();                        
                     }
-                }
+                    else
+                    {
+                        this.session.TransactionContext.SyncRoot.ReleaseMutex();
+                    }
+                }                
 
 			    lock(this.dispatchedMessages)
 				{

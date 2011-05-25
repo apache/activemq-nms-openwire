@@ -38,6 +38,47 @@ namespace Apache.NMS.ActiveMQ.Test
         protected static string TEST_CLIENT_ID = "MessageConsumerTestClientId";
 
         [Test]
+        public void ConsumeInTwoThreads()
+        {
+            ParameterizedThreadStart threadStart =
+                delegate(object o)
+                {
+                    IMessageConsumer consumer = (IMessageConsumer)o;
+                    IMessage message = consumer.Receive(TimeSpan.FromSeconds(2));
+                    Assert.IsNotNull(message);
+                };
+
+            using (IConnection connection = CreateConnection(TEST_CLIENT_ID))
+            {
+                connection.Start();
+                using (ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
+                {
+                    IQueue queue = SessionUtil.GetDestination(session, DESTINATION_NAME) as IQueue;
+
+                    // enqueue 2 messages
+                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    using (IMessageProducer producer = session.CreateProducer(queue))
+                    {
+                        producer.DeliveryMode = MsgDeliveryMode.Persistent;
+                        producer.Send(producer.CreateMessage());
+                        producer.Send(producer.CreateMessage());
+                        session.Commit();
+
+                        // receive first using a dedicated thread. This works
+                        Thread thread = new Thread(threadStart);
+                        thread.Start(consumer);
+                        thread.Join();
+                        session.Commit();
+
+                        // receive second using main thread. This FAILS
+                        IMessage message = consumer.Receive(TimeSpan.FromSeconds(2)); // throws System.Threading.AbandonedMutexException
+                        Assert.IsNotNull(message);
+                        session.Commit();
+                    }
+                }
+            }
+        }
+        [Test]
         public void TestReceiveIgnoreExpirationMessage(
             [Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge,
                 AcknowledgementMode.DupsOkAcknowledge, AcknowledgementMode.Transactional)]
