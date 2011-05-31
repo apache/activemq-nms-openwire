@@ -419,7 +419,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 session.Commit();
 
                 // sends normal message, then immediate retry, then retry after 500 ms, then expire.
-                Thread.Sleep(2000);
+                Thread.Sleep(3000);
                 Assert.AreEqual(3, cc.numReceived);
             }
         }
