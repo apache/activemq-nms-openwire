@@ -43,6 +43,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         bool clientMaster;
         bool faultTolerant;
         bool failoverReconnect;
+        string clientIp;
 
         ///
         /// <summery>
@@ -75,7 +76,8 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "Manageable = " + Manageable + ", " + 
                 "ClientMaster = " + ClientMaster + ", " + 
                 "FaultTolerant = " + FaultTolerant + ", " + 
-                "FailoverReconnect = " + FailoverReconnect + " ]";
+                "FailoverReconnect = " + FailoverReconnect + ", " + 
+                "ClientIp = " + ClientIp + " ]";
         }
 
         public ConnectionId ConnectionId
@@ -136,6 +138,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return failoverReconnect; }
             set { this.failoverReconnect = value; }
+        }
+
+        public string ClientIp
+        {
+            get { return clientIp; }
+            set { this.clientIp = value; }
         }
 
         ///

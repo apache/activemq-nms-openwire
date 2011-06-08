@@ -40,6 +40,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         MessageId firstMessageId;
         MessageId lastMessageId;
         int messageCount;
+        BrokerError poisonCause;
 
         ///
         /// <summery>
@@ -69,7 +70,8 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "AckType = " + AckType + ", " + 
                 "FirstMessageId = " + FirstMessageId + ", " + 
                 "LastMessageId = " + LastMessageId + ", " + 
-                "MessageCount = " + MessageCount + " ]";
+                "MessageCount = " + MessageCount + ", " + 
+                "PoisonCause = " + PoisonCause + " ]";
         }
 
         public ActiveMQDestination Destination
@@ -112,6 +114,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return messageCount; }
             set { this.messageCount = value; }
+        }
+
+        public BrokerError PoisonCause
+        {
+            get { return poisonCause; }
+            set { this.poisonCause = value; }
         }
 
         ///
