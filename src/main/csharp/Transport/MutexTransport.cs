@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 using System;
+using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport
@@ -26,31 +27,73 @@ namespace Apache.NMS.ActiveMQ.Transport
 	{
 		private readonly object transmissionLock = new object();
 
+		private void GetTransmissionLock(int timeout)
+		{
+			if(timeout > 0)
+			{
+				DateTime timeoutTime = DateTime.Now + TimeSpan.FromMilliseconds(timeout);
+
+				while(true)
+				{
+					if(Monitor.TryEnter(transmissionLock))
+					{
+						break;
+					}
+
+					if(DateTime.Now > timeoutTime)
+					{
+						throw new IOException(string.Format("Oneway timed out after {0} milliseconds.", timeout));
+					}
+
+					Thread.Sleep(10);
+				}
+			}
+			else
+			{
+				Monitor.Enter(transmissionLock);
+			}
+		}
+
 		public MutexTransport(ITransport next) : base(next)
 		{
 		}
 
 		public override void Oneway(Command command)
 		{
-			lock(transmissionLock)
+			GetTransmissionLock(this.next.Timeout);
+			try
 			{
-				this.next.Oneway(command);
+				base.Oneway(command);
+			}
+			finally
+			{
+				Monitor.Exit(transmissionLock);
 			}
 		}
 
 		public override FutureResponse AsyncRequest(Command command)
 		{
-			lock(transmissionLock)
+			GetTransmissionLock(this.next.AsyncTimeout);
+			try
 			{
 				return base.AsyncRequest(command);
+			}
+			finally
+			{
+				Monitor.Exit(transmissionLock);
 			}
 		}
 
 		public override Response Request(Command command, TimeSpan timeout)
 		{
-			lock(transmissionLock)
+			GetTransmissionLock((int) timeout.TotalMilliseconds);
+			try
 			{
 				return base.Request(command, timeout);
+			}
+			finally
+			{
+				Monitor.Exit(transmissionLock);
 			}
 		}
 	}

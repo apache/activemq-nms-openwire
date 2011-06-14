@@ -83,7 +83,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// </returns>
 		Response Request(Command command, TimeSpan timeout);
 
-        /// <summary>
+		/// <summary>
         /// Allows a caller to find a specific type of Transport in the Chain of
         /// Transports that is created.  This allows a caller to find a specific
         /// object in the Transport chain and set or get properties on that specific
@@ -96,6 +96,26 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// A <see cref="System.Object"/>
         /// </returns>
         Object Narrow(Type type);
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending synchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		int Timeout
+		{
+			get;
+			set;
+		}
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending asynchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		int AsyncTimeout
+		{
+			get;
+			set;
+		}
 
 		CommandHandler Command
 		{
