@@ -40,6 +40,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private readonly Atomic<bool> closed = new Atomic<bool>(false);
 		private volatile bool seenShutdown;
 		private readonly Uri connectedUri;
+		private int timeout = -1;
+		private int asynctimeout = -1;
 
 		private CommandHandler commandHandler;
 		private ExceptionHandler exceptionHandler;
@@ -309,6 +311,26 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		}
 
 		// Implementation methods
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending synchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		public int Timeout
+		{
+			get { return this.timeout; }
+			set { this.timeout = value; }
+		}
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending asynchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		public int AsyncTimeout
+		{
+			get { return this.asynctimeout; }
+			set { this.asynctimeout = value; }
+		}
 
 		public CommandHandler Command
 		{

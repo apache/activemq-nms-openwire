@@ -205,8 +205,28 @@ namespace Apache.NMS.ActiveMQ.Transport
         
             return null;
         }
-        
-        public bool IsFaultTolerant
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending synchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		public int Timeout
+		{
+			get { return next.Timeout; }
+			set { next.Timeout = value; }
+		}
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending asynchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		public int AsyncTimeout
+		{
+			get { return next.AsyncTimeout; }
+			set { next.AsyncTimeout = value; }
+		}
+		
+		public bool IsFaultTolerant
         {
             get{ return next.IsFaultTolerant; }
         }

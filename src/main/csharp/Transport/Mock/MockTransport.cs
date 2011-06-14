@@ -36,6 +36,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		#region Properties
 
 		private string name;
+		private int timeout = -1;
+		private int asynctimeout = -1;
 		private bool failOnSendMessage = false;
 		private int numMessagesToRespondTo = -1;
 		private int numMessagesRespondedTo = 0;
@@ -127,7 +129,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 		public Response Request(Command command)
 		{
-			return this.Request(command, TimeSpan.FromMilliseconds(Timeout.Infinite));
+			return this.Request(command, TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite));
 		}
 
 		public Response Request(Command command, TimeSpan timeout)
@@ -289,6 +291,26 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		{
 			get { return this.name; }
 			set { this.name = value; }
+		}
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending synchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		public int Timeout
+		{
+			get { return this.timeout; }
+			set { this.timeout = value; }
+		}
+
+		/// <summary>
+		/// Timeout in milliseconds to wait for sending asynchronous messages or commands.
+		/// Set to -1 for infinite timeout.
+		/// </summary>
+		public int AsyncTimeout
+		{
+			get { return this.asynctimeout; }
+			set { this.asynctimeout = value; }
 		}
 
 		public CommandHandler Command

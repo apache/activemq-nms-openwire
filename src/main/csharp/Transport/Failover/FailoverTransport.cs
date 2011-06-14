@@ -303,6 +303,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		/// <value>The async timeout.</value>
 		public int AsyncTimeout
 		{
+			get { return asyncTimeout; }
 			set { asyncTimeout = value; }
 		}
 
