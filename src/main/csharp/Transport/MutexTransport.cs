@@ -32,6 +32,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 			if(timeout > 0)
 			{
 				DateTime timeoutTime = DateTime.Now + TimeSpan.FromMilliseconds(timeout);
+				int waitCount = 1;
 
 				while(true)
 				{
@@ -45,7 +46,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 						throw new IOException(string.Format("Oneway timed out after {0} milliseconds.", timeout));
 					}
 
-					Thread.Sleep(10);
+					// Back off from being overly aggressive.  Having too many threads
+					// aggressively trying to get the lock pegs the CPU.
+					Thread.Sleep(3 * (waitCount++));
 				}
 			}
 			else
