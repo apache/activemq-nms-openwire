@@ -83,7 +83,14 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			get
 			{
-				return transactions[id];
+				TransactionState state;
+
+				if(transactions.TryGetValue(id, out state))
+				{
+					return state;
+				}
+
+				return null;
 			}
 		}
 
@@ -99,32 +106,33 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			get
 			{
-				#if DEBUG
-				try
+				SessionState sessionState;
+
+				if(sessions.TryGetValue(id, out sessionState))
 				{
-				#endif
-					return sessions[id];
-				#if DEBUG
+					return sessionState;
 				}
-				catch(System.Collections.Generic.KeyNotFoundException)
+
+#if DEBUG
+				// Useful for dignosing missing session ids
+				string sessionList = string.Empty;
+				foreach(SessionId sessionId in sessions.Keys)
 				{
-					// Useful for dignosing missing session ids
-					string sessionList = string.Empty;
-					foreach(SessionId sessionId in sessions.Keys)
-					{
-						sessionList += sessionId.ToString() + "\n";
-					}
-					System.Diagnostics.Debug.Assert(false,
-						string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
-					throw;
+					sessionList += sessionId.ToString() + "\n";
 				}
-				#endif
+
+				System.Diagnostics.Debug.Assert(false,
+					string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
+#endif
+				return null;
 			}
 		}
 
 		public TransactionState removeTransactionState(TransactionId id)
 		{
-			TransactionState ret = transactions[id];
+			TransactionState ret = null;
+
+			transactions.TryGetValue(id, out ret);
 			transactions.Remove(id);
 			return ret;
 		}
@@ -137,41 +145,31 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public SessionState removeSession(SessionId id)
 		{
-			SessionState ret = sessions[id];
+			SessionState ret = null;
+
+			sessions.TryGetValue(id, out ret);
 			sessions.Remove(id);
 			return ret;
 		}
 
 		public ConnectionInfo Info
 		{
-			get
-			{
-				return info;
-			}
+			get { return info; }
 		}
 
 		public AtomicCollection<SessionId> SessionIds
 		{
-			get
-			{
-				return sessions.Keys;
-			}
+			get { return sessions.Keys; }
 		}
 
 		public AtomicCollection<DestinationInfo> TempDestinations
 		{
-			get
-			{
-				return tempDestinations;
-			}
+			get { return tempDestinations; }
 		}
 
 		public AtomicCollection<SessionState> SessionStates
 		{
-			get
-			{
-				return sessions.Values;
-			}
+			get { return sessions.Values; }
 		}
 
 		private void checkShutdown()

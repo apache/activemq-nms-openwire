@@ -177,6 +177,14 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
+		public bool TryGetValue(TKey key, out TValue val)
+		{
+			lock(((ICollection) _dictionary).SyncRoot)
+			{
+				return _dictionary.TryGetValue(key, out val);
+			}
+		}
+
 		public AtomicCollection<TKey> Keys
 		{
 			get

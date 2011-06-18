@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 
@@ -70,9 +69,12 @@ namespace Apache.NMS.ActiveMQ.State
 
             public override void Run()
             {
-                ConnectionId connectionId = info.ConnectionId;
-                ConnectionState cs = cst.connectionStates[connectionId];
-                cs.removeTransactionState(info.TransactionId);
+                ConnectionState cs;
+
+				if(cst.connectionStates.TryGetValue(info.ConnectionId, out cs))
+				{
+					cs.removeTransactionState(info.TransactionId);
+				}
             }
         }
 
@@ -180,11 +182,15 @@ namespace Apache.NMS.ActiveMQ.State
             // Restore the session's consumers but possibly in pull only (prefetch 0 state) till
             // recovery completes.
 
-            ConnectionState connectionState = connectionStates[sessionState.Info.SessionId.ParentId];
-            bool connectionInterruptionProcessingComplete =
-                connectionState.ConnectionInterruptProcessingComplete;
+			ConnectionState connectionState = null;
+			bool connectionInterruptionProcessingComplete = false;
 
-            // Restore the session's consumers
+			if(connectionStates.TryGetValue(sessionState.Info.SessionId.ParentId, out connectionState))
+			{
+				connectionInterruptionProcessingComplete = connectionState.ConnectionInterruptProcessingComplete;
+			}
+			
+			// Restore the session's consumers
             foreach(ConsumerState consumerState in sessionState.ConsumerStates)
             {
                 ConsumerInfo infoToSend = consumerState.Info;
@@ -192,7 +198,7 @@ namespace Apache.NMS.ActiveMQ.State
                 if(!connectionInterruptionProcessingComplete && infoToSend.PrefetchSize > 0 && transport.WireFormat.Version > 5)
                 {
                     infoToSend = consumerState.Info.Clone() as ConsumerInfo;
-                    connectionState.RecoveringPullConsumers.Add(infoToSend.ConsumerId, consumerState.Info);
+					connectionState.RecoveringPullConsumers.Add(infoToSend.ConsumerId, consumerState.Info);
                     infoToSend.PrefetchSize = 0;
                     if(Tracer.IsDebugEnabled)
                     {
@@ -239,24 +245,25 @@ namespace Apache.NMS.ActiveMQ.State
 
         public override Response processAddDestination(DestinationInfo info)
         {
-            if(info != null)
+            if(info != null && info.Destination.IsTemporary)
             {
-                ConnectionState cs = connectionStates[info.ConnectionId];
-                if(cs != null && info.Destination.IsTemporary)
-                {
-                    cs.addTempDestination(info);
-                }
+                ConnectionState cs;
+
+				if(connectionStates.TryGetValue(info.ConnectionId, out cs))
+				{
+					cs.addTempDestination(info);
+				}
             }
             return TRACKED_RESPONSE_MARKER;
         }
 
         public override Response processRemoveDestination(DestinationInfo info)
         {
-            if(info != null)
+            if(info != null && info.Destination.IsTemporary)
             {
-                ConnectionState cs = connectionStates[info.ConnectionId];
-                if(cs != null && info.Destination.IsTemporary)
-                {
+                ConnectionState cs;
+				if(connectionStates.TryGetValue(info.ConnectionId, out cs))
+				{
                     cs.removeTempDestination(info.Destination);
                 }
             }
@@ -273,8 +280,9 @@ namespace Apache.NMS.ActiveMQ.State
                     ConnectionId connectionId = sessionId.ParentId;
                     if(connectionId != null)
                     {
-                        ConnectionState cs = connectionStates[connectionId];
-                        if(cs != null)
+                        ConnectionState cs;
+						
+						if(connectionStates.TryGetValue(connectionId, out cs))
                         {
                             SessionState ss = cs[sessionId];
                             if(ss != null)
@@ -298,8 +306,9 @@ namespace Apache.NMS.ActiveMQ.State
                     ConnectionId connectionId = sessionId.ParentId;
                     if(connectionId != null)
                     {
-                        ConnectionState cs = connectionStates[connectionId];
-                        if(cs != null)
+						ConnectionState cs = null;
+						
+						if(connectionStates.TryGetValue(connectionId, out cs))
                         {
                             SessionState ss = cs[sessionId];
                             if(ss != null)
@@ -323,8 +332,9 @@ namespace Apache.NMS.ActiveMQ.State
                     ConnectionId connectionId = sessionId.ParentId;
                     if(connectionId != null)
                     {
-                        ConnectionState cs = connectionStates[connectionId];
-                        if(cs != null)
+						ConnectionState cs = null;
+
+						if(connectionStates.TryGetValue(connectionId, out cs))
                         {
                             SessionState ss = cs[sessionId];
                             if(ss != null)
@@ -348,8 +358,9 @@ namespace Apache.NMS.ActiveMQ.State
                     ConnectionId connectionId = sessionId.ParentId;
                     if(connectionId != null)
                     {
-                        ConnectionState cs = connectionStates[connectionId];
-                        if(cs != null)
+						ConnectionState cs = null;
+
+						if(connectionStates.TryGetValue(connectionId, out cs))
                         {
                             SessionState ss = cs[sessionId];
                             if(ss != null)
@@ -370,8 +381,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.SessionId.ParentId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         cs.addSession(info);
                     }
@@ -387,8 +399,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = id.ParentId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         cs.removeSession(id);
                     }
@@ -424,8 +437,9 @@ namespace Apache.NMS.ActiveMQ.State
                     ConnectionId connectionId = send.ProducerId.ParentId.ParentId;
                     if(connectionId != null)
                     {
-                        ConnectionState cs = connectionStates[connectionId];
-                        if(cs != null)
+						ConnectionState cs = null;
+
+						if(connectionStates.TryGetValue(connectionId, out cs))
                         {
                             TransactionState transactionState = cs[send.TransactionId];
                             if(transactionState != null)
@@ -452,8 +466,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = ack.ConsumerId.ParentId.ParentId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         TransactionState transactionState = cs[ack.TransactionId];
                         if(transactionState != null)
@@ -474,8 +489,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.ConnectionId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         cs.addTransactionState(info.TransactionId);
                         TransactionState state = cs[info.TransactionId];
@@ -494,8 +510,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.ConnectionId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
@@ -516,8 +533,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.ConnectionId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
@@ -538,7 +556,8 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.ConnectionId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
+					ConnectionState cs = null;
+
                     if(cs != null)
                     {
                         TransactionState transactionState = cs[info.TransactionId];
@@ -560,8 +579,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.ConnectionId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
@@ -582,8 +602,9 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionId connectionId = info.ConnectionId;
                 if(connectionId != null)
                 {
-                    ConnectionState cs = connectionStates[connectionId];
-                    if(cs != null)
+					ConnectionState cs = null;
+
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
@@ -683,8 +704,9 @@ namespace Apache.NMS.ActiveMQ.State
 
         public void ConnectionInterruptProcessingComplete(ITransport transport, ConnectionId connectionId)
         {
-            ConnectionState connectionState = connectionStates[connectionId];
-            if(connectionState != null)
+			ConnectionState connectionState = null;
+
+			if(connectionStates.TryGetValue(connectionId, out connectionState))
             {
                 connectionState.ConnectionInterruptProcessingComplete = true;
 
@@ -719,8 +741,9 @@ namespace Apache.NMS.ActiveMQ.State
 
         public void TransportInterrupted(ConnectionId id)
         {
-            ConnectionState connection = connectionStates[id];
-            if(connection != null)
+			ConnectionState connection = null;
+
+			if(connectionStates.TryGetValue(id, out connection))
             {
                 connection.ConnectionInterruptProcessingComplete = false;
             }
