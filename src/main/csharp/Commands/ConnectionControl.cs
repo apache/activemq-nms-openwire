@@ -41,6 +41,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         string connectedBrokers;
         string reconnectTo;
         bool rebalanceConnection;
+        byte[] token;
 
         ///
         /// <summery>
@@ -71,7 +72,8 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "Suspend = " + Suspend + ", " + 
                 "ConnectedBrokers = " + ConnectedBrokers + ", " + 
                 "ReconnectTo = " + ReconnectTo + ", " + 
-                "RebalanceConnection = " + RebalanceConnection + " ]";
+                "RebalanceConnection = " + RebalanceConnection + ", " + 
+                "Token = " + System.Text.ASCIIEncoding.ASCII.GetString(Token) + " ]";
         }
 
         public bool Close
@@ -120,6 +122,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return rebalanceConnection; }
             set { this.rebalanceConnection = value; }
+        }
+
+        public byte[] Token
+        {
+            get { return token; }
+            set { this.token = value; }
         }
 
         ///

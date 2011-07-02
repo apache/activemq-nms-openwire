@@ -69,6 +69,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V8
             info.ConnectedBrokers = TightUnmarshalString(dataIn, bs);
             info.ReconnectTo = TightUnmarshalString(dataIn, bs);
             info.RebalanceConnection = bs.ReadBoolean();
+            info.Token = ReadBytes(dataIn, bs.ReadBoolean());
         }
 
         //
@@ -87,6 +88,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V8
             rc += TightMarshalString1(info.ConnectedBrokers, bs);
             rc += TightMarshalString1(info.ReconnectTo, bs);
             bs.WriteBoolean(info.RebalanceConnection);
+            bs.WriteBoolean(info.Token!=null);
+            rc += info.Token==null ? 0 : info.Token.Length+4;
 
             return rc + 0;
         }
@@ -107,6 +110,10 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V8
             TightMarshalString2(info.ConnectedBrokers, dataOut, bs);
             TightMarshalString2(info.ReconnectTo, dataOut, bs);
             bs.ReadBoolean();
+            if(bs.ReadBoolean()) {
+                dataOut.Write(info.Token.Length);
+                dataOut.Write(info.Token);
+            }
         }
 
         // 
@@ -125,6 +132,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V8
             info.ConnectedBrokers = LooseUnmarshalString(dataIn);
             info.ReconnectTo = LooseUnmarshalString(dataIn);
             info.RebalanceConnection = dataIn.ReadBoolean();
+            info.Token = ReadBytes(dataIn, dataIn.ReadBoolean());
         }
 
         // 
@@ -144,6 +152,11 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V8
             LooseMarshalString(info.ConnectedBrokers, dataOut);
             LooseMarshalString(info.ReconnectTo, dataOut);
             dataOut.Write(info.RebalanceConnection);
+            dataOut.Write(info.Token!=null);
+            if(info.Token!=null) {
+               dataOut.Write(info.Token.Length);
+               dataOut.Write(info.Token);
+            }
         }
     }
 }
