@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Commands
@@ -423,6 +424,30 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
+        /// <summary>
+        /// Gets the Destination Type of this Destination as a String value which is one
+        /// of {Queue,Topic,TempQueue,TempTopic}.
+        /// </summary>
+        /// <returns>
+        /// The Destination Type as a String.
+        /// </returns>
+        public String GetDestinationTypeAsString()
+        {
+            switch(GetDestinationType())
+            {
+                case ACTIVEMQ_QUEUE:
+                    return "Queue";
+                case ACTIVEMQ_TOPIC:
+                    return "Topic";
+                case ACTIVEMQ_TEMPORARY_QUEUE:
+                    return "TempQueue";
+                case ACTIVEMQ_TEMPORARY_TOPIC:
+                    return "TempTopic";
+                default:
+                    throw new NMSException("Invalid destination type: " + GetDestinationType());
+            }
+        }
+
 		/// <summary>
 		/// Returns true if this destination represents a collection of
 		/// destinations; allowing a set of destinations to be published to or subscribed
@@ -439,30 +464,32 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
-		/*public List GetChildDestinations() {
-		 List answer = new ArrayList();
-		 StringTokenizer iter = new StringTokenizer(physicalName, COMPOSITE_SEPARATOR);
-		 while (iter.hasMoreTokens()) {
-		 String name = iter.nextToken();
-		 Destination child = null;
-		 if (name.StartsWith(QUEUE_PREFIX)) {
-		 child = new ActiveMQQueue(name.Substring(QUEUE_PREFIX.Length));
-		 }
-		 else if (name.StartsWith(TOPIC_PREFIX)) {
-		 child = new ActiveMQTopic(name.Substring(TOPIC_PREFIX.Length));
-		 }
-		 else {
-		 child = createDestination(name);
-		 }
-		 answer.add(child);
-		 }
-		 if (answer.size() == 1) {
-		 // lets put ourselves inside the collection
-		 // as we are not really a composite destination
-		 answer.set(0, this);
-		 }
-		 return answer;
-		 }*/
+        public ActiveMQDestination[] GetCompositeDestinations()
+        {
+            if (IsComposite)
+            {
+                LinkedList<String> list = new LinkedList<String>();
+                String[] composites = physicalName.Split(COMPOSITE_SEPARATOR.ToCharArray());
+                foreach(String composite in composites)
+                {
+                    if (String.IsNullOrEmpty(composite.Trim()))
+                    {
+                        continue;
+                    }
+                    list.AddLast(composite.Trim());
+                }
+                ActiveMQDestination[] compositeDestinations = new ActiveMQDestination[list.Count];
+                int counter = 0;
+                foreach(String destination in list)
+                {
+                    compositeDestinations[counter++] = CreateDestination(destination);
+                }
+
+                return compositeDestinations;
+            }
+
+            return new ActiveMQDestination[0];
+        }
 
 		/// <summary>
 		/// </summary>

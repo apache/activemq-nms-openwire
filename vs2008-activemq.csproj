@@ -68,6 +68,7 @@
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\main\csharp\AdvisoryConsumer.cs" />
     <Compile Include="src\main\csharp\BrokerException.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -288,6 +289,7 @@
     <Compile Include="src\main\csharp\ConnectionFactory.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\ConnectionFailedException.cs" />
     <Compile Include="src\main\csharp\ConnectionMetaData.cs" />
     <Compile Include="src\main\csharp\ConsumerClosedException.cs">
       <SubType>Code</SubType>
@@ -1017,6 +1019,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="src\main\csharp\Util\ActiveMQMessageTransformation.cs" />
+    <Compile Include="src\main\csharp\Util\AdvisorySupport.cs" />
     <Compile Include="src\main\csharp\Util\FactoryAttribute.cs" />
     <Compile Include="src\main\csharp\Util\FactoryFinder.cs" />
     <Compile Include="src\main\csharp\Util\FifoMessageDispatchChannel.cs" />

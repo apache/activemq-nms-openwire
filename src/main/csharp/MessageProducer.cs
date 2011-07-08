@@ -255,7 +255,7 @@ namespace Apache.NMS.ActiveMQ
 					throw new ConnectionClosedException();
 				}
 
-				session.DoSend(activeMessage, this, this.usage, this.RequestTimeout);
+				session.DoSend(dest, activeMessage, this, this.usage, this.RequestTimeout);
 			}
 		}
 
