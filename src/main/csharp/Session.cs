@@ -655,9 +655,15 @@ namespace Apache.NMS.ActiveMQ
 
         #endregion
 
-        internal void DoSend( ActiveMQMessage message, MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout )
+        internal void DoSend(ActiveMQDestination destination, ActiveMQMessage message,
+                             MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout)
         {
             ActiveMQMessage msg = message;
+
+            if(destination.IsTemporary && !connection.IsTempDestinationActive(destination as ActiveMQTempDestination))
+            {
+                throw new InvalidDestinationException("Cannot publish to a deleted Destination: " + destination);
+            }
 
             if(IsTransacted)
             {
@@ -960,5 +966,17 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        internal bool IsInUse(ActiveMQTempDestination dest)
+        {
+            foreach(MessageConsumer consumer in this.consumers.Values)
+            {
+                if(consumer.IsInUse(dest))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

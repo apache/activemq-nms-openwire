@@ -74,7 +74,32 @@ namespace Apache.NMS.ActiveMQ
 			if(destination == null)
 			{
 				throw new InvalidDestinationException("Consumer cannot receive on Null Destinations.");
-			}
+            }
+            else if(destination.PhysicalName == null)
+            {
+                throw new InvalidDestinationException("The destination object was not given a physical name.");
+            }
+            else if (destination.IsTemporary)
+            {
+                String physicalName = destination.PhysicalName;
+
+                if(String.IsNullOrEmpty(physicalName))
+                {
+                    throw new InvalidDestinationException("Physical name of Destination should be valid: " + destination);
+                }
+    
+                String connectionID = session.Connection.ConnectionId.Value;
+
+                if(physicalName.IndexOf(connectionID) < 0)
+                {
+                    throw new InvalidDestinationException("Cannot use a Temporary destination from another Connection");
+                }
+    
+                if(!session.Connection.IsTempDestinationActive(destination as ActiveMQTempDestination))
+                {
+                    throw new InvalidDestinationException("Cannot use a Temporary destination that has been deleted");
+                }
+            }
 
 			this.session = session;
 			this.redeliveryPolicy = this.session.Connection.RedeliveryPolicy;
@@ -1200,6 +1225,11 @@ namespace Apache.NMS.ActiveMQ
 		{
 			get { return this.session.IsClientAcknowledge; }
 		}
+
+        internal bool IsInUse(ActiveMQTempDestination dest)
+        {
+            return this.info.Destination.Equals(dest);
+        }
 
 		#region Nested ISyncronization Types
 

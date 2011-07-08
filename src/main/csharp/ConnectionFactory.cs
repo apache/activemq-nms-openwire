@@ -51,6 +51,7 @@ namespace Apache.NMS.ActiveMQ
 		private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
 		private bool messagePrioritySupported=true;
+        private bool watchTopicAdvisories=true;
 
 		private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
 		private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
@@ -267,6 +268,12 @@ namespace Apache.NMS.ActiveMQ
 			set { this.dispatchAsync = value; }
 		}
 
+        public bool WatchTopicAdvisories
+        {
+            get { return this.watchTopicAdvisories; }
+            set { this.watchTopicAdvisories = value; }
+        }
+
 		public bool MessagePrioritySupported
 		{
 			get { return this.messagePrioritySupported; }
@@ -410,6 +417,7 @@ namespace Apache.NMS.ActiveMQ
 			connection.CompressionPolicy = this.compressionPolicy.Clone() as ICompressionPolicy;
 			connection.ConsumerTransformer = this.consumerTransformer;
 			connection.ProducerTransformer = this.producerTransformer;
+            connection.WatchTopicAdvisories = this.watchTopicAdvisories;
 		}
 
 		protected static void ExceptionHandler(Exception ex)

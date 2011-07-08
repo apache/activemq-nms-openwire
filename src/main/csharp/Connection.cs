@@ -18,6 +18,7 @@
 using System;
 using System.Diagnostics;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Threads;
@@ -46,6 +47,7 @@ namespace Apache.NMS.ActiveMQ
 		private bool dispatchAsync = true;
 		private int producerWindowSize = 0;
 		private bool messagePrioritySupported=true;
+        private bool watchTopicAdviosires = true;
 
 		private bool userSpecifiedClientID;
 		private readonly Uri brokerUri;
@@ -58,6 +60,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
 		private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
 		private readonly IDictionary dispatchers = Hashtable.Synchronized(new Hashtable());
+        private readonly IDictionary tempDests = Hashtable.Synchronized(new Hashtable());
 		private readonly object connectedLock = new object();
 		private readonly Atomic<bool> connected = new Atomic<bool>(false);
 		private readonly Atomic<bool> closed = new Atomic<bool>(false);
@@ -74,9 +77,11 @@ namespace Apache.NMS.ActiveMQ
 		private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
 		private ICompressionPolicy compressionPolicy = new CompressionPolicy();
 		private readonly IdGenerator clientIdGenerator;
+        private int consumerIdCounter = 0;
 		private volatile CountDownLatch transportInterruptionProcessingComplete;
 		private readonly MessageTransformation messageTransformation;
 		private readonly ThreadPoolExecutor executor = new ThreadPoolExecutor();
+        private AdvisoryConsumer advisoryConsumer = null;
 
 		public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
 		{
@@ -319,6 +324,12 @@ namespace Apache.NMS.ActiveMQ
 			set { this.dispatchAsync = value; }
 		}
 
+        public bool WatchTopicAdvisories
+        {
+            get { return this.watchTopicAdviosires; }
+            set { this.watchTopicAdviosires = value; }
+        }
+
 		public string ClientId
 		{
 			get { return info.ClientId; }
@@ -535,6 +546,12 @@ namespace Apache.NMS.ActiveMQ
 					Tracer.Info("Connection.Close(): Closing Connection Now.");
 					this.closing.Value = true;
 
+                    if(this.advisoryConsumer != null)
+                    {
+                        this.advisoryConsumer.Dispose();
+                        this.advisoryConsumer = null;
+                    }
+
 					lock(sessions.SyncRoot)
 					{
 						foreach(Session session in sessions)
@@ -543,6 +560,11 @@ namespace Apache.NMS.ActiveMQ
 						}
 					}
 					sessions.Clear();
+
+                    foreach(ActiveMQTempDestination dest in this.tempDests.Values)
+                    {
+                        dest.Delete();
+                    }
 
 					// Connected is true only when we've successfully sent our ConnectionInfo
 					// to the broker, so if we haven't announced ourselves there's no need to
@@ -733,6 +755,13 @@ namespace Apache.NMS.ActiveMQ
 										if(!(response is ExceptionResponse))
 										{
 											connected.Value = true;
+                                            if(this.watchTopicAdviosires)
+                                            {
+                                                ConsumerId id = new ConsumerId(
+                                                    new SessionId(info.ConnectionId, -1),
+                                                    Interlocked.Increment(ref this.consumerIdCounter));
+                                                this.advisoryConsumer = new AdvisoryConsumer(this, id);
+                                            }
 										}
 									}
 								}
@@ -1090,6 +1119,7 @@ namespace Apache.NMS.ActiveMQ
 			this.SyncRequest(command);
 
 			destination.Connection = this;
+            this.AddTempDestination(destination);
 
 			return destination;
 		}
@@ -1100,6 +1130,19 @@ namespace Apache.NMS.ActiveMQ
 
 		public void DeleteTemporaryDestination(IDestination destination)
 		{
+            CheckClosedOrFailed();
+
+            ActiveMQTempDestination temp = destination as ActiveMQTempDestination;
+
+            foreach(Session session in this.sessions)
+            {
+                if(session.IsInUse(temp))
+                {
+                    throw new NMSException("A consumer is consuming from the temporary destination");
+                }
+            }
+
+            this.tempDests.Remove(destination as ActiveMQTempDestination);
 			this.DeleteDestination(destination);
 		}
 
@@ -1184,5 +1227,49 @@ namespace Apache.NMS.ActiveMQ
 				}
 			}
 		}
+
+        internal void AddTempDestination(ActiveMQTempDestination dest)
+        {
+            // .NET lacks a putIfAbsent operation for Maps.
+            lock(tempDests.SyncRoot)
+            {
+                if(!this.tempDests.Contains(dest))
+                {
+                    this.tempDests.Add(dest, dest);
+                }
+            }
+        }
+
+        internal void RemoveTempDestination(ActiveMQTempDestination dest)
+        {
+            this.tempDests.Remove(dest);
+        }
+
+        internal bool IsTempDestinationActive(ActiveMQTempDestination dest)
+        {
+            if(this.advisoryConsumer == null)
+            {
+                return true;
+            }
+
+            return this.tempDests.Contains(dest);
+        }
+
+        protected void CheckClosedOrFailed()
+        {
+            CheckClosed();
+            if (transportFailed.Value)
+            {
+                throw new ConnectionFailedException(firstFailureError.Message);
+            }
+        }
+
+        protected void CheckClosed()
+        {
+            if(closed.Value)
+            {
+                throw new ConnectionClosedException();
+            }
+        }
 	}
 }
