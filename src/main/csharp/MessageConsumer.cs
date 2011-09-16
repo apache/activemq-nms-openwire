@@ -596,6 +596,7 @@ namespace Apache.NMS.ActiveMQ
 		public virtual void Dispatch(MessageDispatch dispatch)
 		{
 			MessageListener listener = this.listener;
+			bool dispatchMessage = false;
 
 			try
 			{
@@ -623,47 +624,52 @@ namespace Apache.NMS.ActiveMQ
 					{
 						if(listener != null && this.unconsumedMessages.Running)
 						{
-							ActiveMQMessage message = CreateActiveMQMessage(dispatch);
-
-							this.BeforeMessageIsConsumed(dispatch);
-
-							try
-							{
-								bool expired = (!IgnoreExpiration && message.IsExpired());
-
-								if(!expired)
-								{
-									listener(message);
-								}
-
-								this.AfterMessageIsConsumed(dispatch, expired);
-							}
-							catch(Exception e)
-							{
-								if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || IsIndividualAcknowledge)
-								{
-									// Redeliver the message
-								}
-								else
-								{
-									// Transacted or Client ack: Deliver the next message.
-									this.AfterMessageIsConsumed(dispatch, false);
-								}
-
-								Tracer.Error(this.info.ConsumerId + " Exception while processing message: " + e);
-
-								// If aborted we stop the abort here and let normal processing resume.
-								// This allows the session to shutdown normally and ack all messages
-								// that have outstanding acks in this consumer.
-								if( (Thread.CurrentThread.ThreadState & ThreadState.AbortRequested) == ThreadState.AbortRequested)
-								{
-									Thread.ResetAbort();
-								}
-							}
+							dispatchMessage = true;
 						}
 						else
 						{
 							this.unconsumedMessages.Enqueue(dispatch);
+						}
+					}
+				}
+
+				if(dispatchMessage)
+				{
+					ActiveMQMessage message = CreateActiveMQMessage(dispatch);
+
+					this.BeforeMessageIsConsumed(dispatch);
+
+					try
+					{
+						bool expired = (!IgnoreExpiration && message.IsExpired());
+
+						if(!expired)
+						{
+							listener(message);
+						}
+
+						this.AfterMessageIsConsumed(dispatch, expired);
+					}
+					catch(Exception e)
+					{
+						if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || IsIndividualAcknowledge)
+						{
+							// Redeliver the message
+						}
+						else
+						{
+							// Transacted or Client ack: Deliver the next message.
+							this.AfterMessageIsConsumed(dispatch, false);
+						}
+
+						Tracer.Error(this.info.ConsumerId + " Exception while processing message: " + e);
+
+						// If aborted we stop the abort here and let normal processing resume.
+						// This allows the session to shutdown normally and ack all messages
+						// that have outstanding acks in this consumer.
+						if((Thread.CurrentThread.ThreadState & ThreadState.AbortRequested) == ThreadState.AbortRequested)
+						{
+							Thread.ResetAbort();
 						}
 					}
 				}

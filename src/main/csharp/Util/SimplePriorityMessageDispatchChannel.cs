@@ -51,10 +51,7 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             get 
             {
-                lock(this.mutex)
-                {
-                    return this.closed; 
-                }
+                return this.closed; 
             }
             
             set 
@@ -70,10 +67,7 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             get
             {
-                lock(this.mutex)
-                {
-                    return this.running;
-                }
+                return this.running;
             }
             
             set
@@ -89,10 +83,7 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             get
             {
-                lock(mutex)
-                {
-                    return this.size == 0;
-                }
+                return this.size == 0;
             }
         }
 
@@ -100,10 +91,7 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             get
             {
-                lock(mutex)
-                {
-                    return this.size;
-                }
+                return this.size;
             }
         }
 
