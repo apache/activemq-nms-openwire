@@ -222,8 +222,8 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
-        [TestCase("C:\\Transactions\\ReceoveryLogs", true)]
-        [TestCase("\\\\ServerName\\Transactions\\ReceoveryLogs", true)]
+        [TestCase("C:\\Transactions\\RecoveryLogs", true)]
+        [TestCase("\\\\ServerName\\Transactions\\RecoveryLogs", true)]
         public void TestConfigureRecoveryPolicyLogger(string location, bool autoCreate)
         {
             string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
@@ -286,8 +286,7 @@ namespace Apache.NMS.ActiveMQ.Test
             [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=invalid")]
             string baseConnectionURI)
         {
-            INetTxConnectionFactory factory =
-                new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
+            INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
             using(IConnection connection = factory.CreateConnection()){}
         }
