@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using Apache.NMS.Test;
 using Apache.NMS.Util;
@@ -29,17 +30,16 @@ namespace Apache.NMS.ActiveMQ.Test
 		protected static string DESTINATION_NAME = "TestMaxInactivityDuration";
 		protected static string CORRELATION_ID = "MaxInactivityCorrelationID";
 
-		/// <summary>
-		/// The name of the connection configuration that CreateNMSFactory() will load.
-		/// Refer to the nmsprovider-test.config file for the value of this variable.
-		/// </summary>
-		/// <returns></returns>
-		protected override string GetNameTestURI() { return "maxInactivityDurationURI"; }
-
 		[Test]
 		public void TestMaxInactivityDuration()
 		{
-			using(IConnection connection = CreateConnection())
+			string testuri = "activemq:tcp://${activemqhost}:61616" +
+										"?wireFormat.maxInactivityDurationInitialDelay=5000" +
+										"&wireFormat.maxInactivityDuration=10000" +
+										"&connection.asyncClose=false";
+
+			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
+			using(IConnection connection = factory.CreateConnection("", ""))
 			{
 				connection.Start();
 				using(ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
@@ -71,6 +71,50 @@ namespace Apache.NMS.ActiveMQ.Test
 			request.NMSCorrelationID = CORRELATION_ID;
 			request.NMSType = "Test";
 			producer.Send(request);
+		}
+
+		[Test, Sequential]
+		public void TestInactivityMonitorThreadLeak(
+			[Values(0, 1000)]
+			int inactivityDuration)
+		{
+			Process currentProcess = Process.GetCurrentProcess();
+			Tracer.InfoFormat("Beginning thread count: {0}, handle count: {1}", currentProcess.Threads.Count, currentProcess.HandleCount);
+
+			string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616?wireFormat.maxInactivityDuration={0}", inactivityDuration);
+	
+			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
+
+			// We measure the initial resource counts, and then allow a certain fudge factor for the resources
+			// to fluctuate at run-time.  We allow for a certain amount of fluctuation, but if the counts
+			// grow outside the safe boundaries of delayed garbage collection, then we fail the test.
+			currentProcess = Process.GetCurrentProcess();
+			int beginThreadCount = currentProcess.Threads.Count;
+			int beginHandleCount = currentProcess.HandleCount;
+			int maxThreadGrowth = 10;
+			int maxHandleGrowth = 500;
+
+			for(int i = 0; i < 200; i++)
+			{
+				using(IConnection connection = factory.CreateConnection("ResourceLeakTest", "Password"))
+				{
+					using(ISession session = connection.CreateSession())
+					{
+						IDestination destination = SessionUtil.GetDestination(session, "topic://NMSResourceLeak.TestTopic");
+						using(IMessageConsumer consumer = session.CreateConsumer(destination))
+						{
+							connection.Start();
+						}
+					}
+				}
+
+				currentProcess = Process.GetCurrentProcess();
+				int endThreadCount = currentProcess.Threads.Count;
+				int endHandleCount = currentProcess.HandleCount;
+
+				Assert.Less(endThreadCount, beginThreadCount + maxThreadGrowth, string.Format("Thread count grew beyond maximum of {0} on iteration #{1}.", maxThreadGrowth, i));
+				Assert.Less(endHandleCount, beginHandleCount + maxHandleGrowth, string.Format("Handle count grew beyond maximum of {0} on iteration #{1}.", maxHandleGrowth, i));
+			}
 		}
 	}
 }
