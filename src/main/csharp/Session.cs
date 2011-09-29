@@ -824,10 +824,13 @@ namespace Apache.NMS.ActiveMQ
 
         public void Start()
         {
-            foreach(MessageConsumer consumer in this.consumers.Values)
-            {
-                consumer.Start();
-            }
+			lock(this.consumers.SyncRoot)
+			{
+				foreach(MessageConsumer consumer in this.consumers.Values)
+				{
+					consumer.Start();
+				}
+			}
 
             if(this.executor != null)
             {
@@ -977,13 +980,16 @@ namespace Apache.NMS.ActiveMQ
 
         internal bool IsInUse(ActiveMQTempDestination dest)
         {
-            foreach(MessageConsumer consumer in this.consumers.Values)
-            {
-                if(consumer.IsInUse(dest))
-                {
-                    return true;
-                }
-            }
+			lock(this.consumers.SyncRoot)
+			{
+				foreach(MessageConsumer consumer in this.consumers.Values)
+				{
+					if(consumer.IsInUse(dest))
+					{
+						return true;
+					}
+				}
+			}
 
             return false;
         }
