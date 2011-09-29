@@ -144,7 +144,11 @@ namespace Apache.NMS.ActiveMQ.Transport
 			if(!commandSent.Value)
 			{
 				Tracer.DebugFormat("InactivityMonitor[{0}]: No Message sent since last write check. Sending a KeepAliveInfo.", instanceId);
-				this.asyncWriteTask.IsPending = true;
+				if(null != this.asyncWriteTask)
+				{
+					this.asyncWriteTask.IsPending = true;
+				}
+				
 				this.asyncTasks.Wakeup();
 			}
 			else
@@ -179,7 +183,11 @@ namespace Apache.NMS.ActiveMQ.Transport
 			if(!commandReceived.Value)
 			{
 				Tracer.DebugFormat("InactivityMonitor[{0}]: No message received since last read check! Sending an InactivityException!", instanceId);
-				this.asyncErrorTask.IsPending = true;
+				if(null != this.asyncErrorTask)
+				{
+					this.asyncErrorTask.IsPending = true;
+				}
+
 				this.asyncTasks.Wakeup();
 			}
 			else
