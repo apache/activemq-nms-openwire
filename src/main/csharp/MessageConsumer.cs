@@ -228,7 +228,7 @@ namespace Apache.NMS.ActiveMQ
 
 				bool wasStarted = this.session.Started;
 
-				if(wasStarted == true)
+				if(wasStarted)
 				{
 					this.session.Stop();
 				}
@@ -236,7 +236,7 @@ namespace Apache.NMS.ActiveMQ
 				listener += value;
 				this.session.Redispatch(this.unconsumedMessages);
 
-				if(wasStarted == true)
+				if(wasStarted)
 				{
 					this.session.Start();
 				}
