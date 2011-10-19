@@ -31,8 +31,7 @@ namespace Apache.NMS.ActiveMQ.State
 		private readonly AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
 		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
 	    private bool connectionInterruptProcessingComplete = true;
-		private readonly Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = 
-			new Dictionary<ConsumerId, ConsumerInfo>();
+		private readonly Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = new Dictionary<ConsumerId, ConsumerInfo>();
 
 		public ConnectionState(ConnectionInfo info)
 		{
@@ -179,7 +178,7 @@ namespace Apache.NMS.ActiveMQ.State
 				throw new ApplicationException("Disposed");
 			}
 		}
-		
+
 		public Dictionary<ConsumerId, ConsumerInfo> RecoveringPullConsumers
 		{
 			get { return this.recoveringPullConsumers; }
