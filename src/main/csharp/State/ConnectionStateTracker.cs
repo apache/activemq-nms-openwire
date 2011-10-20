@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
+using System.Collections;
 
 namespace Apache.NMS.ActiveMQ.State
 {
@@ -198,7 +199,13 @@ namespace Apache.NMS.ActiveMQ.State
                 if(!connectionInterruptionProcessingComplete && infoToSend.PrefetchSize > 0 && transport.WireFormat.Version > 5)
                 {
                     infoToSend = consumerState.Info.Clone() as ConsumerInfo;
-					connectionState.RecoveringPullConsumers.Add(infoToSend.ConsumerId, consumerState.Info);
+					lock(((ICollection) connectionState.RecoveringPullConsumers).SyncRoot)
+					{
+						if(!connectionState.RecoveringPullConsumers.ContainsKey(infoToSend.ConsumerId))
+						{
+							connectionState.RecoveringPullConsumers.Add(infoToSend.ConsumerId, consumerState.Info);
+						}
+					}
                     infoToSend.PrefetchSize = 0;
                     if(Tracer.IsDebugEnabled)
                     {
@@ -710,32 +717,34 @@ namespace Apache.NMS.ActiveMQ.State
             {
                 connectionState.ConnectionInterruptProcessingComplete = true;
 
-                Dictionary<ConsumerId, ConsumerInfo> stalledConsumers = connectionState.RecoveringPullConsumers;
-                foreach(KeyValuePair<ConsumerId, ConsumerInfo> entry in stalledConsumers)
-                {
-                    ConsumerControl control = new ConsumerControl();
-                    control.ConsumerId = entry.Key;
-                    control.Prefetch = entry.Value.PrefetchSize;
-                    control.Destination = entry.Value.Destination;
-                    try
-                    {
-                        if(Tracer.IsDebugEnabled)
-                        {
-                            Tracer.Debug("restored recovering consumer: " + control.ConsumerId +
-                                         " with: " + control.Prefetch);
-                        }
-                        transport.Oneway(control);
-                    }
-                    catch(Exception ex)
-                    {
-                        if(Tracer.IsDebugEnabled)
-                        {
-                            Tracer.Debug("Failed to submit control for consumer: " + control.ConsumerId +
-                                         " with: " + control.Prefetch + "Error: " + ex.Message);
-                        }
-                    }
-                }
-                stalledConsumers.Clear();
+				lock(((ICollection) connectionState.RecoveringPullConsumers).SyncRoot)
+				{
+					foreach(KeyValuePair<ConsumerId, ConsumerInfo> entry in connectionState.RecoveringPullConsumers)
+					{
+						ConsumerControl control = new ConsumerControl();
+						control.ConsumerId = entry.Key;
+						control.Prefetch = entry.Value.PrefetchSize;
+						control.Destination = entry.Value.Destination;
+						try
+						{
+							if(Tracer.IsDebugEnabled)
+							{
+								Tracer.Debug("restored recovering consumer: " + control.ConsumerId +
+											 " with: " + control.Prefetch);
+							}
+							transport.Oneway(control);
+						}
+						catch(Exception ex)
+						{
+							if(Tracer.IsDebugEnabled)
+							{
+								Tracer.Debug("Failed to submit control for consumer: " + control.ConsumerId +
+											 " with: " + control.Prefetch + "Error: " + ex.Message);
+							}
+						}
+					}
+					connectionState.RecoveringPullConsumers.Clear();
+				}
             }
         }
 
