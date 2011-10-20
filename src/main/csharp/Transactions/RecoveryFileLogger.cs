@@ -258,7 +258,7 @@ namespace Apache.NMS.ActiveMQ.Transactions
                 }
                 catch(Exception ex)
                 {
-                    Tracer.InfoFormat("Error while opening Recovery file {0} error message: {1}", Filename, ex.Message);
+                    Tracer.ErrorFormat("Error while opening Recovery file {0} error message: {1}", Filename, ex.Message);
                     // Nothing to restore.
                     return null;
                 }

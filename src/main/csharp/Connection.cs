@@ -694,8 +694,8 @@ namespace Apache.NMS.ActiveMQ
 					if(connected.Value)
 					{
 						transport.Oneway(command);
+						Tracer.Info("Oneway command sent to broker.");
 					}
-					Tracer.Info("Oneway command sent to broker.");
 				}
 				else
 				{
@@ -898,13 +898,13 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void OnKeepAliveCommand(ITransport commandTransport, KeepAliveInfo info)
 		{
-			Tracer.Info("Keep alive message received.");
+			Tracer.Debug("Keep alive message received.");
 
 			try
 			{
 				if(connected.Value)
 				{
-					Tracer.Info("Returning KeepAliveInfo Response.");
+					Tracer.Debug("Returning KeepAliveInfo Response.");
 					info.ResponseRequired = false;
 					transport.Oneway(info);
 				}
