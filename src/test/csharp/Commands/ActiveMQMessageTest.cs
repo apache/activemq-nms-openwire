@@ -148,7 +148,19 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
         {
             ActiveMQMessage msg = new ActiveMQMessage();
             msg.NMSCorrelationID = this.nmsCorrelationID;
-            Assert.IsTrue(msg.NMSCorrelationID.Equals(this.nmsCorrelationID));
+            Assert.IsTrue(msg.NMSCorrelationID.Equals(this.nmsCorrelationID));		
+			
+			// Check that we get the real value even if we go through the properties
+			string nmsCorrelationId = msg.Properties.GetString("NMSCorrelationID");
+			Assert.IsTrue(nmsCorrelationId.Equals(this.nmsCorrelationID));
+			
+			// We shouldn't get the expected value though if we use the inner property 
+			// name from ActiveMQMessage
+			string correlationId = (string) msg.Properties["correlationId"];
+			Assert.IsNullOrEmpty(correlationId);			
+			msg.Properties["correlationId"] = "TEST";
+			correlationId = (string) msg.Properties["correlationId"];
+			Assert.IsFalse(msg.Properties["NMSCorrelationID"].Equals(msg.Properties["correlationId"]));
         }
     
         [Test]
