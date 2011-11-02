@@ -262,9 +262,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 		public override void Oneway(Command command)
 		{
 			// Disable inactivity monitoring while processing a command.
-			//synchronize this method - its not synchronized
-			//further down the transport stack and gets called by more
-			//than one thread  by this class
+			// synchronize this method - its not synchronized
+			// further down the transport stack and gets called by more
+			// than one thread  by this class
 			lock(inWrite)
 			{
 				inWrite.Value = true;
@@ -330,10 +330,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 					Math.Min(
 						localWireFormatInfo.MaxInactivityDuration,
 						remoteWireFormatInfo.MaxInactivityDuration);
-				initialDelayTime =
-					Math.Min(
-						localWireFormatInfo.MaxInactivityDurationInitialDelay,
-						remoteWireFormatInfo.MaxInactivityDurationInitialDelay);
+				initialDelayTime = remoteWireFormatInfo.MaxInactivityDurationInitialDelay > 0 ?
+					Math.Min(localWireFormatInfo.MaxInactivityDurationInitialDelay,
+						     remoteWireFormatInfo.MaxInactivityDurationInitialDelay) :
+                    localWireFormatInfo.MaxInactivityDurationInitialDelay;
 
 				if(readCheckTime > 0)
 				{

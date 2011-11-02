@@ -86,6 +86,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			id = idCounter++;
 
 			stateTracker.TrackTransactions = true;
+            reconnectTask = DefaultThreadPools.DefaultTaskRunnerFactory.CreateTaskRunner(
+                new FailoverTask(this), "ActiveMQ Failover Worker: " + this.GetHashCode().ToString());
 		}
 
 		~FailoverTransport()
@@ -107,6 +109,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			public bool Iterate()
 			{
 				bool result = false;
+                if (!parent.IsStarted)
+                {
+                    return false;
+                }
+
 				bool buildBackup = true;
 				bool doReconnect = !parent.disposed && parent.connectionFailure == null;
 				try
@@ -424,10 +431,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				stateTracker.TrackMessages = TrackMessages;
 				if(ConnectedTransport != null)
 				{
+                    Tracer.Debug("FailoverTransport already connected, start is restoring.");
 					stateTracker.DoRestore(ConnectedTransport);
 				}
 				else
 				{
+                    Tracer.Debug("FailoverTransport not connected, start is reconnecting.");
 					Reconnect(false);
 				}
 			}
@@ -553,8 +562,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 						// Skipping send of ShutdownInfo command when not connected.
 						return;
 					}
-
-					if(command.IsRemoveInfo || command.IsMessageAck)
+					else if(command.IsRemoveInfo || command.IsMessageAck)
 					{
 						// Simulate response to RemoveInfo command or a MessageAck
                         // since it would be stale at this point.
@@ -605,7 +613,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							try
 							{
 								// Wait for something
-								Monitor.Wait(reconnectMutex, 1000);
+								Monitor.Wait(reconnectMutex, 100);
 							}
 							catch(ThreadInterruptedException e)
 							{
@@ -665,7 +673,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							// this method
 							if(tracked == null)
 							{
-
 								// since we will retry in this method.. take it
 								// out of the request map so that it is not
 								// sent 2 times on recovery
@@ -681,11 +688,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								// the outer catch
 								throw e;
 							}
-
 						}
 
 						return;
-
 					}
 					catch(Exception e)
 					{
@@ -769,13 +774,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			{
 				if(started)
 				{
-					if(reconnectTask == null)
-					{
-						Tracer.Debug("Creating reconnect task");
-						reconnectTask = DefaultThreadPools.DefaultTaskRunnerFactory.CreateTaskRunner(new FailoverTask(this),
-											"ActiveMQ Failover Worker: " + this.GetHashCode().ToString());
-					}
-
 					if(rebalance)
 					{
 						ITransport transport = connectedTransport.GetAndSet(null);
@@ -943,6 +941,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 									ConnectedTransport = t;
 									connectFailures = 0;
 									connected = true;
+                                    Monitor.PulseAll(reconnectMutex);
 									if(this.Resumed != null)
 									{
 										this.Resumed(t);
@@ -1048,6 +1047,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 								ConnectedTransport = transport;
 								connectFailures = 0;
 								connected = true;
+                                Monitor.PulseAll(reconnectMutex);
 
 								if(firstConnection)
 								{
@@ -1066,7 +1066,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 							{
 								Tracer.DebugFormat("Connect failed after waiting for asynchronous callback.");
 							}
-
 						}
 						catch(Exception e)
 						{
