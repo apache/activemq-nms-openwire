@@ -653,6 +653,24 @@ namespace Apache.NMS.ActiveMQ
             this.DoRollback();
         }
 
+        public void Recover()
+        {
+            CheckClosed();
+
+            if (IsTransacted)
+            {
+                throw new IllegalStateException("Cannot Recover a Transacted Session");
+            }
+
+            lock(this.consumers.SyncRoot)
+            {
+                foreach(MessageConsumer consumer in this.consumers.Values)
+                {
+                    consumer.Rollback();
+                }
+            }
+        }
+
         #endregion
 
         internal void DoSend(ActiveMQDestination destination, ActiveMQMessage message,
@@ -927,6 +945,14 @@ namespace Apache.NMS.ActiveMQ
             else
             {
                 this.connection.SyncRequest(ack);
+            }
+        }
+
+        private void CheckClosed()
+        {
+            if (closed)
+            {
+                throw new IllegalStateException("Session is Closed");
             }
         }
 

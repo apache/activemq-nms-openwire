@@ -825,7 +825,6 @@ namespace Apache.NMS.ActiveMQ
 
 				if(this.session.IsTransacted)
 				{
-				    //this.session.TransactionContext.DtcWaitHandle.WaitOne();
 					this.AckLater(dispatch, AckType.DeliveredAck);
 				}
 			}
@@ -1027,7 +1026,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		private void Commit()
+		internal void Commit()
 		{
 			lock(this.dispatchedMessages)
 			{
@@ -1037,7 +1036,7 @@ namespace Apache.NMS.ActiveMQ
 			this.redeliveryDelay = 0;
 		}
 
-		private void Rollback()
+		internal void Rollback()
 		{
 			lock(this.unconsumedMessages.SyncRoot)
 			{
