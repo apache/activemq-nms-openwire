@@ -90,6 +90,7 @@
     <Compile Include="src\test\csharp\NetTxTransactionTest.cs" />
     <Compile Include="src\test\csharp\NMSConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\NmsConsoleTracer.cs" />
+    <Compile Include="src\test\csharp\NMSSessionRecoverTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\BooleanStreamTest.cs">
       <SubType>Code</SubType>
     </Compile>
