@@ -655,6 +655,7 @@ namespace Apache.NMS.ActiveMQ
 						if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || IsIndividualAcknowledge)
 						{
 							// Redeliver the message
+                            Rollback();
 						}
 						else
 						{
