@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Web;
 using System.Net.Sockets;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
@@ -82,7 +83,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             Tracer.Debug("Creating new instance of the SSL Transport.");
 			SslTransport transport = new SslTransport(location, socket, wireFormat);
 
-            transport.ClientCertSubject = this.clientCertSubject;
+            transport.ClientCertSubject = HttpUtility.UrlDecode(this.clientCertSubject);
             transport.ClientCertFilename = this.clientCertFilename;
             transport.ClientCertPassword = this.clientCertPassword;
             transport.ServerName = this.serverName;
