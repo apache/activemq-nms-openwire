@@ -34,7 +34,8 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		[Test]
 		[TestCase("tcp://${activemqhost}:61616")]
-		[TestCase("activemq:tcp://${activemqhost}:61616")]
+        [TestCase("activemq:tcp://${activemqhost}:61616")]
+        [TestCase("activemqnettx:tcp://${activemqhost}:61616")]
 		[TestCase("activemq:tcp://${activemqhost}:61616/0.0.0.0:0")]
 		[TestCase("activemq:tcp://${activemqhost}:61616?connection.asyncclose=false")]
 		[TestCase("activemq:failover:tcp://${activemqhost}:61616")]

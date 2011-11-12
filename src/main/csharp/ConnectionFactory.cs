@@ -180,9 +180,16 @@ namespace Apache.NMS.ActiveMQ
 			set
 			{
 				Tracer.Info("BrokerUri set = " + value.OriginalString);
-				
-				brokerUri = new Uri(URISupport.StripPrefix(value.OriginalString, "activemq:"));
-				
+
+                if(value.OriginalString.StartsWith("activemqnettx:"))
+                {
+                    brokerUri = new Uri(URISupport.StripPrefix(value.OriginalString, "activemqnettx:"));
+                }
+                else
+                {
+				    brokerUri = new Uri(URISupport.StripPrefix(value.OriginalString, "activemq:"));
+                }
+
 				if(!String.IsNullOrEmpty(brokerUri.Query) && !brokerUri.OriginalString.EndsWith(")"))
 				{
 					// Since the Uri class will return the end of a Query string found in a Composite
