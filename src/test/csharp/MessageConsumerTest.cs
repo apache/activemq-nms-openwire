@@ -37,6 +37,101 @@ namespace Apache.NMS.ActiveMQ.Test
         protected static string DESTINATION_NAME = "queue://MessageConsumerTestDestination";
         protected static string TEST_CLIENT_ID = "MessageConsumerTestClientId";
 
+        private CountDownLatch doneLatch;
+        private int counter;
+        private String errorMessage;
+
+        [SetUp]
+        public override void SetUp()
+        {
+            base.SetUp();
+
+            this.doneLatch = new CountDownLatch(1);
+            this.counter = 0;
+            this.errorMessage = null;
+        }
+
+        [Test]
+        public void TestAsyncDispatchExceptionRedelivers()
+        {
+            using (IConnection connection = CreateConnection(TEST_CLIENT_ID))
+            {
+                using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+                {
+                    IQueue queue = SessionUtil.GetDestination(session, DESTINATION_NAME) as IQueue;
+
+                    using (IMessageProducer producer = session.CreateProducer(queue))
+                    {
+                        producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+                        producer.Send(producer.CreateTextMessage("First"));
+                        producer.Send(producer.CreateTextMessage("Second"));
+                    }
+
+                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    {
+                        consumer.Listener += OnTestAsynchRedliversMessage;
+
+                        connection.Start();
+
+                        if (doneLatch.await(TimeSpan.FromSeconds(10)))
+                        {
+                            if (!String.IsNullOrEmpty(errorMessage))
+                            {
+                                Assert.Fail(errorMessage);
+                            }
+                        }
+                        else
+                        {
+                            Assert.Fail("Timeout waiting for async message delivery to complete.");
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OnTestAsynchRedliversMessage(IMessage msg)
+        {
+            counter++;
+            try
+            {
+                ITextMessage message = msg as ITextMessage;
+                switch (counter)
+                {
+                case 1:
+                    Tracer.Debug("Got first Message: " + message.Text);
+                    Assert.AreEqual("First", message.Text);
+                    Assert.IsFalse(message.NMSRedelivered);
+                    break;
+                case 2:
+                    Tracer.Debug("Got Second Message: " + message.Text);
+                    Assert.AreEqual("Second", message.Text);
+                    Assert.IsFalse(message.NMSRedelivered);
+                    throw new Exception("Ignore Me");
+                case 3:
+                    Tracer.Debug("Got Third Message: " + message.Text);
+                    Assert.AreEqual("Second", message.Text);
+                    Assert.IsTrue(message.NMSRedelivered);
+                    doneLatch.countDown();
+                    break;
+                default:
+                    errorMessage = "Got too many messages: " + counter;
+                    Tracer.Debug(errorMessage);
+                    doneLatch.countDown();
+                    break;
+                }
+            }
+            catch (Exception e)
+            {
+                if (e.Message.Equals("Ignore Me"))
+                {
+                    throw;
+                }
+                errorMessage = "Got exception: " + e.Message;
+                Tracer.Warn("Exception on Message Receive: " + e.Message);
+                doneLatch.countDown();
+            }
+        }
+
         [Test]
         public void ConsumeInTwoThreads()
         {
@@ -77,7 +172,8 @@ namespace Apache.NMS.ActiveMQ.Test
                     }
                 }
             }
-        }
+        }
+
         [Test]
         public void TestReceiveIgnoreExpirationMessage(
             [Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge,
