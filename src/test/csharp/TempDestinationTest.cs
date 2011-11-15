@@ -24,6 +24,7 @@ using Apache.NMS;
 using Apache.NMS.Test;
 using Apache.NMS.Util;
 using Apache.NMS.Policies;
+using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -291,6 +292,74 @@ namespace Apache.NMS.ActiveMQ.Test
             catch(NMSException)
             {
                 Assert.IsTrue(true, "failed to throw an exception");
+            }
+        }
+
+        [Test]
+        public void TestConnectionCanPurgeTempDestinations()
+        {
+            Connection connection = CreateConnection() as Connection;
+            connections.Add(connection);
+            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+            IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
+            advisoryConsumer.Listener += OnAdvisoryMessage;
+
+            connection.Start();
+
+            for(int i = 0; i < 10; ++i)
+            {
+                ITemporaryTopic tempTopic = session.CreateTemporaryTopic();
+                Tracer.Debug("Created TempDestination: " + tempTopic);
+            }
+
+            // Create one from an alternate connection, it shouldn't get purged
+            // so we should have one less removed than added entries.
+            Connection connection2 = CreateConnection() as Connection;
+            ISession session2 = connection2.CreateSession(AcknowledgementMode.AutoAcknowledge);
+            ITemporaryTopic tempTopic2 = session2.CreateTemporaryTopic();
+
+            Thread.Sleep(4000);
+            Assert.IsTrue(tempDestsAdded.Count == 11);
+
+            connection.PurgeTempDestinations();
+
+            Thread.Sleep(4000);
+            Assert.IsTrue(tempDestsRemoved.Count == 10);
+        }
+
+        private readonly IList tempDestsAdded = ArrayList.Synchronized(new ArrayList());
+        private readonly IList tempDestsRemoved = ArrayList.Synchronized(new ArrayList());
+
+        private void OnAdvisoryMessage(IMessage msg)
+        {
+            Message message = msg as Message;
+            DestinationInfo destInfo = message.DataStructure as DestinationInfo;
+
+            if(destInfo != null)
+            {
+                ActiveMQDestination dest = destInfo.Destination;
+                if(!dest.IsTemporary)
+                {
+                    return;
+                }
+    
+                ActiveMQTempDestination tempDest = dest as ActiveMQTempDestination;
+                if(destInfo.OperationType == DestinationInfo.ADD_OPERATION_TYPE)
+                {
+                    if(Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("Connection adding: " + tempDest);
+                    }
+                    this.tempDestsAdded.Add(tempDest);
+                }
+                else if(destInfo.OperationType == DestinationInfo.REMOVE_OPERATION_TYPE)
+                {
+                    if(Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("Connection removing: " + tempDest);
+                    }
+                    this.tempDestsRemoved.Add(tempDest);
+                }
             }
         }
 

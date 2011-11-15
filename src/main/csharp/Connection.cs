@@ -630,6 +630,36 @@ namespace Apache.NMS.ActiveMQ
 			disposed = true;
 		}
 
+        public void PurgeTempDestinations()
+        {
+            if (this.tempDests == null || this.tempDests.Count == 0)
+            {
+                return;
+            }
+
+            lock(this.tempDests.SyncRoot)
+            {
+                Object[] keys = new Object[this.tempDests.Count];
+                this.tempDests.Keys.CopyTo(keys, 0);
+                foreach(ActiveMQTempDestination dest in keys)
+                {
+                    String localConnectionId = info.ConnectionId == null ? "" : info.ConnectionId.ToString();
+                    if (dest.PhysicalName.Contains(localConnectionId))
+                    {
+                        try
+                        {
+                            DeleteTemporaryDestination(dest);
+                        }
+                        catch
+                        {
+                            // The destination may still be in use in which case its
+                            // ok that it is not deleted now.
+                        }
+                    }
+                }
+            }
+        }
+
 		// Implementation methods
 
 		/// <summary>
@@ -1122,10 +1152,6 @@ namespace Apache.NMS.ActiveMQ
             this.AddTempDestination(destination);
 
 			return destination;
-		}
-
-		protected void CreateTemporaryDestination(ActiveMQDestination tempDestination)
-		{
 		}
 
 		public void DeleteTemporaryDestination(IDestination destination)
