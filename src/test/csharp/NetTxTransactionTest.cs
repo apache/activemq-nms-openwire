@@ -223,19 +223,30 @@ namespace Apache.NMS.ActiveMQ.Test
 
                 using(INetTxSession session = connection.CreateNetTxSession())
                 {
+                    session.TransactionStartedListener += TransactionStarted;
+                    session.TransactionCommittedListener += TransactionCommitted;
+                    session.TransactionRolledBackListener += TransactionRolledBack;
+
                     destination = session.CreateTemporaryQueue();
                     using(IMessageProducer producer = session.CreateProducer(destination))
                     {
                         using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
                         {
+                            Assert.IsFalse(this.transactionStarted);
+
                             Assert.IsNotNull(Transaction.Current);
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
                                 producer.Send(session.CreateTextMessage("Hello World"));
                             }
 
+                            Assert.IsTrue(this.transactionStarted, "A TX should have been started by producing");
+
                             scoped.Complete();
                         }
+
+                        Assert.IsFalse(this.transactionStarted, "TX Should have Committed and cleared Started");
+                        Assert.IsTrue(this.transactionCommitted, "TX Should have Committed");
 
                         session.Close();
                     }
@@ -243,18 +254,29 @@ namespace Apache.NMS.ActiveMQ.Test
 
                 using(INetTxSession session = connection.CreateNetTxSession())
                 {
+                    session.TransactionStartedListener += TransactionStarted;
+                    session.TransactionCommittedListener += TransactionCommitted;
+                    session.TransactionRolledBackListener += TransactionRolledBack;
+
                     using(IMessageConsumer consumer = session.CreateConsumer(destination))
                     {
                         using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
                         {
+                            Assert.IsFalse(this.transactionStarted);
+
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
                                 IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(2000));
                                 Assert.IsNotNull(msg, "Message was null for index: " + i);
                             }
 
+                            Assert.IsTrue(this.transactionStarted, "A TX should have been started by consuming");
+
                             scoped.Complete();
                         }
+
+                        Assert.IsFalse(this.transactionStarted, "TX Should have Committed and cleared Started");
+                        Assert.IsTrue(this.transactionCommitted, "TX Should have Committed");
 
                         session.Close();
                     }
@@ -276,6 +298,31 @@ namespace Apache.NMS.ActiveMQ.Test
 
                 connection.Close();
             }
+        }
+
+        private bool transactionStarted = false;
+        private bool transactionCommitted = false;
+        private bool transactionRolledBack = false;
+
+        private void TransactionStarted(ISession session)
+        {
+            transactionStarted = true;
+            transactionCommitted = false;
+            transactionRolledBack = false;
+        }
+
+        private void TransactionCommitted(ISession session)
+        {
+            transactionStarted = false;
+            transactionCommitted = true;
+            transactionRolledBack = false;
+        }
+
+        private void TransactionRolledBack(ISession session)
+        {
+            transactionStarted = false;
+            transactionCommitted = false;
+            transactionRolledBack = true;
         }
 
     }

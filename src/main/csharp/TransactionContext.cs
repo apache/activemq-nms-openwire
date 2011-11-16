@@ -93,6 +93,11 @@ namespace Apache.NMS.ActiveMQ
                 
                 this.session.Connection.Oneway(info);
 
+                if(this.TransactionStartedListener != null)
+                {
+                    this.TransactionStartedListener(this.session);
+                }
+
                 if(Tracer.IsDebugEnabled)
                 {
                     Tracer.Debug("Begin:" + this.transactionId.ToString());
@@ -171,6 +176,11 @@ namespace Apache.NMS.ActiveMQ
                     {
                         synchronization.AfterCommit();
                     }
+
+                    if(this.TransactionCommittedListener != null)
+                    {
+                        this.TransactionCommittedListener(this.session);
+                    }
                 }
             }
             finally
@@ -189,6 +199,11 @@ namespace Apache.NMS.ActiveMQ
                     {
                         synchronization.AfterRollback();
                     }
+
+                    if(this.TransactionRolledBackListener != null)
+                    {
+                        this.TransactionRolledBackListener(this.session);
+                    }
                 }
             }
             finally
@@ -196,6 +211,14 @@ namespace Apache.NMS.ActiveMQ
                 synchronizations.Clear();
             }
         }
+
+        #region Transaction State Events
+
+        public event SessionTxEventDelegate TransactionStartedListener;
+        public event SessionTxEventDelegate TransactionCommittedListener;
+        public event SessionTxEventDelegate TransactionRolledBackListener;
+
+        #endregion
 
         #region Transaction Members used when dealing with .NET System Transactions.
 
@@ -285,6 +308,11 @@ namespace Apache.NMS.ActiveMQ
                     info.Type = (int) TransactionType.Begin;
 
                     this.session.Connection.Oneway(info);
+
+                    if (this.TransactionStartedListener != null)
+                    {
+                        this.TransactionStartedListener(this.session);
+                    }
 
                     if (Tracer.IsDebugEnabled)
                     {

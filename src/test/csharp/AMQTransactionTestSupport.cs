@@ -540,6 +540,133 @@ namespace Apache.NMS.ActiveMQ.Test
         }
 
         [Test]
+        public void TestTransactionEventsFired()
+        {
+            IMessage[] outbound = new IMessage[]
+            {session.CreateTextMessage("First IMessage"), session.CreateTextMessage("Second IMessage")};
+
+            session.TransactionStartedListener += TransactionStarted;
+            session.TransactionCommittedListener += TransactionCommitted;
+            session.TransactionRolledBackListener += TransactionRolledBack;
+
+            // sends a message
+            BeginTx();
+            producer.Send(outbound[0]);
+            Assert.IsTrue(this.transactionStarted);
+            CommitTx();
+            Assert.IsFalse(this.transactionStarted);
+            Assert.IsTrue(this.transactionCommitted);
+
+            // sends a message that gets rollbacked
+            BeginTx();
+            producer.Send(session.CreateTextMessage("I'm going to get rolled back."));
+            Assert.IsTrue(this.transactionStarted);
+            RollbackTx();
+            Assert.IsFalse(this.transactionStarted);
+            Assert.IsTrue(this.transactionRolledBack);
+
+            // sends a message
+            BeginTx();
+            producer.Send(outbound[1]);
+            Assert.IsTrue(this.transactionStarted);
+            CommitTx();
+            Assert.IsFalse(this.transactionStarted);
+            Assert.IsTrue(this.transactionCommitted);
+
+            // receives the first message
+            BeginTx();
+            LinkedList<IMessage> messages = new LinkedList<IMessage>();
+            IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+            messages.AddLast(message);
+
+            // receives the second message
+            message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+            Assert.IsTrue(this.transactionStarted);
+            messages.AddLast(message);
+
+            // validates that the rollbacked was not consumed
+            CommitTx();
+            Assert.IsFalse(this.transactionStarted);
+            Assert.IsTrue(this.transactionCommitted);
+
+            IMessage[] inbound = new IMessage[messages.Count];
+            messages.CopyTo(inbound, 0);
+            AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
+        }
+
+        [Test]
+        public void TestMessageListenerGeneratesTxEvents()
+        {
+            messageReceived = false;
+
+            session.TransactionStartedListener += TransactionStarted;
+            session.TransactionCommittedListener += TransactionCommitted;
+            session.TransactionRolledBackListener += TransactionRolledBack;
+
+            // Send messages
+            for(int i = 0; i < MESSAGE_COUNT; i++)
+            {
+                producer.Send(session.CreateTextMessage(MESSAGE_TEXT + i));
+            }
+
+            Assert.IsTrue(this.transactionStarted);
+            CommitTx();
+            Assert.IsFalse(this.transactionStarted);
+            Assert.IsTrue(this.transactionCommitted);
+
+            consumer.Listener += new MessageListener(OnAsyncTxMessage);
+
+            // wait receive
+            WaitForMessageToBeReceived();
+            Assert.IsTrue(this.transactionStarted);
+
+            CommitTx();
+            Assert.IsFalse(this.transactionStarted);
+            Assert.IsTrue(this.transactionCommitted);
+        }
+
+        private bool transactionStarted = false;
+        private bool transactionCommitted = false;
+        private bool transactionRolledBack = false;
+        private bool messageReceived = false;
+
+        public void OnAsyncTxMessage(IMessage message)
+        {
+            messageReceived = true;
+        }
+
+        private void WaitForMessageToBeReceived()
+        {
+            for(int i = 0; i < 100 && !messageReceived; i++)
+            {
+                Thread.Sleep(100);
+            }
+
+            Assert.IsTrue(messageReceived);
+        }
+
+        private void TransactionStarted(ISession session)
+        {
+            transactionStarted = true;
+            transactionCommitted = false;
+            transactionRolledBack = false;
+        }
+
+        private void TransactionCommitted(ISession session)
+        {
+            transactionStarted = false;
+            transactionCommitted = true;
+            transactionRolledBack = false;
+        }
+
+        private void TransactionRolledBack(ISession session)
+        {
+            transactionStarted = false;
+            transactionCommitted = false;
+            transactionRolledBack = true;
+        }
+
+        [Test]
         public void TestMessageListener()
         {
             // Send messages

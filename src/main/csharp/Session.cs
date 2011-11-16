@@ -104,6 +104,31 @@ namespace Apache.NMS.ActiveMQ
 
         #region Property Accessors
 
+        #region Session Transaction Events
+
+        // We delegate the events to the TransactionContext since it knows
+        // what the state is for both Local and DTC transactions.
+
+        public event SessionTxEventDelegate TransactionStartedListener
+        {
+            add { this.transactionContext.TransactionStartedListener += value; }
+            remove { this.transactionContext.TransactionStartedListener += value; }
+        }
+
+        public event SessionTxEventDelegate TransactionCommittedListener
+        {
+            add { this.transactionContext.TransactionCommittedListener += value; }
+            remove { this.transactionContext.TransactionCommittedListener += value; }
+        }
+
+        public event SessionTxEventDelegate TransactionRolledBackListener
+        {
+            add { this.transactionContext.TransactionRolledBackListener += value; }
+            remove { this.transactionContext.TransactionRolledBackListener += value; }
+        }
+
+        #endregion
+
         /// <summary>
         /// Sets the maximum number of messages to keep around per consumer
         /// in addition to the prefetch window for non-durable topics until messages
@@ -756,7 +781,7 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         internal virtual void DoStartTransaction()
         {
-            if(IsTransacted)
+            if(IsTransacted && !TransactionContext.InTransaction)
             {
                 this.TransactionContext.Begin();
             }
