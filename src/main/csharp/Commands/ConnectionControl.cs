@@ -73,7 +73,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "ConnectedBrokers = " + ConnectedBrokers + ", " + 
                 "ReconnectTo = " + ReconnectTo + ", " + 
                 "RebalanceConnection = " + RebalanceConnection + ", " + 
-                "Token = " + System.Text.ASCIIEncoding.ASCII.GetString(Token) + " ]";
+                "Token = " + Token ?? System.Text.ASCIIEncoding.ASCII.GetString(Token) + " ]";
         }
 
         public bool Close
