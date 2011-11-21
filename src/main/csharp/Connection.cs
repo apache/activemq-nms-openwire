@@ -1046,8 +1046,12 @@ namespace Apache.NMS.ActiveMQ
 		{
 			Tracer.Debug("Connection: Transport has been Interrupted.");
 
-			this.transportInterruptionProcessingComplete = new CountDownLatch(dispatchers.Count);
-			if(Tracer.IsDebugEnabled)
+            // Ensure that if there's an advisory consumer we don't add it to the
+            // set of consumers that need interruption processing.
+			this.transportInterruptionProcessingComplete =
+                new CountDownLatch(dispatchers.Count - (this.advisoryConsumer != null ? 1 : 0));
+
+            if(Tracer.IsDebugEnabled)
 			{
 				Tracer.Debug("transport interrupted, dispatchers: " + dispatchers.Count);
 			}
