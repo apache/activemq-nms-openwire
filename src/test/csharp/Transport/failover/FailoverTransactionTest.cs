@@ -42,8 +42,6 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void FailoverBeforeCommitSentTest()
         {
-            Tracer.Trace = new NmsConsoleTracer();
-
             string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
             IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
             using(connection = factory.CreateConnection() as Connection)
