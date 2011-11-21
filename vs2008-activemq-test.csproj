@@ -106,6 +106,7 @@
     <Compile Include="src\test\csharp\Transactions\RecoveryFileLoggerTest.cs" />
     <Compile Include="src\test\csharp\Transactions\RecoveryLoggerHarness.cs" />
     <Compile Include="src\test\csharp\Transactions\RecoveryLoggerHarnessFactory.cs" />
+    <Compile Include="src\test\csharp\Transport\failover\FailoverTransactionTest.cs" />
     <Compile Include="src\test\csharp\Transport\failover\FailoverTransportTest.cs" />
     <Compile Include="src\test\csharp\Transport\Inactivity\InactivityMonitorTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />
