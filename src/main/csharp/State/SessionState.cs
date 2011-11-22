@@ -49,6 +49,11 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			ProducerState ret = producers[id];
 			producers.Remove(id);
+            if (ret.TransactionState != null)
+            {
+                ret.TransactionState.AddProducer(ret);
+            }
+
 			return ret;
 		}
 
@@ -67,34 +72,22 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public SessionInfo Info
 		{
-			get
-			{
-				return info;
-			}
+            get { return info; }
 		}
 
 		public AtomicCollection<ConsumerId> ConsumerIds
 		{
-			get
-			{
-				return consumers.Keys;
-			}
+			get { return consumers.Keys; }
 		}
 
 		public AtomicCollection<ProducerId> ProducerIds
 		{
-			get
-			{
-				return producers.Keys;
-			}
+			get { return producers.Keys; }
 		}
 
 		public AtomicCollection<ProducerState> ProducerStates
 		{
-			get
-			{
-				return producers.Values;
-			}
+			get { return producers.Values; }
 		}
 
 		public ProducerState getProducerState(ProducerId producerId)
@@ -104,18 +97,12 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public ProducerState this[ProducerId producerId]
 		{
-			get
-			{
-				return producers[producerId];
-			}
+			get { return producers[producerId]; }
 		}
 
 		public AtomicCollection<ConsumerState> ConsumerStates
 		{
-			get
-			{
-				return consumers.Values;
-			}
+			get { return consumers.Values; }
 		}
 
 		public ConsumerState getConsumerState(ConsumerId consumerId)
@@ -125,10 +112,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public ConsumerState this[ConsumerId consumerId]
 		{
-			get
-			{
-				return consumers[consumerId];
-			}
+            get { return consumers[consumerId]; }
 		}
 
 		private void checkShutdown()

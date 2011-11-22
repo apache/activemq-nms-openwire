@@ -23,7 +23,8 @@ namespace Apache.NMS.ActiveMQ.State
 {
 	public class ProducerState
 	{
-	    readonly ProducerInfo info;
+	    private readonly ProducerInfo info;
+        private TransactionState transactionState;
 
 		public ProducerState(ProducerInfo info)
 		{
@@ -37,10 +38,13 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public ProducerInfo Info
 		{
-			get
-			{
-				return info;
-			}
+            get { return info; }
 		}
+
+        public TransactionState TransactionState
+        {
+            get { return this.transactionState; }
+            set { this.transactionState = value; }
+        }
 	}
 }

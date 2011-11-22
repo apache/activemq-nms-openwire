@@ -20,8 +20,7 @@ using System.Collections.Generic;
 
 namespace Apache.NMS.ActiveMQ.State
 {
-	public class AtomicCollection<TValue>
-		where TValue : class
+	public class AtomicCollection<TValue> where TValue : class
 	{
 		private readonly ArrayList _collection = new ArrayList();
 
@@ -53,10 +52,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public bool IsReadOnly
 		{
-			get
-			{
-				return false;
-			}
+			get { return false; }
 		}
 
 		public int Add(TValue v)

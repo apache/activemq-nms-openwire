@@ -34,6 +34,7 @@ namespace Apache.NMS.ActiveMQ.State
         protected Dictionary<ConnectionId, ConnectionState> connectionStates = new Dictionary<ConnectionId, ConnectionState>();
 
         private bool _trackTransactions;
+        private bool _trackTransactionProducers = true;
         private bool _restoreSessions = true;
         private bool _restoreConsumers = true;
         private bool _restoreProducers = true;
@@ -142,11 +143,39 @@ namespace Apache.NMS.ActiveMQ.State
         private void DoRestoreTransactions(ITransport transport, ConnectionState connectionState)
         {
             AtomicCollection<TransactionState> transactionStates = connectionState.TransactionStates;
+
             foreach(TransactionState transactionState in transactionStates)
             {
-                foreach(Command command in transactionState.Commands)
+                // replay the add and remove of short lived producers that may have been
+                // involved in the transaction
+                foreach (ProducerState producerState in transactionState.ProducerStates)
                 {
+                    if (Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("tx replay producer :" + producerState.Info);
+                    }
+                    transport.Oneway(producerState.Info);
+                }
+    
+                foreach (Command command in transactionState.Commands)
+                {
+                    if (Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("tx replay: " + command);
+                    }
                     transport.Oneway(command);
+                }
+    
+                foreach (ProducerState producerState in transactionState.ProducerStates)
+                {
+                    if (Tracer.IsDebugEnabled)
+                    {
+                        Tracer.Debug("tx remove replayed producer :" + producerState.Info);
+                    }
+
+                    RemoveInfo producerRemove = new RemoveInfo();
+                    producerRemove.ObjectId = producerState.Info.ProducerId;
+                    transport.Oneway(producerRemove);
                 }
             }
         }
@@ -441,7 +470,8 @@ namespace Apache.NMS.ActiveMQ.State
             {
                 if(TrackTransactions && send.TransactionId != null)
                 {
-                    ConnectionId connectionId = send.ProducerId.ParentId.ParentId;
+                    ProducerId producerId = send.ProducerId;
+                    ConnectionId connectionId = producerId.ParentId.ParentId;
                     if(connectionId != null)
                     {
 						ConnectionState cs = null;
@@ -452,6 +482,13 @@ namespace Apache.NMS.ActiveMQ.State
                             if(transactionState != null)
                             {
                                 transactionState.addCommand(send);
+
+                                if (_trackTransactionProducers)
+                                {
+                                    SessionState ss = cs[producerId.ParentId];
+                                    ProducerState producerState = ss[producerId];
+                                    producerState.TransactionState = transactionState;
+                                }
                             }
                         }
                     }
@@ -627,86 +664,50 @@ namespace Apache.NMS.ActiveMQ.State
 
         public bool RestoreConsumers
         {
-            get
-            {
-                return _restoreConsumers;
-            }
-            set
-            {
-                _restoreConsumers = value;
-            }
+            get { return _restoreConsumers; }
+            set { _restoreConsumers = value; }
         }
 
         public bool RestoreProducers
         {
-            get
-            {
-                return _restoreProducers;
-            }
-            set
-            {
-                _restoreProducers = value;
-            }
+            get { return _restoreProducers; }
+            set { _restoreProducers = value; }
         }
 
         public bool RestoreSessions
         {
-            get
-            {
-                return _restoreSessions;
-            }
-            set
-            {
-                _restoreSessions = value;
-            }
+            get { return _restoreSessions; }
+            set { _restoreSessions = value; }
         }
 
         public bool TrackTransactions
         {
-            get
-            {
-                return _trackTransactions;
-            }
-            set
-            {
-                _trackTransactions = value;
-            }
+            get { return _trackTransactions; }
+            set { _trackTransactions = value; }
+        }
+
+        public bool TrackTransactionProducers
+        {
+            get { return _trackTransactionProducers; }
+            set { _trackTransactionProducers = value; }
         }
 
         public bool RestoreTransaction
         {
-            get
-            {
-                return _restoreTransaction;
-            }
-            set
-            {
-                _restoreTransaction = value;
-            }
+            get { return _restoreTransaction; }
+            set { _restoreTransaction = value; }
         }
 
         public bool TrackMessages
         {
-            get
-            {
-                return _trackMessages;
-            }
-            set
-            {
-                _trackMessages = value;
-            }
+            get { return _trackMessages; }
+            set { _trackMessages = value; }
         }
 
         public int MaxCacheSize
         {
-            get
-            {
-                return _maxCacheSize;
-            }
-            set
-            {
-                _maxCacheSize = value;
-            }
+            get { return _maxCacheSize; }
+            set { _maxCacheSize = value; }
         }
 
         public void ConnectionInterruptProcessingComplete(ITransport transport, ConnectionId connectionId)

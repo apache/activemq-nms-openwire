@@ -24,8 +24,7 @@ namespace Apache.NMS.ActiveMQ.State
 {
 	public class ConnectionState
 	{
-
-		ConnectionInfo info;
+		private ConnectionInfo info;
 		private readonly AtomicDictionary<TransactionId, TransactionState> transactions = new AtomicDictionary<TransactionId, TransactionState>();
 		private readonly AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
 		private readonly AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
@@ -95,10 +94,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public AtomicCollection<TransactionState> TransactionStates
 		{
-			get
-			{
-				return transactions.Values;
-			}
+			get { return transactions.Values; }
 		}
 
 		public SessionState this[SessionId id]

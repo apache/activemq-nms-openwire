@@ -21,10 +21,9 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.State
 {
-
 	public class ConsumerState
 	{
-	    readonly ConsumerInfo info;
+	    private readonly ConsumerInfo info;
 
 		public ConsumerState(ConsumerInfo info)
 		{
@@ -38,10 +37,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public ConsumerInfo Info
 		{
-			get
-			{
-				return info;
-			}
+			get { return info; }
 		}
 	}
 }

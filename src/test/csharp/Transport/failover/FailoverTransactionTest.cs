@@ -94,6 +94,62 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
+        [Test]
+        public void FailoverWithShortLivedProducerTest()
+        {
+            string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
+            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            using(connection = factory.CreateConnection() as Connection)
+            {
+                connection.ConnectionInterruptedListener +=
+                    new ConnectionInterruptedListener(TransportInterrupted);
+                connection.ConnectionResumedListener +=
+                    new ConnectionResumedListener(TransportResumed);
+
+                connection.Start();
+
+                ITransport transport = (connection as Connection).ITransport;
+                TcpFaultyTransport tcpFaulty = transport.Narrow(typeof(TcpFaultyTransport)) as TcpFaultyTransport;
+                Assert.IsNotNull(tcpFaulty);
+                tcpFaulty.OnewayCommandPreProcessor += this.FailOnCommitTransportHook;
+
+                using(ISession session = connection.CreateSession())
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    PurgeQueue(connection, destination);
+                }
+
+                Tracer.Debug("Test is putting " + MSG_COUNT + " messages on the queue: " + destinationName);
+
+                using(ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    PutMsgIntoQueue(session, destination, false);
+                    session.Commit();
+                }
+
+                Assert.IsTrue(this.interrupted);
+                Assert.IsTrue(this.resumed);
+
+                Tracer.Debug("Test is attempting to read " + MSG_COUNT +
+                             " messages from the queue: " + destinationName);
+
+                using(ISession session = connection.CreateSession())
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    IMessageConsumer consumer = session.CreateConsumer(destination);
+                    for (int i = 0; i < MSG_COUNT; ++i)
+                    {
+                        IMessage msg = consumer.Receive(TimeSpan.FromSeconds(5));
+                        Assert.IsNotNull(msg, "Should receive message[" + (i + 1) + "] after commit failed once.");
+                    }
+                }
+            }
+
+            Assert.IsTrue(this.interrupted);
+            Assert.IsTrue(this.resumed);
+        }
+
         public void TransportInterrupted()
         {
             this.interrupted = true;
@@ -106,6 +162,11 @@ namespace Apache.NMS.ActiveMQ.Test
 
         private void PutMsgIntoQueue(ISession session, IDestination destination)
         {
+            PutMsgIntoQueue(session, destination, true);
+        }
+
+        private void PutMsgIntoQueue(ISession session, IDestination destination, bool commit)
+        {
             using(IMessageProducer producer = session.CreateProducer(destination))
             {
                 ITextMessage message = session.CreateTextMessage();
@@ -115,7 +176,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     producer.Send(message);
                 }
 
-                if (session.Transacted)
+                if (session.Transacted && commit)
                 {
                     session.Commit();
                 }

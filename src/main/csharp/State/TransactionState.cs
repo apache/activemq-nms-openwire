@@ -24,12 +24,12 @@ namespace Apache.NMS.ActiveMQ.State
 {
 	public class TransactionState
 	{
-
 		private readonly List<Command> commands = new List<Command>();
 		private readonly TransactionId id;
 		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
 		private bool prepared;
 		private int preparedResult;
+        private readonly AtomicDictionary<ProducerId, ProducerState> producers = new AtomicDictionary<ProducerId, ProducerState>();
 
 		public TransactionState(TransactionId id)
 		{
@@ -49,10 +49,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public List<Command> Commands
 		{
-			get
-			{
-				return commands;
-			}
+			get { return commands; }
 		}
 
 		private void checkShutdown()
@@ -75,26 +72,25 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public bool Prepared
 		{
-			get
-			{
-				return prepared;
-			}
-			set
-			{
-				prepared = value;
-			}
+			get { return prepared; }
+			set { prepared = value; }
 		}
 
 		public int PreparedResult
 		{
-			get
-			{
-				return preparedResult;
-			}
-			set
-			{
-				preparedResult = value;
-			}
+			get { return preparedResult; }
+			set { preparedResult = value; }
 		}
+
+        public void AddProducer(ProducerState producer)
+        {
+            this.producers.Add(producer.Info.ProducerId, producer);
+        }
+
+        public AtomicCollection<ProducerState> ProducerStates
+        {
+            get { return producers.Values; }
+        }
+
 	}
 }

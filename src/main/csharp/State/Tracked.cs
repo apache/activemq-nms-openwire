@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		public void onResponses()
 		{
-			if(runnable != null)
+			if (runnable != null)
 			{
 				runnable.Run();
 				runnable = null;
@@ -39,10 +39,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 		virtual public bool WaitingForResponse
 		{
-			get
-			{
-				return runnable != null;
-			}
+			get { return runnable != null; }
 		}
 
 	}
