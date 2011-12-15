@@ -42,8 +42,8 @@ namespace Apache.NMS.ActiveMQ.State
         private bool _trackMessages = true;
         private int _maxCacheSize = 256;
         private int currentCacheSize;
-        private readonly Dictionary<MessageId, Message> messageCache = new Dictionary<MessageId, Message>();
-        private readonly Queue<MessageId> messageCacheFIFO = new Queue<MessageId>();
+        private readonly Dictionary<Object, Command> messageCache = new Dictionary<Object, Command>();
+        private readonly Queue<Object> messageCacheFIFO = new Queue<Object>();
 
         protected void RemoveEldestInCache()
         {
@@ -102,10 +102,17 @@ namespace Apache.NMS.ActiveMQ.State
 
         public void TrackBack(Command command)
         {
-            if(TrackMessages && command != null && command.IsMessage)
+            if (command != null)
             {
-                Message message = (Message) command;
-                if(message.TransactionId == null)
+                if (TrackMessages && command.IsMessage)
+                {
+                    Message message = (Message) command;
+                    if(message.TransactionId == null)
+                    {
+                        currentCacheSize = currentCacheSize + 1;
+                    }
+                }
+                else if (command.IsMessagePull)
                 {
                     currentCacheSize = currentCacheSize + 1;
                 }
@@ -119,6 +126,10 @@ namespace Apache.NMS.ActiveMQ.State
             {
                 ConnectionInfo info = connectionState.Info;
                 info.FailoverReconnect = true;
+                if (Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("conn: " + connectionState.Info.ConnectionId);
+                }
                 transport.Oneway(info);
 
                 DoRestoreTempDestinations(transport, connectionState);
@@ -133,19 +144,46 @@ namespace Apache.NMS.ActiveMQ.State
                     DoRestoreTransactions(transport, connectionState);
                 }
             }
-            //now flush messages
-            foreach(Message msg in messageCache.Values)
+
+            // Now flush messages
+            foreach(Command command in messageCache.Values)
             {
-                transport.Oneway(msg);
+                if (Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Replaying command: " + command);
+                }
+
+                transport.Oneway(command);
             }
         }
 
         private void DoRestoreTransactions(ITransport transport, ConnectionState connectionState)
         {
             AtomicCollection<TransactionState> transactionStates = connectionState.TransactionStates;
+            List<TransactionInfo> toRollback = new List<TransactionInfo>();
 
             foreach(TransactionState transactionState in transactionStates)
             {
+                // rollback any completed transactions - no way to know if commit got there
+                // or if reply went missing
+                if (transactionState.Commands.Count != 0)
+                {
+                    Command lastCommand = transactionState.Commands[transactionState.Commands.Count - 1];
+                    if (lastCommand.IsTransactionInfo)
+                    {
+                        TransactionInfo transactionInfo = lastCommand as TransactionInfo;
+                        if (transactionInfo.Type == TransactionInfo.COMMIT_ONE_PHASE)
+                        {
+                            if (Tracer.IsDebugEnabled)
+                            {
+                                Tracer.Debug("rolling back potentially completed tx: " + transactionState.getId());
+                            }
+                            toRollback.Add(transactionInfo);
+                            continue;
+                        }
+                    }
+                }
+
                 // replay the add and remove of short lived producers that may have been
                 // involved in the transaction
                 foreach (ProducerState producerState in transactionState.ProducerStates)
@@ -178,6 +216,18 @@ namespace Apache.NMS.ActiveMQ.State
                     transport.Oneway(producerRemove);
                 }
             }
+
+            foreach (TransactionInfo command in toRollback)
+            {
+                // respond to the outstanding commit
+                ExceptionResponse response = new ExceptionResponse();
+                response.Exception = new BrokerError();
+                response.Exception.Message =
+                    "Transaction completion in doubt due to failover. Forcing rollback of " + command.TransactionId;
+                response.Exception.ExceptionClass = (new TransactionRolledBackException()).GetType().FullName;
+                response.CorrelationId = command.CommandId;
+                transport.Command(transport, response);
+            }
         }
 
         /// <summary>
@@ -189,6 +239,10 @@ namespace Apache.NMS.ActiveMQ.State
             // Restore the connection's sessions
             foreach(SessionState sessionState in connectionState.SessionStates)
             {
+                if (Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Restoring session: " + sessionState.Info.SessionId);
+                }
                 transport.Oneway(sessionState.Info);
 
                 if(RestoreProducers)
@@ -262,6 +316,10 @@ namespace Apache.NMS.ActiveMQ.State
             // Restore the session's producers
             foreach(ProducerState producerState in sessionState.ProducerStates)
             {
+                if (Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("Restoring producer: " + producerState.Info.ProducerId);
+                }
                 transport.Oneway(producerState.Info);
             }
         }
@@ -658,6 +716,17 @@ namespace Apache.NMS.ActiveMQ.State
                     }
                 }
                 return TRACKED_RESPONSE_MARKER;
+            }
+            return null;
+        }
+
+        public override Response processMessagePull(MessagePull pull)
+        {
+            if (pull != null)
+            {
+                // leave a single instance in the cache
+                String id = pull.Destination + "::" + pull.ConsumerId;
+                messageCache.Add(id, pull);
             }
             return null;
         }

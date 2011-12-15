@@ -39,6 +39,85 @@ namespace Apache.NMS.ActiveMQ.Test
         private readonly int MSG_COUNT = 2;
         private readonly String destinationName = "FailoverTransactionTestQ";
 
+        [SetUp]
+        public override void SetUp()
+        {
+            base.SetUp();
+
+            this.connection = null;
+            this.interrupted = false;
+            this.resumed = false;
+            this.commitFailed = false;
+        }
+
+        [Test]
+        public void FailoverAfterCommitSentTest()
+        {
+            string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
+            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            using(connection = factory.CreateConnection() as Connection)
+            {
+                connection.ConnectionInterruptedListener +=
+                    new ConnectionInterruptedListener(TransportInterrupted);
+                connection.ConnectionResumedListener +=
+                    new ConnectionResumedListener(TransportResumed);
+
+                connection.Start();
+
+                ITransport transport = (connection as Connection).ITransport;
+                TcpFaultyTransport tcpFaulty = transport.Narrow(typeof(TcpFaultyTransport)) as TcpFaultyTransport;
+                Assert.IsNotNull(tcpFaulty);
+                tcpFaulty.OnewayCommandPostProcessor += this.FailOnCommitTransportHook;
+
+                using(ISession session = connection.CreateSession())
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    PurgeQueue(connection, destination);
+                }
+
+                Tracer.Debug("Test is putting " + MSG_COUNT + " messages on the queue: " + destinationName);
+
+                using(ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    PutMsgIntoQueue(session, destination, false);
+
+                    try
+                    {
+                        session.Commit();
+                        Assert.Fail("Should have thrown a TransactionRolledBackException");
+                    }
+                    catch(TransactionRolledBackException)
+                    {
+                    }
+                    catch
+                    {
+                        Assert.Fail("Should have thrown a TransactionRolledBackException");
+                    }
+                }
+
+                Assert.IsTrue(this.interrupted);
+                Assert.IsTrue(this.resumed);
+
+                Tracer.Debug("Test is attempting to read " + MSG_COUNT +
+                             " messages from the queue: " + destinationName);
+
+                using(ISession session = connection.CreateSession())
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    IMessageConsumer consumer = session.CreateConsumer(destination);
+                    for (int i = 0; i < MSG_COUNT; ++i)
+                    {
+                        IMessage msg = consumer.Receive(TimeSpan.FromSeconds(5));
+                        Assert.IsNotNull(msg, "Should receive message[" + (i + 1) + "] after commit failed once.");
+                    }
+                }
+            }
+
+            Assert.IsTrue(this.interrupted);
+            Assert.IsTrue(this.resumed);
+        }
+
         [Test]
         public void FailoverBeforeCommitSentTest()
         {
@@ -69,24 +148,34 @@ namespace Apache.NMS.ActiveMQ.Test
                 using(ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
                 {
                     IDestination destination = session.GetQueue(destinationName);
-                    PutMsgIntoQueue(session, destination);
+                    PutMsgIntoQueue(session, destination, false);
+
+                    try
+                    {
+                        session.Commit();
+                        Assert.Fail("Should have thrown a TransactionRolledBackException");
+                    }
+                    catch(TransactionRolledBackException)
+                    {
+                    }
+                    catch
+                    {
+                        Assert.Fail("Should have thrown a TransactionRolledBackException");
+                    }
                 }
 
                 Assert.IsTrue(this.interrupted);
                 Assert.IsTrue(this.resumed);
 
-                Tracer.Debug("Test is attempting to read " + MSG_COUNT +
-                             " messages from the queue: " + destinationName);
+                Tracer.Debug("Test is attempting to read a message from" +
+                             destinationName + " but no messages are expected");
 
                 using(ISession session = connection.CreateSession())
                 {
                     IDestination destination = session.GetQueue(destinationName);
                     IMessageConsumer consumer = session.CreateConsumer(destination);
-                    for (int i = 0; i < MSG_COUNT; ++i)
-                    {
-                        IMessage msg = consumer.Receive(TimeSpan.FromSeconds(5));
-                        Assert.IsNotNull(msg, "Should receive message[" + (i + 1) + "] after commit failed once.");
-                    }
+                    IMessage msg = consumer.Receive(TimeSpan.FromSeconds(5));
+                    Assert.IsNull(msg, "Should not receive a message after commit failed.");
                 }
             }
 
@@ -111,7 +200,6 @@ namespace Apache.NMS.ActiveMQ.Test
                 ITransport transport = (connection as Connection).ITransport;
                 TcpFaultyTransport tcpFaulty = transport.Narrow(typeof(TcpFaultyTransport)) as TcpFaultyTransport;
                 Assert.IsNotNull(tcpFaulty);
-                tcpFaulty.OnewayCommandPreProcessor += this.FailOnCommitTransportHook;
 
                 using(ISession session = connection.CreateSession())
                 {
@@ -124,6 +212,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 using(ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
                 {
                     IDestination destination = session.GetQueue(destinationName);
+                    PutMsgIntoQueue(session, destination, false);
+                    tcpFaulty.Close();
                     PutMsgIntoQueue(session, destination, false);
                     session.Commit();
                 }
