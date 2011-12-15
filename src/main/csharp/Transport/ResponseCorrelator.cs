@@ -50,7 +50,6 @@ namespace Apache.NMS.ActiveMQ.Transport
         {
             command.CommandId = GetNextCommandId();
 			command.ResponseRequired = false;
-			
             next.Oneway(command);
         }
 
@@ -78,7 +77,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 				ExceptionResponse response = new ExceptionResponse();
 				response.Exception = brError;
 	            future.Response = response;
-	            throw priorError;
+                return future;
 	        }
 			
             next.Oneway(command);
@@ -91,22 +90,6 @@ namespace Apache.NMS.ActiveMQ.Transport
             FutureResponse future = AsyncRequest(command);
             future.ResponseTimeout = timeout;
             Response response = future.Response;
-
-            if(response != null && response is ExceptionResponse)
-            {
-                ExceptionResponse er = response as ExceptionResponse;
-                BrokerError brokerError = er.Exception;
-
-                if(brokerError == null)
-                {
-                    throw new BrokerException();
-                }
-                else
-                {
-                    throw new BrokerException(brokerError);
-                }
-            }
-
             return response;
         }
 
@@ -122,20 +105,12 @@ namespace Apache.NMS.ActiveMQ.Transport
                 {
                     requestMap.Remove(correlationId);
                     future.Response = response;
-
-                    if(response is ExceptionResponse)
-                    {
-                        ExceptionResponse er = response as ExceptionResponse;
-                        BrokerError brokerError = er.Exception;
-                        BrokerException exception = new BrokerException(brokerError);
-                        this.exceptionHandler(this, exception);
-                    }
                 }
                 else
                 {
                     if(Tracer.IsDebugEnabled)
                     {
-                        Tracer.Debug("Unknown response ID: " + response.CommandId + " for response: " + response);
+                        Tracer.Debug("Unknown response ID: " + response.CorrelationId + " for response: " + response);
                     }
                 }
             }
