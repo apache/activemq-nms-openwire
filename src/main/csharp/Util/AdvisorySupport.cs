@@ -280,6 +280,28 @@ namespace Apache.NMS.ActiveMQ
             return IsDestinationAdvisoryTopic(ActiveMQDestination.Transform(destination));
         }
 
+        public static bool IsTempDestinationAdvisoryTopic(ActiveMQDestination destination)
+        {
+            if (destination.IsComposite)
+            {
+                ActiveMQDestination[] compositeDestinations = destination.GetCompositeDestinations();
+                bool containsNonTempDests = false;
+                for (int i = 0; i < compositeDestinations.Length; i++)
+                {
+                    if (!IsTempDestinationAdvisoryTopic(compositeDestinations[i]))
+                    {
+                        containsNonTempDests = true;
+                    }
+                }
+                return !containsNonTempDests;
+            }
+            else
+            {
+                return destination.Equals(TEMP_QUEUE_ADVISORY_TOPIC) ||
+                       destination.Equals(TEMP_TOPIC_ADVISORY_TOPIC);
+            }
+        }
+
         public static bool IsDestinationAdvisoryTopic(ActiveMQDestination destination)
         {
             if (destination.IsComposite)
