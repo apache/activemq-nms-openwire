@@ -20,6 +20,8 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using System.Reflection;
+using System.Runtime.Remoting;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.ActiveMQ.Transport;
@@ -687,11 +689,15 @@ namespace Apache.NMS.ActiveMQ
 				if(response is ExceptionResponse)
 				{
 					ExceptionResponse exceptionResponse = (ExceptionResponse) response;
-					BrokerError brokerError = exceptionResponse.Exception;
-					throw new BrokerException(brokerError);
+                    Exception exception = CreateExceptionFromResponse(exceptionResponse);
+					throw exception;
 				}
 				return response;
 			}
+            catch(NMSException)
+            {
+                throw;
+            }
 			catch(Exception ex)
 			{
 				throw NMSExceptionSupport.Create(ex);
@@ -793,10 +799,24 @@ namespace Apache.NMS.ActiveMQ
                                                 this.advisoryConsumer = new AdvisoryConsumer(this, id);
                                             }
 										}
+                                        else
+                                        {
+                                            NMSException exception = CreateExceptionFromResponse(response as ExceptionResponse);
+                                            if(exception is InvalidClientIDException)
+                                            {
+                                                // This is non-recoverable
+                                                throw exception;
+                                            }
+                                        }
 									}
 								}
-								catch
+                                catch(BrokerException)
+                                {
+                                    // We Swallow the generic version and throw ConnectionClosedException
+                                }
+								catch(NMSException)
 								{
+                                    throw;
 								}
 							}
 						}
@@ -1300,6 +1320,57 @@ namespace Apache.NMS.ActiveMQ
             {
                 throw new ConnectionClosedException();
             }
+        }
+
+        private NMSException CreateExceptionFromResponse(ExceptionResponse exceptionResponse)
+        {
+            if(String.IsNullOrEmpty(exceptionResponse.Exception.ExceptionClass))
+            {
+                return new BrokerException(exceptionResponse.Exception);
+            }
+
+            NMSException exception = null;
+            String name = exceptionResponse.Exception.ExceptionClass;
+            String message = exceptionResponse.Exception.Message;
+
+            // We only create instances of exceptions from the NMS API
+            Assembly nmsAssembly = Assembly.GetAssembly(typeof(NMSException));
+
+            // First try and see if its one we populated ourselves in which case
+            // it will have the correct namespace and exception name.
+            Type exceptionType = nmsAssembly.GetType(name, false, true);
+
+            // Exceptions from the broker don't have the same namespace, so we
+            // trim that and try using the NMS namespace to see if we can get an
+            // NMSException based version of the same type.  We have to convert
+            // the JMS preficed exceptions to NMS also.
+            if(exceptionType == null && !name.StartsWith("Apache.NMS") && name.Contains("."))
+            {
+                int pos = name.LastIndexOf(".");
+                name = name.Substring(pos + 1);
+                name = name.Replace("JMS", "NMS");
+                name = "Apache.NMS." + name;
+
+                exceptionType = nmsAssembly.GetType(name, false, true);
+            }
+
+            if(exceptionType != null)
+            {
+                object[] args = null;
+                if(!String.IsNullOrEmpty(message))
+                {
+                    args = new object[1];
+                    args[0] = message;
+                }
+
+                exception = Activator.CreateInstance(exceptionType, args) as NMSException;
+            }
+            else
+            {
+                exception = new BrokerException(exceptionResponse.Exception);
+            }
+
+            return exception;
         }
 	}
 }
