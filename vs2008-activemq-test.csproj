@@ -60,6 +60,7 @@
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\test\csharp\AMQNET366Test.cs" />
     <Compile Include="src\test\csharp\AMQQueueTransactionTest.cs" />
     <Compile Include="src\test\csharp\AMQRedeliveryPolicyTest.cs" />
     <Compile Include="src\test\csharp\AMQTopicTransactionTest.cs" />
