@@ -35,6 +35,7 @@ namespace Apache.NMS.ActiveMQ.Threads
         private bool closing = false;
         private bool closed = false;
         private ManualResetEvent executionComplete = new ManualResetEvent(true);
+        private Thread workThread = null;
 
         /// <summary>
         /// Represents an asynchronous task that is executed on the ThreadPool
@@ -115,7 +116,7 @@ namespace Apache.NMS.ActiveMQ.Threads
                     this.closing = true;
                     this.workQueue.Clear();
 
-                    if(this.running)
+                    if(this.running && Thread.CurrentThread != this.workThread)
                     {
                         syncRoot.ReleaseMutex();
                         this.executionComplete.WaitOne();
@@ -135,6 +136,8 @@ namespace Apache.NMS.ActiveMQ.Threads
 
             lock(syncRoot)
             {
+                this.workThread = Thread.CurrentThread;
+
                 if(this.workQueue.Count == 0 || this.closing)
                 {
                     this.running = false;
@@ -151,6 +154,8 @@ namespace Apache.NMS.ActiveMQ.Threads
             }
             finally
             {
+                this.workThread = null;
+
                 if(this.closing)
                 {
                     this.running = false;
