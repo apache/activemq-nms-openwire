@@ -463,7 +463,10 @@ namespace Apache.NMS.ActiveMQ.Commands
             set
             {
                 InitializeWriting();
-                this.dataOut.Write(value, 0, value.Length);
+				if(null != value)
+				{
+					this.dataOut.Write(value, 0, value.Length);
+				}
             }
         }
 
@@ -537,10 +540,13 @@ namespace Apache.NMS.ActiveMQ.Commands
                     EndianBinaryWriter writer = new EndianBinaryWriter(final);                    
 
                     this.dataOut.Close();
-                    byte[] compressed = this.outputBuffer.ToArray();
 
                     writer.Write(this.length);
-                    writer.Write(compressed, 0, compressed.Length);
+					if(this.length > 0)
+					{
+						byte[] compressed = this.outputBuffer.ToArray();
+						writer.Write(compressed, 0, compressed.Length);
+					}
                     writer.Close();
                     
                     base.Content = final.ToArray();
@@ -623,8 +629,11 @@ namespace Apache.NMS.ActiveMQ.Commands
             
             public override void Write(byte[] buffer, int offset, int count)
             {
-                this.parent.length += count;
-                this.sink.Write(buffer, offset, count);
+				if(null != buffer)
+				{
+					this.parent.length += count;
+					this.sink.Write(buffer, offset, count);
+				}
             }
 
             public override void Flush()
