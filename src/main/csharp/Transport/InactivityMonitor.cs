@@ -455,7 +455,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
 			public bool Iterate()
 			{
-				Tracer.DebugFormat("InactivityMonitor[{0}] perparing for another Write Check", parent.instanceId);
+				Tracer.DebugFormat("InactivityMonitor[{0}] preparing for another Write Check", parent.instanceId);
 				if(this.pending.CompareAndSet(true, false) && this.parent.monitorStarted.Value)
 				{
 					try
