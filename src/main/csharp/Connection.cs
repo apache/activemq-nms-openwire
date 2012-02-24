@@ -910,6 +910,7 @@ namespace Apache.NMS.ActiveMQ
 						}
 					}
 
+					Tracer.Error(message + " : " + cause);
 					OnException(new NMSConnectionException(message, cause));
 				}
 			}

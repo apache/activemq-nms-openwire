@@ -32,16 +32,12 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class TempDestinationTest : NMSTestSupport
     {
-        private Connection connection;
         private readonly IList connections = ArrayList.Synchronized(new ArrayList());
 
         [SetUp]
         public override void SetUp()
         {
             base.SetUp();
-
-            connection = this.CreateConnection() as Connection;
-            connections.Add(connection);
         }
 
         [TearDown]
@@ -59,17 +55,24 @@ namespace Apache.NMS.ActiveMQ.Test
             }
 
             connections.Clear();
-
             base.TearDown();
         }
 
-        /// <summary>
+		private Connection GetNewConnection()
+		{
+			Connection newConnection = CreateConnection() as Connection;
+			connections.Add(newConnection);
+			return newConnection;
+		}
+
+		/// <summary>
         /// Make sure Temp destination can only be consumed by local connection
         /// </summary>
         [Test]
         public void TestTempDestOnlyConsumedByLocalConn()
         {
-            connection.Start();
+			Connection connection = GetNewConnection();
+			connection.Start();
 
             ISession tempSession = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
@@ -79,8 +82,7 @@ namespace Apache.NMS.ActiveMQ.Test
             producer.Send(message);
 
             // temp destination should not be consume when using another connection
-            Connection otherConnection = CreateConnection() as Connection;
-            connections.Add(otherConnection);
+			Connection otherConnection = GetNewConnection();
             ISession otherSession = otherConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             ITemporaryQueue otherQueue = otherSession.CreateTemporaryQueue();
             IMessageConsumer consumer = otherSession.CreateConsumer(otherQueue);
@@ -111,7 +113,8 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestTempQueueHoldsMessagesWithConsumers()
         {
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			Connection connection = GetNewConnection();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             IQueue queue = session.CreateTemporaryQueue();
             IMessageConsumer consumer = session.CreateConsumer(queue);
             connection.Start();
@@ -134,7 +137,8 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestTempQueueHoldsMessagesWithoutConsumers()
         {
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			Connection connection = GetNewConnection();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             IQueue queue = session.CreateTemporaryQueue();
             IMessageProducer producer = session.CreateProducer(queue);
             producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
@@ -161,7 +165,8 @@ namespace Apache.NMS.ActiveMQ.Test
             int dataSize = 1024;
     
             ArrayList list = new ArrayList(count);
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			Connection connection = GetNewConnection();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             IQueue queue = session.CreateTemporaryQueue();
             IMessageProducer producer = session.CreateProducer(queue);
             producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
@@ -193,8 +198,8 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestPublishFailsForClosedConnection()
         {
-            Connection tempConnection = CreateConnection() as Connection;
-            connections.Add(tempConnection);
+			Connection connection = GetNewConnection();
+			Connection tempConnection = GetNewConnection();
             ISession tempSession = tempConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
 
@@ -234,8 +239,8 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestPublishFailsForDestoryedTempDestination()
         {
-            Connection tempConnection = CreateConnection() as Connection;
-            connections.Add(tempConnection);
+			Connection connection = GetNewConnection();
+			Connection tempConnection = GetNewConnection();
             ISession tempSession = tempConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
     
@@ -265,18 +270,70 @@ namespace Apache.NMS.ActiveMQ.Test
             catch(NMSException e)
             {
                 Tracer.Debug("Test threw expected exception: " + e.Message);
-                Assert.IsTrue(true, "failed to throw an exception");
             }
         }
-    
-        /// <summary>
+
+		/// <summary>
+		/// Make sure consumers work after a publisher fails to publish to deleted temp destination.
+		/// </summary>
+		[Test]
+		public void TestConsumeAfterPublishFailsForDestroyedTempDestination()
+		{
+			const string msgQueueName = "Test.RequestReply.MsgQueue";
+			Connection consumerConnection = GetNewConnection();
+			ISession consumerSession = consumerConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			IDestination consumerDestination = consumerSession.GetQueue(msgQueueName);
+			IMessageConsumer consumer = consumerSession.CreateConsumer(consumerDestination);
+
+			consumerConnection.Start();
+
+			// The real test is whether sending a message to a deleted temp queue messes up
+			// the consumers on the same connection.
+			for(int index = 0; index < 25; index++)
+			{
+				Connection producerConnection = GetNewConnection();
+				ISession producerSession = producerConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+				IDestination producerDestination = producerSession.GetQueue(msgQueueName);
+				IMessageProducer producer = producerSession.CreateProducer(producerDestination);
+				IDestination replyDestination = producerSession.CreateTemporaryQueue();
+				IMessageConsumer replyConsumer = producerSession.CreateConsumer(replyDestination);
+
+				producerConnection.Start();
+
+				IMessage sendMsg = producer.CreateTextMessage("Consumer check.");
+				sendMsg.NMSReplyTo = replyDestination;
+
+				producer.Send(sendMsg);
+
+				// Will the following Receive() call fail on the second or subsequent calls?
+				IMessage receiveMsg = consumer.Receive();
+				IMessageProducer replyProducer = consumerSession.CreateProducer(receiveMsg.NMSReplyTo);
+
+				connections.Remove(producerConnection);
+				producerConnection.Close();
+				//Thread.Sleep(2000); // Wait a little bit to let the delete take effect.
+
+				// This message delivery NOT should work since the temp destination was removed by closing the connection.
+				try
+				{
+					IMessage replyMsg = replyProducer.CreateTextMessage("Reply check.");
+					replyProducer.Send(replyMsg);
+					Assert.Fail("Send should fail since temp destination should not exist anymore.");
+				}
+				catch(NMSException e)
+				{
+					Tracer.Debug("Test threw expected exception: " + e.Message);
+				}
+			}
+		}
+
+		/// <summary>
         /// Test you can't delete a Destination with Active Subscribers
         /// </summary>
         [Test]
         public void TestDeleteDestinationWithSubscribersFails()
         {
-            Connection connection = CreateConnection() as Connection;
-            connections.Add(connection);
+			Connection connection = GetNewConnection();
             ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
             ITemporaryQueue queue = session.CreateTemporaryQueue();
 
