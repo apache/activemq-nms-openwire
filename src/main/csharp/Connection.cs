@@ -953,14 +953,27 @@ namespace Apache.NMS.ActiveMQ
 
 		internal void OnException(Exception error)
 		{
-			// Will fire an exception listener callback if there's any set.
-			OnAsyncException(error);
-
-			if(!this.closing.Value && !this.closed.Value)
+			if(this.transport.IsFaultTolerant)
 			{
-				// Perform the actual work in another thread to avoid lock contention
-				// and allow the caller to continue on in its error cleanup.
-				executor.QueueUserWorkItem(AsyncOnExceptionHandler, error);
+				Tracer.ErrorFormat("Attempting recovery from Exception: {0}", error.Message);
+				while(null != (error = error.InnerException))
+				{
+					Tracer.ErrorFormat("   {0}", error.Message);
+				}
+
+				OnTransportInterrupted(this.transport);
+			}
+			else
+			{
+				// Will fire an exception listener callback if there's any set.
+				OnAsyncException(error);
+
+				if(!this.closing.Value && !this.closed.Value)
+				{
+					// Perform the actual work in another thread to avoid lock contention
+					// and allow the caller to continue on in its error cleanup.
+					executor.QueueUserWorkItem(AsyncOnExceptionHandler, error);
+				}
 			}
 		}
 
