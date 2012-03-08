@@ -77,6 +77,8 @@ namespace Apache.NMS.ActiveMQ
                 {
                     MessageAck ack = new MessageAck();
                     ack.AckType = (byte)AckType.ConsumedAck;
+					ack.ConsumerId = messageDispatch.ConsumerId;
+					ack.Destination = messageDispatch.Destination;
                     ack.FirstMessageId = messageDispatch.Message.MessageId;
                     ack.MessageCount = deliveredCounter;
 
