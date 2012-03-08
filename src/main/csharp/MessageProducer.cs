@@ -231,6 +231,13 @@ namespace Apache.NMS.ActiveMQ
 			id.ProducerId = info.ProducerId;
 			id.ProducerSequenceId = Interlocked.Increment(ref this.producerSequenceId);
 			activeMessage.MessageId = id;
+			
+			// Ensure that the source message contains the NMSMessageId of the transformed
+			// message for correlation purposes.
+			if (!Object.ReferenceEquals(message, activeMessage))
+			{
+				message.NMSMessageId = activeMessage.NMSMessageId;				
+			}
 
 			if(!disableMessageTimestamp)
 			{
