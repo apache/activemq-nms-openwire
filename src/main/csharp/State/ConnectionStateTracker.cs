@@ -726,7 +726,7 @@ namespace Apache.NMS.ActiveMQ.State
             {
                 // leave a single instance in the cache
                 String id = pull.Destination + "::" + pull.ConsumerId;
-                messageCache.Add(id, pull);
+                messageCache[id] = pull;
             }
             return null;
         }
