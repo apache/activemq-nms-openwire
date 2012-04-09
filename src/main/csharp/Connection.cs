@@ -446,7 +446,6 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public void Stop()
 		{
-			CheckConnected();
 			if(started.CompareAndSet(true, false))
 			{
 				lock(sessions.SyncRoot)
