@@ -682,7 +682,39 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
-        public void TransportInterrupted()
+		[Test]
+		public void FailStartupMaxReconnectAttempts()
+		{
+			// Connect to valid machine, but on invalid port that doesn't have a broker listening.
+			string uri = "failover:(tcp://localhost:31313)?transport.StartupMaxReconnectAttempts=3";
+			IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+			IConnection failConnection = factory.CreateConnection();
+			try
+			{
+				failConnection.Start();
+				Assert.Fail("Should not have connected to broker.");
+			}
+			catch(Apache.NMS.ActiveMQ.ConnectionClosedException)
+			{
+			}
+			finally
+			{
+				try
+				{
+					failConnection.Stop();
+				}
+				catch(Apache.NMS.ActiveMQ.ConnectionClosedException)
+				{
+                    Assert.Fail("Connection closed exception thrown while closing a connection.");
+				}
+				finally
+				{
+					failConnection.Dispose();
+				}
+			}
+		}
+		
+		public void TransportInterrupted()
         {
             this.interrupted = true;
         }
