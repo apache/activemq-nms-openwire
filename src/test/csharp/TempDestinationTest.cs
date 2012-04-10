@@ -29,34 +29,34 @@ using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-    [TestFixture]
-    public class TempDestinationTest : NMSTestSupport
-    {
-        private readonly IList connections = ArrayList.Synchronized(new ArrayList());
+	[TestFixture]
+	public class TempDestinationTest : NMSTestSupport
+	{
+		private readonly IList connections = ArrayList.Synchronized(new ArrayList());
 
-        [SetUp]
-        public override void SetUp()
-        {
-            base.SetUp();
-        }
+		[SetUp]
+		public override void SetUp()
+		{
+			base.SetUp();
+		}
 
-        [TearDown]
-        public override void TearDown()
-        {
-            foreach(Connection connection in connections)
-            {
-                try
-                {
-                    connection.Close();
-                }
-                catch
-                {
-                }
-            }
+		[TearDown]
+		public override void TearDown()
+		{
+			foreach(Connection connection in connections)
+			{
+				try
+				{
+					connection.Close();
+				}
+				catch
+				{
+				}
+			}
 
-            connections.Clear();
-            base.TearDown();
-        }
+			connections.Clear();
+			base.TearDown();
+		}
 
 		private Connection GetNewConnection()
 		{
@@ -66,212 +66,212 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		/// <summary>
-        /// Make sure Temp destination can only be consumed by local connection
-        /// </summary>
-        [Test]
-        public void TestTempDestOnlyConsumedByLocalConn()
-        {
+		/// Make sure Temp destination can only be consumed by local connection
+		/// </summary>
+		[Test]
+		public void TestTempDestOnlyConsumedByLocalConn()
+		{
 			Connection connection = GetNewConnection();
 			connection.Start();
 
-            ISession tempSession = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
-            IMessageProducer producer = tempSession.CreateProducer(queue);
-            producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
-            ITextMessage message = tempSession.CreateTextMessage("First");
-            producer.Send(message);
+			ISession tempSession = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
+			IMessageProducer producer = tempSession.CreateProducer(queue);
+			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+			ITextMessage message = tempSession.CreateTextMessage("First");
+			producer.Send(message);
 
-            // temp destination should not be consume when using another connection
+			// temp destination should not be consume when using another connection
 			Connection otherConnection = GetNewConnection();
-            ISession otherSession = otherConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            ITemporaryQueue otherQueue = otherSession.CreateTemporaryQueue();
-            IMessageConsumer consumer = otherSession.CreateConsumer(otherQueue);
-            IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(3000));
-            Assert.IsNull(msg);
+			ISession otherSession = otherConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			ITemporaryQueue otherQueue = otherSession.CreateTemporaryQueue();
+			IMessageConsumer consumer = otherSession.CreateConsumer(otherQueue);
+			IMessage msg = consumer.Receive(TimeSpan.FromMilliseconds(3000));
+			Assert.IsNull(msg);
 
-            // should throw InvalidDestinationException when consuming a temp
-            // destination from another connection
-            try
-            {
-                consumer = otherSession.CreateConsumer(queue);
-                Assert.Fail("Send should fail since temp destination should be used from another connection");
-            }
-            catch(InvalidDestinationException)
-            {
-                Assert.IsTrue(true, "failed to throw an exception");
-            }
+			// should throw InvalidDestinationException when consuming a temp
+			// destination from another connection
+			try
+			{
+				consumer = otherSession.CreateConsumer(queue);
+				Assert.Fail("Send should fail since temp destination should be used from another connection");
+			}
+			catch(InvalidDestinationException)
+			{
+				Assert.IsTrue(true, "failed to throw an exception");
+			}
 
-            // should be able to consume temp destination from the same connection
-            consumer = tempSession.CreateConsumer(queue);
-            msg = consumer.Receive(TimeSpan.FromMilliseconds(3000));
-            Assert.NotNull(msg);
-        }
+			// should be able to consume temp destination from the same connection
+			consumer = tempSession.CreateConsumer(queue);
+			msg = consumer.Receive(TimeSpan.FromMilliseconds(3000));
+			Assert.NotNull(msg);
+		}
 
-        /// <summary>
-        /// Make sure that a temp queue does not drop message if there is an active consumers.
-        /// </summary>
-        [Test]
-        public void TestTempQueueHoldsMessagesWithConsumers()
-        {
+		/// <summary>
+		/// Make sure that a temp queue does not drop message if there is an active consumers.
+		/// </summary>
+		[Test]
+		public void TestTempQueueHoldsMessagesWithConsumers()
+		{
 			Connection connection = GetNewConnection();
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            IQueue queue = session.CreateTemporaryQueue();
-            IMessageConsumer consumer = session.CreateConsumer(queue);
-            connection.Start();
+			IQueue queue = session.CreateTemporaryQueue();
+			IMessageConsumer consumer = session.CreateConsumer(queue);
+			connection.Start();
 
-            IMessageProducer producer = session.CreateProducer(queue);
-            producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
-            ITextMessage message = session.CreateTextMessage("Hello");
-            producer.Send(message);
+			IMessageProducer producer = session.CreateProducer(queue);
+			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+			ITextMessage message = session.CreateTextMessage("Hello");
+			producer.Send(message);
 
-            IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(1000));
-            Assert.IsNotNull(message2);
-            Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
-            Assert.IsTrue(((ITextMessage)message2).Text.Equals(message.Text),
-                          "Expected message to be a '" + message.Text + "'");
-        }
+			IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(1000));
+			Assert.IsNotNull(message2);
+			Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
+			Assert.IsTrue(((ITextMessage)message2).Text.Equals(message.Text),
+						  "Expected message to be a '" + message.Text + "'");
+		}
 
-        /// <summary>
-        /// Make sure that a temp queue does not drop message if there are no active consumers.
-        /// </summary>
-        [Test]
-        public void TestTempQueueHoldsMessagesWithoutConsumers()
-        {
+		/// <summary>
+		/// Make sure that a temp queue does not drop message if there are no active consumers.
+		/// </summary>
+		[Test]
+		public void TestTempQueueHoldsMessagesWithoutConsumers()
+		{
 			Connection connection = GetNewConnection();
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            IQueue queue = session.CreateTemporaryQueue();
-            IMessageProducer producer = session.CreateProducer(queue);
-            producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
-            ITextMessage message = session.CreateTextMessage("Hello");
-            producer.Send(message);
-    
-            connection.Start();
-            IMessageConsumer consumer = session.CreateConsumer(queue);
-            IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(3000));
-            Assert.IsNotNull(message2);
-            Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
-            Assert.IsTrue(((ITextMessage)message2).Text.Equals(message.Text),
-                          "Expected message to be a '" + message.Text + "'");
-    
-        }
-    
-        /// <summary>
-        /// Test temp queue works under load
-        /// </summary>
-        [Test]
-        public void TestTmpQueueWorksUnderLoad()
-        {
-            int count = 500;
-            int dataSize = 1024;
-    
-            ArrayList list = new ArrayList(count);
+			IQueue queue = session.CreateTemporaryQueue();
+			IMessageProducer producer = session.CreateProducer(queue);
+			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+			ITextMessage message = session.CreateTextMessage("Hello");
+			producer.Send(message);
+
+			connection.Start();
+			IMessageConsumer consumer = session.CreateConsumer(queue);
+			IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(3000));
+			Assert.IsNotNull(message2);
+			Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
+			Assert.IsTrue(((ITextMessage)message2).Text.Equals(message.Text),
+						  "Expected message to be a '" + message.Text + "'");
+
+		}
+
+		/// <summary>
+		/// Test temp queue works under load
+		/// </summary>
+		[Test]
+		public void TestTmpQueueWorksUnderLoad()
+		{
+			int count = 500;
+			int dataSize = 1024;
+
+			ArrayList list = new ArrayList(count);
 			Connection connection = GetNewConnection();
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            IQueue queue = session.CreateTemporaryQueue();
-            IMessageProducer producer = session.CreateProducer(queue);
-            producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+			IQueue queue = session.CreateTemporaryQueue();
+			IMessageProducer producer = session.CreateProducer(queue);
+			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
 
-            byte[] data = new byte[dataSize];
-            for (int i = 0; i < count; i++)
-            {
-                IBytesMessage message = session.CreateBytesMessage();
-                message.WriteBytes(data);
-                message.Properties.SetInt("c", i);
-                producer.Send(message);
-                list.Add(message);
-            }
+			byte[] data = new byte[dataSize];
+			for(int i = 0; i < count; i++)
+			{
+				IBytesMessage message = session.CreateBytesMessage();
+				message.WriteBytes(data);
+				message.Properties.SetInt("c", i);
+				producer.Send(message);
+				list.Add(message);
+			}
 
-            connection.Start();
-            IMessageConsumer consumer = session.CreateConsumer(queue);
-            for (int i = 0; i < count; i++)
-            {
-                IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(2000));
-                Assert.IsTrue(message2 != null);
-                Assert.AreEqual(i, message2.Properties.GetInt("c"));
-                Assert.IsTrue(message2.Equals(list[i]));
-            }
-        }
-    
-        /// <summary>
-        /// Make sure you cannot publish to a temp destination that does not exist anymore.
-        /// </summary>
-        [Test]
-        public void TestPublishFailsForClosedConnection()
-        {
+			connection.Start();
+			IMessageConsumer consumer = session.CreateConsumer(queue);
+			for(int i = 0; i < count; i++)
+			{
+				IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+				Assert.IsTrue(message2 != null);
+				Assert.AreEqual(i, message2.Properties.GetInt("c"));
+				Assert.IsTrue(message2.Equals(list[i]));
+			}
+		}
+
+		/// <summary>
+		/// Make sure you cannot publish to a temp destination that does not exist anymore.
+		/// </summary>
+		[Test]
+		public void TestPublishFailsForClosedConnection()
+		{
 			Connection connection = GetNewConnection();
 			Connection tempConnection = GetNewConnection();
-            ISession tempSession = tempConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
+			ISession tempSession = tempConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
 
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            connection.Start();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			connection.Start();
 
-            // This message delivery should work since the temp connection is still
-            // open.
-            IMessageProducer producer = session.CreateProducer(queue);
-            producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
-            ITextMessage message = session.CreateTextMessage("First");
-            producer.Send(message);
-            Thread.Sleep(1000);
+			// This message delivery should work since the temp connection is still
+			// open.
+			IMessageProducer producer = session.CreateProducer(queue);
+			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+			ITextMessage message = session.CreateTextMessage("First");
+			producer.Send(message);
+			Thread.Sleep(1000);
 
-            // Closing the connection should destroy the temp queue that was
-            // created.
-            tempConnection.Close();
-            Thread.Sleep(5000); // Wait a little bit to let the delete take effect.
-    
-            // This message delivery NOT should work since the temp connection is
-            // now closed.
-            try
-            {
-                message = session.CreateTextMessage("Hello");
-                producer.Send(message);
-                Assert.Fail("Send should fail since temp destination should not exist anymore.");
-            }
-            catch(NMSException e)
-            {
-                Tracer.Debug("Test threw expected exception: " + e.Message);
-            }
-        }
-    
-        /// <summary>
-        /// Make sure you cannot publish to a temp destination that does not exist anymore.
-        /// </summary>
-        [Test]
-        public void TestPublishFailsForDestoryedTempDestination()
-        {
+			// Closing the connection should destroy the temp queue that was
+			// created.
+			tempConnection.Close();
+			Thread.Sleep(5000); // Wait a little bit to let the delete take effect.
+
+			// This message delivery NOT should work since the temp connection is
+			// now closed.
+			try
+			{
+				message = session.CreateTextMessage("Hello");
+				producer.Send(message);
+				Assert.Fail("Send should fail since temp destination should not exist anymore.");
+			}
+			catch(NMSException e)
+			{
+				Tracer.Debug("Test threw expected exception: " + e.Message);
+			}
+		}
+
+		/// <summary>
+		/// Make sure you cannot publish to a temp destination that does not exist anymore.
+		/// </summary>
+		[Test]
+		public void TestPublishFailsForDestroyedTempDestination()
+		{
 			Connection connection = GetNewConnection();
 			Connection tempConnection = GetNewConnection();
-            ISession tempSession = tempConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
-    
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            connection.Start();
+			ISession tempSession = tempConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			ITemporaryQueue queue = tempSession.CreateTemporaryQueue();
 
-            // This message delivery should work since the temp connection is still
-            // open.
-            IMessageProducer producer = session.CreateProducer(queue);
-            producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
-            ITextMessage message = session.CreateTextMessage("First");
-            producer.Send(message);
-            Thread.Sleep(1000);
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			connection.Start();
 
-            // deleting the Queue will cause sends to fail
-            queue.Delete();
-            Thread.Sleep(5000); // Wait a little bit to let the delete take effect.
-    
-            // This message delivery NOT should work since the temp connection is
-            // now closed.
-            try
-            {
-                message = session.CreateTextMessage("Hello");
-                producer.Send(message);
-                Assert.Fail("Send should fail since temp destination should not exist anymore.");
-            }
-            catch(NMSException e)
-            {
-                Tracer.Debug("Test threw expected exception: " + e.Message);
-            }
-        }
+			// This message delivery should work since the temp connection is still
+			// open.
+			IMessageProducer producer = session.CreateProducer(queue);
+			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
+			ITextMessage message = session.CreateTextMessage("First");
+			producer.Send(message);
+			Thread.Sleep(1000);
+
+			// deleting the Queue will cause sends to fail
+			queue.Delete();
+			Thread.Sleep(5000); // Wait a little bit to let the delete take effect.
+
+			// This message delivery NOT should work since the temp connection is
+			// now closed.
+			try
+			{
+				message = session.CreateTextMessage("Hello");
+				producer.Send(message);
+				Assert.Fail("Send should fail since temp destination should not exist anymore.");
+			}
+			catch(NMSException e)
+			{
+				Tracer.Debug("Test threw expected exception: " + e.Message);
+			}
+		}
 
 		/// <summary>
 		/// Make sure consumers work after a publisher fails to publish to deleted temp destination.
@@ -311,7 +311,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				connections.Remove(producerConnection);
 				producerConnection.Close();
-				//Thread.Sleep(2000); // Wait a little bit to let the delete take effect.
+				Thread.Sleep(1000); // Wait a little bit to let the delete take effect.
 
 				// This message delivery NOT should work since the temp destination was removed by closing the connection.
 				try
@@ -328,98 +328,117 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		/// <summary>
-        /// Test you can't delete a Destination with Active Subscribers
-        /// </summary>
-        [Test]
-        public void TestDeleteDestinationWithSubscribersFails()
-        {
+		/// Test you can't delete a Destination with Active Subscribers
+		/// </summary>
+		[Test]
+		public void TestDeleteDestinationWithSubscribersFails()
+		{
 			Connection connection = GetNewConnection();
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            ITemporaryQueue queue = session.CreateTemporaryQueue();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			ITemporaryQueue queue = session.CreateTemporaryQueue();
 
-            connection.Start();
+			connection.Start();
 
-            session.CreateConsumer(queue);
+			session.CreateConsumer(queue);
 
-            try
-            {
-                queue.Delete();
-                Assert.Fail("Should fail as Subscribers are active");
-            }
-            catch(NMSException)
-            {
-                Assert.IsTrue(true, "failed to throw an exception");
-            }
-        }
+			try
+			{
+				queue.Delete();
+				Assert.Fail("Should fail as Subscribers are active");
+			}
+			catch(NMSException)
+			{
+				Assert.IsTrue(true, "failed to throw an exception");
+			}
+		}
 
-        [Test]
-        public void TestConnectionCanPurgeTempDestinations()
-        {
-            Connection connection = CreateConnection() as Connection;
-            connections.Add(connection);
-            ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
-            advisoryConsumer.Listener += OnAdvisoryMessage;
+		/// <summary>
+		/// Test clean up of multiple temp destinations
+		/// </summary>
+		[Test]
+		public void TestCloseConnectionWithTempQueues()
+		{
+			List<ITemporaryQueue> listTempQueues = new List<ITemporaryQueue>();
+			IConnection connection = CreateConnection();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 
-            connection.Start();
+			connection.Start();
 
-            for(int i = 0; i < 10; ++i)
-            {
-                ITemporaryTopic tempTopic = session.CreateTemporaryTopic();
-                Tracer.Debug("Created TempDestination: " + tempTopic);
-            }
+			for(int index = 0; index < 25; index++)
+			{
+				listTempQueues.Add(session.CreateTemporaryQueue());
+			}
 
-            // Create one from an alternate connection, it shouldn't get purged
-            // so we should have one less removed than added entries.
-            Connection connection2 = CreateConnection() as Connection;
-            ISession session2 = connection2.CreateSession(AcknowledgementMode.AutoAcknowledge);
-            ITemporaryTopic tempTopic2 = session2.CreateTemporaryTopic();
+			connection.Close();
+		}
 
-            Thread.Sleep(4000);
-            Assert.IsTrue(tempDestsAdded.Count == 11);
+		[Test]
+		public void TestConnectionCanPurgeTempDestinations()
+		{
+			Connection connection = CreateConnection() as Connection;
+			connections.Add(connection);
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
+			advisoryConsumer.Listener += OnAdvisoryMessage;
 
-            connection.PurgeTempDestinations();
+			connection.Start();
 
-            Thread.Sleep(4000);
-            Assert.IsTrue(tempDestsRemoved.Count == 10);
-        }
+			for(int i = 0; i < 10; ++i)
+			{
+				ITemporaryTopic tempTopic = session.CreateTemporaryTopic();
+				Tracer.Debug("Created TempDestination: " + tempTopic);
+			}
 
-        private readonly IList tempDestsAdded = ArrayList.Synchronized(new ArrayList());
-        private readonly IList tempDestsRemoved = ArrayList.Synchronized(new ArrayList());
+			// Create one from an alternate connection, it shouldn't get purged
+			// so we should have one less removed than added entries.
+			Connection connection2 = CreateConnection() as Connection;
+			ISession session2 = connection2.CreateSession(AcknowledgementMode.AutoAcknowledge);
+			ITemporaryTopic tempTopic2 = session2.CreateTemporaryTopic();
 
-        private void OnAdvisoryMessage(IMessage msg)
-        {
-            Message message = msg as Message;
-            DestinationInfo destInfo = message.DataStructure as DestinationInfo;
+			Thread.Sleep(4000);
+			Assert.IsTrue(tempDestsAdded.Count == 11);
 
-            if(destInfo != null)
-            {
-                ActiveMQDestination dest = destInfo.Destination;
-                if(!dest.IsTemporary)
-                {
-                    return;
-                }
-    
-                ActiveMQTempDestination tempDest = dest as ActiveMQTempDestination;
-                if(destInfo.OperationType == DestinationInfo.ADD_OPERATION_TYPE)
-                {
-                    if(Tracer.IsDebugEnabled)
-                    {
-                        Tracer.Debug("Connection adding: " + tempDest);
-                    }
-                    this.tempDestsAdded.Add(tempDest);
-                }
-                else if(destInfo.OperationType == DestinationInfo.REMOVE_OPERATION_TYPE)
-                {
-                    if(Tracer.IsDebugEnabled)
-                    {
-                        Tracer.Debug("Connection removing: " + tempDest);
-                    }
-                    this.tempDestsRemoved.Add(tempDest);
-                }
-            }
-        }
+			connection.PurgeTempDestinations();
 
-    }
+			Thread.Sleep(4000);
+			Assert.IsTrue(tempDestsRemoved.Count == 10);
+		}
+
+		private readonly IList tempDestsAdded = ArrayList.Synchronized(new ArrayList());
+		private readonly IList tempDestsRemoved = ArrayList.Synchronized(new ArrayList());
+
+		private void OnAdvisoryMessage(IMessage msg)
+		{
+			Message message = msg as Message;
+			DestinationInfo destInfo = message.DataStructure as DestinationInfo;
+
+			if(destInfo != null)
+			{
+				ActiveMQDestination dest = destInfo.Destination;
+				if(!dest.IsTemporary)
+				{
+					return;
+				}
+
+				ActiveMQTempDestination tempDest = dest as ActiveMQTempDestination;
+				if(destInfo.OperationType == DestinationInfo.ADD_OPERATION_TYPE)
+				{
+					if(Tracer.IsDebugEnabled)
+					{
+						Tracer.Debug("Connection adding: " + tempDest);
+					}
+					this.tempDestsAdded.Add(tempDest);
+				}
+				else if(destInfo.OperationType == DestinationInfo.REMOVE_OPERATION_TYPE)
+				{
+					if(Tracer.IsDebugEnabled)
+					{
+						Tracer.Debug("Connection removing: " + tempDest);
+					}
+					this.tempDestsRemoved.Add(tempDest);
+				}
+			}
+		}
+	}
 }
 
