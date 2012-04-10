@@ -236,7 +236,7 @@ namespace Apache.NMS.ActiveMQ.Test
         /// Make sure you cannot publish to a temp destination that does not exist anymore.
         /// </summary>
         [Test]
-        public void TestPublishFailsForDestoryedTempDestination()
+        public void TestPublishFailsForDestroyedTempDestination()
         {
 			Connection connection = GetNewConnection();
 			Connection tempConnection = GetNewConnection();
@@ -310,7 +310,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				connections.Remove(producerConnection);
 				producerConnection.Close();
-				//Thread.Sleep(2000); // Wait a little bit to let the delete take effect.
+				Thread.Sleep(1000); // Wait a little bit to let the delete take effect.
 
 				// This message delivery NOT should work since the temp destination was removed by closing the connection.
 				try
@@ -351,6 +351,25 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-    }
+		/// <summary>
+		/// Test clean up of multiple temp destinations
+		/// </summary>
+		[Test]
+		public void TestCloseConnectionWithTempQueues()
+		{
+			List<ITemporaryQueue> listTempQueues = new List<ITemporaryQueue>();
+			IConnection connection = CreateConnection();
+			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+
+			connection.Start();
+
+			for(int index = 0; index < 25; index++)
+			{
+				listTempQueues.Add(session.CreateTemporaryQueue());
+			}
+
+			connection.Close();
+		}
+	}
 }
 
