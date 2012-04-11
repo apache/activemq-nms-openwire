@@ -60,6 +60,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		private Connection GetNewConnection()
 		{
 			Connection newConnection = CreateConnection() as Connection;
+			newConnection.AlwaysSyncSend = true;
 			connections.Add(newConnection);
 			return newConnection;
 		}
@@ -285,6 +286,11 @@ namespace Apache.NMS.ActiveMQ.Test
 			IMessageConsumer consumer = consumerSession.CreateConsumer(consumerDestination);
 
 			consumerConnection.Start();
+			
+			// Purge the destination before starting.
+			while (consumer.Receive(TimeSpan.FromMilliseconds(3000)) != null)
+			{
+			}			
 
 			// The real test is whether sending a message to a deleted temp queue messes up
 			// the consumers on the same connection.
@@ -296,7 +302,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				IMessageProducer producer = producerSession.CreateProducer(producerDestination);
 				IDestination replyDestination = producerSession.CreateTemporaryQueue();
 				IMessageConsumer replyConsumer = producerSession.CreateConsumer(replyDestination);
-
+				
 				producerConnection.Start();
 
 				IMessage sendMsg = producer.CreateTextMessage("Consumer check.");
@@ -307,10 +313,11 @@ namespace Apache.NMS.ActiveMQ.Test
 				// Will the following Receive() call fail on the second or subsequent calls?
 				IMessage receiveMsg = consumer.Receive();
 				IMessageProducer replyProducer = consumerSession.CreateProducer(receiveMsg.NMSReplyTo);
-
+				
+				replyConsumer.Close();
 				connections.Remove(producerConnection);
 				producerConnection.Close();
-				Thread.Sleep(1000); // Wait a little bit to let the delete take effect.
+				Thread.Sleep(2000); // Wait a little bit to let the delete take effect.
 
 				// This message delivery NOT should work since the temp destination was removed by closing the connection.
 				try
