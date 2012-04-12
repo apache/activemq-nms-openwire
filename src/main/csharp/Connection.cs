@@ -696,7 +696,7 @@ namespace Apache.NMS.ActiveMQ
 				if(response is ExceptionResponse)
 				{
 					ExceptionResponse exceptionResponse = (ExceptionResponse)response;
-                    Exception exception = CreateExceptionFromResponse(exceptionResponse);
+                    Exception exception = CreateExceptionFromBrokerError(exceptionResponse.Exception);
 					throw exception;
 				}
 				return response;
@@ -808,7 +808,8 @@ namespace Apache.NMS.ActiveMQ
 										}
                                         else
                                         {
-                                            NMSException exception = CreateExceptionFromResponse(response as ExceptionResponse);
+											ExceptionResponse error = response as ExceptionResponse;
+                                            NMSException exception = CreateExceptionFromBrokerError(error.Exception);
                                             if(exception is InvalidClientIDException)
                                             {
                                                 // This is non-recoverable
@@ -918,7 +919,7 @@ namespace Apache.NMS.ActiveMQ
 					}
 
 					Tracer.Error(message + " : " + cause);
-					OnException(new NMSConnectionException(message, cause));
+					OnAsyncException(CreateExceptionFromBrokerError(brokerError));
 				}
 			}
 			else
@@ -1072,7 +1073,7 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void OnTransportInterrupted(ITransport sender)
 		{
-			Tracer.Debug("Connection: Transport has been Interrupted.");
+			Tracer.DebugFormat("Connection[{0}]: Transport has been Interrupted.", this.info.ConnectionId);
 
 			// Ensure that if there's an advisory consumer we don't add it to the
 			// set of consumers that need interruption processing.
@@ -1113,7 +1114,7 @@ namespace Apache.NMS.ActiveMQ
 
 		protected void OnTransportResumed(ITransport sender)
 		{
-			Tracer.Debug("Transport has resumed normal operation.");
+			Tracer.DebugFormat("Connection[{0}]: Transport has resumed normal operation.", this.info.ConnectionId);
 
 			if(this.ConnectionResumedListener != null && !this.closing.Value)
 			{
@@ -1338,16 +1339,16 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-        private NMSException CreateExceptionFromResponse(ExceptionResponse exceptionResponse)
+        private NMSException CreateExceptionFromBrokerError(BrokerError brokerError)
         {
-            if(String.IsNullOrEmpty(exceptionResponse.Exception.ExceptionClass))
+            if(String.IsNullOrEmpty(brokerError.ExceptionClass))
             {
-                return new BrokerException(exceptionResponse.Exception);
+                return new BrokerException(brokerError);
             }
 
             NMSException exception = null;
-            String name = exceptionResponse.Exception.ExceptionClass;
-            String message = exceptionResponse.Exception.Message;
+            String name = brokerError.ExceptionClass;
+            String message = brokerError.Message;
 
             // We only create instances of exceptions from the NMS API
             Assembly nmsAssembly = Assembly.GetAssembly(typeof(NMSException));
@@ -1383,7 +1384,7 @@ namespace Apache.NMS.ActiveMQ
             }
             else
             {
-                exception = new BrokerException(exceptionResponse.Exception);
+                exception = new BrokerException(brokerError);
             }
 
             return exception;
