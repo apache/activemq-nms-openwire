@@ -38,6 +38,9 @@ namespace Apache.NMS.ActiveMQ.Test
 		public override void SetUp()
 		{
 			base.SetUp();
+
+			this.tempDestsAdded.Clear();
+			this.tempDestsRemoved.Clear();
 		}
 
 		[TearDown]
@@ -287,23 +290,27 @@ namespace Apache.NMS.ActiveMQ.Test
 			IMessageConsumer consumer = consumerSession.CreateConsumer(consumerDestination);
 
 			consumerConnection.Start();
-			
+
 			// Purge the destination before starting.
-			while (consumer.Receive(TimeSpan.FromMilliseconds(3000)) != null)
+			while(consumer.Receive(TimeSpan.FromMilliseconds(3000)) != null)
 			{
-			}			
+			}
+
+			IMessageConsumer advisoryConsumer = consumerSession.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
+			advisoryConsumer.Listener += OnAdvisoryMessage;
 
 			// The real test is whether sending a message to a deleted temp queue messes up
 			// the consumers on the same connection.
 			for(int index = 0; index < 25; index++)
 			{
+				Tracer.InfoFormat("LOOP #{0} ---------------------------------------------------", index + 1);
 				Connection producerConnection = GetNewConnection();
 				ISession producerSession = producerConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 				IDestination producerDestination = producerSession.GetQueue(msgQueueName);
 				IMessageProducer producer = producerSession.CreateProducer(producerDestination);
 				IDestination replyDestination = producerSession.CreateTemporaryQueue();
 				IMessageConsumer replyConsumer = producerSession.CreateConsumer(replyDestination);
-				
+
 				producerConnection.Start();
 
 				IMessage sendMsg = producer.CreateTextMessage("Consumer check.");
@@ -314,11 +321,12 @@ namespace Apache.NMS.ActiveMQ.Test
 				// Will the following Receive() call fail on the second or subsequent calls?
 				IMessage receiveMsg = consumer.Receive();
 				IMessageProducer replyProducer = consumerSession.CreateProducer(receiveMsg.NMSReplyTo);
-				
+
 				replyConsumer.Close();
 				connections.Remove(producerConnection);
 				producerConnection.Close();
-				Thread.Sleep(2000); // Wait a little bit to let the delete take effect.
+
+				WaitForTempDestinationDelete(replyDestination);
 
 				// This message delivery NOT should work since the temp destination was removed by closing the connection.
 				try
@@ -330,6 +338,36 @@ namespace Apache.NMS.ActiveMQ.Test
 				catch(NMSException e)
 				{
 					Tracer.Debug("Test threw expected exception: " + e.Message);
+				}
+			}
+		}
+
+		private void WaitForTempDestinationDelete(IDestination replyDestination)
+		{
+			const int MaxLoopCount = 200;
+			int loopCount = 0;
+			bool destinationDeleted = false;
+			ActiveMQTempDestination replyTempDestination = replyDestination as ActiveMQTempDestination;
+
+			while(!destinationDeleted)
+			{
+				loopCount++;
+				if(loopCount > MaxLoopCount)
+				{
+					Assert.Fail(string.Format("Timeout waiting for delete of {0}", replyTempDestination.PhysicalName));
+				}
+
+				Thread.Sleep(10);
+				lock(this.tempDestsRemoved.SyncRoot)
+				{
+					foreach(ActiveMQTempDestination tempDest in this.tempDestsRemoved)
+					{
+						if(0 == string.Compare(tempDest.PhysicalName, replyTempDestination.PhysicalName, true))
+						{
+							destinationDeleted = true;
+							break;
+						}
+					}
 				}
 			}
 		}
