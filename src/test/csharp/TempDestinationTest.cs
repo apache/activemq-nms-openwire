@@ -64,7 +64,6 @@ namespace Apache.NMS.ActiveMQ.Test
 		private Connection GetNewConnection()
 		{
 			Connection newConnection = CreateConnection() as Connection;
-			newConnection.AlwaysSyncSend = true;
 			connections.Add(newConnection);
 			return newConnection;
 		}
@@ -102,7 +101,6 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 			catch(InvalidDestinationException)
 			{
-				Assert.IsTrue(true, "failed to throw an exception");
 			}
 
 			// should be able to consume temp destination from the same connection
@@ -131,7 +129,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 			Assert.IsNotNull(message2);
 			Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
-			Assert.IsTrue(((ITextMessage)message2).Text.Equals(message.Text),
+			Assert.AreEqual(((ITextMessage)message2).Text, message.Text,
 						  "Expected message to be a '" + message.Text + "'");
 		}
 
@@ -190,7 +188,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			for(int i = 0; i < count; i++)
 			{
 				IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(2000));
-				Assert.IsTrue(message2 != null);
+				Assert.IsNotNull(message2);
 				Assert.AreEqual(i, message2.Properties.GetInt("c"));
 				Assert.IsTrue(message2.Equals(list[i]));
 			}
@@ -210,6 +208,9 @@ namespace Apache.NMS.ActiveMQ.Test
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 			connection.Start();
 
+			IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
+			advisoryConsumer.Listener += OnAdvisoryMessage;
+
 			// This message delivery should work since the temp connection is still
 			// open.
 			IMessageProducer producer = session.CreateProducer(queue);
@@ -221,7 +222,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			// Closing the connection should destroy the temp queue that was
 			// created.
 			tempConnection.Close();
-			Thread.Sleep(5000); // Wait a little bit to let the delete take effect.
+			WaitForTempDestinationDelete(queue);
 
 			// This message delivery NOT should work since the temp connection is
 			// now closed.
@@ -251,6 +252,9 @@ namespace Apache.NMS.ActiveMQ.Test
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 			connection.Start();
 
+			IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
+			advisoryConsumer.Listener += OnAdvisoryMessage;
+
 			// This message delivery should work since the temp connection is still
 			// open.
 			IMessageProducer producer = session.CreateProducer(queue);
@@ -261,7 +265,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 			// deleting the Queue will cause sends to fail
 			queue.Delete();
-			Thread.Sleep(5000); // Wait a little bit to let the delete take effect.
+			WaitForTempDestinationDelete(queue);
 
 			// This message delivery NOT should work since the temp connection is
 			// now closed.
@@ -319,7 +323,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				IMessage receiveMsg = consumer.Receive();
 				IMessageProducer replyProducer = consumerSession.CreateProducer(receiveMsg.NMSReplyTo);
 
-				replyConsumer.Close();
+				//replyConsumer.Close();
 				connections.Remove(producerConnection);
 				producerConnection.Close();
 
@@ -339,19 +343,49 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		private void WaitForTempDestinationDelete(IDestination replyDestination)
+		private void WaitForTempDestinationAdd(IDestination tempDestination)
+		{
+			const int MaxLoopCount = 200;
+			int loopCount = 0;
+			bool destinationAdded = false;
+			ActiveMQTempDestination amqTempDestination = tempDestination as ActiveMQTempDestination;
+
+			while(!destinationAdded)
+			{
+				loopCount++;
+				if(loopCount > MaxLoopCount)
+				{
+					Assert.Fail(string.Format("Timeout waiting for Add of {0}", amqTempDestination.PhysicalName));
+				}
+
+				Thread.Sleep(10);
+				lock(this.tempDestsAdded.SyncRoot)
+				{
+					foreach(ActiveMQTempDestination tempDest in this.tempDestsAdded)
+					{
+						if(0 == string.Compare(tempDest.PhysicalName, amqTempDestination.PhysicalName, true))
+						{
+							destinationAdded = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		private void WaitForTempDestinationDelete(IDestination tempDestination)
 		{
 			const int MaxLoopCount = 200;
 			int loopCount = 0;
 			bool destinationDeleted = false;
-			ActiveMQTempDestination replyTempDestination = replyDestination as ActiveMQTempDestination;
+			ActiveMQTempDestination amqTempDestination = tempDestination as ActiveMQTempDestination;
 
 			while(!destinationDeleted)
 			{
 				loopCount++;
 				if(loopCount > MaxLoopCount)
 				{
-					Assert.Fail(string.Format("Timeout waiting for delete of {0}", replyTempDestination.PhysicalName));
+					Assert.Fail(string.Format("Timeout waiting for delete of {0}", amqTempDestination.PhysicalName));
 				}
 
 				Thread.Sleep(10);
@@ -359,7 +393,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				{
 					foreach(ActiveMQTempDestination tempDest in this.tempDestsRemoved)
 					{
-						if(0 == string.Compare(tempDest.PhysicalName, replyTempDestination.PhysicalName, true))
+						if(0 == string.Compare(tempDest.PhysicalName, amqTempDestination.PhysicalName, true))
 						{
 							destinationDeleted = true;
 							break;
@@ -390,7 +424,6 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 			catch(NMSException)
 			{
-				Assert.IsTrue(true, "failed to throw an exception");
 			}
 		}
 
@@ -401,6 +434,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		public void TestCloseConnectionWithTempQueues()
 		{
 			List<ITemporaryQueue> listTempQueues = new List<ITemporaryQueue>();
+			// Don't call GetNewConnection(), because we want to close the connection within this test.
 			IConnection connection = CreateConnection();
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 
@@ -417,33 +451,40 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Test]
 		public void TestConnectionCanPurgeTempDestinations()
 		{
-			Connection connection = CreateConnection() as Connection;
-			connections.Add(connection);
+			Connection connection = GetNewConnection();
 			ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 			IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
 			advisoryConsumer.Listener += OnAdvisoryMessage;
 
 			connection.Start();
 
+			List<ITemporaryTopic> tempTopics = new List<ITemporaryTopic>();
+
 			for(int i = 0; i < 10; ++i)
 			{
 				ITemporaryTopic tempTopic = session.CreateTemporaryTopic();
+				tempTopics.Add(tempTopic);
+				WaitForTempDestinationAdd(tempTopic);
 				Tracer.Debug("Created TempDestination: " + tempTopic);
 			}
 
 			// Create one from an alternate connection, it shouldn't get purged
 			// so we should have one less removed than added entries.
-			Connection connection2 = CreateConnection() as Connection;
+			Connection connection2 = GetNewConnection();
 			ISession session2 = connection2.CreateSession(AcknowledgementMode.AutoAcknowledge);
 			ITemporaryTopic tempTopic2 = session2.CreateTemporaryTopic();
 
-			Thread.Sleep(4000);
-			Assert.IsTrue(tempDestsAdded.Count == 11);
+			WaitForTempDestinationAdd(tempTopic2);
+			Assert.AreEqual(tempDestsAdded.Count, 11);
 
 			connection.PurgeTempDestinations();
 
-			Thread.Sleep(4000);
-			Assert.IsTrue(tempDestsRemoved.Count == 10);
+			foreach(ITemporaryTopic tempTopic in tempTopics)
+			{
+				WaitForTempDestinationDelete(tempTopic);
+			}
+
+			Assert.AreEqual(tempDestsRemoved.Count, 10);
 		}
 
 		private readonly IList tempDestsAdded = ArrayList.Synchronized(new ArrayList());
