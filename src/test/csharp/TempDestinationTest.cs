@@ -287,14 +287,11 @@ namespace Apache.NMS.ActiveMQ.Test
 			Connection consumerConnection = GetNewConnection();
 			ISession consumerSession = consumerConnection.CreateSession(AcknowledgementMode.AutoAcknowledge);
 			IDestination consumerDestination = consumerSession.GetQueue(msgQueueName);
+			// Make sure we have a fresh test queue.
+			consumerConnection.DeleteDestination(consumerDestination);
 			IMessageConsumer consumer = consumerSession.CreateConsumer(consumerDestination);
 
 			consumerConnection.Start();
-
-			// Purge the destination before starting.
-			while(consumer.Receive(TimeSpan.FromMilliseconds(3000)) != null)
-			{
-			}
 
 			IMessageConsumer advisoryConsumer = consumerSession.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
 			advisoryConsumer.Listener += OnAdvisoryMessage;
