@@ -39,8 +39,15 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			base.SetUp();
 
-			this.tempDestsAdded.Clear();
-			this.tempDestsRemoved.Clear();
+			lock(this.tempDestsAdded.SyncRoot)
+			{
+				this.tempDestsAdded.Clear();
+			}
+			
+			lock(this.tempDestsRemoved.SyncRoot)
+			{
+				this.tempDestsRemoved.Clear();
+			}
 		}
 
 		[TearDown]
@@ -129,8 +136,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 			Assert.IsNotNull(message2);
 			Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
-			Assert.AreEqual(((ITextMessage)message2).Text, message.Text,
-						  "Expected message to be a '" + message.Text + "'");
+			Assert.AreEqual(message.Text, ((ITextMessage)message2).Text);
 		}
 
 		/// <summary>
@@ -152,9 +158,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(3000));
 			Assert.IsNotNull(message2);
 			Assert.IsTrue(message2 is ITextMessage, "Expected message to be a TextMessage");
-			Assert.IsTrue(((ITextMessage)message2).Text.Equals(message.Text),
-						  "Expected message to be a '" + message.Text + "'");
-
+			Assert.AreEqual(message.Text, ((ITextMessage)message2).Text);
 		}
 
 		/// <summary>
@@ -190,7 +194,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.IsNotNull(message2);
 				Assert.AreEqual(i, message2.Properties.GetInt("c"));
-				Assert.IsTrue(message2.Equals(list[i]));
+				Assert.AreEqual(list[i], message2);
 			}
 		}
 
@@ -224,8 +228,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			tempConnection.Close();
 			WaitForTempDestinationDelete(queue);
 
-			// This message delivery NOT should work since the temp connection is
-			// now closed.
+			// This message delivery should NOT work since the temp connection is now closed.
 			try
 			{
 				message = session.CreateTextMessage("Hello");
@@ -255,8 +258,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			IMessageConsumer advisoryConsumer = session.CreateConsumer(AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC);
 			advisoryConsumer.Listener += OnAdvisoryMessage;
 
-			// This message delivery should work since the temp connection is still
-			// open.
+			// This message delivery should work since the temp connection is still open.
 			IMessageProducer producer = session.CreateProducer(queue);
 			producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
 			ITextMessage message = session.CreateTextMessage("First");
@@ -267,8 +269,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			queue.Delete();
 			WaitForTempDestinationDelete(queue);
 
-			// This message delivery NOT should work since the temp connection is
-			// now closed.
+			// This message delivery should NOT work since the temp connection is now closed.
 			try
 			{
 				message = session.CreateTextMessage("Hello");
@@ -285,7 +286,9 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// Make sure consumers work after a publisher fails to publish to deleted temp destination.
 		/// </summary>
 		[Test]
-		public void TestConsumeAfterPublishFailsForDestroyedTempDestination()
+		[TestCase(MsgDeliveryMode.Persistent)]
+		[TestCase(MsgDeliveryMode.NonPersistent)]
+		public void TestConsumeAfterPublishFailsForDestroyedTempDestination(MsgDeliveryMode replyDeliveryMode)
 		{
 			const string msgQueueName = "Test.RequestReply.MsgQueue";
 			Connection consumerConnection = GetNewConnection();
@@ -322,8 +325,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				// Will the following Receive() call fail on the second or subsequent calls?
 				IMessage receiveMsg = consumer.Receive();
 				IMessageProducer replyProducer = consumerSession.CreateProducer(receiveMsg.NMSReplyTo);
+				replyProducer.DeliveryMode = replyDeliveryMode;
 
-				//replyConsumer.Close();
 				connections.Remove(producerConnection);
 				producerConnection.Close();
 
@@ -385,7 +388,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				loopCount++;
 				if(loopCount > MaxLoopCount)
 				{
-					Assert.Fail(string.Format("Timeout waiting for delete of {0}", amqTempDestination.PhysicalName));
+					Assert.Fail(string.Format("Timeout waiting for Delete of {0}", amqTempDestination.PhysicalName));
 				}
 
 				Thread.Sleep(10);
@@ -475,7 +478,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			ITemporaryTopic tempTopic2 = session2.CreateTemporaryTopic();
 
 			WaitForTempDestinationAdd(tempTopic2);
-			Assert.AreEqual(tempDestsAdded.Count, 11);
+			Assert.AreEqual(11, tempDestsAdded.Count);
 
 			connection.PurgeTempDestinations();
 
@@ -484,7 +487,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				WaitForTempDestinationDelete(tempTopic);
 			}
 
-			Assert.AreEqual(tempDestsRemoved.Count, 10);
+			Assert.AreEqual(10, tempDestsRemoved.Count);
 		}
 
 		private readonly IList tempDestsAdded = ArrayList.Synchronized(new ArrayList());
@@ -510,7 +513,11 @@ namespace Apache.NMS.ActiveMQ.Test
 					{
 						Tracer.Debug("Connection adding: " + tempDest);
 					}
-					this.tempDestsAdded.Add(tempDest);
+					
+					lock(this.tempDestsAdded.SyncRoot)
+					{
+						this.tempDestsAdded.Add(tempDest);
+					}
 				}
 				else if(destInfo.OperationType == DestinationInfo.REMOVE_OPERATION_TYPE)
 				{
@@ -518,7 +525,11 @@ namespace Apache.NMS.ActiveMQ.Test
 					{
 						Tracer.Debug("Connection removing: " + tempDest);
 					}
-					this.tempDestsRemoved.Add(tempDest);
+					
+					lock(this.tempDestsRemoved.SyncRoot)
+					{
+						this.tempDestsRemoved.Add(tempDest);
+					}
 				}
 			}
 		}
