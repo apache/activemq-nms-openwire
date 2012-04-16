@@ -32,8 +32,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         private static readonly FactoryFinder<ActiveMQTransportFactoryAttribute, ITransportFactory> FACTORY_FINDER =
             new FactoryFinder<ActiveMQTransportFactoryAttribute, ITransportFactory>();
-
-        private static IDictionary<String, Type> TRANSPORT_FACTORY_TYPES = new Dictionary<String, Type>();
+		
+        private readonly static object TRANSPORT_FACTORY_TYPES_LOCK = new object();
+        private readonly static IDictionary<String, Type> TRANSPORT_FACTORY_TYPES = new Dictionary<String, Type>();
 
 		public static void HandleException(Exception ex)
 		{
@@ -45,7 +46,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         public void RegisterTransportFactory(string scheme, Type factoryType)
         {
-            TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+			lock (TRANSPORT_FACTORY_TYPES_LOCK)
+			{
+            	TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+			}
         }
 
 		/// <summary>
@@ -131,15 +135,22 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         private static Type FindTransportFactory(string scheme)
         {
-            if(TRANSPORT_FACTORY_TYPES.ContainsKey(scheme))
-            {
-                return TRANSPORT_FACTORY_TYPES[scheme];
-            }
-
+			lock (TRANSPORT_FACTORY_TYPES_LOCK)
+			{			
+	            if(TRANSPORT_FACTORY_TYPES.ContainsKey(scheme))
+	            {
+	                return TRANSPORT_FACTORY_TYPES[scheme];
+	            }
+			}
+			
             try
             {
                 Type factoryType = FACTORY_FINDER.FindFactoryType(scheme);
-                TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+				
+				lock (TRANSPORT_FACTORY_TYPES_LOCK)
+				{			
+                	TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+				}
                 return factoryType;
             }
             catch
