@@ -33,6 +33,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		public const int DEFAULT_BACKOFF_MILLISECONDS = 100;
 		public const int BACKOFF_MULTIPLIER = 2;
 		public const string DEFAULT_DISCOVERY_URI_STRING = "multicast://239.255.2.3:6155";
+    	public const string DEFAULT_HOST_STR = "default"; 
+    	public const string DEFAULT_HOST_IP = "239.255.2.3";
+    	public const int DEFAULT_PORT = 6155;
+
 		private const string TYPE_SUFFIX = "ActiveMQ-4.";
 		private const string ALIVE = "alive";
 		private const string DEAD = "dead";
@@ -69,11 +73,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery.Multicast
 		{
 			lock(stopstartSemaphore)
 			{
-				if (discoveryUri == null)
+				if (discoveryUri == null || discoveryUri.Host.Equals(DEFAULT_HOST_STR))
 				{
 					discoveryUri = new Uri(DEFAULT_DISCOVERY_URI_STRING);
 				}
-
+				
 				if(multicastSocket == null)
 				{
 					int numFailedAttempts = 0;
