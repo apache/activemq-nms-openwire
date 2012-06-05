@@ -18,6 +18,7 @@
 using System.IO;
 
 #if !(PocketPC||NETCF||NETCF_2_0)
+using Apache.NMS.Util;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 #endif
@@ -61,8 +62,21 @@ namespace Apache.NMS.ActiveMQ.Commands
             {
 #if !(PocketPC||NETCF||NETCF_2_0)
                 if (body == null)
-                {
-                    body = Formatter.Deserialize(new MemoryStream(Content));
+                {                
+                    if(base.Content == null)
+                    {
+                        return null;
+                    }
+
+                    byte[] data = base.Content;
+                    Stream target = new MemoryStream(data, false);
+                
+                    if(this.Connection != null && this.Compressed == true)
+                    {
+                        target = this.Connection.CompressionPolicy.CreateDecompressionStream(target);
+                    }
+
+                    body = Formatter.Deserialize(target);
                 }
                 return body;
 #else
@@ -89,9 +103,17 @@ namespace Apache.NMS.ActiveMQ.Commands
             }
             else
             {
-                MemoryStream stream = new MemoryStream();
-                Formatter.Serialize(stream, body);
-                Content = stream.ToArray();
+                MemoryStream result = new MemoryStream();
+                Stream target = result;
+                if(this.Connection != null && this.Connection.UseCompression)
+                {
+                    this.Compressed = true;
+                    target = this.Connection.CompressionPolicy.CreateCompressionStream(target);                    
+                }
+
+                Formatter.Serialize(target, body);
+                target.Close();
+                Content = result.ToArray();
             }
 
             //Console.WriteLine("BeforeMarshalling, content is: " + Content);
