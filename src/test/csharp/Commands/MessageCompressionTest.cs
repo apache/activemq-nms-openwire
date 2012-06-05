@@ -17,6 +17,7 @@
 
 using System;
 using System.IO;
+using Apache.NMS;
 using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
@@ -81,6 +82,36 @@ namespace Apache.NMS.ActiveMQ.Test
                     Assert.IsNotNull(message);
                     Assert.IsTrue(((ActiveMQMessage) message).Compressed);
                     Assert.AreEqual(TEXT, message.Text);
+                }
+            }
+        }
+
+        [Test]
+        public void TestObjectMessageCompression()
+        {
+            using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
+            {
+                connection.UseCompression = true;
+                connection.Start();
+
+                Assert.IsTrue(connection.UseCompression);
+
+                using(ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+                {
+                    IObjectMessage message = session.CreateObjectMessage(TEXT);
+
+                    IDestination destination = session.CreateTemporaryQueue();
+                    
+                    IMessageProducer producer = session.CreateProducer(destination);
+                    IMessageConsumer consumer = session.CreateConsumer(destination);
+
+                    producer.Send(message);
+
+                    message = consumer.Receive(TimeSpan.FromMilliseconds(6000)) as IObjectMessage;
+                    
+                    Assert.IsNotNull(message);
+                    Assert.IsTrue(((ActiveMQMessage) message).Compressed);
+                    Assert.AreEqual(TEXT, message.Body);
                 }
             }
         }
