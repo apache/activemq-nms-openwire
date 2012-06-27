@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -76,12 +76,9 @@ namespace Apache.NMS.ActiveMQ.Util
     
         }
     
-        /**
-         * Get the boolean value at the index
-         * 
-         * @param index
-         * @return true/false
-         */
+        /// <summary>
+        /// Get the boolean value at the index
+        /// </summary>
         public bool GetBit(long index)
         {
             bool answer = index >= firstIndex;
@@ -103,12 +100,9 @@ namespace Apache.NMS.ActiveMQ.Util
             return answer;
         }
     
-        /**
-         * Get the BitArray for the index
-         * 
-         * @param index
-         * @return BitArray
-         */
+        /// <summary>
+        /// Get the BitArray for the index
+        /// </summary>
         private BitArray GetBitArray(long index)
         {
             int bin = GetBin(index);
@@ -138,12 +132,9 @@ namespace Apache.NMS.ActiveMQ.Util
             return answer;
         }
 
-        /**
-         * Get the index of the bin from the total index
-         * 
-         * @param index
-         * @return the index of the bin
-         */
+        /// <summary>
+        /// Get the index of the bin from the total index
+        /// </summary>
         private int GetBin(long index)
         {
             int answer = 0;
@@ -158,12 +149,9 @@ namespace Apache.NMS.ActiveMQ.Util
             return answer;
         }
     
-        /**
-         * Get the offset into a bin from the total index
-         * 
-         * @param index
-         * @return the relative offset into a bin
-         */
+        /// <summary>
+        /// Get the offset into a bin from the total index
+        /// </summary>
         private int GetOffset(long index)
         {
             int answer = 0;
