@@ -92,8 +92,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					// Initialize our Read and Writer instances.  Its not actually necessary
 					// to have two distinct NetworkStream instances but for now the TcpTransport
 					// will continue to do so for legacy reasons.
-					socketWriter = new EndianBinaryWriter(CreateSocketStream());
-					socketReader = new EndianBinaryReader(CreateSocketStream());
+					socketWriter = new EndianBinaryWriter(new BufferedStream(CreateSocketStream()));
+					socketReader = new EndianBinaryReader(new BufferedStream(CreateSocketStream()));
 
 					// now lets create the background read thread
 					readThread = new Thread(new ThreadStart(ReadLoop)) { IsBackground = true };
