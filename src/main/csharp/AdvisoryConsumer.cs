@@ -60,7 +60,7 @@ namespace Apache.NMS.ActiveMQ
                 }
                 catch(Exception e)
                 {
-                    Tracer.Debug("Failoed to send remove for AdvisoryConsumer: " + e.Message);
+                    Tracer.Debug("Failed to send remove for AdvisoryConsumer: " + e.Message);
                 }
                 this.connection.removeDispatcher(this.info.ConsumerId);
             }

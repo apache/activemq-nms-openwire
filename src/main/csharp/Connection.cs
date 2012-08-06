@@ -463,7 +463,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public ISession CreateSession()
 		{
-			return CreateAtiveMQSession(acknowledgementMode);
+			return CreateActiveMQSession(acknowledgementMode);
 		}
 
 		/// <summary>
@@ -471,10 +471,10 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode)
 		{
-			return CreateAtiveMQSession(sessionAcknowledgementMode);
+			return CreateActiveMQSession(sessionAcknowledgementMode);
 		}
 
-		protected virtual Session CreateAtiveMQSession(AcknowledgementMode ackMode)
+		protected virtual Session CreateActiveMQSession(AcknowledgementMode ackMode)
 		{
 			CheckConnected();
 			return new Session(this, NextSessionId, ackMode);

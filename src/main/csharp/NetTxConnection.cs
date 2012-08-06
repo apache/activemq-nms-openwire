@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ
             return session;
         }
 
-        protected override Session CreateAtiveMQSession(AcknowledgementMode ackMode)
+        protected override Session CreateActiveMQSession(AcknowledgementMode ackMode)
         {
             CheckConnected();
             return new NetTxSession(this, NextSessionId);
