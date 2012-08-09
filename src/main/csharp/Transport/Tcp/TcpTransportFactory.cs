@@ -184,7 +184,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		/// </summary>
 		protected virtual ITransport DoCreateTransport(Uri location, Socket socket, IWireFormat wireFormat )
 		{
-			return new TcpTransport(location, socket, wireFormat);
+			TcpTransport transport = new TcpTransport(location, socket, wireFormat);
+
+			// Apply the buffer sizes to the transport also so that it can buffer above the
+			// TCP level which can eagerly send causing sparse packets.
+			transport.SendBufferSize = SendBufferSize;
+			transport.ReceiveBufferSize = ReceiveBufferSize;
+
+			return transport;
 		}
 		
         // DISCUSSION: Caching host entries may not be the best strategy when using the

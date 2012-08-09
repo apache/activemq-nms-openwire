@@ -49,6 +49,26 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private ResumedHandler resumedHandler;
 		private TimeSpan MAX_THREAD_WAIT = TimeSpan.FromMilliseconds(30000);
 
+        /// <summary>
+        /// Size in bytes of the receive buffer.
+        /// </summary>
+        private int receiveBufferSize = 8192;
+        public int ReceiveBufferSize
+        {
+            get { return receiveBufferSize; }
+            set { receiveBufferSize = value; }
+        }
+
+        /// <summary>
+        /// Size in bytes of send buffer.
+        /// </summary>
+        private int sendBufferSize = 8192;
+        public int SendBufferSize
+        {
+            get { return sendBufferSize; }
+            set { sendBufferSize = value; }
+        }
+
 		public TcpTransport(Uri uri, Socket socket, IWireFormat wireformat)
 		{
 			this.connectedUri = uri;
