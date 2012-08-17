@@ -907,7 +907,8 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
 
-            Tracer.ErrorFormat("Connection[{0}]: No such consumer active: " + dispatch.ConsumerId, this.ConnectionId);
+            Tracer.ErrorFormat("Connection[{0}]: No such consumer active: {1}.  Removing...", this.ConnectionId, dispatch.ConsumerId);
+            transport.Oneway(new RemoveInfo() { ObjectId = dispatch.ConsumerId });
         }
 
         protected void OnKeepAliveCommand(ITransport commandTransport, KeepAliveInfo info)
