@@ -564,6 +564,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     }
                     else if(command.IsRemoveInfo || command.IsMessageAck)
                     {
+                        stateTracker.Track(command);
                         // Simulate response to RemoveInfo command or a MessageAck
                         // since it would be stale at this point.
                         if(command.ResponseRequired)
@@ -602,7 +603,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                             Tracer.Info("Waiting for transport to reconnect.");
 
                             int elapsed = (int) (DateTime.Now - start).TotalMilliseconds;
-                            if(this.timeout > 0 && elapsed > timeout)
+                            if(this.timeout > 0 && elapsed > this.timeout)
                             {
                                 timedout = true;
                                 Tracer.DebugFormat("FailoverTransport.oneway - timed out after {0} mills", elapsed);
@@ -612,7 +613,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                             // Release so that the reconnect task can run
                             try
                             {
-                                // Wait for something
+                                // Wait for something.  The mutex will be pulsed if we connect.
                                 Monitor.Wait(reconnectMutex, 100);
                             }
                             catch(ThreadInterruptedException e)
