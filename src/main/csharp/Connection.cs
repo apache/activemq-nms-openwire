@@ -586,6 +586,7 @@ namespace Apache.NMS.ActiveMQ
                     executor.Shutdown();
 
                     Tracer.DebugFormat("Connection[{0}]: Disposing of the Transport.", this.ConnectionId);
+					transport.Stop();
                     transport.Dispose();
                 }
                 catch(Exception ex)
