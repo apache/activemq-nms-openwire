@@ -76,10 +76,10 @@ namespace Apache.NMS.ActiveMQ
             string[] parts = resId.Split(":-".ToCharArray());
 
             // We don't use the hostname here, just the remaining bits.
-            int a = Int32.Parse(parts[1]);
-            short b = Int16.Parse(parts[3]);
-            short c = Int16.Parse(parts[4]);
-            byte[] d = System.BitConverter.GetBytes(Int64.Parse(parts[2]));
+            int a = Int32.Parse(parts[parts.Length-4]);
+            short b = Int16.Parse(parts[parts.Length-2]);
+            short c = Int16.Parse(parts[parts.Length-1]);
+            byte[] d = System.BitConverter.GetBytes(Int64.Parse(parts[parts.Length-3]));
 
             return new Guid(a, b, c, d);
         }
