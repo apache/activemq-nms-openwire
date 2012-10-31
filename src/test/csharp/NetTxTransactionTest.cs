@@ -247,6 +247,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
                         Assert.IsFalse(this.transactionStarted, "TX Should have Committed and cleared Started");
                         Assert.IsTrue(this.transactionCommitted, "TX Should have Committed");
+                        Assert.IsFalse(this.transactionRolledBack, "TX Should not have Rolledback");
 
                         session.Close();
                     }
@@ -277,6 +278,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
                         Assert.IsFalse(this.transactionStarted, "TX Should have Committed and cleared Started");
                         Assert.IsTrue(this.transactionCommitted, "TX Should have Committed");
+                        Assert.IsFalse(this.transactionRolledBack, "TX Should not have Rolledback");
 
                         session.Close();
                     }

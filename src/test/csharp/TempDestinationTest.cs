@@ -313,7 +313,6 @@ namespace Apache.NMS.ActiveMQ.Test
 				IDestination producerDestination = producerSession.GetQueue(msgQueueName);
 				IMessageProducer producer = producerSession.CreateProducer(producerDestination);
 				IDestination replyDestination = producerSession.CreateTemporaryQueue();
-				IMessageConsumer replyConsumer = producerSession.CreateConsumer(replyDestination);
 
 				producerConnection.Start();
 
