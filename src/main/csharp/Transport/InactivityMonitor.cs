@@ -141,6 +141,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 				return;
 			}
 
+			CompositeTaskRunner taskRunner = this.asyncTasks;
+
 			if(!commandSent.Value)
 			{
 				Tracer.DebugFormat("InactivityMonitor[{0}]: No Message sent since last write check. Sending a KeepAliveInfo.", instanceId);
@@ -148,8 +150,11 @@ namespace Apache.NMS.ActiveMQ.Transport
 				{
 					this.asyncWriteTask.IsPending = true;
 				}
-				
-				this.asyncTasks.Wakeup();
+
+				if (this.monitorStarted.Value && taskRunner != null) 
+				{
+					taskRunner.Wakeup();
+				}
 			}
 			else
 			{
@@ -165,6 +170,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			DateTime now = DateTime.Now;
 			TimeSpan elapsed = now - this.lastReadCheckTime;
+			CompositeTaskRunner taskRunner = this.asyncTasks;
 
 			if(!AllowReadCheck(elapsed))
 			{
@@ -188,7 +194,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 					this.asyncErrorTask.IsPending = true;
 				}
 
-				this.asyncTasks.Wakeup();
+				if (this.monitorStarted.Value && taskRunner != null) 
+				{
+					taskRunner.Wakeup();
+				}
 			}
 			else
 			{
@@ -360,8 +369,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 						new TimerCallback(CheckConnection),
 						null,
 						initialDelayTime,
-						writeCheckTime
-						);
+						writeCheckTime);
 				}
 			}
 		}
@@ -377,9 +385,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 					if(null != connectionCheckTimer)
 					{
 						// Attempt to wait for the Timer to shutdown, but don't wait
-						// forever, if they don't shutdown after two seconds, just quit.
+						// forever, if they don't shutdown after a few seconds, just quit.
 						this.connectionCheckTimer.Dispose(shutdownEvent);
-						if(!shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(3000), false))
+						if(!shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(5000), false))
 						{
 							Tracer.WarnFormat("InactivityMonitor[{0}]: Timer Task didn't shutdown properly.", instanceId);
 						}
@@ -391,7 +399,6 @@ namespace Apache.NMS.ActiveMQ.Transport
 					{
 						this.asyncTasks.RemoveTask(this.asyncWriteTask);
 						this.asyncTasks.RemoveTask(this.asyncErrorTask);
-
 						this.asyncTasks.Shutdown();
 						this.asyncTasks = null;
 					}
