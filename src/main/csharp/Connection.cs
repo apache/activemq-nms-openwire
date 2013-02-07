@@ -927,13 +927,13 @@ namespace Apache.NMS.ActiveMQ
 						}
 					}
 
-					Tracer.ErrorFormat("Connection[{0}]: ConnectionError: " + message + " : " + cause, this.ConnectionId);
+					Tracer.ErrorFormat("Connection[{0}]: ConnectionError: {1} : {2}", this.ConnectionId, message, cause);
 					OnAsyncException(CreateExceptionFromBrokerError(brokerError));
 				}
 			}
 			else
 			{
-				Tracer.ErrorFormat("Connection[{0}]: Unknown command: " + command, this.ConnectionId);
+				Tracer.ErrorFormat("Connection[{0}]: Unknown command: {1}", this.ConnectionId, command);
 			}
 		}
 
@@ -1001,7 +1001,7 @@ namespace Apache.NMS.ActiveMQ
 				}
 				else
 				{
-					Tracer.DebugFormat("Connection[{0}]: Async exception with no exception listener: " + error, this.ConnectionId);
+					Tracer.DebugFormat("Connection[{0}]: Async exception with no exception listener: {1}", this.ConnectionId, error);
 				}
 			}
 		}
@@ -1042,7 +1042,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 			catch(Exception ex)
 			{
-				Tracer.DebugFormat("Connection[{0}]: Caught Exception While disposing of Transport: " + ex, this.ConnectionId);
+				Tracer.DebugFormat("Connection[{0}]: Caught Exception While disposing of Transport: {1}", this.ConnectionId, ex);
 			}
 
 			this.brokerInfoReceived.countDown();
@@ -1063,7 +1063,7 @@ namespace Apache.NMS.ActiveMQ
 				}
 				catch(Exception ex)
 				{
-					Tracer.DebugFormat("Connection[{0}]: Caught Exception While disposing of Sessions: " + ex, this.ConnectionId);
+					Tracer.DebugFormat("Connection[{0}]: Caught Exception While disposing of Sessions: {1}", this.ConnectionId, ex);
 				}
 			}
 		}
@@ -1088,7 +1088,7 @@ namespace Apache.NMS.ActiveMQ
 
 			if(Tracer.IsDebugEnabled)
 			{
-				Tracer.DebugFormat("Connection[{0}]: Transport interrupted, dispatchers: " + dispatchers.Count, this.ConnectionId);
+				Tracer.DebugFormat("Connection[{0}]: Transport interrupted, dispatchers: {1}", this.ConnectionId, dispatchers.Count);
 			}
 
 			SignalInterruptionProcessingNeeded();
@@ -1101,7 +1101,7 @@ namespace Apache.NMS.ActiveMQ
 				}
 				catch(Exception ex)
 				{
-					Tracer.WarnFormat("Connection[{0}]: Exception while clearing messages: " + ex.Message, this.ConnectionId);
+					Tracer.WarnFormat("Connection[{0}]: Exception while clearing messages: {1}", this.ConnectionId, ex.Message);
 					Tracer.Warn(ex.StackTrace);
 				}
 			}
@@ -1229,7 +1229,7 @@ namespace Apache.NMS.ActiveMQ
 				if(!closed.Value && cdl.Remaining > 0)
 				{
 					Tracer.WarnFormat("Connection[{0}]: Dispatch paused, waiting for outstanding dispatch interruption " +
-									  "processing (" + cdl.Remaining + ") to complete..", this.ConnectionId);
+					                  "processing ({1}) to complete..", this.ConnectionId, cdl.Remaining);
 					cdl.await(TimeSpan.FromSeconds(10));
 				}
 
@@ -1271,8 +1271,8 @@ namespace Apache.NMS.ActiveMQ
 					failoverTransport.ConnectionInterruptProcessingComplete(this.info.ConnectionId);
 					if(Tracer.IsDebugEnabled)
 					{
-						Tracer.DebugFormat("Connection[{0}]: notified failover transport (" + failoverTransport +
-									 	   ") of interruption completion.", this.ConnectionId);
+						Tracer.DebugFormat("Connection[{0}]: notified failover transport ({1})" +
+									 	   " of interruption completion.", this.ConnectionId, failoverTransport);
 					}
 				}
 			}
@@ -1287,8 +1287,8 @@ namespace Apache.NMS.ActiveMQ
 				failoverTransport.StateTracker.TransportInterrupted(this.info.ConnectionId);
 				if(Tracer.IsDebugEnabled)
 				{
-					Tracer.DebugFormat("Connection[{0}]: notified failover transport (" + failoverTransport +
-								 	   ") of pending interruption processing.", this.ConnectionId);
+					Tracer.DebugFormat("Connection[{0}]: notified failover transport ({1})" +
+								 	   " of pending interruption processing.", this.ConnectionId, failoverTransport);
 				}
 			}
 		}
