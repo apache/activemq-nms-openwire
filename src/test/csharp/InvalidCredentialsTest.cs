@@ -24,8 +24,6 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class InvalidCredentialsTest : NMSTestSupport
 	{
-		private IConnection connection;
-
 		[SetUp]
 		public override void SetUp()
 		{
