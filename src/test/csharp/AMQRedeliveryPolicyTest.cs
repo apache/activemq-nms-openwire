@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class AMQRedeliveryPolicyTest : NMSTestSupport
     {
-        private const string DESTINATION_NAME = "RedeliveryPolicyTestDest";
+        private const string DESTINATION_NAME = "TEST.RedeliveryPolicyTestDest";
 
         [Test]
         public void TestExponentialRedeliveryPolicyDelaysDeliveryOnRollback()

@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
     [TestFixture]
     public class RecoveryFileLoggerTest
     {
-        private Guid rmId;
+        private string rmId;
         private string nonExistantPath;
         private string autoCreatePath;
         private string nonDefaultLogLocation;
@@ -37,10 +37,10 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         [SetUp]
         public void SetUp()
         {
-            this.rmId = Guid.NewGuid();
-            this.nonExistantPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Guid.NewGuid();
-            this.nonDefaultLogLocation = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Guid.NewGuid();
-            this.autoCreatePath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Guid.NewGuid();
+            this.rmId = Guid.NewGuid().ToString();
+            this.nonExistantPath = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
+			this.nonDefaultLogLocation = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
+			this.autoCreatePath = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
 
             Directory.CreateDirectory(nonDefaultLogLocation);
         }
@@ -61,7 +61,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         {
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             Assert.AreEqual(Directory.GetCurrentDirectory(), logger.Location);
         }
@@ -72,7 +72,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             Assert.AreEqual(nonDefaultLogLocation, logger.Location);
         }
@@ -86,7 +86,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             logger.AutoCreateLocation = true;
             logger.Location = autoCreatePath;
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             Assert.IsTrue(Directory.Exists(autoCreatePath));
             Assert.AreEqual(autoCreatePath, logger.Location);
@@ -102,7 +102,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             try
             {
-                logger.Initialize(rmId.ToString());
+                logger.Initialize(rmId);
                 Assert.Fail("Should have detected an invalid dir and thrown an exception");
             }
             catch
@@ -116,7 +116,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             Assert.IsTrue(logger.GetRecoverables().Length == 0);
         }
@@ -137,7 +137,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             gen.NextBytes(recoveryData);
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             XATransactionId xid = new XATransactionId();
             xid.GlobalTransactionId = globalId;
@@ -145,7 +145,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             logger.LogRecoveryInfo(xid, recoveryData);
 
-            Assert.IsTrue(File.Exists(logger.Location + Path.DirectorySeparatorChar + rmId.ToString() + ".bin"),
+            Assert.IsTrue(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
                           "Recovery File was not created");
         }
 
@@ -165,7 +165,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             gen.NextBytes(recoveryData);
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             XATransactionId xid = new XATransactionId();
             xid.GlobalTransactionId = globalId;
@@ -173,7 +173,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             logger.LogRecoveryInfo(xid, recoveryData);
 
-            Assert.IsTrue(File.Exists(logger.Location + Path.DirectorySeparatorChar + rmId.ToString() + ".bin"),
+            Assert.IsTrue(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
                           "Recovery File was not created");
             Assert.IsTrue(logger.GetRecoverables().Length == 1,
                           "Did not recover the logged record.");
@@ -202,7 +202,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             gen.NextBytes(recoveryData);
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId.ToString());
+            logger.Initialize(rmId);
 
             XATransactionId xid = new XATransactionId();
             xid.GlobalTransactionId = globalId;
@@ -210,12 +210,12 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             logger.LogRecoveryInfo(xid, recoveryData);
 
-            Assert.IsTrue(File.Exists(logger.Location + Path.DirectorySeparatorChar + rmId.ToString() + ".bin"),
+            Assert.IsTrue(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
                           "Recovery File was not created");
 
             logger.Purge();
 
-            Assert.IsFalse(File.Exists(logger.Location + Path.DirectorySeparatorChar + rmId.ToString() + ".bin"),
+            Assert.IsFalse(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
                           "Recovery File was not created");
         }
 

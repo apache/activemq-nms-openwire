@@ -93,7 +93,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 			: base(next)
 		{
 			this.instanceId = ++id;
-			Tracer.Debug("Creating Inactivity Monitor: " + instanceId);
+			Tracer.DebugFormat("Creating Inactivity Monitor: {0}", instanceId);
 		}
 
 		~InactivityMonitor()
@@ -305,7 +305,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			if(failed.CompareAndSet(false, true) && !this.disposing)
 			{
-				Tracer.Debug("Exception received in the Inactivity Monitor: " + command.ToString());
+				Tracer.DebugFormat("Exception received in the Inactivity Monitor: {0}", command.Message);
 				StopMonitorThreads();
 				base.OnException(sender, command);
 			}

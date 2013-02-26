@@ -42,17 +42,30 @@ namespace Apache.NMS.ActiveMQ.State
 		public void addProducer(ProducerInfo info)
 		{
 			checkShutdown();
-			producers.Add(info.ProducerId, new ProducerState(info));
+			ProducerState producerState = new ProducerState(info);
+
+			if(producers.ContainsKey(info.ProducerId))
+			{
+				producers[info.ProducerId] = producerState;
+			}
+			else
+			{
+				producers.Add(info.ProducerId, producerState);
+			}
 		}
 
 		public ProducerState removeProducer(ProducerId id)
 		{
-			ProducerState ret = producers[id];
-			producers.Remove(id);
-            if (ret.TransactionState != null)
-            {
-                ret.TransactionState.AddProducer(ret);
-            }
+			ProducerState ret = null;
+
+			if(producers.TryGetValue(id, out ret))
+			{
+				producers.Remove(id);
+				if(null != ret && ret.TransactionState != null)
+				{
+					ret.TransactionState.AddProducer(ret);
+				}
+			}
 
 			return ret;
 		}
@@ -60,13 +73,27 @@ namespace Apache.NMS.ActiveMQ.State
 		public void addConsumer(ConsumerInfo info)
 		{
 			checkShutdown();
-			consumers.Add(info.ConsumerId, new ConsumerState(info));
+			ConsumerState consumerState = new ConsumerState(info);
+
+			if(consumers.ContainsKey(info.ConsumerId))
+			{
+				consumers.Add(info.ConsumerId, consumerState);
+			}
+			else
+			{
+				consumers.Add(info.ConsumerId, consumerState);
+			}
 		}
 
 		public ConsumerState removeConsumer(ConsumerId id)
 		{
-			ConsumerState ret = consumers[id];
-			consumers.Remove(id);
+			ConsumerState ret = null;
+
+			if(consumers.TryGetValue(id, out ret))
+			{
+				consumers.Remove(id);
+			}
+
 			return ret;
 		}
 

@@ -90,11 +90,7 @@ namespace Apache.NMS.ActiveMQ
 			this.brokerUri = connectionUri;
 			this.clientIdGenerator = clientIdGenerator;
 
-			this.transport = transport;
-			this.transport.Command = new CommandHandler(OnCommand);
-			this.transport.Exception = new ExceptionHandler(OnTransportException);
-			this.transport.Interrupted = new InterruptedHandler(OnTransportInterrupted);
-			this.transport.Resumed = new ResumedHandler(OnTransportResumed);
+			SetTransport(transport);
 
 			ConnectionId id = new ConnectionId();
 			id.Value = CONNECTION_ID_GENERATOR.GenerateId();
@@ -412,6 +408,15 @@ namespace Apache.NMS.ActiveMQ
 
 		#endregion
 
+		private void SetTransport(ITransport newTransport)
+		{
+			this.transport = newTransport;
+			this.transport.Command = new CommandHandler(OnCommand);
+			this.transport.Exception = new ExceptionHandler(OnTransportException);
+			this.transport.Interrupted = new InterruptedHandler(OnTransportInterrupted);
+			this.transport.Resumed = new ResumedHandler(OnTransportResumed);
+		}
+
 		/// <summary>
 		/// Starts asynchronous message delivery of incoming messages for this connection.
 		/// Synchronous delivery is unaffected.
@@ -496,35 +501,35 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		internal void addDispatcher( ConsumerId id, IDispatcher dispatcher )
+		internal void addDispatcher(ConsumerId id, IDispatcher dispatcher)
 		{
 			if(!this.closing.Value)
 			{
-				this.dispatchers.Add( id, dispatcher );
+				this.dispatchers.Add(id, dispatcher);
 			}
 		}
 
-		internal void removeDispatcher( ConsumerId id )
+		internal void removeDispatcher(ConsumerId id)
 		{
 			if(!this.closing.Value)
 			{
-				this.dispatchers.Remove( id );
+				this.dispatchers.Remove(id);
 			}
 		}
 
-		internal void addProducer( ProducerId id, MessageProducer producer )
+		internal void addProducer(ProducerId id, MessageProducer producer)
 		{
 			if(!this.closing.Value)
 			{
-				this.producers.Add( id, producer );
+				this.producers.Add(id, producer);
 			}
 		}
 
-		internal void removeProducer( ProducerId id )
+		internal void removeProducer(ProducerId id)
 		{
 			if(!this.closing.Value)
 			{
-				this.producers.Remove( id );
+				this.producers.Remove(id);
 			}
 		}
 
@@ -640,35 +645,35 @@ namespace Apache.NMS.ActiveMQ
 			disposed = true;
 		}
 
-        public void PurgeTempDestinations()
-        {
-            if (this.tempDests == null || this.tempDests.Count == 0)
-            {
-                return;
-            }
+		public void PurgeTempDestinations()
+		{
+			if(this.tempDests == null || this.tempDests.Count == 0)
+			{
+				return;
+			}
 
-            lock(this.tempDests.SyncRoot)
-            {
-                Object[] keys = new Object[this.tempDests.Count];
-                this.tempDests.Keys.CopyTo(keys, 0);
-                foreach(ActiveMQTempDestination dest in keys)
-                {
-                    String localConnectionId = info.ConnectionId == null ? "" : info.ConnectionId.ToString();
-                    if (dest.PhysicalName.Contains(localConnectionId))
-                    {
-                        try
-                        {
-                            DeleteTemporaryDestination(dest);
-                        }
-                        catch
-                        {
-                            // The destination may still be in use in which case its
-                            // ok that it is not deleted now.
-                        }
-                    }
-                }
-            }
-        }
+			lock(this.tempDests.SyncRoot)
+			{
+				Object[] keys = new Object[this.tempDests.Count];
+				this.tempDests.Keys.CopyTo(keys, 0);
+				foreach(ActiveMQTempDestination dest in keys)
+				{
+					String localConnectionId = info.ConnectionId == null ? "" : info.ConnectionId.ToString();
+					if(dest.PhysicalName.Contains(localConnectionId))
+					{
+						try
+						{
+							DeleteTemporaryDestination(dest);
+						}
+						catch
+						{
+							// The destination may still be in use in which case its
+							// ok that it is not deleted now.
+						}
+					}
+				}
+			}
+		}
 
 		// Implementation methods
 
@@ -696,16 +701,16 @@ namespace Apache.NMS.ActiveMQ
 				Response response = transport.Request(command, requestTimeout);
 				if(response is ExceptionResponse)
 				{
-					ExceptionResponse exceptionResponse = (ExceptionResponse)response;
-                    Exception exception = CreateExceptionFromBrokerError(exceptionResponse.Exception);
+					ExceptionResponse exceptionResponse = (ExceptionResponse) response;
+					Exception exception = CreateExceptionFromBrokerError(exceptionResponse.Exception);
 					throw exception;
 				}
 				return response;
 			}
-            catch(NMSException)
-            {
-                throw;
-            }
+			catch(NMSException)
+			{
+				throw;
+			}
 			catch(Exception ex)
 			{
 				throw NMSExceptionSupport.Create(ex);
@@ -738,10 +743,10 @@ namespace Apache.NMS.ActiveMQ
 					if(connected.Value)
 					{
 						transport.Oneway(command);
-						if (Tracer.IsDebugEnabled)
+						if(Tracer.IsDebugEnabled)
 						{
-							Tracer.DebugFormat("Connection[{0}]: Oneway command sent to broker: {1}", 
-								               this.ConnectionId, command);
+							Tracer.DebugFormat("Connection[{0}]: Oneway command sent to broker: {1}",
+											   this.ConnectionId, command);
 						}
 					}
 				}
@@ -798,6 +803,12 @@ namespace Apache.NMS.ActiveMQ
 								{
 									if(null != transport)
 									{
+										// Make sure the transport is started.
+										if(!this.transport.IsStarted)
+										{
+											this.transport.Start();
+										}
+
 										// Send the connection and see if an ack/nak is returned.
 										Response response = transport.Request(this.info, this.RequestTimeout);
 										if(!(response is ExceptionResponse))
@@ -809,27 +820,32 @@ namespace Apache.NMS.ActiveMQ
 													new SessionId(info.ConnectionId, -1),
 													Interlocked.Increment(ref this.consumerIdCounter));
 												this.advisoryConsumer = new AdvisoryConsumer(this, id);
-                                            }
+											}
 										}
-                                        else
-                                        {
+										else
+										{
 											ExceptionResponse error = response as ExceptionResponse;
-                                            NMSException exception = CreateExceptionFromBrokerError(error.Exception);
-                                            if(exception is InvalidClientIDException)
-                                            {
-                                                // This is non-recoverable
-                                                throw exception;
-                                            }
-                                        }
+											NMSException exception = CreateExceptionFromBrokerError(error.Exception);
+											if(exception is InvalidClientIDException)
+											{
+												// This is non-recoverable.
+												// Shutdown the transport connection, and re-create it, but don't start it.
+												// It will be started if the connection is re-attempted.
+												this.transport.Stop();
+												ITransport newTransport = TransportFactory.CreateTransport(this.brokerUri);
+												SetTransport(newTransport);
+												throw exception;
+											}
+										}
 									}
 								}
-                                catch(BrokerException)
-                                {
-                                    // We Swallow the generic version and throw ConnectionClosedException
-                                }
+								catch(BrokerException)
+								{
+									// We Swallow the generic version and throw ConnectionClosedException
+								}
 								catch(NMSException)
 								{
-                                    throw;
+									throw;
 								}
 							}
 						}
@@ -866,19 +882,19 @@ namespace Apache.NMS.ActiveMQ
 			if(command.IsMessageDispatch)
 			{
 				WaitForTransportInterruptionProcessingToComplete();
-				DispatchMessage((MessageDispatch)command);
+				DispatchMessage((MessageDispatch) command);
 			}
 			else if(command.IsKeepAliveInfo)
 			{
-				OnKeepAliveCommand(commandTransport, (KeepAliveInfo)command);
+				OnKeepAliveCommand(commandTransport, (KeepAliveInfo) command);
 			}
 			else if(command.IsWireFormatInfo)
 			{
-				this.brokerWireFormatInfo = (WireFormatInfo)command;
+				this.brokerWireFormatInfo = (WireFormatInfo) command;
 			}
 			else if(command.IsBrokerInfo)
 			{
-				this.brokerInfo = (BrokerInfo)command;
+				this.brokerInfo = (BrokerInfo) command;
 				this.brokerInfoReceived.countDown();
 			}
 			else if(command.IsShutdownInfo)
@@ -893,7 +909,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 			else if(command.IsProducerAck)
 			{
-				ProducerAck ack = (ProducerAck)command as ProducerAck;
+				ProducerAck ack = (ProducerAck) command as ProducerAck;
 				if(ack.ProducerId != null)
 				{
 					MessageProducer producer = producers[ack.ProducerId] as MessageProducer;
@@ -901,8 +917,8 @@ namespace Apache.NMS.ActiveMQ
 					{
 						if(Tracer.IsDebugEnabled)
 						{
-							Tracer.DebugFormat("Connection[{0}]: Received a new ProducerAck -> ", 
-							                   this.ConnectionId, ack);
+							Tracer.DebugFormat("Connection[{0}]: Received a new ProducerAck -> ",
+											   this.ConnectionId, ack);
 						}
 
 						producer.OnProducerAck(ack);
@@ -913,7 +929,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(!closing.Value && !closed.Value)
 				{
-					ConnectionError connectionError = (ConnectionError)command;
+					ConnectionError connectionError = (ConnectionError) command;
 					BrokerError brokerError = connectionError.Exception;
 					string message = "Broker connection error.";
 					string cause = "";
@@ -943,7 +959,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(dispatchers.Contains(dispatch.ConsumerId))
 				{
-					IDispatcher dispatcher = (IDispatcher)dispatchers[dispatch.ConsumerId];
+					IDispatcher dispatcher = (IDispatcher) dispatchers[dispatch.ConsumerId];
 
 					// Can be null when a consumer has sent a MessagePull and there was
 					// no available message at the broker to dispatch or when signalled
@@ -961,14 +977,14 @@ namespace Apache.NMS.ActiveMQ
 				}
 			}
 
-            Tracer.ErrorFormat("Connection[{0}]: No such consumer active: {1}", this.ConnectionId, dispatch.ConsumerId);
+			Tracer.ErrorFormat("Connection[{0}]: No such consumer active: {1}", this.ConnectionId, dispatch.ConsumerId);
 		}
 
 		protected void OnKeepAliveCommand(ITransport commandTransport, KeepAliveInfo info)
 		{
 			try
 			{
-				if (connected.Value)
+				if(connected.Value)
 				{
 					info.ResponseRequired = false;
 					transport.Oneway(info);
@@ -993,7 +1009,7 @@ namespace Apache.NMS.ActiveMQ
 					{
 						error = NMSExceptionSupport.Create(error);
 					}
-					NMSException e = (NMSException)error;
+					NMSException e = (NMSException) error;
 
 					// Called in another thread so that processing can continue
 					// here, ensures no lock contention.
@@ -1216,7 +1232,7 @@ namespace Apache.NMS.ActiveMQ
 			DestinationInfo command = new DestinationInfo();
 			command.ConnectionId = this.ConnectionId;
 			command.OperationType = DestinationInfo.REMOVE_OPERATION_TYPE; // 1 is remove
-			command.Destination = (ActiveMQDestination)destination;
+			command.Destination = (ActiveMQDestination) destination;
 
 			this.Oneway(command);
 		}
@@ -1229,7 +1245,7 @@ namespace Apache.NMS.ActiveMQ
 				if(!closed.Value && cdl.Remaining > 0)
 				{
 					Tracer.WarnFormat("Connection[{0}]: Dispatch paused, waiting for outstanding dispatch interruption " +
-					                  "processing ({1}) to complete..", this.ConnectionId, cdl.Remaining);
+									  "processing ({1}) to complete..", this.ConnectionId, cdl.Remaining);
 					cdl.await(TimeSpan.FromSeconds(10));
 				}
 
@@ -1272,7 +1288,7 @@ namespace Apache.NMS.ActiveMQ
 					if(Tracer.IsDebugEnabled)
 					{
 						Tracer.DebugFormat("Connection[{0}]: notified failover transport ({1})" +
-									 	   " of interruption completion.", this.ConnectionId, failoverTransport);
+										   " of interruption completion.", this.ConnectionId, failoverTransport);
 					}
 				}
 			}
@@ -1288,7 +1304,7 @@ namespace Apache.NMS.ActiveMQ
 				if(Tracer.IsDebugEnabled)
 				{
 					Tracer.DebugFormat("Connection[{0}]: notified failover transport ({1})" +
-								 	   " of pending interruption processing.", this.ConnectionId, failoverTransport);
+									   " of pending interruption processing.", this.ConnectionId, failoverTransport);
 				}
 			}
 		}
@@ -1345,55 +1361,72 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-        private NMSException CreateExceptionFromBrokerError(BrokerError brokerError)
-        {
-            if(String.IsNullOrEmpty(brokerError.ExceptionClass))
-            {
-                return new BrokerException(brokerError);
-            }
+		private NMSException CreateExceptionFromBrokerError(BrokerError brokerError)
+		{
+			String exceptionClassName = brokerError.ExceptionClass;
 
-            NMSException exception = null;
-            String name = brokerError.ExceptionClass;
-            String message = brokerError.Message;
+			if(String.IsNullOrEmpty(exceptionClassName))
+			{
+				return new BrokerException(brokerError);
+			}
 
-            // We only create instances of exceptions from the NMS API
-            Assembly nmsAssembly = Assembly.GetAssembly(typeof(NMSException));
+			NMSException exception = null;
+			String message = brokerError.Message;
 
-            // First try and see if its one we populated ourselves in which case
-            // it will have the correct namespace and exception name.
-            Type exceptionType = nmsAssembly.GetType(name, false, true);
+			// We only create instances of exceptions from the NMS API
+			Assembly nmsAssembly = Assembly.GetAssembly(typeof(NMSException));
 
-            // Exceptions from the broker don't have the same namespace, so we
-            // trim that and try using the NMS namespace to see if we can get an
-            // NMSException based version of the same type.  We have to convert
-            // the JMS preficed exceptions to NMS also.
-            if(exceptionType == null && !name.StartsWith("Apache.NMS") && name.Contains("."))
-            {
-                int pos = name.LastIndexOf(".");
-                name = name.Substring(pos + 1);
-                name = name.Replace("JMS", "NMS");
-                name = "Apache.NMS." + name;
+			// First try and see if it's one we populated ourselves in which case
+			// it will have the correct namespace and exception name.
+			Type exceptionType = nmsAssembly.GetType(exceptionClassName, false, true);
 
-                exceptionType = nmsAssembly.GetType(name, false, true);
-            }
+			// Exceptions from the broker don't have the same namespace, so we
+			// trim that and try using the NMS namespace to see if we can get an
+			// NMSException based version of the same type.  We have to convert
+			// the JMS prefixed exceptions to NMS also.
+			if(null == exceptionType)
+			{
+				if(exceptionClassName.StartsWith("java.lang.SecurityException"))
+				{
+					exceptionClassName = "Apache.NMS.InvalidClientIDException";
+				}
+				else if(!exceptionClassName.StartsWith("Apache.NMS"))
+				{
+					string transformClassName;
 
-            if(exceptionType != null)
-            {
-                object[] args = null;
-                if(!String.IsNullOrEmpty(message))
-                {
-                    args = new object[1];
-                    args[0] = message;
-                }
+					if(exceptionClassName.Contains("."))
+					{
+						int pos = exceptionClassName.LastIndexOf(".");
+						transformClassName = exceptionClassName.Substring(pos + 1).Replace("JMS", "NMS");
+					}
+					else
+					{
+						transformClassName = exceptionClassName;
+					}
 
-                exception = Activator.CreateInstance(exceptionType, args) as NMSException;
-            }
-            else
-            {
-                exception = new BrokerException(brokerError);
-            }
+					exceptionClassName = "Apache.NMS." + transformClassName;
+				}
 
-            return exception;
-        }
+				exceptionType = nmsAssembly.GetType(exceptionClassName, false, true);
+			}
+
+			if(exceptionType != null)
+			{
+				object[] args = null;
+				if(!String.IsNullOrEmpty(message))
+				{
+					args = new object[1];
+					args[0] = message;
+				}
+
+				exception = Activator.CreateInstance(exceptionType, args) as NMSException;
+			}
+			else
+			{
+				exception = new BrokerException(brokerError);
+			}
+
+			return exception;
+		}
 	}
 }

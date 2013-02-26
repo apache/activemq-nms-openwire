@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ.Test
     public class MessageCompressionTest : NMSTestSupport
     {
         protected static string TEST_CLIENT_ID = "MessageCompressionTestClientId";
-        protected static string DESTINATION_NAME = "MessageCompressionTestDest";
+        protected static string DESTINATION_NAME = "TEST.MessageCompressionTestDest";
         
         // The following text should compress well
         private const string TEXT = "The quick red fox jumped over the lazy brown dog. " + "The quick red fox jumped over the lazy brown dog. "

@@ -34,7 +34,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class MessageConsumerTest : NMSTestSupport
     {
-        protected static string DESTINATION_NAME = "queue://MessageConsumerTestDestination";
+        protected static string DESTINATION_NAME = "queue://TEST.MessageConsumerTestDestination";
         protected static string TEST_CLIENT_ID = "MessageConsumerTestClientId";
 
         private CountDownLatch doneLatch;
@@ -209,7 +209,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         {
                             producer.DeliveryMode = deliveryMode;
 
-                            string msgText = "ExpiredMessage:" + Guid.NewGuid().ToString();
+                            string msgText = string.Format("ExpiredMessage: {0}", Guid.NewGuid().ToString());
 
                             ActiveMQTextMessage msg = session.CreateTextMessage(msgText) as ActiveMQTextMessage;
 

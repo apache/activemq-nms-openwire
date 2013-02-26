@@ -27,11 +27,10 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class RollbackRedeliveryTest : NMSTestSupport
     {
-        protected static string DESTINATION_NAME = "TestDestination";
+        protected static string DESTINATION_NAME = "TEST.RollbackDelivery";
         protected static string TEST_CLIENT_ID = "RollbackRedeliveryTestId";
 
         private const int nbMessages = 10;
-        private const String destinationName = "RollbackRedeliveryTestDestination";
 
         private IConnection connection;
 
@@ -48,7 +47,7 @@ namespace Apache.NMS.ActiveMQ.Test
             connection.Start();
 
             Session session = connection.CreateSession() as Session;
-            IQueue queue = session.GetQueue(destinationName);
+            IQueue queue = session.GetQueue(DESTINATION_NAME);
             session.DeleteDestination(queue);
         }
 
@@ -92,11 +91,11 @@ namespace Apache.NMS.ActiveMQ.Test
 
             if(interleaveProducer)
             {
-                PopulateDestinationWithInterleavedProducer(nbMessages, destinationName);
+                PopulateDestinationWithInterleavedProducer(nbMessages, DESTINATION_NAME);
             }
             else
             {
-                PopulateDestination(nbMessages, destinationName);
+                PopulateDestination(nbMessages, DESTINATION_NAME);
             }
 
             // Consume messages and Rollback transactions
@@ -107,7 +106,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 while(received < nbMessages)
                 {
                     ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-                    IDestination destination = session.GetQueue(destinationName);
+                    IDestination destination = session.GetQueue(DESTINATION_NAME);
                     IMessageConsumer consumer = session.CreateConsumer(destination);
                     ITextMessage msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000000));
 
@@ -138,14 +137,14 @@ namespace Apache.NMS.ActiveMQ.Test
         {
 	        connection.Start();
 
-	        PopulateDestinationWithInterleavedProducer(nbMessages, destinationName);
+	        PopulateDestinationWithInterleavedProducer(nbMessages, DESTINATION_NAME);
 
 	        // Consume messages and Rollback transactions
 	        {
 	            int received = 0;
                 IDictionary rolledback = Hashtable.Synchronized(new Hashtable());
 	            ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-	            IDestination destination = session.GetQueue(destinationName);
+	            IDestination destination = session.GetQueue(DESTINATION_NAME);
 	            IMessageConsumer consumer = session.CreateConsumer(destination);
 
                 while(received < nbMessages)
@@ -176,14 +175,14 @@ namespace Apache.NMS.ActiveMQ.Test
         {
 	        connection.Start();
 
-	        PopulateDestination(nbMessages, destinationName);
+	        PopulateDestination(nbMessages, DESTINATION_NAME);
 
 	        // Consume messages and Rollback transactions
 	        {
                 int received = 0;
                 IDictionary rolledback = Hashtable.Synchronized(new Hashtable());
 	            ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-	            IDestination destination = session.GetQueue(destinationName);
+	            IDestination destination = session.GetQueue(DESTINATION_NAME);
 
                 while(received < nbMessages)
                 {
@@ -218,13 +217,13 @@ namespace Apache.NMS.ActiveMQ.Test
 
             connection.Start();
 
-            PopulateDestination(1, destinationName);
+            PopulateDestination(1, DESTINATION_NAME);
 
             // Consume messages and Rollback transactions
             {
                 int received = 0;
                 ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-                IDestination destination = session.GetQueue(destinationName);
+                IDestination destination = session.GetQueue(DESTINATION_NAME);
 
                 IMessageConsumer consumer = session.CreateConsumer(destination);
                 ITextMessage msg = null;
@@ -261,7 +260,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             connection.Start();
 
-            PopulateDestination(1, destinationName);
+            PopulateDestination(1, DESTINATION_NAME);
 
             // Consume messages and Rollback transactions
             {
@@ -275,7 +274,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 while(received <= connection.RedeliveryPolicy.MaximumRedeliveries)
                 {
                     session = connection.CreateSession(AcknowledgementMode.Transactional);
-                    destination = session.GetQueue(destinationName);
+                    destination = session.GetQueue(DESTINATION_NAME);
                     consumer = session.CreateConsumer(destination);
                     msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000000));
                     Assert.IsNotNull(msg);
@@ -293,7 +292,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 }
 
                 session = connection.CreateSession(AcknowledgementMode.Transactional);
-                destination = session.GetQueue(destinationName);
+                destination = session.GetQueue(DESTINATION_NAME);
                 consumer = session.CreateConsumer(destination);
                 msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(6000));
                 Assert.IsNull(msg);
@@ -306,7 +305,7 @@ namespace Apache.NMS.ActiveMQ.Test
             const int numMessages = 1;
             connection.Start();
 
-            PopulateDestination(numMessages, destinationName);
+            PopulateDestination(numMessages, DESTINATION_NAME);
 
             {
                 int received = 0;
@@ -315,7 +314,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 while(received < maxRetries)
                 {
                     ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-                    IDestination destination = session.GetQueue(destinationName);
+                    IDestination destination = session.GetQueue(DESTINATION_NAME);
 
                     IMessageConsumer consumer = session.CreateConsumer(destination);
                     ITextMessage msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
@@ -341,7 +340,7 @@ namespace Apache.NMS.ActiveMQ.Test
             (connection as Connection).PrefetchPolicy.SetAll(0);
             connection.Start();
 
-            PopulateDestination(numMessages, destinationName);
+            PopulateDestination(numMessages, DESTINATION_NAME);
 
             {
                 int received = 0;
@@ -350,7 +349,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 while(received < maxRetries)
                 {
                     ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-                    IDestination destination = session.GetQueue(destinationName);
+                    IDestination destination = session.GetQueue(DESTINATION_NAME);
 
                     IMessageConsumer consumer = session.CreateConsumer(destination);
                     ITextMessage msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));
@@ -372,7 +371,7 @@ namespace Apache.NMS.ActiveMQ.Test
         private void ConsumeMessage(int deliveryCount)
         {
             ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-            IDestination destination = session.GetQueue(destinationName);
+            IDestination destination = session.GetQueue(DESTINATION_NAME);
             IMessageConsumer consumer = session.CreateConsumer(destination);
             ITextMessage msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.IsNotNull(msg);
@@ -387,7 +386,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             const int numMessages = 1;
 
-            PopulateDestination(numMessages, destinationName);
+            PopulateDestination(numMessages, DESTINATION_NAME);
             connection.Close();
 
             {
@@ -400,7 +399,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     connection = CreateConnection();
                     connection.Start();
                     ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
-                    IDestination destination = session.GetQueue(destinationName);
+                    IDestination destination = session.GetQueue(DESTINATION_NAME);
 
                     IMessageConsumer consumer = session.CreateConsumer(destination);
                     ITextMessage msg = (ITextMessage) consumer.Receive(TimeSpan.FromMilliseconds(2000));

@@ -62,7 +62,7 @@ namespace Apache.NMS.ActiveMQ.Test
         public override void SetUp()
         {
             this.oldTracer = Tracer.Trace;
-            this.nonExistantPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Guid.NewGuid();
+            this.nonExistantPath = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
 
             base.SetUp();
 
@@ -81,7 +81,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected void OnException(Exception ex)
         {
-            Tracer.Debug("Test Driver received Error Notification: " + ex.Message);
+            Tracer.DebugFormat("Test Driver received Error Notification: {0}", ex.Message);
         }
 
         #region Database Utility Methods

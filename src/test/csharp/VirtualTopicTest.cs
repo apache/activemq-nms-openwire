@@ -24,7 +24,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class VirtualTopicTest : NMSTestSupport
 	{
-		protected static string DESTINATION_NAME = "TestDestination";
+		protected static string DESTINATION_NAME = "TEST.VTopicDestination";
 		protected static string PRODUCER_DESTINATION_NAME = "VirtualTopic." + DESTINATION_NAME;
 		protected static string CONSUMER_A_DESTINATION_NAME = "Consumer.A." + PRODUCER_DESTINATION_NAME;
 		protected static string CONSUMER_B_DESTINATION_NAME = "Consumer.B." + PRODUCER_DESTINATION_NAME;

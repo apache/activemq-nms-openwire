@@ -218,5 +218,21 @@ namespace Apache.NMS.ActiveMQ.State
 				return _dictionary.Remove(v);
 			}
 		}
+
+		public bool ContainsKey(TKey k)
+		{
+			lock(((ICollection) _dictionary).SyncRoot)
+			{
+				return _dictionary.ContainsKey(k);
+			}
+		}
+
+		public bool ContainsValue(TValue v)
+		{
+			lock(((ICollection) _dictionary).SyncRoot)
+			{
+				return _dictionary.ContainsValue(v);
+			}
+		}
 	}
 }

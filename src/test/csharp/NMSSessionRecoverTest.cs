@@ -58,42 +58,42 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestQueueSynchRecover()
         {
-            destination = new ActiveMQQueue("Queue-" + DateTime.Now.Ticks);
+            destination = new ActiveMQQueue("TEST.Queue-" + DateTime.Now.Ticks);
             DoTestSynchRecover();
         }
 
         [Test]
         public void TestQueueAsynchRecover()
         {
-            destination = new ActiveMQQueue("Queue-" + DateTime.Now.Ticks);
+			destination = new ActiveMQQueue("TEST.Queue-" + DateTime.Now.Ticks);
             DoTestAsynchRecover();
         }
 
         [Test]
         public void TestTopicSynchRecover()
         {
-            destination = new ActiveMQTopic("Topic-" + DateTime.Now.Ticks);
+			destination = new ActiveMQTopic("TEST.Topic-" + DateTime.Now.Ticks);
             DoTestSynchRecover();
         }
 
         [Test]
         public void TestTopicAsynchRecover()
         {
-            destination = new ActiveMQTopic("Topic-" + DateTime.Now.Ticks);
+			destination = new ActiveMQTopic("TEST.Topic-" + DateTime.Now.Ticks);
             DoTestAsynchRecover();
         }
 
         [Test]
         public void TestQueueAsynchRecoverWithAutoAck()
         {
-            destination = new ActiveMQQueue("Queue-" + DateTime.Now.Ticks);
+			destination = new ActiveMQQueue("TEST.Queue-" + DateTime.Now.Ticks);
             DoTestAsynchRecoverWithAutoAck();
         }
 
         [Test]
         public void TestTopicAsynchRecoverWithAutoAck()
         {
-            destination = new ActiveMQTopic("Topic-" + DateTime.Now.Ticks);
+			destination = new ActiveMQTopic("TEST.Topic-" + DateTime.Now.Ticks);
             DoTestAsynchRecoverWithAutoAck();
         }
 

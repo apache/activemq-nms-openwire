@@ -508,8 +508,18 @@ namespace Apache.NMS.ActiveMQ.State
         {
             if(info != null)
             {
-                connectionStates.Add(info.ConnectionId, new ConnectionState(info));
+				ConnectionState connState = new ConnectionState(info);
+
+				if(connectionStates.ContainsKey(info.ConnectionId))
+				{
+					connectionStates[info.ConnectionId] = connState;
+				}
+				else
+				{
+					connectionStates.Add(info.ConnectionId, connState);
+				}
             }
+
             return TRACKED_RESPONSE_MARKER;
         }
 

@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			{
 				using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
 				{
-                    IDestination destination = session.GetQueue("TestReceiveBrowseReceive");
+                    IDestination destination = session.GetQueue("TEST.ReceiveBrowseReceive");
 					IMessageProducer producer = session.CreateProducer(destination);
 					IMessageConsumer consumer = session.CreateConsumer(destination);
 					connection.Start();
@@ -152,7 +152,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			{
 				using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
 				{
-                    IDestination destination = session.GetQueue("TestBrowseReceive");
+                    IDestination destination = session.GetQueue("TEST.BrowseReceive");
 
 					connection.Start();
 

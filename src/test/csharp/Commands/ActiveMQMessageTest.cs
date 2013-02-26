@@ -42,8 +42,8 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
         {
             this.nmsMessageID = "testid";
             this.nmsCorrelationID = "testcorrelationid";
-            this.nmsDestination = new ActiveMQTopic("test.topic");
-            this.nmsReplyTo = new ActiveMQTempTopic("test.replyto.topic:001");
+            this.nmsDestination = new ActiveMQTopic("TEST.test.topic");
+            this.nmsReplyTo = new ActiveMQTempTopic("TEST.test.replyto.topic:001");
             this.nmsDeliveryMode = MsgDeliveryMode.NonPersistent;
             this.nmsRedelivered = true;
             this.nmsType = "test type";

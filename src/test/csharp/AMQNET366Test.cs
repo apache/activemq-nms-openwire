@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ.Test
             using (connection = factory.CreateConnection())
             using (ISession session = connection.CreateSession())
             {
-                IDestination destination = SessionUtil.GetDestination(session, "queue://test.test.in");
+                IDestination destination = SessionUtil.GetDestination(session, "queue://TEST.test.in");
                 using (IMessageConsumer consumer = session.CreateConsumer(destination))
                 {
                     Connection amqConnection = connection as Connection;

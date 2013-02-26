@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]   
     public class ExclusiveConsumerTest : NMSTestSupport
     {
-        protected static string DESTINATION_NAME = "ExclusiveConsumerTestDestination";
+        protected static string DESTINATION_NAME = "TEST.ExclusiveConsumerTestDestination";
         protected static string TEST_CLIENT_ID = "ExclusiveConsumerTestClientId";
         
         private IConnection createConnection(bool start) 

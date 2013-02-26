@@ -79,6 +79,7 @@
     <Compile Include="src\test\csharp\CommonAssemblyInfo.cs" />
     <Compile Include="src\test\csharp\ConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\ConnectionMetaDataTest.cs" />
+    <Compile Include="src\test\csharp\InvalidCredentialsTest.cs" />
     <Compile Include="src\test\csharp\DtcBasicTransactionsTest.cs" />
     <Compile Include="src\test\csharp\DtcConsumerTransactionsTest.cs" />
     <Compile Include="src\test\csharp\DtcProducerTransactionsTest.cs" />

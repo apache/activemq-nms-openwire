@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class PrefetchSizeZeroTest : NMSTestSupport
 	{	
-        protected static string DESTINATION_NAME = "TestPrefetchSizeZero";
+        protected static string DESTINATION_NAME = "TEST.PrefetchSizeZero";
 			
 		[Test]
 		public void TestZeroPrefetchSize()

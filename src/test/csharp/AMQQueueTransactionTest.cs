@@ -42,7 +42,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected override String DestinationName
         {
-            get { return "AMQQueueTransactionTestDestination"; }
+            get { return "TEST.AMQQueueTransactionTestDestination"; }
         }
 
     }

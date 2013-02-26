@@ -74,21 +74,26 @@ namespace Apache.NMS.ActiveMQ.State
 		public void addTransactionState(TransactionId id)
 		{
 			checkShutdown();
-			transactions.Add(id, new TransactionState(id));
+			TransactionState transactionState = new TransactionState(id);
+
+			if(transactions.ContainsKey(id))
+			{
+				transactions[id] = transactionState;
+			}
+			else
+			{
+				transactions.Add(id, transactionState);
+			}
 		}
 
 		public TransactionState this[TransactionId id]
 		{
 			get
 			{
-				TransactionState state;
+				TransactionState state = null;
 
-				if(transactions.TryGetValue(id, out state))
-				{
-					return state;
-				}
-
-				return null;
+				transactions.TryGetValue(id, out state);
+				return state;
 			}
 		}
 
@@ -101,25 +106,25 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			get
 			{
-				SessionState sessionState;
+				SessionState sessionState = null;
 
-				if(sessions.TryGetValue(id, out sessionState))
-				{
-					return sessionState;
-				}
+				sessions.TryGetValue(id, out sessionState);
 
 #if DEBUG
-				// Useful for dignosing missing session ids
-				string sessionList = string.Empty;
-				foreach(SessionId sessionId in sessions.Keys)
+				if(null == sessionState)
 				{
-					sessionList += sessionId.ToString() + "\n";
-				}
+					// Useful for dignosing missing session ids
+					string sessionList = string.Empty;
+					foreach(SessionId sessionId in sessions.Keys)
+					{
+						sessionList += sessionId.ToString() + "\n";
+					}
 
-				System.Diagnostics.Debug.Assert(false,
-					string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
+					System.Diagnostics.Debug.Assert(false,
+						string.Format("Session '{0}' did not exist in the sessions collection.\n\nSessions:-\n{1}", id, sessionList));
+				}
 #endif
-				return null;
+				return sessionState;
 			}
 		}
 
@@ -127,23 +132,38 @@ namespace Apache.NMS.ActiveMQ.State
 		{
 			TransactionState ret = null;
 
-			transactions.TryGetValue(id, out ret);
-			transactions.Remove(id);
+			if(transactions.TryGetValue(id, out ret))
+			{
+				transactions.Remove(id);
+			}
+
 			return ret;
 		}
 
 		public void addSession(SessionInfo info)
 		{
 			checkShutdown();
-			sessions.Add(info.SessionId, new SessionState(info));
+			SessionState sessionState = new SessionState(info);
+
+			if(sessions.ContainsKey(info.SessionId))
+			{
+				sessions[info.SessionId] = sessionState;
+			}
+			else
+			{
+				sessions.Add(info.SessionId, sessionState);
+			}
 		}
 
 		public SessionState removeSession(SessionId id)
 		{
 			SessionState ret = null;
 
-			sessions.TryGetValue(id, out ret);
-			sessions.Remove(id);
+			if(sessions.TryGetValue(id, out ret))
+			{
+				sessions.Remove(id);
+			}
+
 			return ret;
 		}
 

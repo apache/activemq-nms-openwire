@@ -84,7 +84,14 @@ namespace Apache.NMS.ActiveMQ.State
 
         public void AddProducer(ProducerState producer)
         {
-            this.producers.Add(producer.Info.ProducerId, producer);
+			if(this.producers.ContainsKey(producer.Info.ProducerId))
+			{
+				this.producers[producer.Info.ProducerId] = producer;
+			}
+			else
+			{
+				this.producers.Add(producer.Info.ProducerId, producer);
+			}
         }
 
         public AtomicCollection<ProducerState> ProducerStates

@@ -24,7 +24,7 @@ namespace Apache.NMS.ActiveMQ.Test
     public class AMQTopicTransactionTest : AMQTransactionTestSupport
     {
         public const String CLIENT_ID = "TopicTransactionTest";
-        public const String DESTINATION_NAME = "AMQTopicTransactionTestDestination";
+        public const String DESTINATION_NAME = "TEST.AMQTopicTransactionTestDestination";
         public const String SUBSCRIPTION_NAME = "TopicTransactionTest";
 
         protected override bool Topic

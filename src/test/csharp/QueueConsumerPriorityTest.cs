@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class QueueConsumerPriorityTest : NMSTestSupport
     {
-        protected static string DESTINATION_NAME = "QueueConsumerPriorityTestDestination";
+        protected static string DESTINATION_NAME = "TEST.QueueConsumerPriority";
         protected static string TEST_CLIENT_ID = "QueueConsumerPriorityTestClientId";
         protected static int MSG_COUNT = 50;
         

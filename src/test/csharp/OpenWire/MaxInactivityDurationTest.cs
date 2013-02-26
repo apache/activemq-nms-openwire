@@ -27,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class MaxInactivityDurationTest : NMSTestSupport
 	{
-		protected static string DESTINATION_NAME = "TestMaxInactivityDuration";
+		protected static string DESTINATION_NAME = "TEST.MaxInactivityDuration";
 		protected static string CORRELATION_ID = "MaxInactivityCorrelationID";
 
 		[Test]
@@ -100,7 +100,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				{
 					using(ISession session = connection.CreateSession())
 					{
-						IDestination destination = SessionUtil.GetDestination(session, "topic://NMSResourceLeak.TestTopic");
+						IDestination destination = SessionUtil.GetDestination(session, "topic://TEST.NMSResourceLeak");
 						using(IMessageConsumer consumer = session.CreateConsumer(destination))
 						{
 							connection.Start();
