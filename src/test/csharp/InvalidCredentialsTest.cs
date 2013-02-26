@@ -42,9 +42,6 @@ namespace Apache.NMS.ActiveMQ.Test
 		[Test, Timeout(20000)]
 		public void TestRestartInvalidCredentialsWithFailover()
 		{
-			string connectionURI = "activemq:failover:tcp://${activemqhost}:61616";
-			ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
-
 			// To run this test successfully, the broker must have secure login enabled.
 			// This test will attempt to login to the server using invalid credentials.
 			// It should not connect, and should not go into failover retry loop.
