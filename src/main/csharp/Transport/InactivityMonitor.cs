@@ -153,7 +153,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
                 if (this.monitorStarted.Value && taskRunner != null)
                 {
-                    this.asyncTasks.Wakeup();
+                    taskRunner.Wakeup();
                 }
             }
             else
@@ -196,7 +196,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 
                 if (this.monitorStarted.Value && taskRunner != null)
                 {
-                    this.asyncTasks.Wakeup();
+                    taskRunner.Wakeup();
                 }
             }
             else
