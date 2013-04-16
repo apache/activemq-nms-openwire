@@ -124,6 +124,19 @@ namespace Apache.NMS.ActiveMQ.Util
 		{
 			return this.dictionary.Count > this.maxCacheSize;
 		}
+
+		public void PutAll(LRUCache<TKey, TValue> source)
+		{
+			if (Object.Equals(source, this))
+			{
+				return;
+			}
+
+			foreach(KeyValuePair<TKey, TValue> entry in source.entries)
+			{
+				this.Add(entry.Key, entry.Value);
+			}
+		}
 	}
 
 }
