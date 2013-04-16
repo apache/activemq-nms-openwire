@@ -43,11 +43,12 @@ namespace Apache.NMS.ActiveMQ.Test
 			// To run this test successfully, the broker must have secure login enabled.
 			// This test will attempt to login to the server using invalid credentials.
 			// It should not connect, and should not go into failover retry loop.
-			// It will then attempt to login with correct credentials, and it should be succcessful on second attempt.
+			// It will then attempt to login with correct credentials, and it should be 
+			// succcessful on second attempt.
 			Assert.IsTrue(CreateNMSFactory("InvalidCredentials-BogusUser"));
 			using(IConnection connection = CreateConnection())
 			{
-				Assert.Throws(typeof(InvalidClientIDException), () => { connection.Start(); }, "You may not have enabled credential login on the broker.  Credentials must be enabled for this test to pass.");
+				Assert.Throws(typeof(NMSSecurityException), () => { connection.Start(); }, "You may not have enabled credential login on the broker.  Credentials must be enabled for this test to pass.");
 			}
 
 			// Now connect with a valid user account.

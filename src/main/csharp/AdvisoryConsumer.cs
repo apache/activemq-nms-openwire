@@ -43,7 +43,7 @@ namespace Apache.NMS.ActiveMQ
             this.info.PrefetchSize = 1000;
             this.info.NoLocal = true;
 
-            this.connection.addDispatcher(consumerId, this);
+            this.connection.AddDispatcher(consumerId, this);
             this.connection.SyncRequest(this.info);
         }
 
@@ -62,7 +62,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.Debug("Failed to send remove for AdvisoryConsumer: " + e.Message);
                 }
-                this.connection.removeDispatcher(this.info.ConsumerId);
+                this.connection.RemoveDispatcher(this.info.ConsumerId);
             }
         }
 

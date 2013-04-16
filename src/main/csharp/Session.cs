@@ -501,7 +501,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(consumer != null)
                 {
-                    this.RemoveConsumer(consumer.ConsumerId);
+                    this.RemoveConsumer(consumer);
                     consumer.Close();
                 }
 
@@ -542,7 +542,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(consumer != null)
                 {
-                    this.RemoveConsumer(consumer.ConsumerId);
+                    this.RemoveConsumer(consumer);
                     consumer.Close();
                 }
 
@@ -795,17 +795,18 @@ namespace Apache.NMS.ActiveMQ
 
                 // Registered with Connection before we register at the broker.
                 consumers[id] = consumer;
-                connection.addDispatcher(id, this);
+                connection.AddDispatcher(id, this);
             }
         }
 
-        public void RemoveConsumer(ConsumerId objectId)
+        public void RemoveConsumer(MessageConsumer consumer)
         {
-            connection.removeDispatcher(objectId);
+            connection.RemoveDispatcher(consumer.ConsumerId);
             if(!this.closing)
             {
-                consumers.Remove(objectId);
+                consumers.Remove(consumer.ConsumerId);
             }
+			connection.RemoveDispatcher(consumer);
         }
 
         public void AddProducer(MessageProducer producer)
@@ -815,13 +816,13 @@ namespace Apache.NMS.ActiveMQ
                 ProducerId id = producer.ProducerId;
 
                 this.producers[id] = producer;
-                this.connection.addProducer(id, producer);
+                this.connection.AddProducer(id, producer);
             }
         }
 
         public void RemoveProducer(ProducerId objectId)
         {
-            connection.removeProducer(objectId);
+            connection.RemoveProducer(objectId);
             if(!this.closing)
             {
                 producers.Remove(objectId);

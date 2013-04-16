@@ -416,7 +416,7 @@ namespace Apache.NMS.ActiveMQ
 					}
 				}
 
-				this.session.RemoveConsumer(this.ConsumerId);
+				this.session.RemoveConsumer(this);
 				this.unconsumedMessages.Close();
 
 				if(Tracer.IsDebugEnabled)

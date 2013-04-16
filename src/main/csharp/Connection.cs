@@ -50,6 +50,15 @@ namespace Apache.NMS.ActiveMQ
 		private int producerWindowSize = 0;
 		private bool messagePrioritySupported = true;
 		private bool watchTopicAdviosires = true;
+		private bool optimizeAcknowledge;
+    	private long optimizeAcknowledgeTimeOut = 300;
+    	private long optimizedAckScheduledAckInterval = 0;
+	    private bool useRetroactiveConsumer;
+	    private bool exclusiveConsumer;
+	    private long consumerFailoverRedeliveryWaitPeriod = 0;
+	    private bool checkForDuplicates = true;
+	    private bool transactedIndividualAck = false;
+		private bool nonBlockingRedelivery = false;
 
 		private bool userSpecifiedClientID;
 		private readonly Uri brokerUri;
@@ -84,6 +93,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly MessageTransformation messageTransformation;
 		private readonly ThreadPoolExecutor executor = new ThreadPoolExecutor();
 		private AdvisoryConsumer advisoryConsumer = null;
+		private readonly ConnectionAudit connectionAudit = new ConnectionAudit();
 
 		public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
 		{
@@ -100,6 +110,7 @@ namespace Apache.NMS.ActiveMQ
 			this.info.FaultTolerant = transport.IsFaultTolerant;
 
 			this.messageTransformation = new ActiveMQMessageTransformation(this);
+			this.connectionAudit.CheckForDuplicates = transport.IsFaultTolerant;
 		}
 
 		~Connection()
@@ -273,6 +284,72 @@ namespace Apache.NMS.ActiveMQ
 		{
 			get { return this.messagePrioritySupported; }
 			set { this.messagePrioritySupported = value; }
+		}
+
+    	public bool OptimizeAcknowledge 
+		{
+			get { return this.optimizeAcknowledge; }
+			set { this.optimizeAcknowledge = value; }
+		}
+
+    	public long OptimizeAcknowledgeTimeOut
+		{
+			get { return this.optimizeAcknowledgeTimeOut; }
+			set { this.optimizeAcknowledgeTimeOut = value; }
+		}
+
+		public long OptimizedAckScheduledAckInterval
+		{
+			get { return this.optimizedAckScheduledAckInterval; }
+			set { this.optimizedAckScheduledAckInterval = value; }
+		}
+
+		public bool UseRetroactiveConsumer
+		{
+			get { return this.useRetroactiveConsumer; }
+			set { this.useRetroactiveConsumer = value; }
+		}
+
+		public bool ExclusiveConsumer
+		{
+			get { return this.exclusiveConsumer; }
+			set { this.exclusiveConsumer = value; }
+		}
+
+		public long ConsumerFailoverRedeliveryWaitPeriod
+		{
+			get { return this.consumerFailoverRedeliveryWaitPeriod; }
+			set { this.consumerFailoverRedeliveryWaitPeriod = value; }
+		}
+
+		public bool CheckForDuplicates
+		{
+			get { return this.checkForDuplicates; }
+			set { this.checkForDuplicates = value; }
+		}
+
+		public bool TransactedIndividualAck
+		{
+			get { return this.transactedIndividualAck; }
+			set { this.transactedIndividualAck = value; }
+		}
+
+		public bool NonBlockingRedelivery
+		{
+			get { return this.nonBlockingRedelivery; }
+			set { this.nonBlockingRedelivery = value; }
+		}
+
+		public int AuditDepth
+		{
+			get { return this.connectionAudit.AuditDepth; }
+			set { this.connectionAudit.AuditDepth = value; }
+		}
+
+		public int AuditMaximumProducerNumber
+		{
+			get { return this.connectionAudit.AuditMaximumProducerNumber; }
+			set { this.connectionAudit.AuditMaximumProducerNumber = value; }
 		}
 
 		public IConnectionMetaData MetaData
@@ -498,10 +575,11 @@ namespace Apache.NMS.ActiveMQ
 			if(!this.closing.Value)
 			{
 				sessions.Remove(session);
+				RemoveDispatcher(session);
 			}
 		}
 
-		internal void addDispatcher(ConsumerId id, IDispatcher dispatcher)
+		internal void AddDispatcher(ConsumerId id, IDispatcher dispatcher)
 		{
 			if(!this.closing.Value)
 			{
@@ -509,7 +587,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		internal void removeDispatcher(ConsumerId id)
+		internal void RemoveDispatcher(ConsumerId id)
 		{
 			if(!this.closing.Value)
 			{
@@ -517,7 +595,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		internal void addProducer(ProducerId id, MessageProducer producer)
+		internal void AddProducer(ProducerId id, MessageProducer producer)
 		{
 			if(!this.closing.Value)
 			{
@@ -525,13 +603,28 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		internal void removeProducer(ProducerId id)
+		internal void RemoveProducer(ProducerId id)
 		{
 			if(!this.closing.Value)
 			{
 				this.producers.Remove(id);
 			}
 		}
+
+	    internal void RemoveDispatcher(IDispatcher dispatcher) 
+		{
+	        this.connectionAudit.RemoveDispatcher(dispatcher);
+	    }
+
+	    internal bool IsDuplicate(IDispatcher dispatcher, Message message) 
+		{
+	        return this.checkForDuplicates && this.connectionAudit.IsDuplicate(dispatcher, message);
+	    }
+
+	    internal void RollbackDuplicate(IDispatcher dispatcher, Message message)
+		{
+	        this.connectionAudit.RollbackDuplicate(dispatcher, message);
+	    }
 
 		public void Close()
 		{
@@ -703,8 +796,23 @@ namespace Apache.NMS.ActiveMQ
 				{
 					ExceptionResponse exceptionResponse = (ExceptionResponse) response;
 					Exception exception = CreateExceptionFromBrokerError(exceptionResponse.Exception);
+
+					// Security exception on connect means this Connection is unusable, close the
+					// transport now to free its resources.
+					if (exception is NMSSecurityException && command.IsConnectionInfo)
+					{
+						try
+						{
+							transport.Dispose();
+						}
+						catch
+						{
+						}
+					}
+
 					throw exception;
 				}
+
 				return response;
 			}
 			catch(NMSException)
@@ -1388,7 +1496,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(exceptionClassName.StartsWith("java.lang.SecurityException"))
 				{
-					exceptionClassName = "Apache.NMS.InvalidClientIDException";
+					exceptionClassName = "Apache.NMS.NMSSecurityException";
 				}
 				else if(!exceptionClassName.StartsWith("Apache.NMS"))
 				{

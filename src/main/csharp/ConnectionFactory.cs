@@ -50,8 +50,19 @@ namespace Apache.NMS.ActiveMQ
 		private int producerWindowSize = 0;
 		private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
-		private bool messagePrioritySupported=true;
-        private bool watchTopicAdvisories=true;
+		private bool messagePrioritySupported = true;
+        private bool watchTopicAdvisories = true;
+    	private bool optimizeAcknowledge;
+    	private long optimizeAcknowledgeTimeOut = 300;
+    	private long optimizedAckScheduledAckInterval = 0;
+	    private bool useRetroactiveConsumer;
+	    private bool exclusiveConsumer;
+	    private long consumerFailoverRedeliveryWaitPeriod = 0;
+	    private bool checkForDuplicates = true;
+	    private bool transactedIndividualAck = false;
+		private bool nonBlockingRedelivery = false;
+		private int auditDepth = ActiveMQMessageAudit.DEFAULT_WINDOW_SIZE;
+    	private int auditMaximumProducerNumber = ActiveMQMessageAudit.MAXIMUM_PRODUCER_COUNT;
 
 		private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
 		private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
@@ -71,13 +82,11 @@ namespace Apache.NMS.ActiveMQ
 #endif
 		}
 
-		public ConnectionFactory()
-			: this(GetDefaultBrokerUrl())
+		public ConnectionFactory() : this(GetDefaultBrokerUrl())
 		{
 		}
 
-		public ConnectionFactory(string brokerUri)
-			: this(brokerUri, null)
+		public ConnectionFactory(string brokerUri) : this(brokerUri, null)
 		{
 		}
 
@@ -86,8 +95,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 		}
 
-		public ConnectionFactory(Uri brokerUri)
-			: this(brokerUri, null)
+		public ConnectionFactory(Uri brokerUri) : this(brokerUri, null)
 		{
 		}
 
@@ -402,6 +410,72 @@ namespace Apache.NMS.ActiveMQ
 			set { this.producerTransformer = value; }
 		}
 
+    	public bool OptimizeAcknowledge 
+		{
+			get { return this.optimizeAcknowledge; }
+			set { this.optimizeAcknowledge = value; }
+		}
+
+    	public long OptimizeAcknowledgeTimeOut
+		{
+			get { return this.optimizeAcknowledgeTimeOut; }
+			set { this.optimizeAcknowledgeTimeOut = value; }
+		}
+
+		public long OptimizedAckScheduledAckInterval
+		{
+			get { return this.optimizedAckScheduledAckInterval; }
+			set { this.optimizedAckScheduledAckInterval = value; }
+		}
+
+		public bool UseRetroactiveConsumer
+		{
+			get { return this.useRetroactiveConsumer; }
+			set { this.useRetroactiveConsumer = value; }
+		}
+
+		public bool ExclusiveConsumer
+		{
+			get { return this.exclusiveConsumer; }
+			set { this.exclusiveConsumer = value; }
+		}
+
+		public long ConsumerFailoverRedeliveryWaitPeriod
+		{
+			get { return this.consumerFailoverRedeliveryWaitPeriod; }
+			set { this.consumerFailoverRedeliveryWaitPeriod = value; }
+		}
+
+		public bool CheckForDuplicates
+		{
+			get { return this.checkForDuplicates; }
+			set { this.checkForDuplicates = value; }
+		}
+
+		public bool TransactedIndividualAck
+		{
+			get { return this.transactedIndividualAck; }
+			set { this.transactedIndividualAck = value; }
+		}
+
+		public bool NonBlockingRedelivery
+		{
+			get { return this.nonBlockingRedelivery; }
+			set { this.nonBlockingRedelivery = value; }
+		}
+
+		public int AuditDepth
+		{
+			get { return this.auditDepth; }
+			set { this.auditDepth = value; }
+		}
+
+		public int AuditMaximumProducerNumber
+		{
+			get { return this.auditMaximumProducerNumber; }
+			set { this.auditMaximumProducerNumber = value; }
+		}
+
 		#endregion
 
 		protected virtual void ConfigureConnection(Connection connection)
@@ -423,6 +497,17 @@ namespace Apache.NMS.ActiveMQ
 			connection.ConsumerTransformer = this.consumerTransformer;
 			connection.ProducerTransformer = this.producerTransformer;
             connection.WatchTopicAdvisories = this.watchTopicAdvisories;
+			connection.OptimizeAcknowledge = this.optimizeAcknowledge;
+			connection.OptimizeAcknowledgeTimeOut = this.optimizeAcknowledgeTimeOut;
+			connection.OptimizedAckScheduledAckInterval = this.optimizedAckScheduledAckInterval;
+			connection.UseRetroactiveConsumer = this.useRetroactiveConsumer;
+			connection.ExclusiveConsumer = this.exclusiveConsumer;
+			connection.ConsumerFailoverRedeliveryWaitPeriod = this.consumerFailoverRedeliveryWaitPeriod;
+			connection.CheckForDuplicates = this.checkForDuplicates;
+			connection.TransactedIndividualAck = this.transactedIndividualAck;
+			connection.NonBlockingRedelivery = this.nonBlockingRedelivery;
+			connection.AuditDepth = this.auditDepth;
+			connection.AuditMaximumProducerNumber = this.auditMaximumProducerNumber;
 		}
 
 		protected static void ExceptionHandler(Exception ex)

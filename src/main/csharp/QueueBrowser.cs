@@ -114,7 +114,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(consumer != null)
 				{
-					this.session.RemoveConsumer(consumer.ConsumerId);
+					this.session.RemoveConsumer(consumer);
 					consumer.Close();
 				}
 
