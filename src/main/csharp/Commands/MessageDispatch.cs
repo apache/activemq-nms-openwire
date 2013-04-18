@@ -17,6 +17,7 @@
 
 
 using Apache.NMS.ActiveMQ.State;
+using System;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -32,6 +33,8 @@ namespace Apache.NMS.ActiveMQ.Commands
     public class MessageDispatch : BaseCommand
     {
         public const byte ID_MESSAGEDISPATCH = 21;
+
+        private Exception rollbackCause = null;
 
         ConsumerId consumerId;
         ActiveMQDestination destination;
@@ -64,6 +67,12 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "Destination = " + Destination + ", " + 
                 "Message = " + Message + ", " + 
                 "RedeliveryCounter = " + RedeliveryCounter + " ]";
+        }
+
+        public Exception RollbackCause
+        {
+            get { return this.rollbackCause; }
+            set { this.rollbackCause = value; }
         }
 
         public ConsumerId ConsumerId
