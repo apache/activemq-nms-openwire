@@ -59,7 +59,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             PreferredWireFormatInfo.MaxInactivityDuration = 30000;
             PreferredWireFormatInfo.MaxInactivityDurationInitialDelay = 10000;
             PreferredWireFormatInfo.CacheSize = 0;
-            PreferredWireFormatInfo.Version = 6;
+            PreferredWireFormatInfo.Version = 9;
 
             dataMarshallers = new BaseDataStreamMarshaller[256];
             Version = 1;

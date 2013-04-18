@@ -42,6 +42,27 @@ namespace Apache.NMS.ActiveMQ.Commands
         int messageCount;
         BrokerError poisonCause;
 
+        public MessageAck() : base()
+        {
+        }
+
+        public MessageAck(MessageDispatch dispatch, byte ackType, int messageCount) : base()
+        {
+            this.ackType = ackType;
+            this.consumerId = dispatch.ConsumerId;
+            this.destination = dispatch.Destination;
+            this.lastMessageId = dispatch.Message.MessageId;
+            this.messageCount = messageCount;
+        }
+
+        public MessageAck(Message message, byte ackType, int messageCount) : base()
+        {
+            this.ackType = ackType;
+            this.destination = message.Destination;
+            this.lastMessageId = message.MessageId;
+            this.messageCount = messageCount;
+        }
+
         ///
         /// <summery>
         ///  Get the unique identifier that this object and its own

@@ -56,8 +56,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             return GetType().Name + "[ " + 
                 "FormatId = " + FormatId + ", " + 
-                "GlobalTransactionId = " + System.Text.ASCIIEncoding.ASCII.GetString(GlobalTransactionId) + ", " + 
-                "BranchQualifier = " + System.Text.ASCIIEncoding.ASCII.GetString(BranchQualifier) + " ]";
+                "GlobalTransactionId = " + GlobalTransactionId ?? System.Text.ASCIIEncoding.ASCII.GetString(GlobalTransactionId) + ", " + 
+                "BranchQualifier = " + BranchQualifier ?? System.Text.ASCIIEncoding.ASCII.GetString(BranchQualifier) + " ]";
         }
 
         public int FormatId
