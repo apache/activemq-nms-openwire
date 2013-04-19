@@ -72,6 +72,8 @@ namespace Apache.NMS.ActiveMQ
             this.requestTimeout = connection.RequestTimeout;
             this.dispatchAsync = connection.DispatchAsync;
             this.transactionContext = new TransactionContext(this);
+			this.exclusive = connection.ExclusiveConsumer;
+			this.retroactive = connection.UseRetroactiveConsumer;
 
             Uri brokerUri = connection.BrokerUri;
 
@@ -372,7 +374,7 @@ namespace Apache.NMS.ActiveMQ
                             consumer.FailureError = this.connection.FirstFailureError;
                             consumer.Shutdown();
                             this.lastDeliveredSequenceId =
-                                Math.Min(this.lastDeliveredSequenceId, consumer.LastDeliveredSequenceId);
+                                Math.Max(this.lastDeliveredSequenceId, consumer.LastDeliveredSequenceId);
                         }
                     }
                     consumers.Clear();
