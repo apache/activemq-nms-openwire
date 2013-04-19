@@ -966,6 +966,11 @@ namespace Apache.NMS.ActiveMQ
 
         internal void SendAck(MessageAck ack, bool lazy)
         {
+			if(Tracer.IsDebugEnabled)
+			{
+				Tracer.Debug("Session sending Ack: " + ack);
+			}
+
             if(lazy || connection.SendAcksAsync || this.IsTransacted )
             {
                 this.connection.Oneway(ack);
