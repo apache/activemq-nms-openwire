@@ -87,6 +87,22 @@ namespace Apache.NMS.ActiveMQ.Test
             complete.Set();
         }
 
+	    /// <summary>
+	    /// Wait out termination of a thread pool or fail doing so
+	    /// </summary>
+	    public void JoinPool(ThreadPoolExecutor exec) 
+		{
+	        try 
+			{
+	            exec.Shutdown();
+	            Assert.IsTrue(exec.AwaitTermination(TimeSpan.FromSeconds(20)));
+	        } 
+			catch(Exception) 
+			{
+	            Assert.Fail("Unexpected exception");
+	        }
+	    }
+
         [SetUp]
         public void SetUp()
         {
@@ -119,7 +135,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.waitingTaskCompleted);
 
             executor.Shutdown();
-            Assert.IsTrue(executor.IsShutdown);
+			JoinPool(executor);
         }
 
         [Test]
@@ -153,6 +169,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.doneLatch.await(TimeSpan.FromMilliseconds(30 * 1000)));
 
             executor.Shutdown();
+			JoinPool(executor);
             Assert.IsTrue(executor.IsShutdown);
         }
 
@@ -173,11 +190,12 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.doneLatch.await(TimeSpan.FromMilliseconds(30 * 1000)));
 
             executor.Shutdown();
+			JoinPool(executor);
             Assert.IsTrue(executor.IsShutdown);
         }
 
         [Test]
-        public void TestThatShutdownPurgesTasks()
+        public void TestThatShutdownDoesntPurgeTasks()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
             Assert.IsNotNull(executor);
@@ -190,13 +208,49 @@ namespace Apache.NMS.ActiveMQ.Test
                 executor.QueueUserWorkItem(TaskThatIncrementsCount);
             }
 
+            executor.Shutdown();
+
             Thread.Sleep(100);
 
-            executor.Shutdown();
-            Assert.AreEqual(0, count);
+			JoinPool(executor);
+
+            Assert.AreEqual(JOB_COUNT, count);
             Assert.IsTrue(executor.IsShutdown);
         }
 
+		[Test]
+	    public void TestIsTerminated() 
+		{
+            ThreadPoolExecutor executor = new ThreadPoolExecutor();
+            Assert.IsNotNull(executor);
+            Assert.IsFalse(executor.IsShutdown);
+            Assert.IsFalse(executor.IsTerminated);
+
+            executor.QueueUserWorkItem(TaskThatSleeps);
+            executor.Shutdown();
+
+			JoinPool(executor);
+            Assert.IsTrue(executor.IsTerminated);
+		}
+
+		[Test]
+	    public void TestAwaitTermination() 
+		{
+            ThreadPoolExecutor executor = new ThreadPoolExecutor();
+            Assert.IsNotNull(executor);
+            Assert.IsFalse(executor.IsShutdown);
+            Assert.IsFalse(executor.IsTerminated);
+
+            executor.QueueUserWorkItem(TaskThatSleeps);
+            executor.Shutdown();
+
+            Assert.IsFalse(executor.IsTerminated, "Terminated before await.");
+			Assert.IsFalse(executor.AwaitTermination(TimeSpan.FromMilliseconds(500)), "Should be terminated yet.");
+            Assert.IsFalse(executor.IsTerminated, "Terminated after await.");
+
+			JoinPool(executor);
+            Assert.IsTrue(executor.IsTerminated);
+		}
     }
 }
 

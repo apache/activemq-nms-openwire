@@ -100,7 +100,22 @@ namespace Apache.NMS.ActiveMQ.Threads
             }
         }
 
+		/// <summary>
+		/// Returns true if this ThreadPoolExecutor has been shut down but has not 
+		/// finished running all the tasks that have been Queue.  When a ThreadPoolExecutor
+		/// is shut down it will not accept any new tasks but it will complete all tasks
+		/// that have been previously queued.
+		/// </summary>
         public bool IsShutdown
+        {
+            get { return this.closing; }
+        }
+
+		/// <summary>
+		/// Returns true if this ThreadPoolExecutor has been shut down and has also
+		/// completed processing of all outstanding tasks in its task Queue.
+		/// </summary>
+        public bool IsTerminated
         {
             get { return this.closed; }
         }
@@ -109,26 +124,48 @@ namespace Apache.NMS.ActiveMQ.Threads
         {
             if(!this.closed)
             {
+				lock(this.syncRoot)
+				{
+	                if(!this.closed)
+	                {
+	                    this.closing = true;
+
+						// Must be no tasks in Queue and none can be accepted
+						// now that we've flipped the closing toggle so safe to
+						// mark this ThreadPoolExecutor as closed.
+						if (!this.running)
+						{
+							this.closed = true;
+							this.executionComplete.Set();
+						}
+	                }
+				}
+            }
+        }
+
+		public bool AwaitTermination(TimeSpan timeout) 
+		{
+            if(!this.closed)
+            {
                 syncRoot.WaitOne();
 
                 if(!this.closed)
                 {
-                    this.closing = true;
-                    this.workQueue.Clear();
-
+					// If called from the worker thread we can't check this as it 
+					// will deadlock us, just return whatever the closed state is.
                     if(this.running && Thread.CurrentThread != this.workThread)
                     {
                         syncRoot.ReleaseMutex();
-                        this.executionComplete.WaitOne();
+                        this.closed = this.executionComplete.WaitOne(timeout, false);
                         syncRoot.WaitOne();
                     }
-
-                    this.closed = true;
                 }
 
                 syncRoot.ReleaseMutex();
             }
-        }
+
+			return this.closed;
+		}
 
         private void QueueProcessor(object unused)
         {
@@ -138,7 +175,7 @@ namespace Apache.NMS.ActiveMQ.Threads
             {
                 this.workThread = Thread.CurrentThread;
 
-                if(this.workQueue.Count == 0 || this.closing)
+                if(this.workQueue.Count == 0)
                 {
                     this.running = false;
                     this.executionComplete.Set();
@@ -156,10 +193,13 @@ namespace Apache.NMS.ActiveMQ.Threads
             {
                 this.workThread = null;
 
-                if(this.closing)
+                if(this.workQueue.Count == 0)
                 {
-                    this.running = false;
-                    this.executionComplete.Set();
+            		lock(syncRoot)
+					{
+                    	this.running = false;
+                    	this.executionComplete.Set();
+					}
                 }
                 else
                 {

@@ -684,6 +684,10 @@ namespace Apache.NMS.ActiveMQ
 					}
 
 					executor.Shutdown();
+					if (!executor.AwaitTermination(TimeSpan.FromMinutes(1)))
+					{
+						Tracer.DebugFormat("Connection[{0}]: Failed to properly shutdown its executor", this.ConnectionId);
+					}
 
 					Tracer.DebugFormat("Connection[{0}]: Disposing of the Transport.", this.ConnectionId);
 					transport.Stop();
