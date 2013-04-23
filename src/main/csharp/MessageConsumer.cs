@@ -71,6 +71,7 @@ namespace Apache.NMS.ActiveMQ
 	    private bool nonBlockingRedelivery = false;
 
         private Exception failureError;
+		private ThreadPoolExecutor executor;
 
 		private event MessageListener listener;
 
@@ -500,6 +501,12 @@ namespace Apache.NMS.ActiveMQ
 					}
 				}
 
+	            if (this.executor != null) 
+				{
+					this.executor.Shutdown();
+					this.executor.AwaitTermination(TimeSpan.FromMinutes(1));
+					this.executor = null;
+	            }
 				if (this.optimizedAckTimer != null)
 				{
 					this.OptimizedAckScheduledAckInterval = 0;
@@ -660,12 +667,35 @@ namespace Apache.NMS.ActiveMQ
 
 				if(ack != null)
 				{
-					this.session.SendAck(ack);
+	                if (this.executor == null) 
+					{
+						this.executor = new ThreadPoolExecutor();
+	                }
+
+					this.executor.QueueUserWorkItem(AsyncDeliverAck, ack);
 				}
 				else
 				{
 					this.deliveringAcks.Value = false;
 				}
+			}
+		}
+
+		private void AsyncDeliverAck(object ack)
+		{
+			MessageAck pending = ack as MessageAck;
+			try
+			{
+				this.session.SendAck(pending, true);
+			}
+			catch
+			{
+				Tracer.ErrorFormat("Consumer {0} Failed to deliver async Ack {1}",
+                                   this.info.ConsumerId, pending);
+			}
+			finally
+			{
+				this.deliveringAcks.Value = false;
 			}
 		}
 
