@@ -18,7 +18,7 @@
 using System;
 using System.Threading;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Threads
 {
 	/// <summary>
 	/// A facility for applications to schedule tasks for future execution in a background 
@@ -134,6 +134,11 @@ namespace Apache.NMS.ActiveMQ
 
 		#region WaitCallback Scheduling Methods
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for execution at the specified time. If the 
+		/// time is in the past, the task is scheduled for immediate execution.  The method returns
+		/// a TimerTask instance that can be used to later cancel the scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, DateTime when) 
 		{
 			InternalTimerTask task = new InternalTimerTask(callback, arg);
@@ -142,6 +147,11 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for execution after the specified delay. 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, int delay)
 		{
  			if(delay < 0)
@@ -154,6 +164,11 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for execution after the specified delay. 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, TimeSpan delay)
 		{
  			if(delay.CompareTo(TimeSpan.Zero) < 0)
@@ -166,6 +181,22 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-delay execution, 
+		/// beginning after the specified delay. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, int delay, int period)
 		{
  			if(delay < 0 || period <= 0)
@@ -178,6 +209,22 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-delay execution, 
+		/// beginning after the specified delay. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, TimeSpan delay, TimeSpan period)
 		{
  			if(delay.CompareTo(TimeSpan.Zero) < 0 || period.CompareTo(TimeSpan.Zero) <= 0)
@@ -190,6 +237,22 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-delay execution, 
+		/// beginning at the specified start time. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, DateTime when, int period) 
 		{
 	        if (period <= 0) 
@@ -203,6 +266,22 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-delay execution, 
+		/// beginning at the specified start time. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask Schedule(WaitCallback callback, object arg, DateTime when, TimeSpan period) 
 		{
 	        if (period.CompareTo(TimeSpan.Zero) <= 0) 
@@ -216,6 +295,23 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-rate execution, beginning 
+		/// after the specified delay. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask ScheduleAtFixedRate(WaitCallback callback, object arg, int delay, int period)
 		{
  			if(delay < 0 || period <= 0)
@@ -228,6 +324,23 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-rate execution, beginning 
+		/// after the specified delay. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask ScheduleAtFixedRate(WaitCallback callback, object arg, TimeSpan delay, TimeSpan period)
 		{
  			if(delay.CompareTo(TimeSpan.Zero) < 0 || period.CompareTo(TimeSpan.Zero) <= 0)
@@ -240,6 +353,23 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-rate execution, beginning 
+		/// at the specified time. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask ScheduleAtFixedRate(WaitCallback callback, object arg, DateTime when, int period)
 		{
 	        if (period <= 0) 
@@ -253,6 +383,23 @@ namespace Apache.NMS.ActiveMQ
 			return task;
 	    }
 
+		/// <summary>
+		/// Schedules the specified WaitCallback task for repeated fixed-rate execution, beginning 
+		/// at the specified time. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// 
+		/// The method returns a TimerTask instance that can be used to later cancel the 
+		/// scheduled task.
+		/// </summary>
 	    public TimerTask ScheduleAtFixedRate(WaitCallback callback, object arg, DateTime when, TimeSpan period)
 		{
 	        if (period.CompareTo(TimeSpan.Zero) <= 0) 
@@ -270,12 +417,19 @@ namespace Apache.NMS.ActiveMQ
 
 		#region TimerTask Scheduling Methods
 
+		/// <summary>
+		/// Schedules the specified TimerTask for execution at the specified time. If the 
+		/// time is in the past.
+		/// </summary>
 	    public void Schedule(TimerTask task, DateTime when) 
 		{
 	        TimeSpan delay = when - DateTime.Now;
 	        DoScheduleImpl(task, delay, TimeSpan.FromMilliseconds(-1), false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for execution after the specified delay. 
+		/// </summary>
 	    public void Schedule(TimerTask task, int delay)
 		{
  			if(delay < 0)
@@ -286,6 +440,9 @@ namespace Apache.NMS.ActiveMQ
 			DoScheduleImpl(task, TimeSpan.FromMilliseconds(delay), TimeSpan.FromMilliseconds(-1), false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for execution after the specified delay. 
+		/// </summary>
 	    public void Schedule(TimerTask task, TimeSpan delay)
 		{
  			if(delay.CompareTo(TimeSpan.Zero) < 0)
@@ -296,6 +453,19 @@ namespace Apache.NMS.ActiveMQ
 			DoScheduleImpl(task, delay, TimeSpan.FromMilliseconds(-1), false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-delay execution, beginning 
+		/// after the specified delay. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// </summary>
 	    public void Schedule(TimerTask task, int delay, int period)
 		{
  			if(delay < 0 || period <= 0)
@@ -306,6 +476,19 @@ namespace Apache.NMS.ActiveMQ
 	        DoScheduleImpl(task, TimeSpan.FromMilliseconds(delay), TimeSpan.FromMilliseconds(period), false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-delay execution, beginning 
+		/// after the specified delay. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// </summary>
 	    public void Schedule(TimerTask task, TimeSpan delay, TimeSpan period)
 		{
  			if(delay.CompareTo(TimeSpan.Zero) < 0 || period.CompareTo(TimeSpan.Zero) <= 0)
@@ -316,6 +499,19 @@ namespace Apache.NMS.ActiveMQ
 	        DoScheduleImpl(task, delay, period, false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-delay execution, beginning 
+		/// at the specified time. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// </summary>
 	    public void Schedule(TimerTask task, DateTime when, int period) 
 		{
 	        if (period <= 0) 
@@ -327,6 +523,19 @@ namespace Apache.NMS.ActiveMQ
 			DoScheduleImpl(task, delay, TimeSpan.FromMilliseconds(period), false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-delay execution, beginning 
+		/// at the specified time. Subsequent executions take place at approximately 
+		/// regular intervals separated by the specified period.
+		/// 
+		/// In fixed-delay execution, each execution is scheduled relative to the actual execution
+		/// time of the previous execution. If an execution is delayed for any reason (such as 
+		/// garbage collection or other background activity), subsequent executions will be delayed.
+		/// 
+		/// Fixed-delay execution is appropriate for recurring activities that require "smoothness." 
+		/// In other words, it is appropriate for activities where it is more important to keep the
+		/// frequency accurate in the short run than in the long run.
+		/// </summary>
 	    public void Schedule(TimerTask task, DateTime when, TimeSpan period) 
 		{
 	        if (period.CompareTo(TimeSpan.Zero) <= 0) 
@@ -338,6 +547,20 @@ namespace Apache.NMS.ActiveMQ
 			DoScheduleImpl(task, delay, period, false);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-rate execution, beginning 
+		/// after the specified delay. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// </summary>
 	    public void ScheduleAtFixedRate(TimerTask task, int delay, int period)
 		{
  			if(delay < 0 || period <= 0)
@@ -348,6 +571,20 @@ namespace Apache.NMS.ActiveMQ
 	        DoScheduleImpl(task, TimeSpan.FromMilliseconds(delay), TimeSpan.FromMilliseconds(period), true);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-rate execution, beginning 
+		/// after the specified delay. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// </summary>
 	    public void ScheduleAtFixedRate(TimerTask task, TimeSpan delay, TimeSpan period)
 		{
  			if(delay.CompareTo(TimeSpan.Zero) < 0 || period.CompareTo(TimeSpan.Zero) <= 0)
@@ -358,6 +595,20 @@ namespace Apache.NMS.ActiveMQ
 	        DoScheduleImpl(task, delay, period, true);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-rate execution, beginning 
+		/// at the specified time. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// </summary>
 	    public void ScheduleAtFixedRate(TimerTask task, DateTime when, int period)
 		{
 	        if (period <= 0) 
@@ -369,6 +620,20 @@ namespace Apache.NMS.ActiveMQ
 			DoScheduleImpl(task, delay, TimeSpan.FromMilliseconds(period), true);
 	    }
 
+		/// <summary>
+		/// Schedules the specified TimerTask for repeated fixed-rate execution, beginning 
+		/// at the specified time. Subsequent executions take place at approximately regular 
+		/// intervals, separated by the specified period.
+		/// 
+		/// In fixed-rate execution, each execution is scheduled relative to the scheduled execution
+		/// time of the initial execution. If an execution is delayed for any reason (such as garbage
+		/// collection or other background activity), two or more executions will occur in rapid 
+		/// succession to "catch up." 
+		/// 
+		/// Fixed-rate execution is appropriate for recurring activities that are sensitive to 
+		/// absolute time, such as ringing a chime every hour on the hour, or running scheduled 
+		/// maintenance every day at a particular time.
+		/// </summary>
 	    public void ScheduleAtFixedRate(TimerTask task, DateTime when, TimeSpan period)
 		{
 	        if (period.CompareTo(TimeSpan.Zero) <= 0) 

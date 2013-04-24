@@ -17,7 +17,7 @@
 using System;
 using System.Threading;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Threads
 {
 	/// <summary>
 	/// A Task that is run in a Timer instance either once or repeatedly.
