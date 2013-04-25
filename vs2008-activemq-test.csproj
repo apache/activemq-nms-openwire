@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\test\csharp\AMQNET366Test.cs" />
+    <Compile Include="src\test\csharp\AMQNET375Test.cs" />
     <Compile Include="src\test\csharp\AMQQueueTransactionTest.cs" />
     <Compile Include="src\test\csharp\AMQRedeliveryPolicyTest.cs" />
     <Compile Include="src\test\csharp\AMQTopicTransactionTest.cs" />
@@ -99,16 +100,22 @@
     </Compile>
     <Compile Include="src\test\csharp\OpenWire\MaxInactivityDurationTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\PrefetchSizeZeroTest.cs" />
+    <Compile Include="src\test\csharp\OptimizedAckTest.cs" />
     <Compile Include="src\test\csharp\QueueBrowserTests.cs" />
     <Compile Include="src\test\csharp\QueueConsumerPriorityTest.cs" />
     <Compile Include="src\test\csharp\RollbackRedeliveryTest.cs" />
     <Compile Include="src\test\csharp\TempDestinationTest.cs" />
+    <Compile Include="src\test\csharp\TestMain.cs" />
+    <Compile Include="src\test\csharp\TestMainAsync.cs" />
     <Compile Include="src\test\csharp\Threads\CompositeTaskRunnerTest.cs" />
     <Compile Include="src\test\csharp\Threads\DedicatedTaskRunnerTest.cs" />
+    <Compile Include="src\test\csharp\Threads\SchedulerTest.cs" />
     <Compile Include="src\test\csharp\Threads\ThreadPoolExecutorTest.cs" />
+    <Compile Include="src\test\csharp\Threads\TimerExTest.cs" />
     <Compile Include="src\test\csharp\Transactions\RecoveryFileLoggerTest.cs" />
     <Compile Include="src\test\csharp\Transactions\RecoveryLoggerHarness.cs" />
     <Compile Include="src\test\csharp\Transactions\RecoveryLoggerHarnessFactory.cs" />
+    <Compile Include="src\test\csharp\Transport\failover\FailoverTransactionTest.cs" />
     <Compile Include="src\test\csharp\Transport\failover\FailoverTransportTest.cs" />
     <Compile Include="src\test\csharp\Transport\Inactivity\InactivityMonitorTest.cs" />
     <Compile Include="src\test\csharp\Transport\Mock\MockTransportFactoryTest.cs" />
@@ -116,8 +123,12 @@
     <Compile Include="src\test\csharp\Transport\Tcp\TcpFaultyTransport.cs" />
     <Compile Include="src\test\csharp\Transport\Tcp\TcpFaultyTransportFactory.cs" />
     <Compile Include="src\test\csharp\Transport\Tcp\TcpFaultyTransportTest.cs" />
+    <Compile Include="src\test\csharp\Util\ActiveMQMessageAuditTest.cs" />
     <Compile Include="src\test\csharp\Util\ActiveMQMessageTransformationTest.cs" />
+    <Compile Include="src\test\csharp\Util\BitArrayBinTest.cs" />
+    <Compile Include="src\test\csharp\Util\ConnectionAuditTest.cs" />
     <Compile Include="src\test\csharp\Util\FifoMessageDispatchChannelTest.cs" />
+    <Compile Include="src\test\csharp\Util\LRUCacheTest.cs" />
     <Compile Include="src\test\csharp\Util\MemoryUsageTest.cs" />
     <Compile Include="src\test\csharp\Util\SimplePriorityMessageDispatchChannelTest.cs" />
     <Compile Include="src\test\csharp\VirtualTopicTest.cs" />

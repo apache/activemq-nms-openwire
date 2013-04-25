@@ -1147,10 +1147,13 @@
     <Compile Include="src\main\csharp\Threads\DedicatedTaskRunner.cs" />
     <Compile Include="src\main\csharp\Threads\DefaultThreadPools.cs" />
     <Compile Include="src\main\csharp\Threads\PooledTaskRunner.cs" />
+    <Compile Include="src\main\csharp\Threads\Scheduler.cs" />
     <Compile Include="src\main\csharp\Threads\Task.cs" />
     <Compile Include="src\main\csharp\Threads\TaskRunner.cs" />
     <Compile Include="src\main\csharp\Threads\TaskRunnerFactory.cs" />
     <Compile Include="src\main\csharp\Threads\ThreadPoolExecutor.cs" />
+    <Compile Include="src\main\csharp\Threads\TimerEx.cs" />
+    <Compile Include="src\main\csharp\Threads\TimerTask.cs" />
     <Compile Include="src\main\csharp\TransactionContext.cs">
       <SubType>Code</SubType>
     </Compile>
