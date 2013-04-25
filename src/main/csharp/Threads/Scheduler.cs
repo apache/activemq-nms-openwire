@@ -30,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Threads
     	private readonly String name;
     	private TimerEx timer;
     	private readonly Dictionary<Object, TimerTask> timerTasks = new Dictionary<object, TimerTask>();
+		private bool started = false;
 
 		public Scheduler(String name)
 		{
@@ -123,6 +124,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 			lock (this.syncRoot)
 			{
 	        	this.timer = new TimerEx(name, true);
+				this.started = true;
 			}
 	    }
 
@@ -130,6 +132,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 		{
 			lock (this.syncRoot)
 			{
+				this.started = false;
 	        	if (this.timer != null)
             	{
 	            	this.timer.Cancel();
@@ -142,6 +145,17 @@ namespace Apache.NMS.ActiveMQ.Threads
 			get { return this.name; }
 		}
 
+		public bool Started
+		{
+			get 
+			{ 
+				lock (this.syncRoot)
+				{
+					return this.started; 
+				}
+			}
+		}
+
 	    public override string ToString()
 		{
 			return string.Format("[Scheduler][{0}]", name);
@@ -149,7 +163,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 
 		private void CheckStarted()
 		{
-			if (this.timer == null)
+			if (!this.started)
 			{
 				throw new InvalidOperationException("The Schedular has not been started yet");
 			}
