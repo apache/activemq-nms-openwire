@@ -93,6 +93,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly MessageTransformation messageTransformation;
 		private readonly ThreadPoolExecutor executor = new ThreadPoolExecutor();
 		private AdvisoryConsumer advisoryConsumer = null;
+		private Scheduler scheduler = null;
 		private readonly ConnectionAudit connectionAudit = new ConnectionAudit();
 
 		public Connection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
@@ -483,6 +484,36 @@ namespace Apache.NMS.ActiveMQ
 			get { return this.messageTransformation; }
 		}
 
+	    internal Scheduler Scheduler
+		{
+			get
+			{
+		        Scheduler result = this.scheduler;
+		        if (result == null) 
+				{
+		            lock (this) 
+					{
+		                result = scheduler;
+		                if (result == null) 
+						{
+		                    CheckClosed();
+		                    try 
+							{
+		                        result = scheduler = new Scheduler(
+									"ActiveMQConnection["+this.info.ConnectionId.Value+"] Scheduler");
+		                        scheduler.Start();
+		                    }
+							catch(Exception e)
+							{
+		                        throw NMSExceptionSupport.Create(e);
+		                    }
+		                }
+		            }
+		        }
+		        return result;
+			}
+	    }
+
 		#endregion
 
 		private void SetTransport(ITransport newTransport)
@@ -650,6 +681,19 @@ namespace Apache.NMS.ActiveMQ
 						this.advisoryConsumer.Dispose();
 						this.advisoryConsumer = null;
 					}
+
+                    Scheduler scheduler = this.scheduler;
+                    if (scheduler != null) 
+					{
+                        try 
+						{
+                            scheduler.Stop();
+                        } 
+						catch (Exception e) 
+						{
+                            throw NMSExceptionSupport.Create(e);
+                        }
+                    }
 
 					lock(sessions.SyncRoot)
 					{

@@ -65,7 +65,7 @@ namespace Apache.NMS.ActiveMQ
 		private DateTime optimizeAckTimestamp = DateTime.Now;
 	    private long optimizeAcknowledgeTimeOut = 0;
 	    private long optimizedAckScheduledAckInterval = 0;
-	    private Timer optimizedAckTimer;
+	    private WaitCallback optimizedAckTask = null;
 	    private long failoverRedeliveryWaitPeriod = 0;
 	    private bool transactedIndividualAck = false;
 	    private bool nonBlockingRedelivery = false;
@@ -251,26 +251,18 @@ namespace Apache.NMS.ActiveMQ
 			{ 
 				this.optimizedAckScheduledAckInterval = value; 
 
-		        if (this.optimizedAckTimer != null) 
+		        if (this.optimizedAckTask != null) 
 				{
-					AutoResetEvent shutdownEvent = new AutoResetEvent(false);
-					this.optimizedAckTimer.Dispose(shutdownEvent);
-					if(!shutdownEvent.WaitOne(TimeSpan.FromMilliseconds(5000), false))
-					{
-						Tracer.WarnFormat("Consumer[{0}]: Optimized Ack Timer Task didn't shutdown properly.", this.info.ConsumerId);
-					}
-
-					this.optimizedAckTimer = null;
+					this.session.Scheduler.Cancel(this.optimizedAckTask);
+					this.optimizedAckTask = null;
 		        }
 
 		        // Should we periodically send out all outstanding acks.
 		        if (this.optimizeAcknowledge && this.optimizedAckScheduledAckInterval > 0)
 				{
-					this.optimizedAckTimer = new Timer(
-						new TimerCallback(DoOptimizedAck),
-						null,
-						optimizedAckScheduledAckInterval,
-						optimizedAckScheduledAckInterval);
+					this.optimizedAckTask = new WaitCallback(DoOptimizedAck);
+					this.session.Scheduler.ExecutePeriodically(
+						optimizedAckTask, null, TimeSpan.FromMilliseconds(optimizedAckScheduledAckInterval));
 				}
 			}
 		}
@@ -507,9 +499,9 @@ namespace Apache.NMS.ActiveMQ
 					this.executor.AwaitTermination(TimeSpan.FromMinutes(1));
 					this.executor = null;
 	            }
-				if (this.optimizedAckTimer != null)
+				if (this.optimizedAckTask != null)
 				{
-					this.OptimizedAckScheduledAckInterval = 0;
+					this.session.Scheduler.Cancel(this.optimizedAckTask);
 				}
 
 	            if (this.session.IsClientAcknowledge)
@@ -1579,7 +1571,10 @@ namespace Apache.NMS.ActiveMQ
 
 	    private void DoOptimizedAck(object state)
 		{
-			DeliverAcks();
+			if (this.optimizeAcknowledge && !this.unconsumedMessages.Closed)
+			{
+				DeliverAcks();
+			}
 		}
 	    
 	    private void WaitForRedeliveries() 

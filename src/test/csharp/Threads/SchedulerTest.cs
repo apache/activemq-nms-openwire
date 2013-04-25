@@ -141,6 +141,19 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test]
+		public void TestExecuteAfterDelayNoDelay()
+		{
+	        Scheduler scheduler = new Scheduler("TestExecuteAfterDelay");
+	        scheduler.Start();
+	        scheduler.ExecuteAfterDelay(CounterCallback, null, 0);
+	        scheduler.ExecuteAfterDelay(CounterCallback, null, 0);
+	        scheduler.ExecuteAfterDelay(CounterCallback, null, 0);
+	        Thread.Sleep(500);
+	        Assert.IsTrue(counter == 3, "Should have executed Three tasks.");
+	        scheduler.Stop();
+		}
+
+		[Test]
 		public void TestCancel()
 		{
 	        Scheduler scheduler = new Scheduler("TestCancel");

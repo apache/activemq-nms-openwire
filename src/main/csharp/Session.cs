@@ -22,6 +22,7 @@ using System.Threading;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.Threads;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -280,6 +281,11 @@ namespace Apache.NMS.ActiveMQ
             get { return this.producerTransformer; }
             set { this.producerTransformer = value; }
         }
+
+		internal Scheduler Scheduler
+		{
+			get { return this.connection.Scheduler; }
+		}
 
         #endregion
 
@@ -912,13 +918,15 @@ namespace Apache.NMS.ActiveMQ
             // Because we are called from inside the Transport Reconnection logic
             // we spawn the Consumer clear to another Thread so that we can avoid
             // any lock contention that might exist between the consumer and the
-            // connection that is reconnecting.
+            // connection that is reconnecting.  Use the Connection Scheduler so 
+			// that the clear calls are done one at a time to avoid further 
+			// contention on the Connection and Session resources.
             lock(this.consumers.SyncRoot)
             {
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
                     consumer.InProgressClearRequired();
-                    ThreadPool.QueueUserWorkItem(ClearMessages, consumer);
+					Scheduler.ExecuteAfterDelay(ClearMessages, consumer, 0);
                 }
             }
         }
