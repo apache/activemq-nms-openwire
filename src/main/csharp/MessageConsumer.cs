@@ -1405,6 +1405,12 @@ namespace Apache.NMS.ActiveMQ
 						// We need to NACK the messages so that they get sent to the DLQ.
                     	MessageAck ack = new MessageAck(lastMd, (byte) AckType.PoisonAck, dispatchedMessages.Count);
                     	
+                        if(Tracer.IsDebugEnabled)
+                        {
+							Tracer.DebugFormat("Consumer {0} Poison Ack of {1} messages aft max redeliveries: {2}",
+                                               this.info.ConsumerId, this.dispatchedMessages.Count, this.redeliveryPolicy.MaximumRedeliveries);
+                        }
+
 						if (lastMd.RollbackCause != null)
 						{
 							BrokerError cause = new BrokerError();
@@ -1433,31 +1439,59 @@ namespace Apache.NMS.ActiveMQ
 							this.session.SendAck(ack);
 						}
 
-						// stop the delivery of messages.
-						this.unconsumedMessages.Stop();
-
-                        if(Tracer.IsDebugEnabled)
-                        {
-                            Tracer.DebugFormat("Consumer {0} Rolled Back, Re-enque {1} messages",
-                                               this.info.ConsumerId, this.dispatchedMessages.Count);
-                        }
-
-						foreach(MessageDispatch dispatch in this.dispatchedMessages)
+						if (this.nonBlockingRedelivery)
 						{
-                            this.unconsumedMessages.EnqueueFirst(dispatch);
+							if(redeliveryDelay == 0)
+							{
+								redeliveryDelay = RedeliveryPolicy.InitialRedeliveryDelay;
+							}
+
+	                        if(Tracer.IsDebugEnabled)
+	                        {
+								Tracer.DebugFormat("Consumer {0} Rolled Back, Re-enque {1} messages in Non-Blocking mode, delay: {2}",
+	                                               this.info.ConsumerId, this.dispatchedMessages.Count, redeliveryDelay);
+	                        }
+
+                            List<MessageDispatch> pendingRedeliveries =
+                                new List<MessageDispatch>(this.dispatchedMessages);
+							pendingRedeliveries.Reverse();
+
+							this.deliveredCounter -= this.dispatchedMessages.Count;
+							this.dispatchedMessages.Clear();
+
+							this.session.Scheduler.ExecuteAfterDelay(
+								NonBlockingRedeliveryCallback, 
+								pendingRedeliveries, 
+								TimeSpan.FromMilliseconds(redeliveryDelay));
 						}
-
-						this.deliveredCounter -= this.dispatchedMessages.Count;
-						this.dispatchedMessages.Clear();
-
-						if(redeliveryDelay > 0 && !this.unconsumedMessages.Closed)
+						else 
 						{
-							DateTime deadline = DateTime.Now.AddMilliseconds(redeliveryDelay);
-							ThreadPool.QueueUserWorkItem(this.RollbackHelper, deadline);
-						}
-						else
-						{
-							Start();
+							// stop the delivery of messages.
+							this.unconsumedMessages.Stop();
+
+	                        if(Tracer.IsDebugEnabled)
+	                        {
+	                            Tracer.DebugFormat("Consumer {0} Rolled Back, Re-enque {1} messages",
+	                                               this.info.ConsumerId, this.dispatchedMessages.Count);
+	                        }
+
+							foreach(MessageDispatch dispatch in this.dispatchedMessages)
+							{
+	                            this.unconsumedMessages.EnqueueFirst(dispatch);
+							}
+
+							this.deliveredCounter -= this.dispatchedMessages.Count;
+							this.dispatchedMessages.Clear();
+
+							if(redeliveryDelay > 0 && !this.unconsumedMessages.Closed)
+							{
+								DateTime deadline = DateTime.Now.AddMilliseconds(redeliveryDelay);
+								ThreadPool.QueueUserWorkItem(this.RollbackHelper, deadline);
+							}
+							else
+							{
+								Start();
+							}
 						}
 					}
 				}
@@ -1492,6 +1526,26 @@ namespace Apache.NMS.ActiveMQ
 				}
 			}
 		}
+
+        private void NonBlockingRedeliveryCallback(object arg) 
+		{
+            try 
+			{
+                if (!this.unconsumedMessages.Closed) 
+				{
+					List<MessageDispatch> pendingRedeliveries = arg as List<MessageDispatch>;
+
+                    foreach (MessageDispatch dispatch in pendingRedeliveries) 
+					{
+                        session.Dispatch(dispatch);
+                    }
+                }
+            } 
+			catch (Exception e) 
+			{
+				session.Connection.OnAsyncException(e);
+            }
+        }
 
 		private ActiveMQMessage CreateActiveMQMessage(MessageDispatch dispatch)
 		{
