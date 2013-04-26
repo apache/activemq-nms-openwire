@@ -688,7 +688,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
                                 // Rethrow the exception so it will handled by
                                 // the outer catch
-                                throw e;
+                                throw;
                             }
                             else
                             {

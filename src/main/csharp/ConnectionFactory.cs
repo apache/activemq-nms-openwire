@@ -144,7 +144,7 @@ namespace Apache.NMS.ActiveMQ
 
                 return connection;
             }
-            catch(NMSException e)
+            catch(NMSException)
             {
                 try
                 {
@@ -154,7 +154,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                 }
 
-                throw e;
+                throw;
             }
             catch(Exception e)
             {

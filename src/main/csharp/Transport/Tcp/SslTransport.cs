@@ -137,7 +137,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                 }
                 Tracer.Error("Authentication failed - closing the connection.");
 
-                throw e;
+                throw;
             }
 
             return sslStream;
@@ -249,6 +249,5 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
             return collection;
         }
-
     }
 }

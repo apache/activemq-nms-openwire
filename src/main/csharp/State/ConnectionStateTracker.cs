@@ -90,9 +90,9 @@ namespace Apache.NMS.ActiveMQ.State
             {
                 return (Tracked) command.visit(this);
             }
-            catch(IOException e)
+            catch(IOException)
             {
-                throw e;
+                throw;
             }
             catch(Exception e)
             {
