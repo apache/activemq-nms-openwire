@@ -52,6 +52,42 @@ namespace Apache.NMS.ActiveMQ.Test
         }
 
         [Test]
+        public void TestBadSelectorDoesNotCloseConnection()
+        {
+            using (IConnection connection = CreateConnection(TEST_CLIENT_ID))
+            {
+                using (ISession sender = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+                using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+                {
+					IDestination destination = sender.CreateTemporaryQueue();
+
+					IMessageProducer producer = sender.CreateProducer(destination);
+            		ITextMessage goodMsg = sender.CreateTextMessage("testGood");
+            		producer.Send(goodMsg);
+
+            		IMessageConsumer consumer = session.CreateConsumer(destination);
+            		connection.Start();            
+					Assert.NotNull(consumer.Receive(TimeSpan.FromMilliseconds(5000)));
+
+		            try
+		            {
+		                ISession badListenerSession = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+		                badListenerSession.CreateConsumer(destination, "badSelector;too");
+		                Assert.Fail("Exception expected.");
+		            }
+		            catch(Exception e)
+		            {
+						Tracer.DebugFormat("Caught Ex: {0}", e);
+		            }
+
+		            ITextMessage failMsg = sender.CreateTextMessage("testFail");
+		            producer.Send(failMsg);
+					Assert.NotNull(consumer.Receive(TimeSpan.FromMilliseconds(5000)));
+	        	}
+			}
+		}
+
+        [Test]
         public void TestAsyncDispatchExceptionRedelivers()
         {
             using (IConnection connection = CreateConnection(TEST_CLIENT_ID))
