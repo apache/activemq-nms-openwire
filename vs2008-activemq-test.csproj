@@ -95,6 +95,7 @@
     <Compile Include="src\test\csharp\NMSConnectionFactoryTest.cs" />
     <Compile Include="src\test\csharp\NmsConsoleTracer.cs" />
     <Compile Include="src\test\csharp\NMSSessionRecoverTest.cs" />
+    <Compile Include="src\test\csharp\NonBlockingConsumerRedeliveryTest.cs" />
     <Compile Include="src\test\csharp\OpenWire\BooleanStreamTest.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -104,6 +105,12 @@
     <Compile Include="src\test\csharp\QueueBrowserTests.cs" />
     <Compile Include="src\test\csharp\QueueConsumerPriorityTest.cs" />
     <Compile Include="src\test\csharp\RollbackRedeliveryTest.cs" />
+    <Compile Include="src\test\csharp\State\ConnectionStateTest.cs" />
+    <Compile Include="src\test\csharp\State\ConnectionStateTrackerTest.cs" />
+    <Compile Include="src\test\csharp\State\ConsumerStateTest.cs" />
+    <Compile Include="src\test\csharp\State\ProducerStateTest.cs" />
+    <Compile Include="src\test\csharp\State\SessionStateTest.cs" />
+    <Compile Include="src\test\csharp\State\TransactionStateTest.cs" />
     <Compile Include="src\test\csharp\TempDestinationTest.cs" />
     <Compile Include="src\test\csharp\TestMain.cs" />
     <Compile Include="src\test\csharp\TestMainAsync.cs" />
