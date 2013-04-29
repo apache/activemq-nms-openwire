@@ -25,9 +25,11 @@ namespace Apache.NMS.ActiveMQ.State
 	{
 	    readonly SessionInfo info;
 
-		private readonly AtomicDictionary<ProducerId, ProducerState> producers = new AtomicDictionary<ProducerId, ProducerState>();
-		private readonly AtomicDictionary<ConsumerId, ConsumerState> consumers = new AtomicDictionary<ConsumerId, ConsumerState>();
-		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
+		private readonly AtomicDictionary<ProducerId, ProducerState> producers = 
+			new AtomicDictionary<ProducerId, ProducerState>();
+		private readonly AtomicDictionary<ConsumerId, ConsumerState> consumers = 
+			new AtomicDictionary<ConsumerId, ConsumerState>();
+		private readonly Atomic<bool> isShutdown = new Atomic<bool>(false);
 
 		public SessionState(SessionInfo info)
 		{
@@ -39,9 +41,9 @@ namespace Apache.NMS.ActiveMQ.State
 			return info.ToString();
 		}
 
-		public void addProducer(ProducerInfo info)
+		public void AddProducer(ProducerInfo info)
 		{
-			checkShutdown();
+			CheckShutdown();
 			ProducerState producerState = new ProducerState(info);
 
 			if(producers.ContainsKey(info.ProducerId))
@@ -54,8 +56,9 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public ProducerState removeProducer(ProducerId id)
+		public ProducerState RemoveProducer(ProducerId id)
 		{
+			CheckShutdown();
 			ProducerState ret = null;
 
 			if(producers.TryGetValue(id, out ret))
@@ -70,9 +73,9 @@ namespace Apache.NMS.ActiveMQ.State
 			return ret;
 		}
 
-		public void addConsumer(ConsumerInfo info)
+		public void AddConsumer(ConsumerInfo info)
 		{
-			checkShutdown();
+			CheckShutdown();
 			ConsumerState consumerState = new ConsumerState(info);
 
 			if(consumers.ContainsKey(info.ConsumerId))
@@ -85,8 +88,9 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public ConsumerState removeConsumer(ConsumerId id)
+		public ConsumerState RemoveConsumer(ConsumerId id)
 		{
+			CheckShutdown();
 			ConsumerState ret = null;
 
 			if(consumers.TryGetValue(id, out ret))
@@ -142,18 +146,19 @@ namespace Apache.NMS.ActiveMQ.State
             get { return consumers[consumerId]; }
 		}
 
-		private void checkShutdown()
+		private void CheckShutdown()
 		{
-			if(_shutdown.Value)
+			if(isShutdown.Value)
 			{
 				throw new ApplicationException("Disposed");
 			}
 		}
 
-		public void shutdown()
+		public void Shutdown()
 		{
-			_shutdown.Value = true;
+			isShutdown.Value = true;
+			producers.Clear();
+			consumers.Clear();
 		}
-
 	}
 }

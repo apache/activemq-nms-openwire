@@ -63,7 +63,28 @@ namespace Apache.NMS.ActiveMQ.Util
 		public TValue this[TKey key]
 		{
 			get { return dictionary[key]; }
-			set { this.Add(key, value); }
+			set 
+			{ 
+				TValue currentValue = default (TValue);
+				// Moved used item to end of list since it been used again.
+				if (dictionary.TryGetValue(key, out currentValue))
+				{
+					KeyValuePair<TKey, TValue> entry = 
+						new KeyValuePair<TKey, TValue>(key, value);
+					entries.Remove(entry);
+				}
+
+				dictionary[key] = value;
+	            entries.AddLast(new KeyValuePair<TKey, TValue>(key, value));
+
+	            KeyValuePair<TKey, TValue> eldest = entries.First.Value;
+
+			    if(this.RemoveEldestEntry(eldest))
+	            {
+	                this.dictionary.Remove(eldest.Key);
+	                this.entries.RemoveFirst();
+	            }
+			}
 		}
 
 		public bool TryGetValue(TKey key, out TValue val)

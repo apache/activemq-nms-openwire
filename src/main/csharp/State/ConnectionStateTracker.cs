@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Util;
 using System.Collections;
 
 namespace Apache.NMS.ActiveMQ.State
@@ -33,30 +34,16 @@ namespace Apache.NMS.ActiveMQ.State
 
         protected Dictionary<ConnectionId, ConnectionState> connectionStates = new Dictionary<ConnectionId, ConnectionState>();
 
-        private bool _trackTransactions;
-        private bool _trackTransactionProducers = true;
-        private bool _restoreSessions = true;
-        private bool _restoreConsumers = true;
-        private bool _restoreProducers = true;
-        private bool _restoreTransaction = true;
-        private bool _trackMessages = true;
-        private int _maxCacheSize = 256;
+        private bool isTrackTransactions;
+        private bool isTrackTransactionProducers = true;
+        private bool isRestoreSessions = true;
+        private bool isRestoreConsumers = true;
+        private bool isRestoreProducers = true;
+        private bool isRestoreTransaction = true;
+        private bool isTrackMessages = true;
+        private int maxCacheSize = 256;
         private int currentCacheSize;
-        private readonly Dictionary<Object, Command> messageCache = new Dictionary<Object, Command>();
-        private readonly Queue<Object> messageCacheFIFO = new Queue<Object>();
-
-        protected void RemoveEldestInCache()
-        {
-            System.Collections.ICollection ic = messageCacheFIFO;
-            lock(ic.SyncRoot)
-            {
-                while(messageCacheFIFO.Count > MaxCacheSize)
-                {
-                    messageCache.Remove(messageCacheFIFO.Dequeue());
-                    currentCacheSize = currentCacheSize - 1;
-                }
-            }
-        }
+        private readonly LRUCache<Object, Command> messageCache = new LRUCache<Object, Command>(256);
 
         private class RemoveTransactionAction : ThreadSimulator
         {
@@ -75,7 +62,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 				if(cst.connectionStates.TryGetValue(info.ConnectionId, out cs))
 				{
-					cs.removeTransactionState(info.TransactionId);
+					cs.RemoveTransactionState(info.TransactionId);
 				}
             }
         }
@@ -176,7 +163,8 @@ namespace Apache.NMS.ActiveMQ.State
                         {
                             if (Tracer.IsDebugEnabled)
                             {
-                                Tracer.Debug("rolling back potentially completed tx: " + transactionState.getId());
+                                Tracer.Debug("rolling back potentially completed tx: " + 
+								             transactionState.Id);
                             }
                             toRollback.Add(transactionInfo);
                             continue;
@@ -345,7 +333,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 				if(connectionStates.TryGetValue(info.ConnectionId, out cs))
 				{
-					cs.addTempDestination(info);
+					cs.AddTempDestination(info);
 				}
             }
             return TRACKED_RESPONSE_MARKER;
@@ -358,7 +346,7 @@ namespace Apache.NMS.ActiveMQ.State
                 ConnectionState cs;
 				if(connectionStates.TryGetValue(info.ConnectionId, out cs))
 				{
-                    cs.removeTempDestination(info.Destination);
+                    cs.RemoveTempDestination(info.Destination);
                 }
             }
             return TRACKED_RESPONSE_MARKER;
@@ -381,7 +369,7 @@ namespace Apache.NMS.ActiveMQ.State
                             SessionState ss = cs[sessionId];
                             if(ss != null)
                             {
-                                ss.addProducer(info);
+                                ss.AddProducer(info);
                             }
                         }
                     }
@@ -407,7 +395,7 @@ namespace Apache.NMS.ActiveMQ.State
                             SessionState ss = cs[sessionId];
                             if(ss != null)
                             {
-                                ss.removeProducer(id);
+                                ss.RemoveProducer(id);
                             }
                         }
                     }
@@ -433,7 +421,7 @@ namespace Apache.NMS.ActiveMQ.State
                             SessionState ss = cs[sessionId];
                             if(ss != null)
                             {
-                                ss.addConsumer(info);
+                                ss.AddConsumer(info);
                             }
                         }
                     }
@@ -459,7 +447,7 @@ namespace Apache.NMS.ActiveMQ.State
                             SessionState ss = cs[sessionId];
                             if(ss != null)
                             {
-                                ss.removeConsumer(id);
+                                ss.RemoveConsumer(id);
                             }
                         }
                     }
@@ -479,7 +467,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
-                        cs.addSession(info);
+                        cs.AddSession(info);
                     }
                 }
             }
@@ -497,7 +485,7 @@ namespace Apache.NMS.ActiveMQ.State
 
 					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
-                        cs.removeSession(id);
+                        cs.RemoveSession(id);
                     }
                 }
             }
@@ -549,9 +537,9 @@ namespace Apache.NMS.ActiveMQ.State
                             TransactionState transactionState = cs[send.TransactionId];
                             if(transactionState != null)
                             {
-                                transactionState.addCommand(send);
+                                transactionState.AddCommand(send);
 
-                                if (_trackTransactionProducers)
+                                if (isTrackTransactionProducers)
                                 {
                                     SessionState ss = cs[producerId.ParentId];
                                     ProducerState producerState = ss[producerId];
@@ -565,7 +553,6 @@ namespace Apache.NMS.ActiveMQ.State
                 else if(TrackMessages)
                 {
                     messageCache.Add(send.MessageId, (Message) send.Clone());
-                    RemoveEldestInCache();
                 }
             }
             return null;
@@ -585,7 +572,7 @@ namespace Apache.NMS.ActiveMQ.State
                         TransactionState transactionState = cs[ack.TransactionId];
                         if(transactionState != null)
                         {
-                            transactionState.addCommand(ack);
+                            transactionState.AddCommand(ack);
                         }
                     }
                 }
@@ -605,9 +592,9 @@ namespace Apache.NMS.ActiveMQ.State
 
 					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
-                        cs.addTransactionState(info.TransactionId);
+                        cs.AddTransactionState(info.TransactionId);
                         TransactionState state = cs[info.TransactionId];
-                        state.addCommand(info);
+                        state.AddCommand(info);
                     }
                 }
                 return TRACKED_RESPONSE_MARKER;
@@ -629,7 +616,7 @@ namespace Apache.NMS.ActiveMQ.State
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
                         {
-                            transactionState.addCommand(info);
+                            transactionState.AddCommand(info);
                         }
                     }
                 }
@@ -652,7 +639,7 @@ namespace Apache.NMS.ActiveMQ.State
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
                         {
-                            transactionState.addCommand(info);
+                            transactionState.AddCommand(info);
                             return new Tracked(new RemoveTransactionAction(info, this));
                         }
                     }
@@ -675,7 +662,7 @@ namespace Apache.NMS.ActiveMQ.State
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
                         {
-                            transactionState.addCommand(info);
+                            transactionState.AddCommand(info);
                             return new Tracked(new RemoveTransactionAction(info, this));
                         }
                     }
@@ -698,7 +685,7 @@ namespace Apache.NMS.ActiveMQ.State
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
                         {
-                            transactionState.addCommand(info);
+                            transactionState.AddCommand(info);
                             return new Tracked(new RemoveTransactionAction(info, this));
                         }
                     }
@@ -721,7 +708,7 @@ namespace Apache.NMS.ActiveMQ.State
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
                         {
-                            transactionState.addCommand(info);
+                            transactionState.AddCommand(info);
                         }
                     }
                 }
@@ -743,50 +730,54 @@ namespace Apache.NMS.ActiveMQ.State
 
         public bool RestoreConsumers
         {
-            get { return _restoreConsumers; }
-            set { _restoreConsumers = value; }
+            get { return isRestoreConsumers; }
+            set { isRestoreConsumers = value; }
         }
 
         public bool RestoreProducers
         {
-            get { return _restoreProducers; }
-            set { _restoreProducers = value; }
+            get { return isRestoreProducers; }
+            set { isRestoreProducers = value; }
         }
 
         public bool RestoreSessions
         {
-            get { return _restoreSessions; }
-            set { _restoreSessions = value; }
+            get { return isRestoreSessions; }
+            set { isRestoreSessions = value; }
         }
 
         public bool TrackTransactions
         {
-            get { return _trackTransactions; }
-            set { _trackTransactions = value; }
+            get { return isTrackTransactions; }
+            set { isTrackTransactions = value; }
         }
 
         public bool TrackTransactionProducers
         {
-            get { return _trackTransactionProducers; }
-            set { _trackTransactionProducers = value; }
+            get { return isTrackTransactionProducers; }
+            set { isTrackTransactionProducers = value; }
         }
 
         public bool RestoreTransaction
         {
-            get { return _restoreTransaction; }
-            set { _restoreTransaction = value; }
+            get { return isRestoreTransaction; }
+            set { isRestoreTransaction = value; }
         }
 
         public bool TrackMessages
         {
-            get { return _trackMessages; }
-            set { _trackMessages = value; }
+            get { return isTrackMessages; }
+            set { isTrackMessages = value; }
         }
 
         public int MaxCacheSize
         {
-            get { return _maxCacheSize; }
-            set { _maxCacheSize = value; }
+            get { return maxCacheSize; }
+            set 
+			{ 
+				this.maxCacheSize = value; 
+				this.messageCache.MaxCacheSize = maxCacheSize;
+			}
         }
 
         public void ConnectionInterruptProcessingComplete(ITransport transport, ConnectionId connectionId)

@@ -25,18 +25,22 @@ namespace Apache.NMS.ActiveMQ.State
 	public class ConnectionState
 	{
 		private ConnectionInfo info;
-		private readonly AtomicDictionary<TransactionId, TransactionState> transactions = new AtomicDictionary<TransactionId, TransactionState>();
-		private readonly AtomicDictionary<SessionId, SessionState> sessions = new AtomicDictionary<SessionId, SessionState>();
-		private readonly AtomicCollection<DestinationInfo> tempDestinations = new AtomicCollection<DestinationInfo>();
-		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
+		private readonly AtomicDictionary<TransactionId, TransactionState> transactions = 
+			new AtomicDictionary<TransactionId, TransactionState>();
+		private readonly AtomicDictionary<SessionId, SessionState> sessions = 
+			new AtomicDictionary<SessionId, SessionState>();
+		private readonly AtomicCollection<DestinationInfo> tempDestinations = 
+			new AtomicCollection<DestinationInfo>();
+		private readonly Atomic<bool> isShutdown = new Atomic<bool>(false);
 	    private bool connectionInterruptProcessingComplete = true;
-		private readonly Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = new Dictionary<ConsumerId, ConsumerInfo>();
+		private readonly Dictionary<ConsumerId, ConsumerInfo> recoveringPullConsumers = 
+			new Dictionary<ConsumerId, ConsumerInfo>();
 
 		public ConnectionState(ConnectionInfo info)
 		{
 			this.info = info;
 			// Add the default session id.
-			addSession(new SessionInfo(info, -1));
+			AddSession(new SessionInfo(info, -1));
 		}
 
 		public override String ToString()
@@ -44,22 +48,22 @@ namespace Apache.NMS.ActiveMQ.State
 			return info.ToString();
 		}
 
-		public void reset(ConnectionInfo info)
+		public void Reset(ConnectionInfo info)
 		{
 			this.info = info;
 			transactions.Clear();
 			sessions.Clear();
 			tempDestinations.Clear();
-			_shutdown.Value = false;
+			isShutdown.Value = false;
 		}
 
-		public void addTempDestination(DestinationInfo info)
+		public void AddTempDestination(DestinationInfo info)
 		{
-			checkShutdown();
+			CheckShutdown();
 			tempDestinations.Add(info);
 		}
 
-		public void removeTempDestination(IDestination destination)
+		public void RemoveTempDestination(IDestination destination)
 		{
 			for(int i = tempDestinations.Count - 1; i >= 0; i--)
 			{
@@ -71,9 +75,9 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public void addTransactionState(TransactionId id)
+		public void AddTransactionState(TransactionId id)
 		{
-			checkShutdown();
+			CheckShutdown();
 			TransactionState transactionState = new TransactionState(id);
 
 			if(transactions.ContainsKey(id))
@@ -128,7 +132,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public TransactionState removeTransactionState(TransactionId id)
+		public TransactionState RemoveTransactionState(TransactionId id)
 		{
 			TransactionState ret = null;
 
@@ -140,9 +144,9 @@ namespace Apache.NMS.ActiveMQ.State
 			return ret;
 		}
 
-		public void addSession(SessionInfo info)
+		public void AddSession(SessionInfo info)
 		{
-			checkShutdown();
+			CheckShutdown();
 			SessionState sessionState = new SessionState(info);
 
 			if(sessions.ContainsKey(info.SessionId))
@@ -155,7 +159,7 @@ namespace Apache.NMS.ActiveMQ.State
 			}
 		}
 
-		public SessionState removeSession(SessionId id)
+		public SessionState RemoveSession(SessionId id)
 		{
 			SessionState ret = null;
 
@@ -187,9 +191,9 @@ namespace Apache.NMS.ActiveMQ.State
 			get { return sessions.Values; }
 		}
 
-		private void checkShutdown()
+		private void CheckShutdown()
 		{
-			if(_shutdown.Value)
+			if(isShutdown.Value)
 			{
 				throw new ApplicationException("Disposed");
 			}
@@ -206,13 +210,13 @@ namespace Apache.NMS.ActiveMQ.State
 			set { this.connectionInterruptProcessingComplete = value; }
 		}
 
-		public void shutdown()
+		public void Shutdown()
 		{
-			if(_shutdown.CompareAndSet(false, true))
+			if(isShutdown.CompareAndSet(false, true))
 			{
 				foreach(SessionState ss in sessions.Values)
 				{
-					ss.shutdown();
+					ss.Shutdown();
 				}
 			}
 		}

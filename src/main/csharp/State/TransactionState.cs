@@ -26,10 +26,11 @@ namespace Apache.NMS.ActiveMQ.State
 	{
 		private readonly List<Command> commands = new List<Command>();
 		private readonly TransactionId id;
-		private readonly Atomic<bool> _shutdown = new Atomic<bool>(false);
+		private readonly Atomic<bool> isShutdown = new Atomic<bool>(false);
 		private bool prepared;
 		private int preparedResult;
-        private readonly AtomicDictionary<ProducerId, ProducerState> producers = new AtomicDictionary<ProducerId, ProducerState>();
+        private readonly AtomicDictionary<ProducerId, ProducerState> producers = 
+			new AtomicDictionary<ProducerId, ProducerState>();
 
 		public TransactionState(TransactionId id)
 		{
@@ -41,9 +42,9 @@ namespace Apache.NMS.ActiveMQ.State
 			return id.ToString();
 		}
 
-		public void addCommand(Command operation)
+		public void AddCommand(Command operation)
 		{
-			checkShutdown();
+			CheckShutdown();
 			commands.Add(operation);
 		}
 
@@ -52,22 +53,24 @@ namespace Apache.NMS.ActiveMQ.State
 			get { return commands; }
 		}
 
-		private void checkShutdown()
+		private void CheckShutdown()
 		{
-			if(_shutdown.Value)
+			if(isShutdown.Value)
 			{
 				throw new ApplicationException("Disposed");
 			}
 		}
 
-		public void shutdown()
+		public void Shutdown()
 		{
-			_shutdown.Value = true;
+			isShutdown.Value = true;
+			producers.Clear();
+			commands.Clear();
 		}
 
-		public TransactionId getId()
+		public TransactionId Id
 		{
-			return id;
+			get { return id; }
 		}
 
 		public bool Prepared
@@ -84,6 +87,7 @@ namespace Apache.NMS.ActiveMQ.State
 
         public void AddProducer(ProducerState producer)
         {
+			CheckShutdown();
 			if(this.producers.ContainsKey(producer.Info.ProducerId))
 			{
 				this.producers[producer.Info.ProducerId] = producer;
