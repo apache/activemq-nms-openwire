@@ -219,9 +219,9 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///  the proper processXXX method in the visitor.
         /// </summery>
         ///
-        public override Response visit(ICommandVisitor visitor)
+        public override Response Visit(ICommandVisitor visitor)
         {
-            return visitor.processAddConsumer( this );
+            return visitor.ProcessAddConsumer( this );
         }
 
     };

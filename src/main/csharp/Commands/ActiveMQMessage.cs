@@ -404,9 +404,9 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
-		public override Response visit(ICommandVisitor visitor)
+		public override Response Visit(ICommandVisitor visitor)
 		{
-			return visitor.processMessage(this);
+			return visitor.ProcessMessage(this);
 		}
 	}
 }

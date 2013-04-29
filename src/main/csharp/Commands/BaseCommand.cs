@@ -124,7 +124,7 @@ namespace Apache.NMS.ActiveMQ.Commands
             return packetTypeStr;
         }
 
-        public virtual Response visit(ICommandVisitor visitor)
+        public virtual Response Visit(ICommandVisitor visitor)
         {
             throw new ApplicationException("BaseCommand.Visit() not implemented");
         }

@@ -132,15 +132,15 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///  the proper processXXX method in the visitor.
         /// </summery>
         ///
-        public override Response visit(ICommandVisitor visitor)
+        public override Response Visit(ICommandVisitor visitor)
         {
         if(IsAddOperation)
         {
-            return visitor.processAddDestination(this);
+            return visitor.ProcessAddDestination(this);
         }
         else if(IsRemoveOperation)
         {
-            return visitor.processRemoveDestination(this);
+            return visitor.ProcessRemoveDestination(this);
         }
         throw new IOException("Unknown operation type: " + OperationType);
         }

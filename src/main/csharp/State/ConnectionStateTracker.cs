@@ -32,7 +32,8 @@ namespace Apache.NMS.ActiveMQ.State
     {
         private static readonly Tracked TRACKED_RESPONSE_MARKER = new Tracked(null);
 
-        protected Dictionary<ConnectionId, ConnectionState> connectionStates = new Dictionary<ConnectionId, ConnectionState>();
+        protected readonly Dictionary<ConnectionId, ConnectionState> connectionStates = 
+			new Dictionary<ConnectionId, ConnectionState>();
 
         private bool isTrackTransactions;
         private bool isTrackTransactionProducers = true;
@@ -45,7 +46,7 @@ namespace Apache.NMS.ActiveMQ.State
         private int currentCacheSize;
         private readonly LRUCache<Object, Command> messageCache = new LRUCache<Object, Command>(256);
 
-        private class RemoveTransactionAction : ThreadSimulator
+        private class RemoveTransactionAction : ResponseHandler
         {
             private readonly TransactionInfo info;
             private readonly ConnectionStateTracker cst;
@@ -56,7 +57,7 @@ namespace Apache.NMS.ActiveMQ.State
                 this.cst = aCst;
             }
 
-            public override void Run()
+            public override void OnResponse()
             {
                 ConnectionState cs;
 
@@ -75,7 +76,7 @@ namespace Apache.NMS.ActiveMQ.State
         {
             try
             {
-                return (Tracked) command.visit(this);
+                return (Tracked) command.Visit(this);
             }
             catch(IOException)
             {
@@ -325,7 +326,7 @@ namespace Apache.NMS.ActiveMQ.State
             }
         }
 
-        public override Response processAddDestination(DestinationInfo info)
+        public override Response ProcessAddDestination(DestinationInfo info)
         {
             if(info != null && info.Destination.IsTemporary)
             {
@@ -339,7 +340,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processRemoveDestination(DestinationInfo info)
+        public override Response ProcessRemoveDestination(DestinationInfo info)
         {
             if(info != null && info.Destination.IsTemporary)
             {
@@ -352,7 +353,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processAddProducer(ProducerInfo info)
+        public override Response ProcessAddProducer(ProducerInfo info)
         {
             if(info != null && info.ProducerId != null)
             {
@@ -378,7 +379,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processRemoveProducer(ProducerId id)
+        public override Response ProcessRemoveProducer(ProducerId id)
         {
             if(id != null)
             {
@@ -404,7 +405,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processAddConsumer(ConsumerInfo info)
+        public override Response ProcessAddConsumer(ConsumerInfo info)
         {
             if(info != null)
             {
@@ -430,7 +431,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processRemoveConsumer(ConsumerId id)
+        public override Response ProcessRemoveConsumer(ConsumerId id)
         {
             if(id != null)
             {
@@ -456,7 +457,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processAddSession(SessionInfo info)
+        public override Response ProcessAddSession(SessionInfo info)
         {
             if(info != null)
             {
@@ -474,7 +475,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processRemoveSession(SessionId id)
+        public override Response ProcessRemoveSession(SessionId id)
         {
             if(id != null)
             {
@@ -492,7 +493,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processAddConnection(ConnectionInfo info)
+        public override Response ProcessAddConnection(ConnectionInfo info)
         {
             if(info != null)
             {
@@ -511,7 +512,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processRemoveConnection(ConnectionId id)
+        public override Response ProcessRemoveConnection(ConnectionId id)
         {
             if(id != null)
             {
@@ -520,7 +521,7 @@ namespace Apache.NMS.ActiveMQ.State
             return TRACKED_RESPONSE_MARKER;
         }
 
-        public override Response processMessage(Message send)
+        public override Response ProcessMessage(Message send)
         {
             if(send != null)
             {
@@ -558,7 +559,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processMessageAck(MessageAck ack)
+        public override Response ProcessMessageAck(MessageAck ack)
         {
             if(TrackTransactions && ack != null && ack.TransactionId != null)
             {
@@ -581,7 +582,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processBeginTransaction(TransactionInfo info)
+        public override Response ProcessBeginTransaction(TransactionInfo info)
         {
             if(TrackTransactions && info != null && info.TransactionId != null)
             {
@@ -602,7 +603,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processPrepareTransaction(TransactionInfo info)
+        public override Response ProcessPrepareTransaction(TransactionInfo info)
         {
             if(TrackTransactions && info != null)
             {
@@ -625,7 +626,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processCommitTransactionOnePhase(TransactionInfo info)
+        public override Response ProcessCommitTransactionOnePhase(TransactionInfo info)
         {
             if(TrackTransactions && info != null)
             {
@@ -648,7 +649,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processCommitTransactionTwoPhase(TransactionInfo info)
+        public override Response ProcessCommitTransactionTwoPhase(TransactionInfo info)
         {
             if(TrackTransactions && info != null)
             {
@@ -671,7 +672,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processRollbackTransaction(TransactionInfo info)
+        public override Response ProcessRollbackTransaction(TransactionInfo info)
         {
             if(TrackTransactions && info != null)
             {
@@ -694,7 +695,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processEndTransaction(TransactionInfo info)
+        public override Response ProcessEndTransaction(TransactionInfo info)
         {
             if(TrackTransactions && info != null)
             {
@@ -717,7 +718,7 @@ namespace Apache.NMS.ActiveMQ.State
             return null;
         }
 
-        public override Response processMessagePull(MessagePull pull)
+        public override Response ProcessMessagePull(MessagePull pull)
         {
             if (pull != null)
             {

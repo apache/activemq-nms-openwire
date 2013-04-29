@@ -15,31 +15,15 @@
  * limitations under the License.
  */
 
-using Apache.NMS.ActiveMQ.Commands;
+using System;
 
 namespace Apache.NMS.ActiveMQ.State
 {
-	public class Tracked : Response
+	public abstract class ResponseHandler
 	{
-		private ResponseHandler handler = null;
-
-		public Tracked(ResponseHandler handler)
+		public virtual void OnResponse()
 		{
-			this.handler = handler;
-		}
-
-		public void onResponses()
-		{
-			if (handler != null)
-			{
-				handler.OnResponse();
-				handler = null;
-			}
-		}
-
-		virtual public bool WaitingForResponse
-		{
-			get { return handler != null; }
+			throw new ApplicationException("ResponseHandler.Run() should be overridden.");
 		}
 	}
 }

@@ -217,26 +217,25 @@ namespace Apache.NMS.ActiveMQ.Test
 	        conn.producer = new ProducerInfo();
 	        conn.producer.ProducerId = producerId;
 
-	        tracker.processAddConnection(conn.connection);
-	        tracker.processAddSession(conn.session);
-	        tracker.processAddConsumer(conn.consumer);
-	        tracker.processAddProducer(conn.producer);
+	        tracker.ProcessAddConnection(conn.connection);
+	        tracker.ProcessAddSession(conn.session);
+	        tracker.ProcessAddConsumer(conn.consumer);
+	        tracker.ProcessAddProducer(conn.producer);
 
 	        return conn;
 	    }
 
 	    void ClearConnectionState(ConnectionStateTracker tracker, ConnectionData conn) 
 		{
-	        tracker.processRemoveProducer(conn.producer.ProducerId);
-	        tracker.processRemoveConsumer(conn.consumer.ConsumerId);
-	        tracker.processRemoveSession(conn.session.SessionId);
-	        tracker.processRemoveConnection(conn.connection.ConnectionId);
+	        tracker.ProcessRemoveProducer(conn.producer.ProducerId);
+	        tracker.ProcessRemoveConsumer(conn.consumer.ConsumerId);
+	        tracker.ProcessRemoveSession(conn.session.SessionId);
+	        tracker.ProcessRemoveConnection(conn.connection.ConnectionId);
 	    }
 
 		[SetUp]
 		public void SetUp()
 		{
-			Apache.NMS.Tracer.Trace = new NmsConsoleTracer();
 		}
 
 		[Test]
@@ -256,12 +255,6 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		    ConnectionData conn = CreateConnectionState(tracker);
 
-		    int messageSize;
-		    {
-		        Message message = new Message();
-		        messageSize = message.Size();
-		    }
-
 			tracker.MaxCacheSize = 4;
 
 		    int sequenceId = 1;
@@ -274,7 +267,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		        Message message = new Message();
 		        message.MessageId = id;
 
-		        tracker.processMessage(message);
+		        tracker.ProcessMessage(message);
 		        tracker.TrackBack(message);
 		    }
 
@@ -299,7 +292,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		        ActiveMQDestination destination = new ActiveMQTopic("TEST" + i);
 		        pull.ConsumerId = conn.consumer.ConsumerId;
 		        pull.Destination = destination;
-		        tracker.processMessagePull(pull);
+		        tracker.ProcessMessagePull(pull);
 				tracker.TrackBack(pull);
 		    }
 
@@ -324,7 +317,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		        ActiveMQDestination destination = new ActiveMQTopic("TEST");
 		        pull.ConsumerId = conn.consumer.ConsumerId;
 		        pull.Destination = destination;
-		        tracker.processMessagePull(pull);
+		        tracker.ProcessMessagePull(pull);
 				tracker.TrackBack(pull);
 		    }
 

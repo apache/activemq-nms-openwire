@@ -21,186 +21,184 @@ namespace Apache.NMS.ActiveMQ.State
 {
     public class CommandVisitorAdapter : ICommandVisitor
     {
-
-        public virtual Response processAddConnection(ConnectionInfo info)
+        public virtual Response ProcessAddConnection(ConnectionInfo info)
         {
             return null;
         }
 
-        public virtual Response processAddConsumer(ConsumerInfo info)
+        public virtual Response ProcessAddConsumer(ConsumerInfo info)
         {
             return null;
         }
 
-        public virtual Response processAddDestination(DestinationInfo info)
+        public virtual Response ProcessAddDestination(DestinationInfo info)
         {
             return null;
         }
 
-        public virtual Response processAddProducer(ProducerInfo info)
+        public virtual Response ProcessAddProducer(ProducerInfo info)
         {
             return null;
         }
 
-        public virtual Response processAddSession(SessionInfo info)
+        public virtual Response ProcessAddSession(SessionInfo info)
         {
             return null;
         }
 
-        public virtual Response processBeginTransaction(TransactionInfo info)
+        public virtual Response ProcessBeginTransaction(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processBrokerInfo(BrokerInfo info)
+        public virtual Response ProcessBrokerInfo(BrokerInfo info)
         {
             return null;
         }
 
-        public virtual Response processCommitTransactionOnePhase(TransactionInfo info)
+        public virtual Response ProcessCommitTransactionOnePhase(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processCommitTransactionTwoPhase(TransactionInfo info)
+        public virtual Response ProcessCommitTransactionTwoPhase(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processEndTransaction(TransactionInfo info)
+        public virtual Response ProcessEndTransaction(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processFlushCommand(FlushCommand command)
+        public virtual Response ProcessFlushCommand(FlushCommand command)
         {
             return null;
         }
 
-        public virtual Response processForgetTransaction(TransactionInfo info)
+        public virtual Response ProcessForgetTransaction(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processKeepAliveInfo(KeepAliveInfo info)
+        public virtual Response ProcessKeepAliveInfo(KeepAliveInfo info)
         {
             return null;
         }
 
-        public virtual Response processMessage(Message send)
+        public virtual Response ProcessMessage(Message send)
         {
             return null;
         }
 
-        public virtual Response processMessageAck(MessageAck ack)
+        public virtual Response ProcessMessageAck(MessageAck ack)
         {
             return null;
         }
 
-        public virtual Response processMessageDispatchNotification(MessageDispatchNotification notification)
+        public virtual Response ProcessMessageDispatchNotification(MessageDispatchNotification notification)
         {
             return null;
         }
 
-        public virtual Response processMessagePull(MessagePull pull)
+        public virtual Response ProcessMessagePull(MessagePull pull)
         {
             return null;
         }
 
-        public virtual Response processPrepareTransaction(TransactionInfo info)
+        public virtual Response ProcessPrepareTransaction(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processProducerAck(ProducerAck ack)
+        public virtual Response ProcessProducerAck(ProducerAck ack)
         {
             return null;
         }
 
-        public virtual Response processRecoverTransactions(TransactionInfo info)
+        public virtual Response ProcessRecoverTransactions(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processRemoveConnection(ConnectionId id)
+        public virtual Response ProcessRemoveConnection(ConnectionId id)
         {
             return null;
         }
 
-        public virtual Response processRemoveConsumer(ConsumerId id)
+        public virtual Response ProcessRemoveConsumer(ConsumerId id)
         {
             return null;
         }
 
-        public virtual Response processRemoveDestination(DestinationInfo info)
+        public virtual Response ProcessRemoveDestination(DestinationInfo info)
         {
             return null;
         }
 
-        public virtual Response processRemoveProducer(ProducerId id)
+        public virtual Response ProcessRemoveProducer(ProducerId id)
         {
             return null;
         }
 
-        public virtual Response processRemoveSession(SessionId id)
+        public virtual Response ProcessRemoveSession(SessionId id)
         {
             return null;
         }
 
-        public virtual Response processRemoveSubscriptionInfo(RemoveSubscriptionInfo info)
+        public virtual Response ProcessRemoveSubscriptionInfo(RemoveSubscriptionInfo info)
         {
             return null;
         }
 
-        public virtual Response processRollbackTransaction(TransactionInfo info)
+        public virtual Response ProcessRollbackTransaction(TransactionInfo info)
         {
             return null;
         }
 
-        public virtual Response processShutdownInfo(ShutdownInfo info)
+        public virtual Response ProcessShutdownInfo(ShutdownInfo info)
         {
             return null;
         }
 
-        public virtual Response processWireFormat(WireFormatInfo info)
+        public virtual Response ProcessWireFormat(WireFormatInfo info)
         {
             return null;
         }
 
-        public virtual Response processMessageDispatch(MessageDispatch dispatch)
+        public virtual Response ProcessMessageDispatch(MessageDispatch dispatch)
         {
             return null;
         }
 
-        public virtual Response processControlCommand(ControlCommand command)
+        public virtual Response ProcessControlCommand(ControlCommand command)
         {
             return null;
         }
 
-        public virtual Response processConnectionControl(ConnectionControl control)
+        public virtual Response ProcessConnectionControl(ConnectionControl control)
         {
             return null;
         }
 
-        public virtual Response processConnectionError(ConnectionError error)
+        public virtual Response ProcessConnectionError(ConnectionError error)
         {
             return null;
         }
 
-        public virtual Response processConsumerControl(ConsumerControl control)
+        public virtual Response ProcessConsumerControl(ConsumerControl control)
         {
             return null;
         }
 
-        public virtual Response processResponse(Response response)
+        public virtual Response ProcessResponse(Response response)
         {
             return null;
         }
 
-        public virtual Response processReplayCommand(ReplayCommand replayCommand)
+        public virtual Response ProcessReplayCommand(ReplayCommand replayCommand)
         {
            return null;
         }
-
     }
 }

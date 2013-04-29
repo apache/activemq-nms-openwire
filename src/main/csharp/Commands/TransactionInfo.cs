@@ -105,29 +105,29 @@ namespace Apache.NMS.ActiveMQ.Commands
         /// <summery>
         ///  Allows a Visitor to visit this command and return a response to the
         ///  command based on the command type being visited.  The command will call
-        ///  the proper processXXX method in the visitor.
+        ///  the proper ProcessXXX method in the visitor.
         /// </summery>
         ///
-        public override Response visit(ICommandVisitor visitor)
+        public override Response Visit(ICommandVisitor visitor)
         {
             switch(type)
             {
                 case TransactionInfo.BEGIN:
-                    return visitor.processBeginTransaction(this);
+                    return visitor.ProcessBeginTransaction(this);
                 case TransactionInfo.END:
-                    return visitor.processEndTransaction(this);
+                    return visitor.ProcessEndTransaction(this);
                 case TransactionInfo.PREPARE:
-                    return visitor.processPrepareTransaction(this);
+                    return visitor.ProcessPrepareTransaction(this);
                 case TransactionInfo.COMMIT_ONE_PHASE:
-                    return visitor.processCommitTransactionOnePhase(this);
+                    return visitor.ProcessCommitTransactionOnePhase(this);
                 case TransactionInfo.COMMIT_TWO_PHASE:
-                    return visitor.processCommitTransactionTwoPhase(this);
+                    return visitor.ProcessCommitTransactionTwoPhase(this);
                 case TransactionInfo.ROLLBACK:
-                    return visitor.processRollbackTransaction(this);
+                    return visitor.ProcessRollbackTransaction(this);
                 case TransactionInfo.RECOVER:
-                    return visitor.processRecoverTransactions(this);
+                    return visitor.ProcessRecoverTransactions(this);
                 case TransactionInfo.FORGET:
-                    return visitor.processForgetTransaction(this);
+                    return visitor.ProcessForgetTransaction(this);
                 default:
                     throw new IOException("Transaction info type unknown: " + type);
             }

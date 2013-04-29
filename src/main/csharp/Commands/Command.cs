@@ -163,7 +163,7 @@ namespace Apache.NMS.ActiveMQ.Commands
            get;
         }
 
-        Response visit(ICommandVisitor visitor);
+        Response Visit(ICommandVisitor visitor);
     }
 }
 

@@ -207,9 +207,9 @@ namespace Apache.NMS.ActiveMQ.Commands
             }
         }
 
-        public override Response visit(ICommandVisitor visitor)
+        public override Response Visit(ICommandVisitor visitor)
         {
-            return visitor.processWireFormat(this);
+            return visitor.ProcessWireFormat(this);
         }
     }
 }

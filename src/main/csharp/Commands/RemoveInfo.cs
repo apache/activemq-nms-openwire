@@ -91,18 +91,18 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///  the proper processXXX method in the visitor.
         /// </summery>
         ///
-        public override Response visit(ICommandVisitor visitor)
+        public override Response Visit(ICommandVisitor visitor)
         {
             switch(objectId.GetDataStructureType())
             {
                 case ConnectionId.ID_CONNECTIONID:
-                    return visitor.processRemoveConnection((ConnectionId) objectId);
+                    return visitor.ProcessRemoveConnection((ConnectionId) objectId);
                 case SessionId.ID_SESSIONID:
-                    return visitor.processRemoveSession((SessionId) objectId);
+                    return visitor.ProcessRemoveSession((SessionId) objectId);
                 case ConsumerId.ID_CONSUMERID:
-                    return visitor.processRemoveConsumer((ConsumerId) objectId);
+                    return visitor.ProcessRemoveConsumer((ConsumerId) objectId);
                 case ProducerId.ID_PRODUCERID:
-                    return visitor.processRemoveProducer((ProducerId) objectId);
+                    return visitor.ProcessRemoveProducer((ProducerId) objectId);
                 default:
                     throw new IOException("Unknown remove command type: " + objectId.GetDataStructureType());
             }

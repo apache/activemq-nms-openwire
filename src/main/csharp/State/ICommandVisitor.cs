@@ -22,78 +22,77 @@ namespace Apache.NMS.ActiveMQ.State
 {
     public interface ICommandVisitor
     {
+        Response ProcessAddConnection(ConnectionInfo info);
 
-        Response processAddConnection(ConnectionInfo info);
+        Response ProcessAddSession(SessionInfo info);
 
-        Response processAddSession(SessionInfo info);
+        Response ProcessAddProducer(ProducerInfo info);
 
-        Response processAddProducer(ProducerInfo info);
+        Response ProcessAddConsumer(ConsumerInfo info);
 
-        Response processAddConsumer(ConsumerInfo info);
+        Response ProcessRemoveConnection(ConnectionId id);
 
-        Response processRemoveConnection(ConnectionId id);
+        Response ProcessRemoveSession(SessionId id);
 
-        Response processRemoveSession(SessionId id);
+        Response ProcessRemoveProducer(ProducerId id);
 
-        Response processRemoveProducer(ProducerId id);
+        Response ProcessRemoveConsumer(ConsumerId id);
 
-        Response processRemoveConsumer(ConsumerId id);
+        Response ProcessAddDestination(DestinationInfo info);
 
-        Response processAddDestination(DestinationInfo info);
+        Response ProcessRemoveDestination(DestinationInfo info);
 
-        Response processRemoveDestination(DestinationInfo info);
+        Response ProcessRemoveSubscriptionInfo(RemoveSubscriptionInfo info);
 
-        Response processRemoveSubscriptionInfo(RemoveSubscriptionInfo info);
+        Response ProcessMessage(Message send);
 
-        Response processMessage(Message send);
+        Response ProcessMessageAck(MessageAck ack);
 
-        Response processMessageAck(MessageAck ack);
+        Response ProcessMessagePull(MessagePull pull);
 
-        Response processMessagePull(MessagePull pull);
+        Response ProcessBeginTransaction(TransactionInfo info);
 
-        Response processBeginTransaction(TransactionInfo info);
+        Response ProcessPrepareTransaction(TransactionInfo info);
 
-        Response processPrepareTransaction(TransactionInfo info);
+        Response ProcessCommitTransactionOnePhase(TransactionInfo info);
 
-        Response processCommitTransactionOnePhase(TransactionInfo info);
+        Response ProcessCommitTransactionTwoPhase(TransactionInfo info);
 
-        Response processCommitTransactionTwoPhase(TransactionInfo info);
+        Response ProcessRollbackTransaction(TransactionInfo info);
 
-        Response processRollbackTransaction(TransactionInfo info);
+        Response ProcessWireFormat(WireFormatInfo info);
 
-        Response processWireFormat(WireFormatInfo info);
+        Response ProcessKeepAliveInfo(KeepAliveInfo info);
 
-        Response processKeepAliveInfo(KeepAliveInfo info);
+        Response ProcessShutdownInfo(ShutdownInfo info);
 
-        Response processShutdownInfo(ShutdownInfo info);
+        Response ProcessFlushCommand(FlushCommand command);
 
-        Response processFlushCommand(FlushCommand command);
+        Response ProcessBrokerInfo(BrokerInfo info);
 
-        Response processBrokerInfo(BrokerInfo info);
+        Response ProcessRecoverTransactions(TransactionInfo info);
 
-        Response processRecoverTransactions(TransactionInfo info);
+        Response ProcessForgetTransaction(TransactionInfo info);
 
-        Response processForgetTransaction(TransactionInfo info);
+        Response ProcessEndTransaction(TransactionInfo info);
 
-        Response processEndTransaction(TransactionInfo info);
+        Response ProcessMessageDispatchNotification(MessageDispatchNotification notification);
 
-        Response processMessageDispatchNotification(MessageDispatchNotification notification);
+        Response ProcessProducerAck(ProducerAck ack);
 
-        Response processProducerAck(ProducerAck ack);
+        Response ProcessMessageDispatch(MessageDispatch dispatch);
 
-        Response processMessageDispatch(MessageDispatch dispatch);
+        Response ProcessControlCommand(ControlCommand command);
 
-        Response processControlCommand(ControlCommand command);
+        Response ProcessConnectionError(ConnectionError error);
 
-        Response processConnectionError(ConnectionError error);
+        Response ProcessConnectionControl(ConnectionControl control);
 
-        Response processConnectionControl(ConnectionControl control);
+        Response ProcessConsumerControl(ConsumerControl control);
 
-        Response processConsumerControl(ConsumerControl control);
+        Response ProcessResponse(Response response);
 
-        Response processResponse(Response response);
-
-        Response processReplayCommand(ReplayCommand replayCommand);
+        Response ProcessReplayCommand(ReplayCommand replayCommand);
 
     }
 }
