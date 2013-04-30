@@ -94,6 +94,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { sendTimeout = value; }
         }
 
+		private int connectTimeout = 30000;
+		public int ConnectTimeout
+		{
+			get { return connectTimeout; }
+			set { this.connectTimeout = value; }
+		}
+
         #endregion
 
         #region ITransportFactory Members
@@ -253,12 +260,17 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 						{
 							DoBind(socket, localAddress, localPort);
 						}
-						
-                        socket.Connect(new IPEndPoint(address, port));
-                        if(socket.Connected)
-                        {
-                            return socket;
-                        }
+
+						IAsyncResult result = socket.BeginConnect(new IPEndPoint(address, port), null, null);
+						result.AsyncWaitHandle.WaitOne(ConnectTimeout, true);
+						if(!socket.Connected)
+						{
+				            socket.Close();
+						}
+						else
+						{
+							return socket;
+						}
                     }
                 }
                 catch
