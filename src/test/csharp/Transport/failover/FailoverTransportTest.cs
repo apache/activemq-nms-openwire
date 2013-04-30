@@ -595,6 +595,49 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test]
+		public void TestPriorityBackupConfigPriorityURIsList() 
+		{
+		    Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)" +
+			                  "?transport.randomize=false&transport.priorityBackup=true&" +
+			                  "transport.priorityURIs=mock://localhost:61616,mock://localhost:61618");
+
+			FailoverTransportFactory factory = new FailoverTransportFactory();
+
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
+
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize, "Randomize should be false");
+				Assert.IsTrue(failover.PriorityBackup, "Prioirity Backup not set.");
+
+				String priorityURIs = failover.PriorityURIs;
+	            String[] tokens = priorityURIs.Split(new Char[] { ',' });
+				Assert.AreEqual(2, tokens.Length, "Bad priorityURIs string: " + priorityURIs);
+
+		    	transport.Start();
+
+				for(int i = 0; i < MAX_ATTEMPTS; ++i)
+				{
+					if(failover.IsConnected)
+					{
+						break;
+					}
+					
+					Thread.Sleep(100);
+				}
+				
+				Assert.IsTrue(failover.IsConnected);
+				Assert.IsTrue(failover.IsConnectedToPriority);
+			}
+		}
+
+		[Test]
 		public void OpenWireCommandsTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");

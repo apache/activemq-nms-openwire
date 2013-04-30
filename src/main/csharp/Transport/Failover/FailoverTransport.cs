@@ -306,6 +306,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			set { this.priorityBackup = value; }
 		}
 
+	    public String PriorityURIs
+		{
+			get { return PrintableUriList(priorityList); }
+			set { this.ProcessDelimitedUriList(value, priorityList); }
+	    }
+
         public int BackupPoolSize
         {
             get { return backupPoolSize; }
@@ -1416,20 +1422,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 if(newTransports.Length > 0 && IsUpdateURIsSupported)
                 {
                     List<Uri> list = new List<Uri>();
-                    String[] tokens = newTransports.Split(new Char[] { ',' });
-
-                    foreach(String str in tokens)
-                    {
-                        try
-                        {
-                            Uri uri = new Uri(str);
-                            list.Add(uri);
-                        }
-                        catch
-                        {
-                            Tracer.Error("Failed to parse broker address: " + str);
-                        }
-                    }
+					ProcessDelimitedUriList(newTransports, list);
 
                     if(list.Count != 0)
                     {
@@ -1443,8 +1436,32 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         }
                     }
                 }
+            }        
+		}
+
+		private void ProcessDelimitedUriList(String priorityUris, List<Uri> target)
+		{
+            String[] tokens = priorityUris.Split(new Char[] { ',' });
+
+            foreach(String str in tokens)
+            {
+                try
+                {
+                    Uri uri = new Uri(str);
+                    target.Add(uri);
+
+					if (Tracer.IsDebugEnabled)
+					{
+						Tracer.DebugFormat("Adding new Uri[{0}] to list,", uri);
+					}
+                }
+                catch (Exception e)
+                {
+					Tracer.ErrorFormat("Failed to parse broker address: {0} because of: {1}",
+					                   str, e.Message);
+                }
             }
-        }
+		}
 
         public void Dispose()
         {
@@ -1587,16 +1604,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 		{
 			if (uriList.Count == 0)
 			{
-				return "<no-Uris>";
+				return "";
 			}
 
 			StringBuilder builder = new StringBuilder();
 			for (int i = 0; i < uriList.Count; ++i)
 			{
 				builder.Append(uriList[i]);
-				if (i < uriList.Count + 1)
+				if (i < (uriList.Count - 1))
 				{
-					builder.Append(":");
+					builder.Append(",");
 				}
 			}
 
