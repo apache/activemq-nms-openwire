@@ -658,7 +658,7 @@ namespace Apache.NMS.ActiveMQ.State
                 {
 					ConnectionState cs = null;
 
-                    if(cs != null)
+					if(connectionStates.TryGetValue(connectionId, out cs))
                     {
                         TransactionState transactionState = cs[info.TransactionId];
                         if(transactionState != null)
