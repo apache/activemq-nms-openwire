@@ -19,6 +19,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using System.Text;
+using System.Net;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.State;
 using Apache.NMS.ActiveMQ.Threads;
@@ -32,6 +34,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
     /// </summary>
     public class FailoverTransport : ICompositeTransport, IComparable
     {
+		private static int DEFAULT_INITIAL_RECONNECT_DELAY = 10;
+		private static int INFINITE = -1;
+
         private static int idCounter = 0;
         private readonly int id;
 
@@ -39,11 +44,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private bool connected;
         private readonly List<Uri> uris = new List<Uri>();
         private readonly List<Uri> updated = new List<Uri>();
+
         private CommandHandler commandHandler;
         private ExceptionHandler exceptionHandler;
         private InterruptedHandler interruptedHandler;
         private ResumedHandler resumedHandler;
 
+		private readonly CountDownLatch listenerLatch = new CountDownLatch(4);
         private readonly Mutex reconnectMutex = new Mutex();
         private readonly Mutex backupMutex = new Mutex();
         private readonly Mutex sleepMutex = new Mutex();
@@ -55,31 +62,38 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private readonly AtomicReference<ITransport> connectedTransport = new AtomicReference<ITransport>(null);
         private TaskRunner reconnectTask = null;
         private bool started;
-
-        private int timeout = -1;
-        private int initialReconnectDelay = 10;
+        private bool initialized;
+        private int initialReconnectDelay = DEFAULT_INITIAL_RECONNECT_DELAY;
         private int maxReconnectDelay = 1000 * 30;
         private int backOffMultiplier = 2;
+        private int timeout = INFINITE;
         private bool useExponentialBackOff = true;
         private bool randomize = true;
-        private bool initialized;
-        private int maxReconnectAttempts;
-        private int startupMaxReconnectAttempts;
+        private int maxReconnectAttempts = INFINITE;
+        private int startupMaxReconnectAttempts = INFINITE;
         private int connectFailures;
-        private int reconnectDelay = 10;
-        private int asyncTimeout = 45000;
-        private bool asyncConnect = false;
+        private int reconnectDelay = DEFAULT_INITIAL_RECONNECT_DELAY;
         private Exception connectionFailure;
         private bool firstConnection = true;
         private bool backup = false;
         private readonly List<BackupTransport> backups = new List<BackupTransport>();
         private int backupPoolSize = 1;
         private bool trackMessages = false;
+    	private bool trackTransactionProducers = true;
         private int maxCacheSize = 256;
         private volatile Exception failure;
         private readonly object mutex = new object();
         private bool reconnectSupported = true;
         private bool updateURIsSupported = true;
+    	private bool doRebalance = false;
+    	private bool connectedToPriority = false;
+	 	private bool priorityBackup = false;
+    	private List<Uri> priorityList = new List<Uri>();
+    	private bool priorityBackupAvailable = false;
+
+		// Not Sure how to work these back in with all the changes.
+		//private int asyncTimeout = 45000;
+        //private bool asyncConnect = false;
 
         public FailoverTransport()
         {
@@ -115,35 +129,48 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 }
 
                 bool buildBackup = true;
-                bool doReconnect = !parent.disposed && parent.connectionFailure == null;
-                try
-                {
-                    parent.backupMutex.WaitOne();
-                    if(parent.ConnectedTransport == null && doReconnect)
-                    {
+                lock (parent.backupMutex) 
+				{
+                    if ((parent.connectedTransport.Value == null || parent.doRebalance || parent.priorityBackupAvailable) && !parent.disposed)
+					{
                         result = parent.DoConnect();
                         buildBackup = false;
+                        parent.connectedToPriority = 
+							parent.IsPriority(parent.connectedTransportURI);
                     }
                 }
-                finally
-                {
-                    parent.backupMutex.ReleaseMutex();
-                }
-
-                if(buildBackup)
-                {
+                if (buildBackup) 
+				{
                     parent.BuildBackups();
+                    if (parent.priorityBackup && !parent.connectedToPriority) 
+					{
+                        try 
+						{
+                            parent.DoDelay();
+                            if (parent.reconnectTask == null)
+							{
+                                return true;
+                            }
+                            parent.reconnectTask.Wakeup();
+                        } 
+						catch (ThreadInterruptedException) 
+						{
+                        	Tracer.Debug("Reconnect task has been interrupted.");
+                        }
+                    }
                 }
-                else
-                {
-                    //build backups on the next iteration
-                    result = true;
-                    try
-                    {
+				else 
+				{
+                    try 
+					{
+                        if (parent.reconnectTask == null) 
+						{
+                            return true;
+                        }
                         parent.reconnectTask.Wakeup();
                     }
-                    catch(ThreadInterruptedException)
-                    {
+					catch (ThreadInterruptedException) 
+					{
                         Tracer.Debug("Reconnect task has been interrupted.");
                     }
                 }
@@ -158,25 +185,41 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         public CommandHandler Command
         {
             get { return commandHandler; }
-            set { commandHandler = value; }
+            set 
+			{ 
+				commandHandler = value; 
+				listenerLatch.countDown();
+			}
         }
 
         public ExceptionHandler Exception
         {
             get { return exceptionHandler; }
-            set { exceptionHandler = value; }
+            set 
+			{ 
+				exceptionHandler = value; 
+				listenerLatch.countDown();
+			}
         }
 
         public InterruptedHandler Interrupted
         {
             get { return interruptedHandler; }
-            set { this.interruptedHandler = value; }
+            set 
+			{ 
+				this.interruptedHandler = value; 
+				this.listenerLatch.countDown();
+			}
         }
 
         public ResumedHandler Resumed
         {
             get { return resumedHandler; }
-            set { this.resumedHandler = value; }
+            set 
+			{ 
+				this.resumedHandler = value; 
+				this.listenerLatch.countDown();
+			}
         }
 
         internal Exception Failure
@@ -257,6 +300,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             set { backup = value; }
         }
 
+		public bool PriorityBackup
+		{
+			get { return priorityBackup; }
+			set { this.priorityBackup = value; }
+		}
+
         public int BackupPoolSize
         {
             get { return backupPoolSize; }
@@ -268,6 +317,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             get { return trackMessages; }
             set { trackMessages = value; }
         }
+
+		public bool TrackTransactionProducers
+		{
+			get { return trackTransactionProducers; }
+			set { this.trackTransactionProducers = value; }
+		}
 
         public int MaxCacheSize
         {
@@ -301,7 +356,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         /// <value><c>true</c> if [async connect]; otherwise, <c>false</c>.</value>
         public bool AsyncConnect
         {
-            set { asyncConnect = value; }
+            set { }
         }
 
         /// <summary>
@@ -310,8 +365,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         /// <value>The async timeout.</value>
         public int AsyncTimeout
         {
-            get { return asyncTimeout; }
-            set { asyncTimeout = value; }
+            get { return 0; }
+            set { }
         }
 
         public ConnectionStateTracker StateTracker
@@ -336,6 +391,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             get { return connected; }
         }
 
+        public bool IsConnectedToPriority
+        {
+            get { return connectedToPriority; }
+        }
+
         public bool IsStarted
         {
             get { return started; }
@@ -357,45 +417,45 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             {
                 HandleTransportFailure(error);
             }
-            catch(Exception e)
+            catch(Exception)
             {
-                e.GetType();
-                // What to do here?
+				this.Exception(this, new IOException("Unexpected Transport Failure."));
             }
         }
 
-        public void disposedOnCommand(ITransport sender, Command c)
+        public void DisposedOnCommand(ITransport sender, Command c)
         {
         }
 
-        public void disposedOnException(ITransport sender, Exception e)
+        public void DisposedOnException(ITransport sender, Exception e)
         {
         }
 
         public void HandleTransportFailure(Exception e)
         {
             ITransport transport = connectedTransport.GetAndSet(null);
-            if(transport != null)
-            {
-                transport.Command = disposedOnCommand;
-                transport.Exception = disposedOnException;
-                try
-                {
-                    transport.Stop();
-                }
-                catch(Exception ex)
-                {
-                    ex.GetType();	// Ignore errors but this lets us see the error during debugging
-                }
+	        if (transport == null) 
+			{
+	            // sync with possible in progress reconnect
+	            lock(reconnectMutex) 
+				{
+	                transport = connectedTransport.GetAndSet(null);
+	            }
+	        }
 
-                lock(reconnectMutex)
-                {
-                    bool reconnectOk = false;
-                    if(started)
-                    {
-                        Tracer.WarnFormat("Transport failed to {0}, attempting to automatically reconnect due to: {1}", ConnectedTransportURI.ToString(), e.Message);
-                        reconnectOk = true;
-                    }
+			if(transport != null)
+            {
+				DisposeTransport(transport);
+
+	            bool reconnectOk = false;
+	            lock(reconnectMutex) 
+				{
+	                if (CanReconnect()) 
+					{
+                    	Tracer.WarnFormat("Transport failed to {0}, attempting to automatically reconnect due to: {1}", 
+						                  ConnectedTransportURI, e.Message);
+	                    reconnectOk = true;
+	                }
 
                     initialized = false;
                     failedConnectTransportURI = ConnectedTransportURI;
@@ -407,13 +467,23 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         this.Interrupted(transport);
                     }
 
-                    if(reconnectOk)
-                    {
-                        reconnectTask.Wakeup();
-                    }
-                }
+	                if (reconnectOk) 
+					{
+	                    updated.Remove(failedConnectTransportURI);
+	                    reconnectTask.Wakeup();
+	                }
+					else if (!disposed) 
+					{
+	                    PropagateFailureToExceptionListener(e);
+	                }
+	            }
             }
         }
+
+	    private bool CanReconnect() 
+		{
+	        return started && 0 != CalculateReconnectAttemptLimit();
+	    }
 
         public void Start()
         {
@@ -429,6 +499,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 started = true;
                 stateTracker.MaxCacheSize = MaxCacheSize;
                 stateTracker.TrackMessages = TrackMessages;
+				stateTracker.TrackTransactionProducers = TrackTransactionProducers;
                 if(ConnectedTransport != null)
                 {
                     Tracer.Debug("FailoverTransport already connected, start is restoring.");
@@ -445,46 +516,72 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         public virtual void Stop()
         {
             ITransport transportToStop = null;
+	        List<ITransport> backupsToStop = new List<ITransport>(backups.Count);
 
-            lock(reconnectMutex)
-            {
-                if(!started)
-                {
-                    Tracer.Debug("FailoverTransport Already Stopped.");
-                    return;
-                }
+			try 
+			{
+	            lock(reconnectMutex)
+	            {
+	                if(!started)
+	                {
+	                    Tracer.Debug("FailoverTransport Already Stopped.");
+	                    return;
+	                }
 
-                Tracer.Debug("FailoverTransport Stopped.");
-                started = false;
-                disposed = true;
-                connected = false;
-                foreach(BackupTransport t in backups)
-                {
-                    t.Disposed = true;
-                }
-                backups.Clear();
+	                Tracer.Debug("FailoverTransport Stopped.");
+	                started = false;
+	                disposed = true;
+	                connected = false;
+	                if(ConnectedTransport != null)
+	                {
+	                    transportToStop = connectedTransport.GetAndSet(null);
+	                }
+	            }
+				lock(sleepMutex)
+				{
+					Monitor.PulseAll(sleepMutex);
+				}
+			}
+			finally
+			{
+            	if(reconnectTask != null)
+            	{
+	                reconnectTask.Shutdown();
+            	}
+			}
 
-                if(ConnectedTransport != null)
-                {
-                    transportToStop = connectedTransport.GetAndSet(null);
-                }
-            }
+	        lock(backupMutex) 
+			{
+	            foreach (BackupTransport backup in backups) 
+				{
+	                backup.Disposed = true;
+	                ITransport transport = backup.Transport;
+	                if (transport != null) 
+					{
+	                    transport.Command = DisposedOnCommand;
+						transport.Exception = DisposedOnException;
+	                    backupsToStop.Add(transport);
+	                }
+	            }
+	            backups.Clear();
+	        }
+	        
+			foreach (ITransport transport in backupsToStop) 
+			{
+	            try 
+				{
+	                if (Tracer.IsDebugEnabled) 
+					{
+	                    Tracer.Debug("Stopped backup: " + transport);
+	                }
+	                DisposeTransport(transport);
+	            } 
+				catch (Exception) 
+				{
+	            }
+	        }
 
-            try
-            {
-                sleepMutex.WaitOne();
-            }
-            finally
-            {
-                sleepMutex.ReleaseMutex();
-            }
-
-            if(reconnectTask != null)
-            {
-                reconnectTask.Shutdown();
-            }
-
-            if(transportToStop != null)
+			if(transportToStop != null)
             {
                 transportToStop.Stop();
             }
@@ -511,15 +608,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             {
                 if(command.IsResponse)
                 {
-                    Object oo = null;
+                    Command request = null;
                     lock(((ICollection) requestMap).SyncRoot)
                     {
                         int v = ((Response) command).CorrelationId;
                         try
                         {
-                            if(requestMap.ContainsKey(v))
+                            if(requestMap.TryGetValue(v, out request))
                             {
-                                oo = requestMap[v];
                                 requestMap.Remove(v);
                             }
                         }
@@ -528,10 +624,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         }
                     }
 
-                    Tracked t = oo as Tracked;
-                    if(t != null)
+                    Tracked tracked = request as Tracked;
+                    if(tracked != null)
                     {
-                        t.onResponses();
+                        tracked.OnResponse();
                     }
                 }
 
@@ -570,6 +666,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         if(command.ResponseRequired)
                         {
                             OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                        }
+                        return;
+                    }
+					else if(command.IsMessagePull) 
+					{
+                        // Simulate response to MessagePull if timed as we can't honor that now.
+                        MessagePull pullRequest = command as MessagePull;
+                        if (pullRequest.Timeout != 0) 
+						{
+                            MessageDispatch dispatch = new MessageDispatch();
+                            dispatch.ConsumerId = pullRequest.ConsumerId;
+                            dispatch.Destination = pullRequest.Destination;
+                            OnCommand(this, dispatch);
                         }
                         return;
                     }
@@ -692,8 +801,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                             }
                             else
                             {
-                                Tracer.DebugFormat("Send Oneway attempt: {0} failed: Message = {1}", i, e.Message);
-                                Tracer.DebugFormat("Failed Message Was: {0}", command);
+								if (Tracer.IsDebugEnabled)
+								{
+                                	Tracer.DebugFormat("Send Oneway attempt: {0} failed: Message = {1}", 
+									                   i, e.Message);
+                                	Tracer.DebugFormat("Failed Message Was: {0}", command);
+								}
                                 HandleTransportFailure(e);
                             }
                         }
@@ -702,8 +815,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     }
                     catch(Exception e)
                     {
-                        Tracer.DebugFormat("Send Oneway attempt: {0} failed: Message = {1}", i, e.Message);
-                        Tracer.DebugFormat("Failed Message Was: {0}", command);
+						if (Tracer.IsDebugEnabled)
+						{
+                        	Tracer.DebugFormat("Send Oneway attempt: {0} failed: Message = {1}", 
+							                   i, e.Message);
+                        	Tracer.DebugFormat("Failed Message Was: {0}", command);
+						}
                         HandleTransportFailure(e);
                     }
                 }
@@ -718,20 +835,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             }
         }
 
-        public void Add(bool rebalance, Uri[] u)
+        public void Add(bool rebalance, Uri[] urisToAdd)
         {
+			bool newUri = false;
             lock(uris)
             {
-                for(int i = 0; i < u.Length; i++)
+                foreach (Uri uri in urisToAdd)
                 {
-                    if(!uris.Contains(u[i]))
+                    if(!Contains(uri))
                     {
-                        uris.Add(u[i]);
+                        uris.Add(uri);
+						newUri = true;
                     }
                 }
             }
 
-            Reconnect(rebalance);
+			if (newUri)
+			{
+            	Reconnect(rebalance);
+			}
         }
 
         public void Add(bool rebalance, String u)
@@ -776,50 +898,41 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             Add(true, new Uri[] { uri });
         }
 
-        public void Reconnect(bool rebalance)
-        {
-            lock(reconnectMutex)
-            {
-                if(started)
-                {
-                    if(rebalance)
-                    {
-                        ITransport transport = connectedTransport.GetAndSet(null);
-                        if(transport != null)
-                        {
-                            transport.Command = disposedOnCommand;
-                            transport.Exception = disposedOnException;
-                            try
-                            {
-                                transport.Stop();
-                            }
-                            catch(Exception ex)
-                            {
-                                ex.GetType();   // Ignore errors but this lets us see the error during debugging
-                            }
-                        }
-                    }
-
+	    public void Reconnect(bool rebalance)
+		{
+			lock(reconnectMutex) 
+			{
+	            if(started) 
+				{
+	                if (rebalance) 
+					{
+	                    doRebalance = true;
+	                }
                     Tracer.Debug("Waking up reconnect task");
-                    try
-                    {
-                        reconnectTask.Wakeup();
-                    }
-                    catch(ThreadInterruptedException)
-                    {
-                    }
-                }
-                else
-                {
+	                try 
+					{
+	                    reconnectTask.Wakeup();
+	                } 
+					catch (ThreadInterruptedException) 
+					{
+	                }
+	            } 
+				else 
+				{
                     Tracer.Debug("Reconnect was triggered but transport is not started yet. Wait for start to connect the transport.");
-                }
-            }
-        }
+	            }
+	        }
+	    }
 
         private List<Uri> ConnectList
         {
             get
             {
+				if (updated.Count != 0)
+				{
+					return updated;
+				}
+
                 List<Uri> l = new List<Uri>(uris);
                 bool removed = false;
                 if(failedConnectTransportURI != null)
@@ -829,21 +942,19 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
                 if(Randomize)
                 {
-                    // Randomly, reorder the list by random swapping
-                    Random r = new Random(DateTime.Now.Millisecond);
-                    for(int i = 0; i < l.Count; i++)
-                    {
-                        int p = r.Next(l.Count);
-                        Uri t = l[p];
-                        l[p] = l[i];
-                        l[i] = t;
-                    }
+					Shuffle(l);
                 }
 
                 if(removed)
                 {
                     l.Add(failedConnectTransportURI);
                 }
+
+		        if (Tracer.IsDebugEnabled)
+				{
+					Tracer.DebugFormat("Uri connection list: {0} from: {1}", 
+					                   PrintableUriList(l), PrintableUriList(uris));
+		        }
 
                 return l;
             }
@@ -908,8 +1019,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         {
             lock(reconnectMutex)
             {
-                if(ConnectedTransport != null || disposed || connectionFailure != null)
-                {
+				if (disposed || connectionFailure != null)
+				{
+					Monitor.PulseAll(reconnectMutex);
+				}
+
+            	if ((connectedTransport.Value != null && !doRebalance && !priorityBackupAvailable) || disposed || connectionFailure != null)
+				{
                     return false;
                 }
                 else
@@ -921,272 +1037,228 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     }
                     else
                     {
-                        if(!UseExponentialBackOff)
-                        {
-                            ReconnectDelay = InitialReconnectDelay;
-                        }
+	                    if (doRebalance)
+						{
+	                        if (connectList[0].Equals(connectedTransportURI))
+							{
+	                            // already connected to first in the list, no need to rebalance
+	                            doRebalance = false;
+	                            return false;
+	                        } 
+							else
+							{
+	                            if (Tracer.IsDebugEnabled)
+								{
+									Tracer.DebugFormat("Doing rebalance from: {0} to {1}", 
+									                   connectedTransportURI, PrintableUriList(connectList));
+	                            }
+	                            try 
+								{
+	                                ITransport current = this.connectedTransport.GetAndSet(null);
+	                                if (current != null) 
+									{
+	                                    DisposeTransport(current);
+	                                }
+	                            } 
+								catch (Exception e) 
+								{
+	                            	if (Tracer.IsDebugEnabled)
+									{
+										Tracer.DebugFormat("Caught an exception stopping existing " + 
+										                   "transport for rebalance {0}", e.Message);
+	                                }
+	                            }
+	                        }
 
-                        try
-                        {
-                            backupMutex.WaitOne();
-                            if(Backup && backups.Count != 0)
-                            {
-                                BackupTransport bt = backups[0];
-                                backups.RemoveAt(0);
-                                ITransport t = bt.Transport;
-                                Uri uri = bt.Uri;
-                                t.Command = OnCommand;
-                                t.Exception = OnException;
-                                try
-                                {
-                                    if(started)
-                                    {
-                                        RestoreTransport(t);
-                                    }
-                                    ReconnectDelay = InitialReconnectDelay;
-                                    failedConnectTransportURI = null;
-                                    ConnectedTransportURI = uri;
-                                    ConnectedTransport = t;
-                                    connectFailures = 0;
-                                    connected = true;
-                                    Monitor.PulseAll(reconnectMutex);
-                                    if(this.Resumed != null)
-                                    {
-                                        this.Resumed(t);
-                                    }
-                                    Tracer.InfoFormat("Successfully reconnected to backup {0}", uri.ToString());
-                                    return false;
-                                }
-                                catch(Exception e)
-                                {
-                                    Tracer.DebugFormat("Backup transport failed: {0}", e.Message);
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            backupMutex.ReleaseMutex();
-                        }
+	                        doRebalance = false;
+	                    }
 
-                        ManualResetEvent allDone = new ManualResetEvent(false);
-                        ITransport transport = null;
-                        Uri chosenUri = null;
-                        object syncLock = new object();
+	                    ResetReconnectDelay();
 
-                        try
-                        {
-                            foreach(Uri uri in connectList)
-                            {
-                                if(ConnectedTransport != null || disposed)
-                                {
-                                    break;
-                                }
+	                    ITransport transport = null;
+	                    Uri uri = null;
 
-                                if(asyncConnect)
-                                {
-                                    Tracer.DebugFormat("Attempting async connect to: {0}", uri);
-                                    // set connector up
-                                    Connector connector = new Connector(
-                                        delegate(ITransport transportToUse, Uri uriToUse)
-                                        {
-                                            if(transport == null)
-                                            {
-                                                lock(syncLock)
-                                                {
-                                                    if(transport == null)
-                                                    {
-                                                        //the transport has not yet been set asynchronously so set it
-                                                        transport = transportToUse;
-                                                        chosenUri = uriToUse;
-                                                    }
-                                                    //notify issuing thread to move on
-                                                    allDone.Set();
-                                                }
-                                            }
-                                        }, uri, this);
+	                    // If we have a backup already waiting lets try it.
+	                    lock(backupMutex) 
+						{
+	                        if ((priorityBackup || backup) && backups.Count > 0)
+							{
+                            	List<BackupTransport> l = new List<BackupTransport>(backups);
+	                            if (randomize) 
+								{
+									Shuffle(l);
+	                            }
+								BackupTransport bt = l[0];
+								l.RemoveAt(0);
+	                            backups.Remove(bt);
+	                            transport = bt.Transport;
+	                            uri = bt.Uri;
+	                            if (priorityBackup && priorityBackupAvailable) 
+								{
+	                                ITransport old = this.connectedTransport.GetAndSet(null);
+	                                if (transport != null) 
+									{
+	                                    DisposeTransport(old);
+	                                }
+	                                priorityBackupAvailable = false;
+	                            }
+	                        }
+	                    }
 
-                                    // initiate a thread to try connecting to broker
-                                    Thread thread = new Thread(connector.DoConnect) {Name = uri.ToString()};
-                                    thread.Start();
-                                }
-                                else
-                                {
-                                    // synchronous connect
-                                    try
-                                    {
-                                        Tracer.DebugFormat("Attempting sync connect to: {0}", uri);
-                                        transport = TransportFactory.CompositeConnect(uri);
-                                        chosenUri = transport.RemoteAddress;
-                                        break;
-                                    }
-                                    catch(Exception e)
-                                    {
-                                        Failure = e;
-                                        Tracer.DebugFormat("Connect fail to: {0}, reason: {1}", uri, e.Message);
-                                    }
-                                }
-                            }
+	                    // Sleep for the reconnectDelay if there's no backup and we aren't trying
+	                    // for the first time, or we were disposed for some reason.
+	                    if (transport == null && !firstConnection && (reconnectDelay > 0) && !disposed) 
+						{
+	                        lock(sleepMutex) 
+							{
+	                            if (Tracer.IsDebugEnabled)
+								{
+									Tracer.DebugFormat("Waiting {0} ms before attempting connection.", reconnectDelay);
+	                            }
+	                            try 
+								{
+	                                Monitor.Wait(sleepMutex, reconnectDelay);
+	                            }
+								catch (ThreadInterruptedException)
+								{
+	                            }
+	                        }
+	                    }
 
-                            if(asyncConnect)
-                            {
-                                // now wait for transport to be populated, but timeout eventually
-                                allDone.WaitOne(asyncTimeout, false);
-                            }
+						IEnumerator<Uri> iter = connectList.GetEnumerator();
+	                    while ((transport != null || iter.MoveNext()) && (connectedTransport.Value == null && !disposed))
+						{
+	                        try 
+							{
+	                            if (Tracer.IsDebugEnabled)
+								{
+									Tracer.DebugFormat("Attempting {0}th connect to: {1}",
+									                   connectFailures, uri);
+	                            }
 
-                            if(transport != null)
-                            {
+								// We could be starting with a backup and if so we wait to grab a
+	                            // URI from the pool until next time around.
+	                            if (transport == null) 
+								{
+	                                uri = iter.Current;
+	                                transport = TransportFactory.CompositeConnect(uri);
+	                            }
+
                                 transport.Command = OnCommand;
                                 transport.Exception = OnException;
-                                transport.Start();
+	                            transport.Start();
 
-                                if(started)
-                                {
-                                    RestoreTransport(transport);
-                                }
+	                            if (started && !firstConnection) 
+								{
+	                                RestoreTransport(transport);
+	                            }
 
-                                if(this.Resumed != null)
-                                {
-                                    this.Resumed(transport);
-                                }
+	                            if (Tracer.IsDebugEnabled)
+								{
+	                                Tracer.Debug("Connection established");
+	                            }
+	                            reconnectDelay = initialReconnectDelay;
+	                            connectedTransportURI = uri;
+	                            connectedTransport.Value = transport;
+	                            Monitor.PulseAll(reconnectMutex);
+	                            connectFailures = 0;
 
-                                Tracer.Debug("Connection established");
-                                ReconnectDelay = InitialReconnectDelay;
-                                ConnectedTransportURI = chosenUri;
-                                ConnectedTransport = transport;
-                                connectFailures = 0;
-                                connected = true;
-                                Monitor.PulseAll(reconnectMutex);
+								// Try to wait long enough for client to init the event callbacks.
+								listenerLatch.await(TimeSpan.FromSeconds(2));
 
-                                if(firstConnection)
-                                {
-                                    firstConnection = false;
-                                    Tracer.InfoFormat("Successfully connected to: {0}", chosenUri.ToString());
-                                }
-                                else
-                                {
-                                    Tracer.InfoFormat("Successfully reconnected to: {0}", chosenUri.ToString());
-                                }
+	                            if (Resumed != null) 
+								{
+	                                Resumed(transport);
+	                            }
+								else 
+								{
+	                                if (Tracer.IsDebugEnabled) 
+									{
+	                                    Tracer.Debug("transport resumed by transport listener not set");
+	                                }
+	                            }
 
-                                return false;
-                            }
+	                            if (firstConnection) 
+								{
+	                                firstConnection = false;
+	                                Tracer.Info("Successfully connected to " + uri);
+	                            }
+								else 
+								{
+	                                Tracer.Info("Successfully reconnected to " + uri);
+	                            }
 
-                            if(asyncConnect)
-                            {
-                                Tracer.DebugFormat("Connect failed after waiting for asynchronous callback.");
-                            }
-                        }
-                        catch(Exception e)
-                        {
-                            Failure = e;
-                            Tracer.DebugFormat("Connect attempt failed.  Reason: {0}", e.Message);
-                        }
-                    }
+	                            connected = true;
+	                            return false;
+	                        }
+							catch (Exception e) 
+							{
+	                            failure = e;
+                                if (Tracer.IsDebugEnabled) 
+								{
+	                                Tracer.Debug("Connect fail to: " + uri + ", reason: " + e.Message);
+	                            }
+	                            if (transport != null) 
+								{
+	                                try 
+									{
+	                                    transport.Stop();
+	                                    transport = null;
+	                                }
+									catch (Exception ee) 
+									{
+	                                	if (Tracer.IsDebugEnabled) 
+										{
+	                                        Tracer.Debug("Stop of failed transport: " + transport +
+	                                                     " failed with reason: " + ee.Message);
+	                                    }
+	                                }
+	                            }
+	                        }
+	                    }
+					}
+				}
+            
+	            int reconnectLimit = CalculateReconnectAttemptLimit();
 
-                    int reconnectAttempts = 0;
-                    if( firstConnection ) {
-                        if( StartupMaxReconnectAttempts != 0 ) {
-                            reconnectAttempts = StartupMaxReconnectAttempts;
-                        }
-                    }
-                    if( reconnectAttempts == 0 ) {
-                        reconnectAttempts = MaxReconnectAttempts;
-                    }
+	            connectFailures++;
+	            if (reconnectLimit != INFINITE && connectFailures >= reconnectLimit) 
+				{
+					Tracer.ErrorFormat("Failed to connect to {0} after: {1} attempt(s)", 
+					                   PrintableUriList(uris), connectFailures);
+	                connectionFailure = failure;
 
-                    if(reconnectAttempts > 0 && ++connectFailures >= reconnectAttempts)
-                    {
-                        Tracer.ErrorFormat("Failed to connect to transport after {0} attempt(s)", connectFailures);
-                        connectionFailure = Failure;
-                        this.Exception(this, connectionFailure);
-                        return false;
-                    }
-                }
-            }
+	                // Make sure on initial startup, that the transportListener has been
+	                // initialized for this instance.
+					listenerLatch.await(TimeSpan.FromSeconds(2));
+	                PropagateFailureToExceptionListener(connectionFailure);
+	                return false;
+	            }
+	        }
 
-            if(!disposed)
-            {
-                Tracer.DebugFormat("Waiting {0}ms before attempting connection.", ReconnectDelay);
-                lock(sleepMutex)
-                {
-                    try
-                    {
-                        Thread.Sleep(ReconnectDelay);
-                    }
-                    catch(ThreadInterruptedException)
-                    {
-                    }
-                }
+	        if(!disposed)
+			{
+	            DoDelay();
+	        }
 
-                if(UseExponentialBackOff)
-                {
-                    // Exponential increment of reconnect delay.
-                    ReconnectDelay *= ReconnectDelayExponent;
-                    if(ReconnectDelay > MaxReconnectDelay)
-                    {
-                        ReconnectDelay = MaxReconnectDelay;
-                    }
-                }
-            }
-            return !disposed;
-        }
-
-        /// <summary>
-        /// This class is a helper for the asynchronous connect option
-        /// </summary>
-        public class Connector
-        {
-            /// <summary>
-            /// callback to properly set chosen transport
-            /// </summary>
-            readonly SetTransport _setTransport;
-
-            /// <summary>
-            /// Uri to try connecting to
-            /// </summary>
-            readonly Uri _uri;
-
-            /// <summary>
-            /// Failover transport issuing the connection attempt
-            /// </summary>
-            private readonly FailoverTransport _transport;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Connector"/> class.
-            /// </summary>
-            /// <param name="setTransport">The set transport.</param>
-            /// <param name="uri">The URI.</param>
-            /// <param name="transport">The transport.</param>
-            public Connector(SetTransport setTransport, Uri uri, FailoverTransport transport)
-            {
-                _uri = uri;
-                _setTransport = setTransport;
-                _transport = transport;
-            }
-
-            /// <summary>
-            /// Does the connect.
-            /// </summary>
-            public void DoConnect()
-            {
-                try
-                {
-                    TransportFactory.AsyncCompositeConnect(_uri, _setTransport);
-                }
-                catch(Exception e)
-                {
-                    _transport.Failure = e;
-                    Tracer.DebugFormat("Connect fail to: {0}, reason: {1}", _uri, e.Message);
-                }
-
-            }
+	        return !disposed;
         }
 
         private bool BuildBackups()
         {
             lock(backupMutex)
             {
-                if(!disposed && Backup && backups.Count < BackupPoolSize)
-                {
+            	if (!disposed && (backup || priorityBackup) && backups.Count < backupPoolSize) 
+				{
+	                List<Uri> backupList = new List<Uri>(priorityList);
                     List<Uri> connectList = ConnectList;
+	                foreach(Uri uri in connectList) 
+					{
+	                    if (!backupList.Contains(uri)) 
+						{
+	                        backupList.Add(uri);
+	                    }
+	                }
                     foreach(BackupTransport bt in backups)
                     {
                         if(bt.Disposed)
@@ -1197,6 +1269,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
                     foreach(Uri uri in connectList)
                     {
+						if (disposed)
+						{
+							break;
+						}
+
                         if(ConnectedTransportURI != null && !ConnectedTransportURI.Equals(uri))
                         {
                             try
@@ -1213,7 +1290,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                                     t.Exception = bt.OnException;
                                     t.Start();
                                     bt.Transport = t;
-                                    backups.Add(bt);
+	                                if (priorityBackup && IsPriority(uri))
+									{
+	                                   priorityBackupAvailable = true;
+	                                   backups.Insert(0, bt);
+	                                }
+									else 
+									{
+	                                    backups.Add(bt);
+	                                }
                                 }
                             }
                             catch(Exception e)
@@ -1246,8 +1331,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         {
             if(IsUpdateURIsSupported)
             {
-                List<Uri> copy = new List<Uri>(this.updated);
-                List<Uri> added = new List<Uri>();
+                Dictionary<Uri, bool> copy = new Dictionary<Uri, bool>();
+                foreach(Uri uri in updated)
+                {
+                    if(uri != null)
+                    {
+                        copy[uri] = true;
+                    }
+                }
+	
+				updated.Clear();
 
                 if(updatedURIs != null && updatedURIs.Length > 0)
                 {
@@ -1263,24 +1356,25 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
                     foreach(Uri uri in uriSet.Keys)
                     {
-                        if(copy.Remove(uri) == false)
+                        if(!updated.Contains(uri))
                         {
-                            added.Add(uri);
+							updated.Add(uri);
                         }
                     }
 
-                    lock(reconnectMutex)
-                    {
-                        this.updated.Clear();
-                        this.updated.AddRange(added);
+					if (Tracer.IsDebugEnabled)
+					{
+						Tracer.DebugFormat("Updated URIs list {0}", PrintableUriList(updated));
+					}
 
-                        foreach(Uri uri in copy)
-                        {
-                            this.uris.Remove(uri);
-                        }
-
-                        this.Add(rebalance, added.ToArray());
-                    }
+	                if (!(copy.Count == 0 && updated.Count == 0) && !copy.Keys.Equals(updated))
+					{
+	                    BuildBackups();
+	                    lock(reconnectMutex) 
+						{
+	                        Reconnect(rebalance);
+	                    }
+	                }
                 }
             }
         }
@@ -1299,8 +1393,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         Uri uri = new Uri(reconnectStr);
                         if(IsReconnectSupported)
                         {
+                            Tracer.Info("Reconnecting to: " + uri.OriginalString);
                             Reconnect(uri);
-                            Tracer.Info("Reconnected to: " + uri.OriginalString);
                         }
                     }
                     catch(Exception e)
@@ -1360,13 +1454,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
         public void Dispose(bool disposing)
         {
-            if(disposing)
-            {
-                // get rid of unmanaged stuff
-            }
-
             this.Stop();
-
             disposed = true;
         }
 
@@ -1388,5 +1476,179 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         {
             return ConnectedTransportURI == null ? "unconnected" : ConnectedTransportURI.ToString();
         }
+
+	    internal bool IsPriority(Uri uri) 
+		{
+	        if (priorityList.Count > 0) 
+			{
+	            return priorityList.Contains(uri);
+	        }
+
+			if (this.uris.Count > 0) 
+			{
+	        	return uris[0].Equals(uri);
+			}
+
+			return false;
+	    }
+
+		public void DisposeTransport(ITransport transport) 
+		{
+			transport.Command = DisposedOnCommand;
+			transport.Exception = DisposedOnException;
+
+			try 
+			{
+	            transport.Stop();
+        	}
+			catch (Exception e) 
+			{
+				Tracer.DebugFormat("Could not stop transport: {0]. Reason: {1}", transport, e.Message);
+        	}
+    	}
+
+	    private void ResetReconnectDelay() 
+		{
+	        if (!useExponentialBackOff || reconnectDelay == DEFAULT_INITIAL_RECONNECT_DELAY) 
+			{
+	            reconnectDelay = initialReconnectDelay;
+	        }
+	    }
+
+	    private void DoDelay()
+		{
+	        if (reconnectDelay > 0) 
+			{
+	            lock(sleepMutex) 
+				{
+	                if (Tracer.IsDebugEnabled) 
+					{
+						Tracer.DebugFormat("Waiting {0} ms before attempting connection", reconnectDelay);
+	                }
+	                try 
+					{
+						Monitor.Wait(sleepMutex, reconnectDelay);
+	                } 
+					catch (ThreadInterruptedException) 
+					{
+	                }
+	            }
+	        }
+
+	        if (useExponentialBackOff) 
+			{
+	            // Exponential increment of reconnect delay.
+	            reconnectDelay *= backOffMultiplier;
+	            if (reconnectDelay > maxReconnectDelay) 
+				{
+	                reconnectDelay = maxReconnectDelay;
+	            }
+	        }
+	    }
+
+	    private void PropagateFailureToExceptionListener(Exception exception) 
+		{
+	        if (Exception != null) 
+			{
+                Exception(this, exception);
+	        }
+			else
+			{
+				Exception(this, new IOException());
+			}
+			Monitor.PulseAll(reconnectMutex);
+	    }
+
+	    private int CalculateReconnectAttemptLimit() 
+		{
+	        int maxReconnectValue = this.maxReconnectAttempts;
+	        if (firstConnection && this.startupMaxReconnectAttempts != INFINITE) 
+			{
+	            maxReconnectValue = this.startupMaxReconnectAttempts;
+	        }
+	        return maxReconnectValue;
+	    }
+
+		public void Shuffle<T>(List<T> list)  
+		{  
+            Random random = new Random(DateTime.Now.Millisecond);
+		    int index = list.Count;  
+		    while (index > 1) 
+			{  
+		        index--;  
+		        int k = random.Next(index + 1);  
+		        T value = list[k];  
+		        list[k] = list[index];  
+		        list[index] = value;  
+		    }  
+		}
+
+		private String PrintableUriList(List<Uri> uriList)
+		{
+			if (uriList.Count == 0)
+			{
+				return "<no-Uris>";
+			}
+
+			StringBuilder builder = new StringBuilder();
+			for (int i = 0; i < uriList.Count; ++i)
+			{
+				builder.Append(uriList[i]);
+				if (i < uriList.Count + 1)
+				{
+					builder.Append(":");
+				}
+			}
+
+			return builder.ToString();
+		}
+
+	    private bool Contains(Uri newURI) 
+		{
+	        bool result = false;
+	        foreach (Uri uri in uris) 
+			{
+	            if (newURI.Port == uri.Port)
+				{
+	                IPHostEntry newAddr = null;
+	                IPHostEntry addr = null;
+	                try 
+					{
+                		newAddr = Dns.GetHostEntry(newURI.Host);
+                		addr = Dns.GetHostEntry(uri.Host);
+	                } 
+					catch(Exception e)
+					{
+
+	                    if (newAddr == null) 
+						{
+							Tracer.WarnFormat("Failed to Lookup IPHostEntry for URI[{0}] : {1}", newURI, e);
+	                    } 
+						else 
+						{
+							Tracer.WarnFormat("Failed to Lookup IPHostEntry for URI[{0}] : {1}", uri, e);
+	                    }
+
+						if(String.Equals(newURI.Host, uri.Host, StringComparison.CurrentCultureIgnoreCase))
+						{
+	                        result = true;
+	                        break;
+	                    }
+						else 
+						{
+	                        continue;
+	                    }
+	                }
+
+	                if (addr.Equals(newAddr)) 
+					{
+	                    result = true;
+	                    break;
+	                }
+	            }
+	        }
+
+	        return result;
+	    }
     }
 }

@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ.State
 			this.handler = handler;
 		}
 
-		public void onResponses()
+		public void OnResponse()
 		{
 			if (handler != null)
 			{

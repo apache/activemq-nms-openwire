@@ -38,6 +38,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		private List<Command> received;
 		private List<Exception> exceptions;
 
+		private const int MAX_ATTEMPTS = 30;
         private const int MESSAGE_COUNT = 5;
         private Connection connection;
         private int msgCount = 5;
@@ -74,6 +75,10 @@ namespace Apache.NMS.ActiveMQ.Test
 			MockTransport mock = sender as MockTransport;
 			Assert.IsNotNull(mock);
 			mock.OutgoingCommand = OnOutgoingCommand;
+		}
+
+		private void OnInterrupted(ITransport sender)
+		{
 		}
 
 		private void VerifyCommandHandlerSetting(ITransport transport, MockTransport mock)
@@ -115,15 +120,17 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
-				Assert.IsNotNull(failover);
-				Assert.IsFalse(failover.Randomize);
+				Assert.IsNotNull(failover, "Failed to create Transport");
+				Assert.IsFalse(failover.Randomize, "Failed to properly set Randomize flag");
 
 				transport.Start();
 
-				Thread.Sleep(1000);
-				Assert.IsTrue(failover.IsConnected);
+				Thread.Sleep(2000);
+				Assert.IsTrue(failover.IsConnected, "Transport should be connected");
 			}
 		}
 
@@ -138,6 +145,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -162,6 +171,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -188,6 +199,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.IsNotNull(transport);
                 transport.Command = OnCommand;
                 transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
                 FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
                 Assert.IsNotNull(failover);
@@ -214,6 +227,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -244,6 +259,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -268,6 +285,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -309,6 +328,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -353,6 +374,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -400,6 +423,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -426,6 +451,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -460,8 +487,8 @@ namespace Apache.NMS.ActiveMQ.Test
 		public void TestFailoverTransportConnectionControlHandling()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61613)?transport.randomize=false");
-			string reconnectTo = "mock://localhost:61616?transport.name=Reconnected";
-			string connectedBrokers = "mock://localhost:61617?transport.name=Broker1," +
+			string connectedBrokers = "mock://localhost:61616?transport.name=Reconnected," +
+									  "mock://localhost:61617?transport.name=Broker1," +
 									  "mock://localhost:61618?transport.name=Broker2";
 			FailoverTransportFactory factory = new FailoverTransportFactory();
 
@@ -470,12 +497,12 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
 				Assert.IsFalse(failover.Randomize);
-
-				failover.Resumed = OnResumed;
 
 				const int MAX_ATTEMPTS = 50;
 
@@ -503,15 +530,13 @@ namespace Apache.NMS.ActiveMQ.Test
 				mock.InjectCommand(new ConnectionControl()
 				{
 					FaultTolerant = true,
-					ReconnectTo = reconnectTo,
-					ConnectedBrokers = connectedBrokers
+					ConnectedBrokers = connectedBrokers,
+					RebalanceConnection = true
 				});
 
 				// Give a bit of time for the Command to actually be processed.
 				Thread.Sleep(2000);
-				
-				failover.Remove(true, "mock://localhost:61613");
-				
+
 				mock = null;
 				
 				for(int i = 0; i < MAX_ATTEMPTS; ++i)
@@ -532,6 +557,44 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test]
+		public void TestPriorityBackupConfig() 
+		{
+		    Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)"+
+			                  "?transport.randomize=false&transport.priorityBackup=true");
+
+			FailoverTransportFactory factory = new FailoverTransportFactory();
+
+			using(ITransport transport = factory.CreateTransport(uri))
+			{
+				Assert.IsNotNull(transport);
+				transport.Command = OnCommand;
+				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
+
+				FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+				Assert.IsNotNull(failover);
+				Assert.IsFalse(failover.Randomize, "Randomize should be false");
+				Assert.IsTrue(failover.PriorityBackup, "Prioirity Backup not set.");
+
+		    	transport.Start();
+
+				for(int i = 0; i < MAX_ATTEMPTS; ++i)
+				{
+					if(failover.IsConnected)
+					{
+						break;
+					}
+					
+					Thread.Sleep(100);
+				}
+				
+				Assert.IsTrue(failover.IsConnected);
+				Assert.IsTrue(failover.IsConnectedToPriority);
+			}
+		}
+
+		[Test]
 		public void OpenWireCommandsTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
@@ -542,6 +605,8 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(transport);
 				transport.Command = OnCommand;
 				transport.Exception = OnException;
+				transport.Resumed = OnResumed;
+				transport.Interrupted = OnInterrupted;
 
 				FailoverTransport failover =  transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
 				Assert.IsNotNull(failover);
@@ -697,19 +762,34 @@ namespace Apache.NMS.ActiveMQ.Test
 			catch(Apache.NMS.ActiveMQ.ConnectionClosedException)
 			{
 			}
+			catch(Apache.NMS.NMSConnectionException)
+			{
+			}
+			catch(Exception e)
+			{
+                Assert.Fail("Wrong Exception Thrown after max reconnect attempts.\n" +
+				            "Exception thrown type: " + e.GetType());
+			}
 			finally
 			{
 				try
 				{
 					failConnection.Stop();
 				}
-				catch(Apache.NMS.ActiveMQ.ConnectionClosedException)
+				catch(Exception)
 				{
                     Assert.Fail("Connection closed exception thrown while closing a connection.");
 				}
 				finally
 				{
-					failConnection.Dispose();
+					try 
+					{
+						failConnection.Dispose();
+					}
+					catch(Exception)
+					{
+	                    Assert.Fail("Connection closed exception thrown while closing a connection.");
+					}
 				}
 			}
 		}
