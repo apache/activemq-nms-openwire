@@ -1137,9 +1137,9 @@
     <Compile Include="src\main\csharp\State\ConsumerState.cs" />
     <Compile Include="src\main\csharp\State\ICommandVisitor.cs" />
     <Compile Include="src\main\csharp\State\ProducerState.cs" />
+    <Compile Include="src\main\csharp\State\ResponseHandler.cs" />
     <Compile Include="src\main\csharp\State\SessionState.cs" />
     <Compile Include="src\main\csharp\State\SynchronizedObjects.cs" />
-    <Compile Include="src\main\csharp\State\ThreadSimulator.cs" />
     <Compile Include="src\main\csharp\State\Tracked.cs" />
     <Compile Include="src\main\csharp\State\TransactionState.cs" />
     <Compile Include="src\main\csharp\Threads\CompositeTask.cs" />
