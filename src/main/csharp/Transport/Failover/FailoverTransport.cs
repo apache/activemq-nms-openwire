@@ -135,8 +135,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					{
                         result = parent.DoConnect();
                         buildBackup = false;
-                        parent.connectedToPriority = 
-							parent.IsPriority(parent.connectedTransportURI);
                     }
                 }
                 if (buildBackup) 
@@ -466,6 +464,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     initialized = false;
                     failedConnectTransportURI = ConnectedTransportURI;
                     ConnectedTransportURI = null;
+					connectedToPriority = false;
                     connected = false;
 
                     if(this.Interrupted != null)
@@ -1045,7 +1044,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     {
 	                    if (doRebalance)
 						{
-	                        if (CompareUris(connectList[0], connectedTransportURI))
+	                        if (connectedToPriority || CompareUris(connectList[0], connectedTransportURI))
 							{
 	                            // already connected to first in the list, no need to rebalance
 	                            doRebalance = false;
@@ -1166,6 +1165,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                            reconnectDelay = initialReconnectDelay;
 	                            connectedTransportURI = uri;
 	                            connectedTransport.Value = transport;
+								connectedToPriority = IsPriority(connectedTransportURI);
 	                            Monitor.PulseAll(reconnectMutex);
 	                            connectFailures = 0;
 
@@ -1496,16 +1496,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 	    internal bool IsPriority(Uri uri) 
 		{
-	        if (priorityList.Count > 0) 
+			if (priorityBackup)
 			{
-	            return priorityList.Contains(uri);
-	        }
+		        if (priorityList.Count > 0) 
+				{
+		            return priorityList.Contains(uri);
+		        }
 
-			if (this.uris.Count > 0) 
-			{
-	        	return uris[0].Equals(uri);
+				if (this.uris.Count > 0) 
+				{
+		        	return uris[0].Equals(uri);
+				}
 			}
-
 			return false;
 	    }
 
@@ -1622,6 +1624,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		private bool CompareUris(Uri first, Uri second) 
 		{
+			bool result = false;
             if (first.Port == second.Port)
 			{
                 IPHostEntry firstAddr = null;
@@ -1630,7 +1633,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
             		firstAddr = Dns.GetHostEntry(first.Host);
             		secondAddr = Dns.GetHostEntry(second.Host);
-                } 
+
+	                if (firstAddr.Equals(secondAddr)) 
+					{
+						result = true;
+	                }
+				} 
 				catch(Exception e)
 				{
                     if (firstAddr == null) 
@@ -1644,17 +1652,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 					if(String.Equals(first.Host, second.Host, StringComparison.CurrentCultureIgnoreCase))
 					{
-						return true;
+						result = true;
                     }
                 }
 
-                if (firstAddr.Equals(secondAddr)) 
-				{
-					return true;
-                }
             }
 
-			return false;
+			return result;
 		}
 
 	    private bool Contains(Uri newURI) 
