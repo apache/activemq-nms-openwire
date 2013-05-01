@@ -1045,7 +1045,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                     {
 	                    if (doRebalance)
 						{
-	                        if (connectList[0].Equals(connectedTransportURI))
+	                        if (CompareUris(connectList[0], connectedTransportURI))
 							{
 	                            // already connected to first in the list, no need to rebalance
 	                            doRebalance = false;
@@ -1620,48 +1620,52 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			return builder.ToString();
 		}
 
+		private bool CompareUris(Uri first, Uri second) 
+		{
+            if (first.Port == second.Port)
+			{
+                IPHostEntry firstAddr = null;
+                IPHostEntry secondAddr = null;
+                try 
+				{
+            		firstAddr = Dns.GetHostEntry(first.Host);
+            		secondAddr = Dns.GetHostEntry(second.Host);
+                } 
+				catch(Exception e)
+				{
+                    if (firstAddr == null) 
+					{
+						Tracer.WarnFormat("Failed to Lookup IPHostEntry for URI[{0}] : {1}", first, e);
+                    } 
+					else 
+					{
+						Tracer.WarnFormat("Failed to Lookup IPHostEntry for URI[{0}] : {1}", second, e);
+                    }
+
+					if(String.Equals(first.Host, second.Host, StringComparison.CurrentCultureIgnoreCase))
+					{
+						return true;
+                    }
+                }
+
+                if (firstAddr.Equals(secondAddr)) 
+				{
+					return true;
+                }
+            }
+
+			return false;
+		}
+
 	    private bool Contains(Uri newURI) 
 		{
 	        bool result = false;
 	        foreach (Uri uri in uris) 
 			{
-	            if (newURI.Port == uri.Port)
+	            if (CompareUris(newURI, uri))
 				{
-	                IPHostEntry newAddr = null;
-	                IPHostEntry addr = null;
-	                try 
-					{
-                		newAddr = Dns.GetHostEntry(newURI.Host);
-                		addr = Dns.GetHostEntry(uri.Host);
-	                } 
-					catch(Exception e)
-					{
-
-	                    if (newAddr == null) 
-						{
-							Tracer.WarnFormat("Failed to Lookup IPHostEntry for URI[{0}] : {1}", newURI, e);
-	                    } 
-						else 
-						{
-							Tracer.WarnFormat("Failed to Lookup IPHostEntry for URI[{0}] : {1}", uri, e);
-	                    }
-
-						if(String.Equals(newURI.Host, uri.Host, StringComparison.CurrentCultureIgnoreCase))
-						{
-	                        result = true;
-	                        break;
-	                    }
-						else 
-						{
-	                        continue;
-	                    }
-	                }
-
-	                if (addr.Equals(newAddr)) 
-					{
-	                    result = true;
-	                    break;
-	                }
+					result = true;
+					break;
 	            }
 	        }
 
