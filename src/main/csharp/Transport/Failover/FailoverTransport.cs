@@ -1101,7 +1101,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                            if (priorityBackup && priorityBackupAvailable) 
 								{
 	                                ITransport old = this.connectedTransport.GetAndSet(null);
-	                                if (transport != null) 
+	                                if (old != null) 
 									{
 	                                    DisposeTransport(old);
 	                                }
