@@ -37,6 +37,7 @@ namespace Apache.NMS.ActiveMQ
 	public class Connection : IConnection
 	{
 		private static readonly IdGenerator CONNECTION_ID_GENERATOR = new IdGenerator();
+		private static readonly TimeSpan InfiniteTimeSpan = TimeSpan.FromMilliseconds(Timeout.Infinite);
 
 		// Uri configurable options.
 		private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
@@ -64,7 +65,7 @@ namespace Apache.NMS.ActiveMQ
 		private readonly Uri brokerUri;
 		private ITransport transport;
 		private readonly ConnectionInfo info;
-		private TimeSpan requestTimeout; // from connection factory
+		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout; // from connection factory
 		private BrokerInfo brokerInfo; // from broker
 		private readonly CountDownLatch brokerInfoReceived = new CountDownLatch(1);
 		private WireFormatInfo brokerWireFormatInfo; // from broker
@@ -1011,7 +1012,8 @@ namespace Apache.NMS.ActiveMQ
 						}
 					}
 
-					if(connected.Value || closed.Value || closing.Value || DateTime.Now > timeoutTime)
+					if(connected.Value || closed.Value || closing.Value
+						|| (DateTime.Now > timeoutTime && this.RequestTimeout != InfiniteTimeSpan))
 					{
 						break;
 					}
