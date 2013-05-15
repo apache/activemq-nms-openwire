@@ -75,18 +75,17 @@ namespace Apache.NMS.ActiveMQ
             {
                 if (TransactionContext.InNetTransaction)
                 {
-                    TransactionContext.SyncRoot.WaitOne();
-
-                    if (TransactionContext.InNetTransaction)
+                    lock (TransactionContext.SyncRoot)
                     {
-                        // Must wait for all the DTC operations to complete before
-                        // moving on from this close call.
-                        TransactionContext.SyncRoot.ReleaseMutex();
-                        this.TransactionContext.DtcWaitHandle.WaitOne();
-                        TransactionContext.SyncRoot.WaitOne();
+                        if (TransactionContext.InNetTransaction)
+                        {
+                            // Must wait for all the DTC operations to complete before
+                            // moving on from this close call.
+                            Monitor.Exit(TransactionContext.SyncRoot);
+                            this.TransactionContext.DtcWaitHandle.WaitOne();
+                            Monitor.Enter(TransactionContext.SyncRoot);
+                        }
                     }
-
-                    TransactionContext.SyncRoot.ReleaseMutex();
                 }
 
                 base.Close();
@@ -111,24 +110,23 @@ namespace Apache.NMS.ActiveMQ
 
         internal override void DoStartTransaction()
         {
-            TransactionContext.SyncRoot.WaitOne();
-
-            if (TransactionContext.InNetTransaction && TransactionContext.NetTxState == TransactionContext.TxState.Pending)
+            lock (TransactionContext.SyncRoot)
             {
-                // To late to participate in this TX, we have to wait for it to complete then
-                // we can create a new TX and start from there.
-                TransactionContext.SyncRoot.ReleaseMutex();
-                TransactionContext.DtcWaitHandle.WaitOne();
-                TransactionContext.SyncRoot.WaitOne();
+                if (TransactionContext.InNetTransaction && TransactionContext.NetTxState == TransactionContext.TxState.Pending)
+                {
+                    // To late to participate in this TX, we have to wait for it to complete then
+                    // we can create a new TX and start from there.
+                    Monitor.Exit(TransactionContext.SyncRoot);
+                    TransactionContext.DtcWaitHandle.WaitOne();
+                    Monitor.Enter(TransactionContext.SyncRoot);
+                }
+ 
+                if (!TransactionContext.InNetTransaction && Transaction.Current != null)
+                {
+                    Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
+                    EnrollInSpecifiedTransaction(Transaction.Current);
+                }
             }
-
-            if (!TransactionContext.InNetTransaction && Transaction.Current != null)
-            {
-                Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
-                EnrollInSpecifiedTransaction(Transaction.Current);
-            }
-
-            TransactionContext.SyncRoot.ReleaseMutex();
         }
 
         private void EnrollInSpecifiedTransaction(Transaction tx)

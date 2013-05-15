@@ -39,11 +39,11 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
-		private readonly MessageTransformation messageTransformation;
-		private readonly MessageDispatchChannel unconsumedMessages;
-		private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
-		private readonly ConsumerInfo info;
-		private readonly Session session;
+        private readonly MessageTransformation messageTransformation;
+        private readonly MessageDispatchChannel unconsumedMessages;
+        private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
+        private readonly ConsumerInfo info;
+        private readonly Session session;
 
 		private MessageAck pendingAck = null;
 
@@ -434,7 +434,7 @@ namespace Apache.NMS.ActiveMQ
 			disposed = true;
 		}
 
-		public void Close()
+		public virtual void Close()
 		{
 			if(!this.unconsumedMessages.Closed)
 			{
@@ -1029,25 +1029,25 @@ namespace Apache.NMS.ActiveMQ
 		{
 			this.lastDeliveredSequenceId = dispatch.Message.MessageId.BrokerSequenceId;
 
-			if(!IsAutoAcknowledgeBatch)
+			if (!IsAutoAcknowledgeBatch)
 			{
                 if (this.session.IsTransacted)
                 {
-                    this.session.TransactionContext.SyncRoot.WaitOne();
-
-                    // In the case where the consumer is operating in concert with a
-                    // distributed TX manager we need to wait whenever the TX is being
-                    // controlled by the DTC as it completes all operations async and
-                    // we cannot start consumption again until all its tasks have completed.)
-                    if (this.session.TransactionContext.InNetTransaction && 
-                        this.session.TransactionContext.NetTxState == TransactionContext.TxState.Pending)
+                    bool waitForDtcWaitHandle = false;
+                    lock (this.session.TransactionContext.SyncRoot)
                     {
-                        this.session.TransactionContext.SyncRoot.ReleaseMutex();
-                        this.session.TransactionContext.DtcWaitHandle.WaitOne();                        
+                        // In the case where the consumer is operating in concert with a
+                        // distributed TX manager we need to wait whenever the TX is being
+                        // controlled by the DTC as it completes all operations async and
+                        // we cannot start consumption again until all its tasks have completed.)
+                        waitForDtcWaitHandle = this.session.TransactionContext.InNetTransaction &&
+                                               this.session.TransactionContext.NetTxState ==
+                                               TransactionContext.TxState.Pending;
                     }
-                    else
+
+                    if (waitForDtcWaitHandle)
                     {
-                        this.session.TransactionContext.SyncRoot.ReleaseMutex();
+                        this.session.TransactionContext.DtcWaitHandle.WaitOne();
                     }
                 }                
 
@@ -1622,6 +1622,11 @@ namespace Apache.NMS.ActiveMQ
         {
             return this.info.Destination.Equals(dest);
         }
+
+	    internal bool Closed
+	    {
+            get { return this.unconsumedMessages.Closed; }
+	    }
 
 	    private void DoOptimizedAck(object state)
 		{

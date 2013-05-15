@@ -229,7 +229,7 @@ namespace Apache.NMS.ActiveMQ
         // Once the DTC calls prepare we lock this object and don't unlock it again until
         // the TX has either completed or terminated, the users of this class should use
         // this sync point when the TX is a DTC version as opposed to a local one.
-        private readonly Mutex syncObject = new Mutex();
+        private readonly object syncObject = new Mutex();
 
 	    public enum TxState
 	    {
@@ -238,7 +238,7 @@ namespace Apache.NMS.ActiveMQ
 
 	    private TxState netTxState = TxState.None;
 
-        public Mutex SyncRoot
+        public object SyncRoot
 	    {
             get { return this.syncObject; }
 	    }
