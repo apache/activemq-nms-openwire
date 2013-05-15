@@ -31,6 +31,17 @@ namespace Apache.NMS.ActiveMQ.Test
     [Category("Manual")]
     class DtcConsumerTransactionsTest : DtcTransactionsTestSupport
     {
+        private NetTxConnectionFactory factory = null;
+
+        [SetUp]
+        public override void SetUp()
+        {
+            base.SetUp();
+
+            this.factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.factory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
+        }
+
         [Test]
         public void TestRedelivered()
         {
@@ -39,7 +50,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeAndFillQueue();
 
             // receive just one
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.Start();
@@ -103,7 +113,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue(messageCount);
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.Start();
@@ -175,7 +184,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue(messageCount);
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.Start();
@@ -246,7 +254,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue(messageCount);
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 // allow no redelivery so that message immediatly goes to the DLQ if first read fails
@@ -314,8 +321,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue();
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
@@ -347,8 +352,6 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in queue with data to send and clears the DB.
             PurgeDatabase();
             PurgeAndFillQueue();
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
@@ -382,8 +385,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue(5 * MSG_COUNT);
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
@@ -409,8 +410,10 @@ namespace Apache.NMS.ActiveMQ.Test
         public void TestConsumeWithDBInsertLogLocation()
         {
             const string logLocation = @".\RecoveryDir";
-            const string newConnectionUri =
-                connectionURI + "?nms.RecoveryPolicy.RecoveryLogger.Location=" + logLocation;
+            string newConnectionUri =
+                connectionURI + "?nms.RecoveryPolicy.RecoveryLogger.Location=" + logLocation +
+                                "&nms.configuredResourceManagerId=" + 
+                                factory.ConfiguredResourceManagerId;
 
             // Test initialize - Fills in queue with data to send and clears the DB.
             PurgeDatabase();
@@ -423,7 +426,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             Directory.CreateDirectory(logLocation);
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(newConnectionUri));
+            factory = new NetTxConnectionFactory(ReplaceEnvVar(newConnectionUri));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
@@ -458,8 +461,6 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue();
 
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
@@ -483,8 +484,6 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in queue with data to send and clears the DB.
             PurgeDatabase();
             PurgeAndFillQueue();
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
@@ -514,8 +513,6 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in queue with data to send and clears the DB.
             PurgeDatabase();
             PurgeAndFillQueue();
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
@@ -548,8 +545,6 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in queue with data to send and clears the DB.
             PurgeDatabase();
             PurgeAndFillQueue();
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
@@ -588,8 +583,6 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             PurgeDatabase();
             PurgeAndFillQueue(MSG_COUNT * BATCH_COUNT);
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             using (NetTxSession session = connection.CreateNetTxSession() as NetTxSession)

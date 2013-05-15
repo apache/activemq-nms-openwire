@@ -26,6 +26,7 @@ namespace Apache.NMS.ActiveMQ
     public class NetTxConnectionFactory : ConnectionFactory, INetTxConnectionFactory
     {
         private NetTxRecoveryPolicy recoveryPolicy = new NetTxRecoveryPolicy();
+        private Guid configuredResourceManagerId = Guid.Empty;
 
         public NetTxConnectionFactory() : base(GetDefaultBrokerUrl())
         {
@@ -50,6 +51,12 @@ namespace Apache.NMS.ActiveMQ
         {
         }
 
+        public String ConfiguredResourceManagerId
+        {
+            get { return this.configuredResourceManagerId.ToString(); }
+            set { this.configuredResourceManagerId = new Guid(value); }
+        }
+
         public INetTxConnection CreateNetTxConnection()
         {
             return (INetTxConnection) base.CreateActiveMQConnection();
@@ -65,6 +72,7 @@ namespace Apache.NMS.ActiveMQ
             NetTxConnection connection = new NetTxConnection(this.BrokerUri, transport, this.ClientIdGenerator);
 
             connection.RecoveryPolicy = this.recoveryPolicy.Clone() as NetTxRecoveryPolicy;
+            connection.ConfiguredResourceManagerId = this.configuredResourceManagerId;
 
             return connection;
         }

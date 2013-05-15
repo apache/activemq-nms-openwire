@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Transactions;
 using NUnit.Framework;
@@ -25,12 +26,21 @@ namespace Apache.NMS.ActiveMQ.Test
     [Category("Manual")]
     class DtcBasicTransactionsTest : DtcTransactionsTestSupport
     {
+        private NetTxConnectionFactory factory = null;
+
+        [SetUp]
+        public override void SetUp()
+        {
+            base.SetUp();
+
+            this.factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.factory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
+        }
+
         [Test]
         [ExpectedException("Apache.NMS.NMSException")]
         public void TestSessionCreateFailsWithInvalidLogLocation()
         {
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
@@ -48,8 +58,6 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
@@ -74,8 +82,6 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PurgeDatabase();
             PurgeAndFillQueue();
-
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
 
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {

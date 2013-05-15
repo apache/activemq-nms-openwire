@@ -32,6 +32,7 @@ namespace Apache.NMS.ActiveMQ
     public class NetTxConnection : Connection, INetTxConnection
     {
         private NetTxRecoveryPolicy recoveryPolicy = new NetTxRecoveryPolicy();
+        private Guid configuredResourceManagerId = Guid.Empty;
 
         public NetTxConnection(Uri connectionUri, ITransport transport, IdGenerator clientIdGenerator)
             : base(connectionUri, transport, clientIdGenerator)
@@ -62,9 +63,19 @@ namespace Apache.NMS.ActiveMQ
             set { this.recoveryPolicy = value; }
         }
 
+        public Guid ConfiguredResourceManagerId
+        {
+            get { return this.configuredResourceManagerId; }
+            set { this.configuredResourceManagerId = value; }
+        }
+
         internal Guid ResourceManagerGuid
         {
-            get { return GuidFromId(this.ResourceManagerId); }
+            get
+            {
+                return ConfiguredResourceManagerId != Guid.Empty ? 
+                    ConfiguredResourceManagerId : GuidFromId(ResourceManagerId);
+            }
         }
 
         private static Guid GuidFromId(string id)
