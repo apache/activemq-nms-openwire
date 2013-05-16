@@ -1819,7 +1819,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		class ConsumerCloseSynchronization : ISynchronization
+		protected class ConsumerCloseSynchronization : ISynchronization
 		{
 			private readonly MessageConsumer consumer;
 

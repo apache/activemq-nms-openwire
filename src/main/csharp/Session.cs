@@ -437,7 +437,7 @@ namespace Apache.NMS.ActiveMQ
                     dest = ActiveMQDestination.Transform(destination);
                 }
 
-                producer = new MessageProducer(this, GetNextProducerId(), dest, this.RequestTimeout);
+                producer = DoCreateMessageProducer(GetNextProducerId(), dest);
 
                 producer.ProducerTransformer = this.ProducerTransformer;
 
@@ -456,6 +456,11 @@ namespace Apache.NMS.ActiveMQ
             }
 
             return producer;
+        }
+
+        internal virtual MessageProducer DoCreateMessageProducer(ProducerId id, ActiveMQDestination destination)
+        {
+            return new MessageProducer(this, GetNextProducerId(), destination, this.RequestTimeout);
         }
 
         public IMessageConsumer CreateConsumer(IDestination destination)
@@ -478,11 +483,11 @@ namespace Apache.NMS.ActiveMQ
             ActiveMQDestination dest = ActiveMQDestination.Transform(destination);
             int prefetchSize = this.Connection.PrefetchPolicy.DurableTopicPrefetch;
 
-            if(dest is ITopic || dest is ITemporaryTopic)
+            if(dest.IsTopic)
             {
                 prefetchSize = this.connection.PrefetchPolicy.TopicPrefetch;
             }
-            else if(dest is IQueue || dest is ITemporaryQueue)
+            else if(dest.IsQueue)
             {
                 prefetchSize = this.connection.PrefetchPolicy.QueuePrefetch;
             }
@@ -491,9 +496,9 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
-                consumer = new MessageConsumer(this, GetNextConsumerId(), dest, null, selector, prefetchSize,
-                                               this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
-                                               noLocal, false, this.connection.DispatchAsync);
+                consumer = DoCreateMessageConsumer(GetNextConsumerId(), dest, null, selector, prefetchSize,
+                                                   this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
+                                                   noLocal);
 
                 consumer.ConsumerTransformer = this.ConsumerTransformer;
 
@@ -531,10 +536,10 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
-                consumer = new MessageConsumer(this, GetNextConsumerId(), dest, name, selector,
-                                               this.connection.PrefetchPolicy.DurableTopicPrefetch,
-                                               this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
-                                               noLocal, false, this.connection.DispatchAsync);
+                consumer = DoCreateMessageConsumer(GetNextConsumerId(), dest, name, selector, 
+                                                   this.connection.PrefetchPolicy.DurableTopicPrefetch,
+                                                   this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
+                                                   noLocal);
 
                 consumer.ConsumerTransformer = this.ConsumerTransformer;
 
@@ -558,6 +563,14 @@ namespace Apache.NMS.ActiveMQ
             }
 
             return consumer;
+        }
+
+        internal virtual MessageConsumer DoCreateMessageConsumer(
+            ConsumerId id, ActiveMQDestination destination, string name, string selector, 
+            int prefetch, int maxPending, bool noLocal)
+        {
+            return new MessageConsumer(this, id, destination, name, selector, prefetch,
+                                       maxPending, noLocal, false, this.DispatchAsync);
         }
 
         public void DeleteDurableConsumer(string name)

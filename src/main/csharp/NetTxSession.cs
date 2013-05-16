@@ -96,6 +96,14 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        internal override MessageConsumer DoCreateMessageConsumer(
+            ConsumerId id, ActiveMQDestination destination, string name, string selector,
+            int prefetch, int maxPending, bool noLocal)
+        {
+            return new NetTxMessageConsumer(this, id, destination, name, selector, prefetch,
+                                            maxPending, noLocal, false, this.DispatchAsync);
+        }
+
         internal override void DoRollback()
         {
             // Only the Transaction Manager can do this when in a .NET Transaction.
