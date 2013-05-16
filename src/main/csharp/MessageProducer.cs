@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageProducer : IMessageProducer
 	{
-		private Session session;
+		private readonly Session session;
 		private readonly MemoryUsage usage = null;
 		private readonly object closedLock = new object();
 		private bool closed = false;
@@ -59,17 +59,20 @@ namespace Apache.NMS.ActiveMQ
 
 			// If the destination contained a URI query, then use it to set public
 			// properties on the ProducerInfo
-			if(destination != null && destination.Options != null)
+			if (destination != null && destination.Options != null)
 			{
 				URISupport.SetProperties(this.info, destination.Options, "producer.");
 			}
 
 			// Version Three and higher will send us a ProducerAck, but only if we
 			// have a set producer window size.
-			if(session.Connection.ProtocolVersion >= 3 && this.info.WindowSize > 0)
+			if (session.Connection.ProtocolVersion >= 3 && this.info.WindowSize > 0)
 			{
-				Tracer.Debug("MessageProducer created with a Window Size of: " + this.info.WindowSize);
-				this.usage = new MemoryUsage(this.info.WindowSize);
+                if (Tracer.IsDebugEnabled)
+                {
+                    Tracer.Debug("MessageProducer created with a Window Size of: " + this.info.WindowSize);
+                }
+			    this.usage = new MemoryUsage(this.info.WindowSize);
 			}
 		}
 
@@ -91,18 +94,12 @@ namespace Apache.NMS.ActiveMQ
 				return;
 			}
 
-			if(disposing)
-			{
-				// Dispose managed code here.
-			}
-
 			try
 			{
 				Close();
 			}
 			catch
 			{
-				// Ignore network errors.
 			}
 
 			disposed = true;
@@ -234,7 +231,7 @@ namespace Apache.NMS.ActiveMQ
 			
 			// Ensure that the source message contains the NMSMessageId of the transformed
 			// message for correlation purposes.
-			if (!Object.ReferenceEquals(message, activeMessage))
+			if (!ReferenceEquals(message, activeMessage))
 			{
 				message.NMSMessageId = activeMessage.NMSMessageId;				
 			}
@@ -361,9 +358,12 @@ namespace Apache.NMS.ActiveMQ
 
 		internal void OnProducerAck(ProducerAck ack)
 		{
-			Tracer.Debug("Received ProducerAck for Message of Size = {" + ack.Size + "}" );
+            if (Tracer.IsDebugEnabled)
+            {
+                Tracer.Debug("Received ProducerAck for Message of Size = {" + ack.Size + "}");
+            }
 
-			if(this.usage != null)
+		    if(this.usage != null)
 			{
 				this.usage.DecreaseUsage( ack.Size );
 			}
