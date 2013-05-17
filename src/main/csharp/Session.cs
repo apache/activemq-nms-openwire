@@ -72,7 +72,7 @@ namespace Apache.NMS.ActiveMQ
             this.acknowledgementMode = acknowledgementMode;
             this.requestTimeout = connection.RequestTimeout;
             this.dispatchAsync = connection.DispatchAsync;
-            this.transactionContext = new TransactionContext(this);
+            this.transactionContext = CreateTransactionContext();
 			this.exclusive = connection.ExclusiveConsumer;
 			this.retroactive = connection.UseRetroactiveConsumer;
 
@@ -1001,6 +1001,11 @@ namespace Apache.NMS.ActiveMQ
                 this.connection.SyncRequest(ack);
             }
         }
+
+		protected virtual TransactionContext CreateTransactionContext()
+		{
+			return new TransactionContext(this);
+		}
 
         private void CheckClosed()
         {
