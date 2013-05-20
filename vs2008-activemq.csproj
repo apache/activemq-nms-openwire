@@ -318,6 +318,7 @@
     <Compile Include="src\main\csharp\NetTxMessageConsumer.cs" />
     <Compile Include="src\main\csharp\NetTxRecoveryPolicy.cs" />
     <Compile Include="src\main\csharp\NetTxSession.cs" />
+    <Compile Include="src\main\csharp\NetTxTransactionContext.cs" />
     <Compile Include="src\main\csharp\OpenWire\BaseDataStreamMarshaller.cs">
       <SubType>Code</SubType>
     </Compile>

@@ -22,12 +22,15 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
 {
-    public class NetTxSession : Session, INetTxSession
+    public sealed class NetTxSession : Session, INetTxSession
     {
+        private readonly NetTxTransactionContext transactionContext;
+
         public NetTxSession(Connection connection, SessionId id)
             : base(connection, id, AcknowledgementMode.AutoAcknowledge)
         {
-            TransactionContext.InitializeDtcTxContext();
+            this.transactionContext = TransactionContext as NetTxTransactionContext;
+            this.transactionContext.InitializeDtcTxContext();
         }
 
         /// <summary>
@@ -55,7 +58,7 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public override bool IsTransacted
         {
-            get { return Transaction.Current != null || TransactionContext.InNetTransaction; }
+            get { return Transaction.Current != null || transactionContext.InNetTransaction; }
         }
 
         public override bool IsAutoAcknowledge
@@ -73,17 +76,17 @@ namespace Apache.NMS.ActiveMQ
 
             try
             {
-                if (TransactionContext.InNetTransaction)
+                if (transactionContext.InNetTransaction)
                 {
-                    lock (TransactionContext.SyncRoot)
+                    lock (transactionContext.SyncRoot)
                     {
-                        if (TransactionContext.InNetTransaction)
+                        if (transactionContext.InNetTransaction)
                         {
                             // Must wait for all the DTC operations to complete before
                             // moving on from this close call.
-                            Monitor.Exit(TransactionContext.SyncRoot);
-                            this.TransactionContext.DtcWaitHandle.WaitOne();
-                            Monitor.Enter(TransactionContext.SyncRoot);
+                            Monitor.Exit(transactionContext.SyncRoot);
+                            this.transactionContext.DtcWaitHandle.WaitOne();
+                            Monitor.Enter(transactionContext.SyncRoot);
                         }
                     }
                 }
@@ -104,6 +107,11 @@ namespace Apache.NMS.ActiveMQ
                                             maxPending, noLocal, false, this.DispatchAsync);
         }
 
+        protected override TransactionContext CreateTransactionContext()
+        {
+            return new NetTxTransactionContext(this);
+        }
+
         internal override void DoRollback()
         {
             // Only the Transaction Manager can do this when in a .NET Transaction.
@@ -118,18 +126,18 @@ namespace Apache.NMS.ActiveMQ
 
         internal override void DoStartTransaction()
         {
-            lock (TransactionContext.SyncRoot)
+            lock (transactionContext.SyncRoot)
             {
-                if (TransactionContext.InNetTransaction && TransactionContext.NetTxState == TransactionContext.TxState.Pending)
+                if (transactionContext.InNetTransaction && transactionContext.NetTxState == NetTxTransactionContext.TxState.Pending)
                 {
                     // To late to participate in this TX, we have to wait for it to complete then
                     // we can create a new TX and start from there.
-                    Monitor.Exit(TransactionContext.SyncRoot);
-                    TransactionContext.DtcWaitHandle.WaitOne();
-                    Monitor.Enter(TransactionContext.SyncRoot);
+                    Monitor.Exit(transactionContext.SyncRoot);
+                    transactionContext.DtcWaitHandle.WaitOne();
+                    Monitor.Enter(transactionContext.SyncRoot);
                 }
  
-                if (!TransactionContext.InNetTransaction && Transaction.Current != null)
+                if (!transactionContext.InNetTransaction && Transaction.Current != null)
                 {
                     Tracer.Debug("NetTxSession detected Ambient Transaction, start new TX with broker");
                     EnrollInSpecifiedTransaction(Transaction.Current);
@@ -139,7 +147,7 @@ namespace Apache.NMS.ActiveMQ
 
         private void EnrollInSpecifiedTransaction(Transaction tx)
         {
-            if(TransactionContext.InNetTransaction)
+            if(transactionContext.InNetTransaction)
             {
                 Tracer.Warn("Enlist attempted while a Net TX was Active.");
                 throw new InvalidOperationException("Session is Already enlisted in a Transaction");
@@ -154,7 +162,7 @@ namespace Apache.NMS.ActiveMQ
             // Start a new .NET style transaction, this could be distributed
             // or it could just be a Local transaction that could become
             // distributed later.
-            TransactionContext.Begin(tx);
+            transactionContext.Begin(tx);
         }
     }
 }

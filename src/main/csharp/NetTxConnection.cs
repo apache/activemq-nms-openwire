@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ
     /// The default Session creation methods of Connection are overriden here
     /// to always return a TX capable session instance.
     /// </summary>
-    public class NetTxConnection : Connection, INetTxConnection
+    public sealed class NetTxConnection : Connection, INetTxConnection
     {
         private NetTxRecoveryPolicy recoveryPolicy = new NetTxRecoveryPolicy();
         private Guid configuredResourceManagerId = Guid.Empty;

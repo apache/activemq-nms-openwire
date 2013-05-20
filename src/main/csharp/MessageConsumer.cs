@@ -1025,38 +1025,18 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		public void BeforeMessageIsConsumed(MessageDispatch dispatch)
+		public virtual void BeforeMessageIsConsumed(MessageDispatch dispatch)
 		{
 			this.lastDeliveredSequenceId = dispatch.Message.MessageId.BrokerSequenceId;
 
 			if (!IsAutoAcknowledgeBatch)
 			{
-                if (this.session.IsTransacted)
-                {
-                    bool waitForDtcWaitHandle = false;
-                    lock (this.session.TransactionContext.SyncRoot)
-                    {
-                        // In the case where the consumer is operating in concert with a
-                        // distributed TX manager we need to wait whenever the TX is being
-                        // controlled by the DTC as it completes all operations async and
-                        // we cannot start consumption again until all its tasks have completed.)
-                        waitForDtcWaitHandle = this.session.TransactionContext.InNetTransaction &&
-                                               this.session.TransactionContext.NetTxState ==
-                                               TransactionContext.TxState.Pending;
-                    }
-
-                    if (waitForDtcWaitHandle)
-                    {
-                        this.session.TransactionContext.DtcWaitHandle.WaitOne();
-                    }
-                }                
-
 			    lock(this.dispatchedMessages)
 				{
 					this.dispatchedMessages.AddFirst(dispatch);
 				}
 
-				if(this.session.IsTransacted)
+				if (this.session.IsTransacted)
 				{
                 	if (this.transactedIndividualAck) 
 					{
@@ -1092,7 +1072,7 @@ namespace Apache.NMS.ActiveMQ
 			return false;
 		}
 
-		public void AfterMessageIsConsumed(MessageDispatch dispatch, bool expired)
+		public virtual void AfterMessageIsConsumed(MessageDispatch dispatch, bool expired)
 		{
 			if(this.unconsumedMessages.Closed)
 			{
@@ -1603,7 +1583,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		private bool IsAutoAcknowledgeBatch
+	    protected bool IsAutoAcknowledgeBatch
 		{
 			get { return this.session.IsDupsOkAcknowledge && !this.info.Destination.IsQueue; }
 		}

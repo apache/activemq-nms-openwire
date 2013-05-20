@@ -23,7 +23,7 @@ using Apache.NMS.ActiveMQ.Transport;
 
 namespace Apache.NMS.ActiveMQ
 {
-    public class NetTxConnectionFactory : ConnectionFactory, INetTxConnectionFactory
+    public sealed class NetTxConnectionFactory : ConnectionFactory, INetTxConnectionFactory
     {
         private NetTxRecoveryPolicy recoveryPolicy = new NetTxRecoveryPolicy();
         private Guid configuredResourceManagerId = Guid.Empty;

@@ -22,9 +22,10 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
 {
-    class NetTxMessageConsumer : MessageConsumer
+    public sealed class NetTxMessageConsumer : MessageConsumer
     {
         private readonly NetTxSession session;
+        private readonly NetTxTransactionContext transactionContext;
 
         internal NetTxMessageConsumer(Session session, ConsumerId id, ActiveMQDestination destination, 
                                       string name, string selector, int prefetch, int maxPendingMessageCount,
@@ -33,6 +34,7 @@ namespace Apache.NMS.ActiveMQ
                  maxPendingMessageCount, noLocal, browser, dispatchAsync)
         {
             this.session = session as NetTxSession;
+            this.transactionContext = session.TransactionContext as NetTxTransactionContext;
         }
 
         public override void Close()
@@ -42,7 +44,7 @@ namespace Apache.NMS.ActiveMQ
                 return;
             }
 
-            lock (this.session.TransactionContext.SyncRoot)
+            lock (this.transactionContext.SyncRoot)
             {
                 if (this.session.IsTransacted || this.session.TransactionContext.InTransaction)
                 {
@@ -59,5 +61,34 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
         }
+
+        public override void BeforeMessageIsConsumed(MessageDispatch dispatch)
+        {
+            if (!IsAutoAcknowledgeBatch)
+            {
+                if (this.session.IsTransacted)
+                {
+                    bool waitForDtcWaitHandle = false;
+                    lock (this.transactionContext.SyncRoot)
+                    {
+                        // In the case where the consumer is operating in concert with a
+                        // distributed TX manager we need to wait whenever the TX is being
+                        // controlled by the DTC as it completes all operations async and
+                        // we cannot start consumption again until all its tasks have completed.)
+                        waitForDtcWaitHandle = this.transactionContext.InNetTransaction &&
+                                               this.transactionContext.NetTxState ==
+                                               NetTxTransactionContext.TxState.Pending;
+                    }
+
+                    if (waitForDtcWaitHandle)
+                    {
+                        this.transactionContext.DtcWaitHandle.WaitOne();
+                    }
+                }
+            }
+
+            base.BeforeMessageIsConsumed(dispatch);
+        }
+
     }
 }

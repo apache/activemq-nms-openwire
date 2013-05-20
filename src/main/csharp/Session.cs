@@ -304,11 +304,6 @@ namespace Apache.NMS.ActiveMQ
                 return;
             }
 
-            if(disposing)
-            {
-                // Dispose managed code here.
-            }
-
             try
             {
                 // Force a Stop when we are Disposing vs a Normal Close.
@@ -344,10 +339,10 @@ namespace Apache.NMS.ActiveMQ
         internal void DoClose()
         {
 			Shutdown();
-            RemoveInfo info = new RemoveInfo();
-            info.ObjectId = this.info.SessionId;
-            info.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
-            this.connection.Oneway(info);
+            RemoveInfo removeInfo = new RemoveInfo();
+            removeInfo.ObjectId = this.info.SessionId;
+            removeInfo.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
+            this.connection.Oneway(removeInfo);
 		}
 		
         internal void Shutdown()
