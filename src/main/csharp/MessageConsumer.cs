@@ -417,11 +417,6 @@ namespace Apache.NMS.ActiveMQ
 				return;
 			}
 
-			if(disposing)
-			{
-				// Dispose managed code here.
-			}
-
 			try
 			{
 				Close();
@@ -1574,7 +1569,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
-		private bool IsAutoAcknowledgeEach
+		protected bool IsAutoAcknowledgeEach
 		{
 			get
 			{
@@ -1588,12 +1583,12 @@ namespace Apache.NMS.ActiveMQ
 			get { return this.session.IsDupsOkAcknowledge && !this.info.Destination.IsQueue; }
 		}
 
-		private bool IsIndividualAcknowledge
+        protected bool IsIndividualAcknowledge
 		{
 			get { return this.session.IsIndividualAcknowledge; }
 		}
 
-		private bool IsClientAcknowledge
+        protected bool IsClientAcknowledge
 		{
 			get { return this.session.IsClientAcknowledge; }
 		}
