@@ -48,6 +48,7 @@ namespace Apache.NMS.ActiveMQ.Test
     {
         protected const int MSG_COUNT = 5;
         protected string nonExistantPath;
+        protected NetTxConnectionFactory factory;
         
         private ITrace oldTracer;
 
@@ -308,25 +309,23 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        protected static void VerifyBrokerQueueCount()
+        protected void VerifyBrokerQueueCount()
         {
             VerifyBrokerQueueCount(MSG_COUNT, connectionURI);
         }
 
-        protected static void VerifyBrokerQueueCount(int expectedCount)
+        protected void VerifyBrokerQueueCount(int expectedCount)
         {
             VerifyBrokerQueueCount(expectedCount, connectionURI);
         }
 
-        protected static void VerifyBrokerQueueCount(string connectionUri)
+        protected void VerifyBrokerQueueCount(string connectionUri)
         {
             VerifyBrokerQueueCount(MSG_COUNT, connectionUri);
         }
 
-        protected static void VerifyBrokerQueueCount(int expectedCount, string connectionUri)
-        {
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionUri));
-            
+        protected void VerifyBrokerQueueCount(int expectedCount, string connectionUri)
+        {           
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 // check messages are present in the queue
@@ -354,12 +353,12 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        protected static void VerifyNoMessagesInQueueNoRecovery()
+        protected void VerifyNoMessagesInQueueNoRecovery()
         {
             VerifyBrokerQueueCountNoRecovery(0);
         }
 
-        protected static void VerifyNoMessagesInQueue()
+        protected void VerifyNoMessagesInQueue()
         {
             VerifyBrokerQueueCount(0);
         }
@@ -397,10 +396,8 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        protected static void VerifyBrokerHasMessagesInQueue(string connectionURI)
+        protected void VerifyBrokerHasMessagesInQueue(string connectionURI)
         {
-            INetTxConnectionFactory factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-
             using (INetTxConnection connection = factory.CreateNetTxConnection())
             {
                 // check messages are present in the queue

@@ -29,8 +29,6 @@ namespace Apache.NMS.ActiveMQ.Test
     [Category("Manual")]
     class DtcProducerTransactionsTest : DtcTransactionsTestSupport
     {
-        private NetTxConnectionFactory factory = null;
-
         [SetUp]
         public override void SetUp()
         {
