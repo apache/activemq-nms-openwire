@@ -25,6 +25,7 @@ namespace Apache.NMS.ActiveMQ
     public sealed class NetTxSession : Session, INetTxSession
     {
         private readonly NetTxTransactionContext transactionContext;
+        private string currentTransactionId;
 
         public NetTxSession(Connection connection, SessionId id)
             : base(connection, id, AcknowledgementMode.AutoAcknowledge)
@@ -128,8 +129,15 @@ namespace Apache.NMS.ActiveMQ
         {
             lock (transactionContext.SyncRoot)
             {
-                if (transactionContext.InNetTransaction && transactionContext.NetTxState == NetTxTransactionContext.TxState.Pending)
+                while (transactionContext.InNetTransaction &&
+                       (transactionContext.NetTxState == NetTxTransactionContext.TxState.Pending ||
+                       (Transaction.Current != null && 
+                        this.currentTransactionId != Transaction.Current.TransactionInformation.LocalIdentifier)))
                 {
+                    if (Tracer.IsDebugEnabled)
+                    {
+                        Tracer.DebugFormat("NetTxSession awaiting completion of TX:{0}", transactionContext.TransactionId);
+                    }
                     // To late to participate in this TX, we have to wait for it to complete then
                     // we can create a new TX and start from there.
                     Monitor.Exit(transactionContext.SyncRoot);
@@ -162,6 +170,7 @@ namespace Apache.NMS.ActiveMQ
             // Start a new .NET style transaction, this could be distributed
             // or it could just be a Local transaction that could become
             // distributed later.
+            this.currentTransactionId = tx.TransactionInformation.LocalIdentifier; 
             transactionContext.Begin(tx);
         }
     }

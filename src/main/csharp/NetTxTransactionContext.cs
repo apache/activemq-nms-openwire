@@ -102,7 +102,6 @@ namespace Apache.NMS.ActiveMQ
         {
             lock (syncObject)
             {
-                this.netTxState = TxState.Active;
                 dtcControlEvent.Reset();
 
                 Tracer.Debug("Begin notification received");
@@ -119,6 +118,10 @@ namespace Apache.NMS.ActiveMQ
                     // Enlist this object in the transaction.
                     this.currentEnlistment =
                         transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
+
+                    // In case of a exception in the current method the transaction will be rolled back.
+                    // Until Begin Transaction is completed we consider to be in a rollback scenario.
+                    this.netTxState = TxState.Pending;
 
                     Tracer.Debug("Enlisted in Durable Transaction with RM Id: " + rmId);
 
@@ -146,6 +149,9 @@ namespace Apache.NMS.ActiveMQ
 
                     this.session.Connection.Oneway(info);
 
+                    // Begin Transaction is completed successfully. Change to transaction active state now.
+                    this.netTxState = TxState.Active;
+
                     SignalTransactionStarted();
 
                     if (Tracer.IsDebugEnabled)
@@ -155,7 +161,12 @@ namespace Apache.NMS.ActiveMQ
                 }
                 catch (Exception)
                 {
-                    dtcControlEvent.Set();
+                    // When in pending state the rollback will signal that a new transaction can be started. Otherwise do it here.
+                    if (netTxState != TxState.Pending)
+                    {
+                        netTxState = TxState.None;
+                        dtcControlEvent.Set();
+                    }
                     throw;
                 }
             }
@@ -201,9 +212,11 @@ namespace Apache.NMS.ActiveMQ
                         // change on the broker.
                         RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
 
-                        // if server responds that nothing needs to be done, then reply prepared
-                        // but clear the current state data so we appear done to the commit method.
-                        preparingEnlistment.Prepared();
+                        // if server responds that nothing needs to be done, then reply done.
+                        // otherwise the DTC will call Commit or Rollback but another transaction
+                        // can already be in progress and this one would be commited or rolled back 
+                        // immediately.
+                        preparingEnlistment.Done();
 
                         // Done so commit won't be called.
                         AfterCommit();

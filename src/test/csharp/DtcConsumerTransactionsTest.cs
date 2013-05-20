@@ -571,6 +571,86 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
+        [Test]
+        public void MessageShouldEnlistToTheCorrectTransaction()
+        {
+            const int messageCount = 100;
+            const int receiveCount = 100;
+
+            // enqueue several messages
+            PurgeDatabase();
+            PurgeAndFillQueue(messageCount);
+
+            var enlistment = new TestSinglePhaseCommit();
+
+            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            {
+                connection.Start();
+
+                // receive half of total messages
+                using (INetTxSession session = connection.CreateNetTxSession())
+                {
+                    IQueue queue = session.GetQueue(testQueueName);
+                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    {
+                        for (int i = 0; i < receiveCount; i++)
+                        {
+                            try
+                            {
+                                using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                                {
+                                    ITextMessage message = consumer.Receive(TimeSpan.FromMilliseconds(10000)) as ITextMessage;
+
+                                    Transaction.Current.EnlistDurable(Guid.NewGuid(), enlistment, EnlistmentOptions.None);
+                                    if (new Random().Next(2) == 0)
+                                    {
+                                        Tracer.InfoFormat("Throwing random Exception for Message {0}", message.NMSMessageId);
+                                        throw new Exception();
+                                    }
+
+                                    scoped.Complete();
+                                }
+                            }
+                            catch
+                            {
+                            }
+
+                            Assert.False(enlistment.singlePhaseCommit, "No single phase commit should happen.");
+                        }
+                    }
+                }
+            }
+        }
+
+        internal class TestSinglePhaseCommit : ISinglePhaseNotification
+        {
+            public bool singlePhaseCommit = false;
+
+            public void Prepare(PreparingEnlistment preparingEnlistment)
+            {
+                preparingEnlistment.Prepared();
+            }
+            public void Commit(Enlistment enlistment)
+            {
+                enlistment.Done();
+            }
+
+            public void Rollback(Enlistment enlistment)
+            {
+                enlistment.Done();
+            }
+            public void InDoubt(Enlistment enlistment)
+            {
+                enlistment.Done();
+            }
+            public void SinglePhaseCommit(SinglePhaseEnlistment singlePhaseEnlistment)
+            {
+                Tracer.Info("Performing invalid single phase commit.");
+                singlePhaseCommit = true;
+                singlePhaseEnlistment.Committed();
+            }
+        }
+
         #region Asynchronous Consumer Inside of a Transaction Test / Example
 
         private const int BATCH_COUNT = 5;
