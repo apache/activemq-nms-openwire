@@ -156,7 +156,7 @@ namespace Apache.NMS.ActiveMQ
 
                     if (Tracer.IsDebugEnabled)
                     {
-                        Tracer.Debug("Began XA'ish Transaction:" + xaId.GlobalTransactionId);
+                        Tracer.Debug("Began XA'ish Transaction:" + xaId);
                     }
                 }
                 catch (Exception)

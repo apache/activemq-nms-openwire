@@ -31,8 +31,9 @@ namespace Apache.NMS.ActiveMQ.Commands
     {
         public const byte ID_NETWORKBRIDGEFILTER = 91;
 
-        int networkTTL;
         BrokerId networkBrokerId;
+        int messageTTL;
+        int consumerTTL;
 
         ///
         /// <summery>
@@ -54,20 +55,27 @@ namespace Apache.NMS.ActiveMQ.Commands
         public override string ToString()
         {
             return GetType().Name + "[ " + 
-                "NetworkTTL = " + NetworkTTL + ", " + 
-                "NetworkBrokerId = " + NetworkBrokerId + " ]";
-        }
-
-        public int NetworkTTL
-        {
-            get { return networkTTL; }
-            set { this.networkTTL = value; }
+                "NetworkBrokerId = " + NetworkBrokerId + ", " + 
+                "MessageTTL = " + MessageTTL + ", " + 
+                "ConsumerTTL = " + ConsumerTTL + " ]";
         }
 
         public BrokerId NetworkBrokerId
         {
             get { return networkBrokerId; }
             set { this.networkBrokerId = value; }
+        }
+
+        public int MessageTTL
+        {
+            get { return messageTTL; }
+            set { this.messageTTL = value; }
+        }
+
+        public int ConsumerTTL
+        {
+            get { return consumerTTL; }
+            set { this.consumerTTL = value; }
         }
 
     };

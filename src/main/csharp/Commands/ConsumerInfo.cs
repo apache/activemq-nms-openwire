@@ -40,6 +40,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         int maximumPendingMessageLimit;
         bool dispatchAsync;
         string selector;
+        string clientId;
         string subscriptionName;
         bool noLocal;
         bool exclusive;
@@ -81,6 +82,7 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "MaximumPendingMessageLimit = " + MaximumPendingMessageLimit + ", " + 
                 "DispatchAsync = " + DispatchAsync + ", " + 
                 "Selector = " + Selector + ", " + 
+                "ClientId = " + ClientId + ", " + 
                 "SubscriptionName = " + SubscriptionName + ", " + 
                 "NoLocal = " + NoLocal + ", " + 
                 "Exclusive = " + Exclusive + ", " + 
@@ -134,6 +136,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return selector; }
             set { this.selector = value; }
+        }
+
+        public string ClientId
+        {
+            get { return clientId; }
+            set { this.clientId = value; }
         }
 
         public string SubscriptionName

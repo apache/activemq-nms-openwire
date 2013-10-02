@@ -32,6 +32,7 @@ namespace Apache.NMS.ActiveMQ.Commands
     {
         public const byte ID_MESSAGEID = 110;
 
+        string textView;
         ProducerId producerId;
         long producerSequenceId;
         long brokerSequenceId;
@@ -74,7 +75,21 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             if(key == null) 
             {
-                key = producerId.ToString() + ":" + producerSequenceId + ":" + brokerSequenceId;
+                if (!String.IsNullOrEmpty(textView))
+                {
+                    if (textView.StartsWith("ID:"))
+                    {
+                        key = textView;
+                    }
+                    else
+                    {
+                        key = "ID:" + textView;
+                    }
+                }
+                else
+                {
+                    key = producerId.ToString() + ":" + producerSequenceId + ":" + brokerSequenceId;
+                }
             }
             
             return key;
@@ -95,6 +110,12 @@ namespace Apache.NMS.ActiveMQ.Commands
                 messageKey = messageKey.Substring(0, p);
             }
             producerId = new ProducerId(messageKey);
+        }
+
+        public string TextView
+        {
+            get { return textView; }
+            set { this.textView = value; }
         }
 
         public ProducerId ProducerId
@@ -119,6 +140,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             int answer = 0;
 
+            answer = (answer * 37) + HashCode(TextView);
             answer = (answer * 37) + HashCode(ProducerId);
             answer = (answer * 37) + HashCode(ProducerSequenceId);
             answer = (answer * 37) + HashCode(BrokerSequenceId);
@@ -138,6 +160,10 @@ namespace Apache.NMS.ActiveMQ.Commands
 
         public virtual bool Equals(MessageId that)
         {
+            if(!Equals(this.TextView, that.TextView))
+            {
+                return false;
+            }
             if(!Equals(this.ProducerId, that.ProducerId))
             {
                 return false;

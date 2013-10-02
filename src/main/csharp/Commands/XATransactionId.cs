@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -54,10 +55,10 @@ namespace Apache.NMS.ActiveMQ.Commands
         ///
         public override string ToString()
         {
-            return GetType().Name + "[ " + 
-                "FormatId = " + FormatId + ", " + 
-                "GlobalTransactionId = " + GlobalTransactionId ?? System.Text.ASCIIEncoding.ASCII.GetString(GlobalTransactionId) + ", " + 
-                "BranchQualifier = " + BranchQualifier ?? System.Text.ASCIIEncoding.ASCII.GetString(BranchQualifier) + " ]";
+            return GetType().Name + "[ " +
+                "FormatId = " + FormatId + ", " +
+                "GlobalTransactionId = " + BitConverter.ToString(GlobalTransactionId).Replace("-", string.Empty) + ", " +
+                "BranchQualifier = " + System.Text.ASCIIEncoding.ASCII.GetString(BranchQualifier) + " ]";
         }
 
         public int FormatId
