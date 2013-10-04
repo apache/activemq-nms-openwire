@@ -329,6 +329,68 @@
     <Compile Include="src\main\csharp\OpenWire\OpenWireFormat.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQBlobMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQBytesMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQDestinationMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQMapMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQObjectMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQQueueMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQStreamMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQTempDestinationMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQTempQueueMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQTempTopicMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQTextMessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ActiveMQTopicMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\BaseCommandMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\BrokerIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\BrokerInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConnectionControlMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConnectionErrorMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConnectionIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConnectionInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConsumerControlMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConsumerIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ConsumerInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ControlCommandMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\DataArrayResponseMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\DataResponseMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\DestinationInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\DiscoveryEventMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ExceptionResponseMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\FlushCommandMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\IntegerResponseMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\JournalQueueAckMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\JournalTopicAckMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\JournalTraceMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\JournalTransactionMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\KeepAliveInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\LastPartialCommandMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\LocalTransactionIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MarshallerFactory.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MessageAckMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MessageDispatchMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MessageDispatchNotificationMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MessageIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MessageMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\MessagePullMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\NetworkBridgeFilterMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\PartialCommandMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ProducerAckMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ProducerIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ProducerInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\RemoveInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\RemoveSubscriptionInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ReplayCommandMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ResponseMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\SessionIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\SessionInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\ShutdownInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\SubscriptionInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\TransactionIdMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\TransactionInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\WireFormatInfoMarshaller.cs" />
+    <Compile Include="src\main\csharp\OpenWire\V10\XATransactionIdMarshaller.cs" />
     <Compile Include="src\main\csharp\OpenWire\V1\ActiveMQBlobMessageMarshaller.cs" />
     <Compile Include="src\main\csharp\OpenWire\V1\ActiveMQBytesMessageMarshaller.cs">
       <SubType>Code</SubType>
@@ -1226,6 +1288,7 @@
     <Compile Include="src\main\csharp\Util\LRUCache.cs" />
     <Compile Include="src\main\csharp\Util\MemoryUsage.cs" />
     <Compile Include="src\main\csharp\Util\MessageDispatchChannel.cs" />
+    <Compile Include="src\main\csharp\Util\ServiceStopper.cs" />
     <Compile Include="src\main\csharp\Util\SimplePriorityMessageDispatchChannel.cs" />
   </ItemGroup>
   <ItemGroup>
