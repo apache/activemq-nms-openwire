@@ -14,16 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 using System;
 
-namespace Apache.NMS.ActiveMQ.Transport
+namespace Apache.NMS.ActiveMQ
 {
-	public delegate void SetTransport(ITransport transport, Uri uri);
+    /// <summary>
+    /// Optional interface for service type objects which support a 
+    /// logical suspend and resume mode.  Services that can be suspended
+    /// when not needed can reduce resource load.  
+    /// </summary>
+    public interface ISuspendable
+    {
+        void Suspend();
 
-	public interface ITransportFactory
-	{
-		ITransport CreateTransport(Uri location);
-		ITransport CompositeConnect(Uri location);
-	}
+        void Resume();
+    }
 }
+

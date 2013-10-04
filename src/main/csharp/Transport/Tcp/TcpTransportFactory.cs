@@ -107,11 +107,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
         public ITransport CompositeConnect(Uri location)
         {
-            return CompositeConnect(location, null);
-        }
-
-        public ITransport CompositeConnect(Uri location, SetTransport setTransport)
-        {
             // Extract query parameters from broker Uri
             StringDictionary map = URISupport.ParseQuery(location.Query);
 
@@ -165,10 +160,6 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             }
 
             transport = new WireFormatNegotiator(transport, wireformat);
-            if(setTransport != null)
-            {
-                setTransport(transport, location);
-            }
 
             return transport;
         }

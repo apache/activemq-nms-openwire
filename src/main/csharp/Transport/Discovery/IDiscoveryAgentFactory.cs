@@ -14,16 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 using System;
 
-namespace Apache.NMS.ActiveMQ.Transport
+namespace Apache.NMS.ActiveMQ.Transport.Discovery
 {
-	public delegate void SetTransport(ITransport transport, Uri uri);
-
-	public interface ITransportFactory
-	{
-		ITransport CreateTransport(Uri location);
-		ITransport CompositeConnect(Uri location);
-	}
+    /// <summary>
+    /// Factory class interface for all DiscoveryAgent factories.  Each agent factory
+    /// should define its own factory attribute so that the agents can be found dynamically
+    /// by the DiscoveryAgentFactory class.
+    /// </summary>
+    public interface IDiscoveryAgentFactory
+    {
+        IDiscoveryAgent CreateAgent(Uri uri);
+    }
 }
+

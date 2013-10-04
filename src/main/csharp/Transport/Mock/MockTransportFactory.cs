@@ -137,10 +137,5 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 			return transport;
 		}
-
-		public ITransport CompositeConnect(Uri location, SetTransport setTransport)
-		{
-			throw new NMSConnectionException("Asynchronous composite connection not supported with Mock transport.");
-		}
 	}
 }
