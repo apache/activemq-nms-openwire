@@ -139,6 +139,7 @@ namespace Apache.NMS.ActiveMQ
 			this.info.Retroactive = session.Retroactive;
 			this.info.Exclusive = session.Exclusive;
 			this.info.Priority = session.Priority;
+			this.info.ClientId = session.Connection.ClientId;
 
 			// If the destination contained a URI query, then use it to set public properties
 			// on the ConsumerInfo

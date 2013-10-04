@@ -61,7 +61,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V7
             base.TightUnmarshal(wireFormat, o, dataIn, bs);
 
             NetworkBridgeFilter info = (NetworkBridgeFilter)o;
-            info.NetworkTTL = dataIn.ReadInt32();
             info.NetworkBrokerId = (BrokerId) TightUnmarshalCachedObject(wireFormat, dataIn, bs);
         }
 
@@ -75,7 +74,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V7
             int rc = base.TightMarshal1(wireFormat, o, bs);
             rc += TightMarshalCachedObject1(wireFormat, (DataStructure)info.NetworkBrokerId, bs);
 
-            return rc + 4;
+            return rc + 0;
         }
 
         // 
@@ -86,7 +85,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V7
             base.TightMarshal2(wireFormat, o, dataOut, bs);
 
             NetworkBridgeFilter info = (NetworkBridgeFilter)o;
-            dataOut.Write(info.NetworkTTL);
             TightMarshalCachedObject2(wireFormat, (DataStructure)info.NetworkBrokerId, dataOut, bs);
         }
 
@@ -98,7 +96,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V7
             base.LooseUnmarshal(wireFormat, o, dataIn);
 
             NetworkBridgeFilter info = (NetworkBridgeFilter)o;
-            info.NetworkTTL = dataIn.ReadInt32();
             info.NetworkBrokerId = (BrokerId) LooseUnmarshalCachedObject(wireFormat, dataIn);
         }
 
@@ -111,7 +108,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V7
             NetworkBridgeFilter info = (NetworkBridgeFilter)o;
 
             base.LooseMarshal(wireFormat, o, dataOut);
-            dataOut.Write(info.NetworkTTL);
             LooseMarshalCachedObject(wireFormat, (DataStructure)info.NetworkBrokerId, dataOut);
         }
     }

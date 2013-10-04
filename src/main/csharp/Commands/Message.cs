@@ -65,6 +65,7 @@ namespace Apache.NMS.ActiveMQ.Commands
         BrokerId[] cluster;
         long brokerInTime;
         long brokerOutTime;
+        bool jMSXGroupFirstForConsumer;
 
         private bool readOnlyMsgProperties;
         private bool readOnlyMsgBody;
@@ -142,7 +143,8 @@ namespace Apache.NMS.ActiveMQ.Commands
                 "Droppable = " + Droppable + ", " + 
                 "Cluster = " + Cluster + ", " + 
                 "BrokerInTime = " + BrokerInTime + ", " + 
-                "BrokerOutTime = " + BrokerOutTime + " ]";
+                "BrokerOutTime = " + BrokerOutTime + ", " + 
+                "JMSXGroupFirstForConsumer = " + JMSXGroupFirstForConsumer + " ]";
         }
 
         public virtual int Size()
@@ -349,6 +351,12 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return brokerOutTime; }
             set { this.brokerOutTime = value; }
+        }
+
+        public bool JMSXGroupFirstForConsumer
+        {
+            get { return jMSXGroupFirstForConsumer; }
+            set { this.jMSXGroupFirstForConsumer = value; }
         }
 
         public virtual bool ReadOnlyProperties
