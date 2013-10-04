@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,19 @@
 
 using System;
 
-namespace Apache.NMS.ActiveMQ.Transport
-{
-	public delegate void SetTransport(ITransport transport, Uri uri);
+using Apache.NMS.ActiveMQ.Util;
 
-	public interface ITransportFactory
-	{
-		ITransport CreateTransport(Uri location);
-		ITransport CompositeConnect(Uri location);
-	}
+namespace Apache.NMS.ActiveMQ.Transport.Discovery
+{
+    /// <summary>
+    /// Attribute that decorates DiscoveryAgentFactory implementations to allow
+    /// the DiscoverAgentFactory to find all the available factories dynamically.
+    /// </summary>
+    public class ActiveMQDiscoveryAgentFactoryAttribute : FactoryAttribute
+    {
+        public ActiveMQDiscoveryAgentFactoryAttribute(string scheme) : base(scheme)
+        {
+        }
+    }
 }
+

@@ -19,10 +19,6 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using Apache.NMS.ActiveMQ.Util;
-using Apache.NMS.ActiveMQ.Transport.Discovery;
-using Apache.NMS.ActiveMQ.Transport.Failover;
-using Apache.NMS.ActiveMQ.Transport.Mock;
-using Apache.NMS.ActiveMQ.Transport.Tcp;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -67,12 +63,6 @@ namespace Apache.NMS.ActiveMQ.Transport
 		{
 			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
 			return tf.CompositeConnect(location);
-		}
-
-		public static ITransport AsyncCompositeConnect(Uri location, SetTransport setTransport)
-		{
-			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
-			return tf.CompositeConnect(location, setTransport);
 		}
 
 		/// <summary>

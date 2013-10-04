@@ -37,21 +37,20 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			return CreateTransport(URISupport.ParseComposite(location));
 		}
 
-		public ITransport CompositeConnect(Uri location, SetTransport setTransport)
-		{
-			throw new NMSConnectionException("Asynchronous composite connection not supported with Failover transport.");
-		}
-
 		public ITransport CreateTransport(Uri location)
 		{
 			return doConnect(location);
 		}
 
 		/// <summary>
+        /// Virtual transport create method which can be overriden by subclasses to provide
+        /// an alternate FailoverTransport implementation.  All transport creation methods in
+        /// this factory calls through this method to create the ITransport instance so this
+        /// is the only method that needs to be overriden.  
 		/// </summary>
 		/// <param name="compositData"></param>
 		/// <returns></returns>
-		public ITransport CreateTransport(URISupport.CompositeData compositData)
+		public virtual ITransport CreateTransport(URISupport.CompositeData compositData)
 		{
 			StringDictionary options = compositData.Parameters;
 			FailoverTransport transport = CreateTransport(options);
@@ -59,7 +58,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 			return transport;
 		}
 
-		public FailoverTransport CreateTransport(StringDictionary parameters)
+		protected FailoverTransport CreateTransport(StringDictionary parameters)
 		{
 			FailoverTransport transport = new FailoverTransport();
 			URISupport.SetProperties(transport, parameters, "transport.");
