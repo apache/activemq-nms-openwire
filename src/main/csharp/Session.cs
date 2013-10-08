@@ -526,6 +526,12 @@ namespace Apache.NMS.ActiveMQ
                 throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
             }
 
+			if (IsIndividualAcknowledge)
+			{
+				throw new NMSException("Cannot create a durable consumer for a session that is using " +
+				                       "Individual Acknowledgement mode.");
+			}
+
             ActiveMQDestination dest = ActiveMQDestination.Transform(destination);
             MessageConsumer consumer = null;
 
