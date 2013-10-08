@@ -714,7 +714,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         bool timedout = false;
                         while(transport == null && !disposed && connectionFailure == null)
                         {
-                            Tracer.Info("Waiting for transport to reconnect.");
+                            Tracer.Debug("Waiting for transport to reconnect.");
 
                             int elapsed = (int) (DateTime.Now - start).TotalMilliseconds;
                             if(this.timeout > 0 && elapsed > this.timeout)
