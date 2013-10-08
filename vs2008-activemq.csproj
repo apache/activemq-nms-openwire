@@ -1229,10 +1229,14 @@
     <Compile Include="src\main\csharp\Transactions\RecoveryFileLoggerFactory.cs" />
     <Compile Include="src\main\csharp\Transactions\RecoveryLoggerFactoryAttribute.cs" />
     <Compile Include="src\main\csharp\Transport\ActiveMQTransportFactoryAttribute.cs" />
+    <Compile Include="src\main\csharp\Transport\Discovery\AbstractDiscoveryAgent.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\ActiveMQDiscoveryAgentFactoryAttribute.cs" />
+    <Compile Include="src\main\csharp\Transport\Discovery\DiscoveredServiceData.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\DiscoveryAgentFactory.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\DiscoveryTransport.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\DiscoveryTransportFactory.cs" />
+    <Compile Include="src\main\csharp\Transport\Discovery\http\HttpDiscoveryAgent.cs" />
+    <Compile Include="src\main\csharp\Transport\Discovery\http\HttpDiscoveryAgentFactory.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\IDiscoveryAgent.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\IDiscoveryAgentFactory.cs" />
     <Compile Include="src\main\csharp\Transport\Discovery\Multicast\MulticastDiscoveryAgent.cs" />
@@ -1325,9 +1329,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="keyfile\NMSKey.snk" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="src\main\csharp\Transport\Discovery\http\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
   <PropertyGroup>
