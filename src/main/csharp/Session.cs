@@ -922,7 +922,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        internal void ClearMessagesInProgress()
+        internal void ClearMessagesInProgress(ref long transportInterruptionProcessingComplete)
         {
             if(this.executor != null)
             {
@@ -940,6 +940,7 @@ namespace Apache.NMS.ActiveMQ
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
                     consumer.InProgressClearRequired();
+					Interlocked.Increment(ref transportInterruptionProcessingComplete);
 					Scheduler.ExecuteAfterDelay(ClearMessages, consumer, 0);
                 }
             }
