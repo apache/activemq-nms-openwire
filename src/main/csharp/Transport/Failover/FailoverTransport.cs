@@ -467,13 +467,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 					connectedToPriority = false;
                     connected = false;
 
-                    if(this.Interrupted != null)
-                    {
-                        this.Interrupted(transport);
-                    }
-
 	                if (reconnectOk) 
 					{
+	                    if(this.Interrupted != null)
+	                    {
+	                        this.Interrupted(transport);
+	                    }
+
 	                    updated.Remove(failedConnectTransportURI);
 	                    reconnectTask.Wakeup();
 	                }
