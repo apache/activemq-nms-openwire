@@ -450,6 +450,8 @@ namespace Apache.NMS.ActiveMQ.State
                             {
                                 ss.RemoveConsumer(id);
                             }
+
+							cs.RecoveringPullConsumers.Remove(id);
                         }
                     }
                 }
