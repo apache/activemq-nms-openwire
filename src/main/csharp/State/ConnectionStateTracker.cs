@@ -43,7 +43,6 @@ namespace Apache.NMS.ActiveMQ.State
         private bool isRestoreTransaction = true;
         private bool isTrackMessages = true;
         private int maxCacheSize = 256;
-        private int currentCacheSize;
         private readonly LRUCache<Object, Command> messageCache = new LRUCache<Object, Command>(256);
 
         private class RemoveTransactionAction : ResponseHandler
@@ -90,21 +89,6 @@ namespace Apache.NMS.ActiveMQ.State
 
         public void TrackBack(Command command)
         {
-            if (command != null)
-            {
-                if (TrackMessages && command.IsMessage)
-                {
-                    Message message = (Message) command;
-                    if(message.TransactionId == null)
-                    {
-                        currentCacheSize = currentCacheSize + 1;
-                    }
-                }
-                else if (command.IsMessagePull)
-                {
-                    currentCacheSize = currentCacheSize + 1;
-                }
-            }
         }
 
         public void DoRestore(ITransport transport)
