@@ -196,7 +196,7 @@ namespace Apache.NMS.ActiveMQ
                     info.Type = (int)TransactionType.End;
 
                     this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
+                    this.connection.SyncRequest(info.Clone());
 
                     // Prepare the Transaction for commit.
                     info.Type = (int)TransactionType.Prepare;
