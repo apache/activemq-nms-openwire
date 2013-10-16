@@ -196,7 +196,7 @@ namespace Apache.NMS.ActiveMQ
                     info.Type = (int)TransactionType.End;
 
                     this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
+                    this.connection.SyncRequest((TransactionInfo) info.Clone());
 
                     // Prepare the Transaction for commit.
                     info.Type = (int)TransactionType.Prepare;
@@ -214,7 +214,7 @@ namespace Apache.NMS.ActiveMQ
 
                         // if server responds that nothing needs to be done, then reply done.
                         // otherwise the DTC will call Commit or Rollback but another transaction
-                        // can already be in progress and this one would be commited or rolled back 
+                        // can already be in progress and this one would be commited or rolled back
                         // immediately.
                         preparingEnlistment.Done();
 
@@ -495,7 +495,7 @@ namespace Apache.NMS.ActiveMQ
         /// Should be called from NetTxSession when created to check if any TX
         /// data is stored for recovery and whether the Broker has matching info
         /// stored.  If an Transaction is found that belongs to this client and is
-        /// still alive on the Broker it will be recovered, otherwise the stored 
+        /// still alive on the Broker it will be recovered, otherwise the stored
         /// data should be cleared.
         /// </summary>
         public void InitializeDtcTxContext()
@@ -515,7 +515,7 @@ namespace Apache.NMS.ActiveMQ
             if (recoverables.Length == 0)
             {
                 Tracer.Debug("Did not detect any recoverable transactions at Broker.");
-                // Broker has no recoverable data so nothing to do here, delete the 
+                // Broker has no recoverable data so nothing to do here, delete the
                 // old recovery log as its stale.
                 RecoveryLogger.Purge();
                 return;
