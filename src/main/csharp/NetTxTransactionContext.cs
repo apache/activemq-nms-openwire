@@ -393,7 +393,7 @@ namespace Apache.NMS.ActiveMQ
 
                         info.Type = (int)TransactionType.Rollback;
                         this.connection.CheckConnected();
-                        this.connection.SyncRequest(info);
+                        this.connection.SyncRequest((TransactionInfo) info.Clone());
 
                         Tracer.Debug("Transaction Rollback Done TX id: " + this.transactionId);
 
@@ -457,7 +457,7 @@ namespace Apache.NMS.ActiveMQ
 
                     info.Type = (int)TransactionType.Rollback;
                     this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
+                    this.connection.SyncRequest((TransactionInfo) info.Clone());
 
                     Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.transactionId);
 
