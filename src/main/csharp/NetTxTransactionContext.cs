@@ -389,7 +389,7 @@ namespace Apache.NMS.ActiveMQ
                         info.Type = (int)TransactionType.End;
 
                         this.connection.CheckConnected();
-                        this.connection.SyncRequest(info);
+                        this.connection.SyncRequest((TransactionInfo) info.Clone());
 
                         info.Type = (int)TransactionType.Rollback;
                         this.connection.CheckConnected();
@@ -453,7 +453,7 @@ namespace Apache.NMS.ActiveMQ
                     info.Type = (int)TransactionType.End;
 
                     this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
+                    this.connection.SyncRequest((TransactionInfo) info.Clone());
 
                     info.Type = (int)TransactionType.Rollback;
                     this.connection.CheckConnected();
