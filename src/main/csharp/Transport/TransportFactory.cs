@@ -22,86 +22,86 @@ using Apache.NMS.ActiveMQ.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	public class TransportFactory
-	{
-		public static event ExceptionListener OnException;
+    public class TransportFactory
+    {
+        public static event ExceptionListener OnException;
 
         private static readonly FactoryFinder<ActiveMQTransportFactoryAttribute, ITransportFactory> FACTORY_FINDER =
             new FactoryFinder<ActiveMQTransportFactoryAttribute, ITransportFactory>();
-		
+
         private readonly static object TRANSPORT_FACTORY_TYPES_LOCK = new object();
         private readonly static IDictionary<String, Type> TRANSPORT_FACTORY_TYPES = new Dictionary<String, Type>();
 
-		public static void HandleException(Exception ex)
-		{
-			if(TransportFactory.OnException != null)
-			{
-				TransportFactory.OnException(ex);
-			}
-		}
+        public static void HandleException(Exception ex)
+        {
+            if(TransportFactory.OnException != null)
+            {
+                TransportFactory.OnException(ex);
+            }
+        }
 
         public void RegisterTransportFactory(string scheme, Type factoryType)
         {
-			lock (TRANSPORT_FACTORY_TYPES_LOCK)
-			{
-            	TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
-			}
+            lock (TRANSPORT_FACTORY_TYPES_LOCK)
+            {
+                TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+            }
         }
 
-		/// <summary>
-		/// Creates a normal transport. 
-		/// </summary>
-		/// <param name="location"></param>
-		/// <returns>the transport</returns>
-		public static ITransport CreateTransport(Uri location)
-		{
-			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
-			return tf.CreateTransport(location);
-		}
+        /// <summary>
+        /// Creates a normal transport.
+        /// </summary>
+        /// <param name="location"></param>
+        /// <returns>the transport</returns>
+        public static ITransport CreateTransport(Uri location)
+        {
+            ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
+            return tf.CreateTransport(location);
+        }
 
-		public static ITransport CompositeConnect(Uri location)
-		{
-			ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
-			return tf.CompositeConnect(location);
-		}
+        public static ITransport CompositeConnect(Uri location)
+        {
+            ITransportFactory tf = TransportFactory.CreateTransportFactory(location);
+            return tf.CompositeConnect(location);
+        }
 
-		/// <summary>
-		/// Create a transport factory for the scheme.  If we do not support the transport protocol,
-		/// an NMSConnectionException will be thrown.
-		/// </summary>
-		/// <param name="location"></param>
-		/// <returns></returns>
-		private static ITransportFactory CreateTransportFactory(Uri location)
-		{
-			string scheme = location.Scheme;
+        /// <summary>
+        /// Create a transport factory for the scheme.  If we do not support the transport protocol,
+        /// an NMSConnectionException will be thrown.
+        /// </summary>
+        /// <param name="location"></param>
+        /// <returns></returns>
+        private static ITransportFactory CreateTransportFactory(Uri location)
+        {
+            string scheme = location.Scheme;
 
-			if(string.IsNullOrEmpty(scheme))
-			{
-				throw new NMSConnectionException(String.Format("Transport scheme invalid: [{0}]", location.ToString()));
-			}
+            if(string.IsNullOrEmpty(scheme))
+            {
+                throw new NMSConnectionException(String.Format("Transport scheme invalid: [{0}]", location.ToString()));
+            }
 
-			ITransportFactory factory = null;
+            ITransportFactory factory = null;
 
-			try
-			{
+            try
+            {
                 factory = NewInstance(scheme.ToLower());
-			}
-			catch(NMSConnectionException)
-			{
-				throw;
-			}
-			catch(Exception e)
-			{
-				throw new NMSConnectionException("Error creating transport.", e);
-			}
+            }
+            catch(NMSConnectionException)
+            {
+                throw;
+            }
+            catch(Exception e)
+            {
+                throw new NMSConnectionException("Error creating transport.", e);
+            }
 
-			if(null == factory)
-			{
-				throw new NMSConnectionException("Unable to create a transport.");
-			}
+            if(null == factory)
+            {
+                throw new NMSConnectionException("Unable to create a transport.");
+            }
 
-			return factory;
-		}
+            return factory;
+        }
 
         private static ITransportFactory NewInstance(string scheme)
         {
@@ -118,29 +118,29 @@ namespace Apache.NMS.ActiveMQ.Transport
             }
             catch(Exception ex)
             {
-                Tracer.WarnFormat("NewInstance failed to create an ITransportFactory with error: {1}", ex.Message);
+                Tracer.WarnFormat("NewInstance failed to create an ITransportFactory with error: {0}", ex.Message);
                 throw;
             }
         }
 
         private static Type FindTransportFactory(string scheme)
         {
-			lock (TRANSPORT_FACTORY_TYPES_LOCK)
-			{			
-	            if(TRANSPORT_FACTORY_TYPES.ContainsKey(scheme))
-	            {
-	                return TRANSPORT_FACTORY_TYPES[scheme];
-	            }
-			}
-			
+            lock (TRANSPORT_FACTORY_TYPES_LOCK)
+            {
+                if(TRANSPORT_FACTORY_TYPES.ContainsKey(scheme))
+                {
+                    return TRANSPORT_FACTORY_TYPES[scheme];
+                }
+            }
+
             try
             {
                 Type factoryType = FACTORY_FINDER.FindFactoryType(scheme);
-				
-				lock (TRANSPORT_FACTORY_TYPES_LOCK)
-				{			
-                	TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
-				}
+
+                lock (TRANSPORT_FACTORY_TYPES_LOCK)
+                {
+                    TRANSPORT_FACTORY_TYPES[scheme] = factoryType;
+                }
                 return factoryType;
             }
             catch
@@ -148,5 +148,5 @@ namespace Apache.NMS.ActiveMQ.Transport
                 throw new NMSConnectionException("Failed to find Factory for Transport type: " + scheme);
             }
         }
-	}
+    }
 }
