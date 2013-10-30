@@ -447,6 +447,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyDatabaseTableIsFull();
 
             // check messages are NOT present in the queue
+            NetTxTransactionContext.ResetDtcRecovery();
             VerifyBrokerQueueCount(0, newConnectionUri);
 
             Assert.AreEqual(0, Directory.GetFiles(logLocation).Length);
@@ -473,6 +474,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyDatabaseTableIsEmpty();
 
             // check messages are present in the queue
+            NetTxTransactionContext.ResetDtcRecovery();
             VerifyBrokerQueueCount();
         }
 
@@ -502,6 +504,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyDatabaseTableIsEmpty();
 
             // check messages are recovered and present in the queue 
+            NetTxTransactionContext.ResetDtcRecovery();
             VerifyBrokerQueueCount();
         }
 
@@ -534,6 +537,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyDatabaseTableIsEmpty();
 
             // check messages are present in the queue
+            NetTxTransactionContext.ResetDtcRecovery();
             VerifyBrokerQueueCount();
         }
 
@@ -566,6 +570,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyDatabaseTableIsEmpty();
 
             // check messages are present in the queue
+            NetTxTransactionContext.ResetDtcRecovery();
             VerifyBrokerQueueCount();
         }
 
