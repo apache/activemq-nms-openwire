@@ -32,9 +32,20 @@ namespace Apache.NMS.ActiveMQ
         private const int XA_READONLY = 3;
 
         private Enlistment currentEnlistment;
+        private static readonly Dictionary<string, bool> recoveredResourceManagerIds = new Dictionary<string, bool>();
 
         public NetTxTransactionContext(Session session) : base(session)
         {
+        }
+
+        /// <summary>
+        /// DTC recovery is performed once for each AppDomain per default. In case you want to perform
+        /// it again during execution of the application you can call this method before.
+        /// But ensure in this case that no connection is active anymore.
+        /// </summary>
+        public static void ResetDtcRecovery()
+        {
+            recoveredResourceManagerIds.Clear();
         }
 
         public override bool InLocalTransaction
@@ -500,62 +511,74 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public void InitializeDtcTxContext()
         {
+            string resourceManagerId = ResourceManagerId;
+
             // initialize the logger with the current Resource Manager Id
-            RecoveryLogger.Initialize(ResourceManagerId);
+            RecoveryLogger.Initialize(resourceManagerId);
 
-            KeyValuePair<XATransactionId, byte[]>[] localRecoverables = RecoveryLogger.GetRecoverables();
-            if (localRecoverables.Length == 0)
+            lock (recoveredResourceManagerIds)
             {
-                Tracer.Debug("Did not detect any open DTC transaction records on disk.");
-                // No local data so anything stored on the broker can't be recovered here.
-                return;
-            }
-
-            XATransactionId[] recoverables = TryRecoverBrokerTXIds();
-            if (recoverables.Length == 0)
-            {
-                Tracer.Debug("Did not detect any recoverable transactions at Broker.");
-                // Broker has no recoverable data so nothing to do here, delete the
-                // old recovery log as its stale.
-                RecoveryLogger.Purge();
-                return;
-            }
-
-            List<KeyValuePair<XATransactionId, byte[]>> matches = new List<KeyValuePair<XATransactionId, byte[]>>();
-
-            foreach (XATransactionId recoverable in recoverables)
-            {
-                foreach (KeyValuePair<XATransactionId, byte[]> entry in localRecoverables)
+                if (recoveredResourceManagerIds.ContainsKey(resourceManagerId))
                 {
-                    if (entry.Key.Equals(recoverable))
+                    return;
+                }
+
+                recoveredResourceManagerIds[resourceManagerId] = true;
+
+                KeyValuePair<XATransactionId, byte[]>[] localRecoverables = RecoveryLogger.GetRecoverables();
+                if (localRecoverables.Length == 0)
+                {
+                    Tracer.Debug("Did not detect any open DTC transaction records on disk.");
+                    // No local data so anything stored on the broker can't be recovered here.
+                    return;
+                }
+
+                XATransactionId[] recoverables = TryRecoverBrokerTXIds();
+                if (recoverables.Length == 0)
+                {
+                    Tracer.Debug("Did not detect any recoverable transactions at Broker.");
+                    // Broker has no recoverable data so nothing to do here, delete the 
+                    // old recovery log as its stale.
+                    RecoveryLogger.Purge();
+                    return;
+                }
+
+                List<KeyValuePair<XATransactionId, byte[]>> matches = new List<KeyValuePair<XATransactionId, byte[]>>();
+
+                foreach (XATransactionId recoverable in recoverables)
+                {
+                    foreach (KeyValuePair<XATransactionId, byte[]> entry in localRecoverables)
                     {
-                        Tracer.DebugFormat("Found a matching TX on Broker to stored Id: {0} reenlisting.", entry.Key);
-                        matches.Add(entry);
+                        if (entry.Key.Equals(recoverable))
+                        {
+                            Tracer.DebugFormat("Found a matching TX on Broker to stored Id: {0} reenlisting.", entry.Key);
+                            matches.Add(entry);
+                        }
                     }
                 }
-            }
 
-            if (matches.Count != 0)
-            {
-                this.recoveryComplete = new CountDownLatch(matches.Count);
-
-                foreach (KeyValuePair<XATransactionId, byte[]> recoverable in matches)
+                if (matches.Count != 0)
                 {
-                    this.transactionId = recoverable.Key;
-                    Tracer.Info("Reenlisting recovered TX with Id: " + this.transactionId);
-                    this.currentEnlistment =
-                        TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
+                    this.recoveryComplete = new CountDownLatch(matches.Count);
+
+                    foreach (KeyValuePair<XATransactionId, byte[]> recoverable in matches)
+                    {
+                        this.transactionId = recoverable.Key;
+                        Tracer.Info("Reenlisting recovered TX with Id: " + this.transactionId);
+                        this.currentEnlistment =
+                            TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
+                    }
+
+                    this.recoveryComplete.await();
+                    Tracer.Debug("All Recovered TX enlistments Reports complete, Recovery Complete.");
+                    TransactionManager.RecoveryComplete(ResourceManagerGuid);
+                    return;
                 }
 
-                this.recoveryComplete.await();
-                Tracer.Debug("All Recovered TX enlistments Reports complete, Recovery Complete.");
-                TransactionManager.RecoveryComplete(ResourceManagerGuid);
-                return;
+                // The old recovery information doesn't match what's on the broker so we
+                // should discard it as its stale now.
+                RecoveryLogger.Purge();
             }
-
-            // The old recovery information doesn't match what's on the broker so we
-            // should discard it as its stale now.
-            RecoveryLogger.Purge();
         }
 
         private XATransactionId[] TryRecoverBrokerTXIds()

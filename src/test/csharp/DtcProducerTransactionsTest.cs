@@ -66,6 +66,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyDatabaseTableIsEmpty();
 
             // check messages are present in the queue
+            NetTxTransactionContext.ResetDtcRecovery();
             VerifyBrokerQueueCount();
         }
 
