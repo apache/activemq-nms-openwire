@@ -26,10 +26,12 @@ using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Test.Transactions
 {
+    using System.Threading;
+
     [TestFixture]
     public class RecoveryFileLoggerTest
     {
-        private string rmId;
+        private string resourceManagerId;
         private string nonExistantPath;
         private string autoCreatePath;
         private string nonDefaultLogLocation;
@@ -37,7 +39,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         [SetUp]
         public void SetUp()
         {
-            this.rmId = Guid.NewGuid().ToString();
+            this.resourceManagerId = Guid.NewGuid().ToString();
             this.nonExistantPath = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
 			this.nonDefaultLogLocation = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
 			this.autoCreatePath = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
@@ -48,12 +50,8 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         [TearDown]
         public void TearDown()
         {
-            if(Directory.Exists(autoCreatePath))
-            {
-                Directory.Delete(autoCreatePath);
-            }
-
-            Directory.Delete(nonDefaultLogLocation, true);
+            SafeDeleteDirectory(autoCreatePath, 1000);
+            SafeDeleteDirectory(nonDefaultLogLocation, 1000);
         }
 
         [Test]
@@ -61,7 +59,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         {
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
-            logger.Initialize(rmId);
+            logger.Initialize(this.resourceManagerId);
 
             Assert.AreEqual(Directory.GetCurrentDirectory(), logger.Location);
         }
@@ -72,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId);
+            logger.Initialize(this.resourceManagerId);
 
             Assert.AreEqual(nonDefaultLogLocation, logger.Location);
         }
@@ -86,7 +84,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             logger.AutoCreateLocation = true;
             logger.Location = autoCreatePath;
-            logger.Initialize(rmId);
+            logger.Initialize(this.resourceManagerId);
 
             Assert.IsTrue(Directory.Exists(autoCreatePath));
             Assert.AreEqual(autoCreatePath, logger.Location);
@@ -102,7 +100,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
 
             try
             {
-                logger.Initialize(rmId);
+                logger.Initialize(this.resourceManagerId);
                 Assert.Fail("Should have detected an invalid dir and thrown an exception");
             }
             catch
@@ -116,7 +114,7 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId);
+            logger.Initialize(this.resourceManagerId);
 
             Assert.IsTrue(logger.GetRecoverables().Length == 0);
         }
@@ -126,27 +124,14 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         {
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
-            byte[] globalId = new byte[32];
-            byte[] branchQ = new byte[32];
-            byte[] recoveryData = new byte[256];
-
-            Random gen = new Random();
-
-            gen.NextBytes(globalId);
-            gen.NextBytes(branchQ);
-            gen.NextBytes(recoveryData);
-
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId);
+            logger.Initialize(this.resourceManagerId);
 
-            XATransactionId xid = new XATransactionId();
-            xid.GlobalTransactionId = globalId;
-            xid.BranchQualifier = branchQ;
+            TransactionData transactionData = new TransactionData();
+            logger.LogRecoveryInfo(transactionData.Transaction, transactionData.RecoveryData);
 
-            logger.LogRecoveryInfo(xid, recoveryData);
-
-            Assert.IsTrue(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
-                          "Recovery File was not created");
+            Assert.IsTrue(File.Exists(this.GetFilename(logger, transactionData)),
+                "Recovery File was not created");
         }
 
         [Test]
@@ -154,36 +139,58 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         {
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
-            byte[] globalId = new byte[32];
-            byte[] branchQ = new byte[32];
-            byte[] recoveryData = new byte[256];
+            logger.Location = this.nonDefaultLogLocation;
+            logger.Initialize(this.resourceManagerId);
 
-            Random gen = new Random();
+            TransactionData transactionData01 = new TransactionData();
+            logger.LogRecoveryInfo(transactionData01.Transaction, transactionData01.RecoveryData);
+            TransactionData transactionData02 = new TransactionData();
+            logger.LogRecoveryInfo(transactionData02.Transaction, transactionData02.RecoveryData);
 
-            gen.NextBytes(globalId);
-            gen.NextBytes(branchQ);
-            gen.NextBytes(recoveryData);
-
-            logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId);
-
-            XATransactionId xid = new XATransactionId();
-            xid.GlobalTransactionId = globalId;
-            xid.BranchQualifier = branchQ;
-
-            logger.LogRecoveryInfo(xid, recoveryData);
-
-            Assert.IsTrue(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
-                          "Recovery File was not created");
-            Assert.IsTrue(logger.GetRecoverables().Length == 1,
-                          "Did not recover the logged record.");
+            Assert.IsTrue(File.Exists(this.GetFilename(logger, transactionData01)), "Recovery File was not created");
+            Assert.IsTrue(File.Exists(this.GetFilename(logger, transactionData02)), "Recovery File was not created");
+            Assert.AreEqual(2, logger.GetRecoverables().Length, "Did not recover the logged record.");
 
             KeyValuePair<XATransactionId, byte[]>[] records = logger.GetRecoverables();
-            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(2, records.Length);
 
-            Assert.AreEqual(globalId, records[0].Key.GlobalTransactionId, "Incorrect Global TX Id returned");
-            Assert.AreEqual(branchQ, records[0].Key.BranchQualifier, "Incorrect Branch Qualifier returned");
-            Assert.AreEqual(recoveryData, records[0].Value, "Incorrect Recovery Information returned");
+            foreach (var keyValuePair in records)
+            {
+                if (BitConverter.ToString(keyValuePair.Key.GlobalTransactionId) == BitConverter.ToString(transactionData01.Transaction.GlobalTransactionId))
+                {
+                    Assert.AreEqual(transactionData01.GlobalId, keyValuePair.Key.GlobalTransactionId, "Incorrect Global TX Id returned");
+                    Assert.AreEqual(transactionData01.BranchQ, keyValuePair.Key.BranchQualifier, "Incorrect Branch Qualifier returned");
+                    Assert.AreEqual(transactionData01.RecoveryData, keyValuePair.Value, "Incorrect Recovery Information returned");
+                }
+                else if (BitConverter.ToString(keyValuePair.Key.GlobalTransactionId) == BitConverter.ToString(transactionData02.Transaction.GlobalTransactionId))
+                {
+                    Assert.AreEqual(transactionData02.GlobalId, keyValuePair.Key.GlobalTransactionId, "Incorrect Global TX Id returned");
+                    Assert.AreEqual(transactionData02.BranchQ, keyValuePair.Key.BranchQualifier, "Incorrect Branch Qualifier returned");
+                    Assert.AreEqual(transactionData02.RecoveryData, keyValuePair.Value, "Incorrect Recovery Information returned");
+                }
+                else
+                {
+                    Assert.Fail("Transaction not found.");
+                }
+            }
+        }
+
+        [Test]
+        public void TestLogRecovered()
+        {
+            RecoveryFileLogger logger = new RecoveryFileLogger();
+
+            logger.Location = nonDefaultLogLocation;
+            logger.Initialize(this.resourceManagerId);
+
+            TransactionData transactionData = new TransactionData();
+            logger.LogRecoveryInfo(transactionData.Transaction, transactionData.RecoveryData);
+
+            Assert.IsTrue(File.Exists(this.GetFilename(logger, transactionData)), "Recovery File was not created");
+
+            logger.LogRecovered(transactionData.Transaction);
+
+            this.AssertFileIsDeleted(this.GetFilename(logger, transactionData), 1000);
         }
 
         [Test]
@@ -191,34 +198,116 @@ namespace Apache.NMS.ActiveMQ.Test.Transactions
         {
             RecoveryFileLogger logger = new RecoveryFileLogger();
 
-            byte[] globalId = new byte[32];
-            byte[] branchQ = new byte[32];
-            byte[] recoveryData = new byte[256];
-
-            Random gen = new Random();
-
-            gen.NextBytes(globalId);
-            gen.NextBytes(branchQ);
-            gen.NextBytes(recoveryData);
-
             logger.Location = nonDefaultLogLocation;
-            logger.Initialize(rmId);
+            logger.Initialize(this.resourceManagerId.ToString());
 
-            XATransactionId xid = new XATransactionId();
-            xid.GlobalTransactionId = globalId;
-            xid.BranchQualifier = branchQ;
+            TransactionData transactionData01 = new TransactionData();
+            logger.LogRecoveryInfo(transactionData01.Transaction, transactionData01.RecoveryData);
+            TransactionData transactionData02 = new TransactionData();
+            logger.LogRecoveryInfo(transactionData02.Transaction, transactionData02.RecoveryData);
 
-            logger.LogRecoveryInfo(xid, recoveryData);
-
-            Assert.IsTrue(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
-                          "Recovery File was not created");
+            Assert.IsTrue(File.Exists(this.GetFilename(logger, transactionData01)), "Recovery File was not created");
+            Assert.IsTrue(File.Exists(this.GetFilename(logger, transactionData02)), "Recovery File was not created");
 
             logger.Purge();
 
-            Assert.IsFalse(File.Exists(Path.Combine(logger.Location, rmId + ".bin")),
-                          "Recovery File was not created");
+            this.AssertFileIsDeleted(this.GetFilename(logger, transactionData01), 1000);
+            this.AssertFileIsDeleted(this.GetFilename(logger, transactionData02), 1000);
         }
 
+        private string GetFilename(RecoveryFileLogger logger, TransactionData transactionData)
+        {
+            return string.Format(
+                "{0}{1}{2}_{3}.bin",
+                logger.Location,
+                Path.DirectorySeparatorChar,
+                this.resourceManagerId.ToString(),
+                BitConverter.ToString(transactionData.Transaction.GlobalTransactionId).Replace("-", string.Empty));
+        }
+
+        private void AssertFileIsDeleted(string filename, int timeout)
+        {
+            var expiration = DateTime.Now.Add(TimeSpan.FromMilliseconds(timeout));
+            while (File.Exists(filename))
+            {
+                if (expiration < DateTime.Now)
+                {
+                    Assert.Fail("Recovery File was not removed");
+                }
+
+                Thread.Sleep(5);
+            }
+        }
+
+        private void SafeDeleteDirectory(string directory, int timeout)
+        {
+            var expiration = DateTime.Now.Add(TimeSpan.FromMilliseconds(timeout));
+            while (true)
+            {
+                if (!Directory.Exists(directory))
+                {
+                    return;
+                }
+
+                try
+                {
+                    Directory.Delete(directory, true);
+                    return;
+                }
+                catch (Exception)
+                {
+                }
+
+                if (expiration < DateTime.Now)
+                {
+                    return;
+                }
+
+                Thread.Sleep(5);
+            }
+        }
+
+        private class TransactionData
+        {
+            private static readonly Random Random = new Random();
+
+            private readonly XATransactionId xid;
+
+            private readonly byte[] recoveryData = new byte[256];
+            private readonly byte[] globalId = new byte[32];
+            private readonly byte[] branchQ = new byte[32];
+
+            public TransactionData()
+            {
+                Random.NextBytes(this.globalId);
+                Random.NextBytes(this.branchQ);
+                Random.NextBytes(this.recoveryData);
+
+                this.xid = new XATransactionId();
+                this.xid.GlobalTransactionId = this.globalId;
+                this.xid.BranchQualifier = this.branchQ;
+            }
+
+            public XATransactionId Transaction
+            {
+                get { return this.xid; }
+            }
+
+            public byte[] RecoveryData
+            {
+                get { return this.recoveryData; }
+            }
+
+            public byte[] GlobalId
+            {
+                get { return this.globalId; }
+            }
+
+            public byte[] BranchQ
+            {
+                get { return this.branchQ; }
+            }
+        }
     }
 }
 

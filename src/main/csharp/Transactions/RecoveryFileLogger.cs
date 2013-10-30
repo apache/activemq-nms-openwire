@@ -30,16 +30,17 @@ namespace Apache.NMS.ActiveMQ.Transactions
 {
     public class RecoveryFileLogger : IRecoveryLogger
     {
+        private readonly object syncRoot = new object();
+
         private string location;
         private bool autoCreateLocation;
         private string resourceManagerId;
-        private readonly object syncRoot = new object();
 
         public RecoveryFileLogger()
         {
             // Set the path by default to the location of the executing assembly.
             // May need to change this to current working directory, not sure.
-            this.location = "";
+            this.location = string.Empty;
         }
 
         /// <summary>
@@ -59,14 +60,18 @@ namespace Apache.NMS.ActiveMQ.Transactions
         {
             get
             {
-                if(String.IsNullOrEmpty(this.location))
+                if(string.IsNullOrEmpty(this.location))
                 {
                     return Directory.GetCurrentDirectory();
                 }
 
                 return this.location;
             }
-            set { this.location = Uri.UnescapeDataString(value); }
+
+            set
+            {
+                this.location = Uri.UnescapeDataString(value);
+            }
         }
 
         /// <summary>
@@ -114,17 +119,17 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
             try
             {
-                lock (syncRoot)
-                {
-                    RecoveryInformation info = new RecoveryInformation(xid, recoveryInformation);
-                    Tracer.Debug("Serializing Recovery Info to file: " + Filename);
+                string filename = this.CreateFilename(xid);
 
-                    IFormatter formatter = new BinaryFormatter();
-                    using (FileStream recoveryLog = new FileStream(Filename, FileMode.OpenOrCreate, FileAccess.Write))
-                    {
-                        formatter.Serialize(recoveryLog, info);
-                    }
+                RecoveryInformation info = new RecoveryInformation(xid, recoveryInformation);
+                Tracer.Debug("Serializing Recovery Info to file: " + filename);
+
+                IFormatter formatter = new BinaryFormatter();
+                using (FileStream recoveryLog = new FileStream(filename, FileMode.OpenOrCreate, FileAccess.Write))
+                {
+                    formatter.Serialize(recoveryLog, info);
                 }
+
             }
             catch (Exception ex)
             {
@@ -135,50 +140,59 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
         public KeyValuePair<XATransactionId, byte[]>[] GetRecoverables()
         {
-            KeyValuePair<XATransactionId, byte[]>[] result = new KeyValuePair<XATransactionId, byte[]>[0];
-            RecoveryInformation info = TryOpenRecoveryInfoFile();
+            IList<RecoveryInformation> infos = this.TryOpenRecoveryInfoFile();
 
-            if (info != null)
+            KeyValuePair<XATransactionId, byte[]>[] results = new KeyValuePair<XATransactionId, byte[]>[infos.Count];
+
+            int index = 0;
+            foreach (RecoveryInformation info in infos)
             {
-                result = new KeyValuePair<XATransactionId, byte[]>[1];
-                result[0] = new KeyValuePair<XATransactionId, byte[]>(info.Xid, info.TxRecoveryInfo);
+                results[index++] = new KeyValuePair<XATransactionId, byte[]>(info.Xid, info.TxRecoveryInfo);
             }
 
-            return result;
+            return results;
         }
 
         public void LogRecovered(XATransactionId xid)
         {
-            lock (syncRoot)
+            try
             {
-                try
-                {
-                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + Filename);
-                    File.Delete(Filename);
-                }
-                catch(Exception ex)
-                {
-                    Tracer.Debug("Caught Exception while removing stale RecoveryInfo file: " + ex.Message);
-                    return;
-                }
+                string filename = this.CreateFilename(xid);
+
+                Tracer.Debug("Attempting to remove stale Recovery Info file: " + filename);
+
+                File.Delete(filename);
+            }
+            catch (Exception ex)
+            {
+                Tracer.Debug("Caught Exception while removing stale RecoveryInfo file: " + ex.Message);
             }
         }
 
         public void Purge()
         {
-            lock (syncRoot)
+            lock (this.syncRoot)
             {
                 try
                 {
-                    Tracer.Debug("Attempting to remove stale Recovery Info file: " + Filename);
-                    File.Delete(Filename);
+                    IEnumerable<string> files = this.GetFilesForResourceManagerId();
+
+                    foreach (var file in files)
+                    {
+                        Tracer.Debug("Attempting to remove stale Recovery Info file: " + file);
+                        File.Delete(file);
+                    }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Tracer.Debug("Caught Exception while removing stale RecoveryInfo file: " + ex.Message);
-                    return;
                 }
             }
+        }
+
+        private IEnumerable<string> GetFilesForResourceManagerId()
+        {
+            return Directory.GetFiles(this.Location, this.ResourceManagerId + "_*.bin");
         }
 
         public string LoggerType
@@ -188,9 +202,20 @@ namespace Apache.NMS.ActiveMQ.Transactions
 
         #region Recovery File Opeations
 
-        private string Filename
+        private string CreateFilename(XATransactionId xaTransactionId)
         {
-            get { return Location + Path.DirectorySeparatorChar + ResourceManagerId + ".bin"; }
+            return string.Format(
+                "{0}{1}{2}_{3}.bin", 
+                this.Location, 
+                Path.DirectorySeparatorChar, 
+                this.ResourceManagerId,
+                GetHexValue(xaTransactionId));
+        }
+        
+        private static string GetHexValue(XATransactionId xid)
+        {
+            string transactionIdHexValue = BitConverter.ToString(xid.GlobalTransactionId);
+            return transactionIdHexValue.Replace("-", string.Empty);
         }
 
         [Serializable]
@@ -234,33 +259,27 @@ namespace Apache.NMS.ActiveMQ.Transactions
             }
         }
 
-        private RecoveryInformation TryOpenRecoveryInfoFile()
+        private IList<RecoveryInformation> TryOpenRecoveryInfoFile()
         {
-            RecoveryInformation result = null;
+            List<RecoveryInformation> result = new List<RecoveryInformation>();
 
-            Tracer.Debug("Checking for Recoverable Transactions filename: " + Filename);
+            IEnumerable<string> files = this.GetFilesForResourceManagerId();
 
-            lock (syncRoot)
+            foreach (var file in files)
             {
+                Tracer.Debug("Checking for Recoverable Transactions filename: " + file);
                 try
                 {
-                    if (!File.Exists(Filename))
+                    using (FileStream recoveryLog = new FileStream(file, FileMode.Open, FileAccess.Read))
                     {
-                        return null;
-                    }
-
-                    using(FileStream recoveryLog = new FileStream(Filename, FileMode.Open, FileAccess.Read))
-                    {
-                        Tracer.Debug("Found Recovery Log File: " + Filename);
+                        Tracer.Debug("Found Recovery Log File: " + file);
                         IFormatter formatter = new BinaryFormatter();
-                        result = formatter.Deserialize(recoveryLog) as RecoveryInformation;
+                        result.Add(formatter.Deserialize(recoveryLog) as RecoveryInformation);
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    Tracer.ErrorFormat("Error while opening Recovery file {0} error message: {1}", Filename, ex.Message);
-                    // Nothing to restore.
-                    return null;
+                    Tracer.ErrorFormat("Error while opening Recovery file {0} error message: {1}", file, ex.Message);
                 }
             }
 
