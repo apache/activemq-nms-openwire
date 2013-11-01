@@ -48,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.Test
     {
         protected const int MSG_COUNT = 5;
         protected string nonExistantPath;
-        protected NetTxConnectionFactory factory;
+        protected NetTxConnectionFactory dtcFactory;
         
         private ITrace oldTracer;
 
@@ -326,7 +326,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected void VerifyBrokerQueueCount(int expectedCount, string connectionUri)
         {           
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 // check messages are present in the queue
                 using (INetTxSession session = connection.CreateNetTxSession())
@@ -398,7 +398,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected void VerifyBrokerHasMessagesInQueue(string connectionURI)
         {
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 // check messages are present in the queue
                 using (INetTxSession session = connection.CreateNetTxSession())
