@@ -1642,7 +1642,7 @@ namespace Apache.NMS.ActiveMQ
 	                    Thread.Sleep((int) Math.Max(500, failoverRedeliveryWaitPeriod/4));
 	                }
 	            } 
-				while (numberNotReplayed > 0 && expiry < DateTime.Now);
+				while (numberNotReplayed > 0 && expiry > DateTime.Now);
 	        }
 	    }
 
