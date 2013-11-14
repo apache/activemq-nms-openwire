@@ -751,7 +751,7 @@ namespace Apache.NMS.ActiveMQ
 	                            }
 	                            foreach (MessageDispatch delivered in dispatchedMessages) 
 								{
-	                                this.previouslyDeliveredMessages.Add(delivered.Message.MessageId, false);
+	                                this.previouslyDeliveredMessages[delivered.Message.MessageId] = false;
 	                            }
 	                        } 
 							else 
@@ -822,7 +822,7 @@ namespace Apache.NMS.ActiveMQ
 								{
 	                                if (previouslyDeliveredMessages != null) 
 									{
-	                                    previouslyDeliveredMessages.Add(dispatch.Message.MessageId, true);
+	                                    previouslyDeliveredMessages[dispatch.Message.MessageId] = true;
 	                                } 
 									else 
 									{
