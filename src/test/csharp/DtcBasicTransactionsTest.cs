@@ -31,15 +31,15 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             base.SetUp();
 
-            this.factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-            this.factory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
+            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
         [Test]
         [ExpectedException("Apache.NMS.NMSException")]
         public void TestSessionCreateFailsWithInvalidLogLocation()
         {
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -57,7 +57,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -81,7 +81,7 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeDatabase();
             PurgeAndFillQueue();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();

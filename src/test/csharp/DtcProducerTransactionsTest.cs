@@ -34,8 +34,8 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             base.SetUp();
 
-            this.factory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
-            this.factory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
+            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
         [Test]
@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -76,7 +76,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -107,11 +107,11 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            NetTxConnectionFactory netTxFactory = factory;
+            NetTxConnectionFactory netTxFactory = dtcFactory;
             RecoveryFileLogger logger = netTxFactory.RecoveryPolicy.RecoveryLogger as RecoveryFileLogger;
             string logDirectory = logger.Location;
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -151,11 +151,11 @@ namespace Apache.NMS.ActiveMQ.Test
             string newConnectionUri = 
                 connectionURI + "?nms.RecoveryPolicy.RecoveryLoggerType=harness" +
                                 "&nms.configuredResourceManagerId=" +
-                                factory.ConfiguredResourceManagerId;
+                                dtcFactory.ConfiguredResourceManagerId;
 
-            factory = new NetTxConnectionFactory(ReplaceEnvVar(newConnectionUri));
+            dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(newConnectionUri));
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 IRecoveryLogger logger = (connection as NetTxConnection).RecoveryPolicy.RecoveryLogger;
                 Assert.IsNotNull(logger);
@@ -185,7 +185,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -213,7 +213,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -241,7 +241,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -264,7 +264,7 @@ namespace Apache.NMS.ActiveMQ.Test
             // Test initialize - Fills in DB with data to send.
             PrepareDatabase();
 
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
@@ -292,7 +292,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test]
         public void TestIterativeTransactedProduceWithDBDelete()
         {
-            using (INetTxConnection connection = factory.CreateNetTxConnection())
+            using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
                 connection.ExceptionListener += this.OnException;
                 connection.Start();
