@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ
 
         public override bool InLocalTransaction
         {
-            get { return this.transactionId != null && this.currentEnlistment == null; }
+            get { return this.TransactionId != null && this.currentEnlistment == null; }
         }
 
         public override void Begin()
@@ -93,7 +93,7 @@ namespace Apache.NMS.ActiveMQ
 
         public bool InNetTransaction
         {
-            get { return this.transactionId != null && this.transactionId is XATransactionId; }
+            get { return this.TransactionId != null && this.TransactionId is XATransactionId; }
         }
 
         public TxState NetTxState
@@ -139,7 +139,7 @@ namespace Apache.NMS.ActiveMQ
                     TransactionInformation txInfo = transaction.TransactionInformation;
 
                     XATransactionId xaId = new XATransactionId();
-                    this.transactionId = xaId;
+                    this.TransactionId = xaId;
 
                     if (txInfo.DistributedIdentifier != Guid.Empty)
                     {
@@ -155,7 +155,7 @@ namespace Apache.NMS.ActiveMQ
                     // Now notify the broker that a new XA'ish transaction has started.
                     TransactionInfo info = new TransactionInfo();
                     info.ConnectionId = this.connection.ConnectionId;
-                    info.TransactionId = this.transactionId;
+                    info.TransactionId = this.TransactionId;
                     info.Type = (int)TransactionType.Begin;
 
                     this.session.Connection.Oneway(info);
@@ -191,19 +191,19 @@ namespace Apache.NMS.ActiveMQ
 
                 try
                 {
-                    Tracer.Debug("Prepare notification received for TX id: " + this.transactionId);
+                    Tracer.Debug("Prepare notification received for TX id: " + this.TransactionId);
 
                     BeforeEnd();
 
                     // Before sending the request to the broker, log the recovery bits, if
                     // this fails we can't prepare and the TX should be rolled back.
-                    RecoveryLogger.LogRecoveryInfo(this.transactionId as XATransactionId,
+                    RecoveryLogger.LogRecoveryInfo(this.TransactionId as XATransactionId,
                                                    preparingEnlistment.RecoveryInformation());
 
                     // Inform the broker that work on the XA'sh TX Branch is complete.
                     TransactionInfo info = new TransactionInfo();
                     info.ConnectionId = this.connection.ConnectionId;
-                    info.TransactionId = this.transactionId;
+                    info.TransactionId = this.TransactionId;
                     info.Type = (int)TransactionType.End;
 
                     this.connection.CheckConnected();
@@ -214,14 +214,14 @@ namespace Apache.NMS.ActiveMQ
                     IntegerResponse response = (IntegerResponse)this.connection.SyncRequest(info);
                     if (response.Result == XA_READONLY)
                     {
-                        Tracer.Debug("Transaction Prepare done and doesn't need a commit, TX id: " + this.transactionId);
+                        Tracer.Debug("Transaction Prepare done and doesn't need a commit, TX id: " + this.TransactionId);
 
-                        this.transactionId = null;
+                        this.TransactionId = null;
                         this.currentEnlistment = null;
 
                         // Read Only means there's nothing to recover because there was no
                         // change on the broker.
-                        RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+                        RecoveryLogger.LogRecovered(this.TransactionId as XATransactionId);
 
                         // if server responds that nothing needs to be done, then reply done.
                         // otherwise the DTC will call Commit or Rollback but another transaction
@@ -237,7 +237,7 @@ namespace Apache.NMS.ActiveMQ
                     }
                     else
                     {
-                        Tracer.Debug("Transaction Prepare succeeded TX id: " + this.transactionId);
+                        Tracer.Debug("Transaction Prepare succeeded TX id: " + this.TransactionId);
 
                         // If work finished correctly, reply prepared
                         preparingEnlistment.Prepared();
@@ -246,7 +246,7 @@ namespace Apache.NMS.ActiveMQ
                 catch (Exception ex)
                 {
                     Tracer.DebugFormat("Transaction[{0}] Prepare failed with error: {1}",
-                                       this.transactionId, ex.Message);
+                                       this.TransactionId, ex.Message);
 
                     AfterRollback();
                     preparingEnlistment.ForceRollback();
@@ -260,7 +260,7 @@ namespace Apache.NMS.ActiveMQ
                     }
 
                     this.currentEnlistment = null;
-                    this.transactionId = null;
+                    this.TransactionId = null;
                     this.netTxState = TxState.None;
                     this.dtcControlEvent.Set();
                 }
@@ -273,22 +273,22 @@ namespace Apache.NMS.ActiveMQ
             {
                 try
                 {
-                    Tracer.Debug("Commit notification received for TX id: " + this.transactionId);
+                    Tracer.Debug("Commit notification received for TX id: " + this.TransactionId);
 
-                    if (this.transactionId != null)
+                    if (this.TransactionId != null)
                     {
                         // Now notify the broker that a new XA'ish transaction has completed.
                         TransactionInfo info = new TransactionInfo();
                         info.ConnectionId = this.connection.ConnectionId;
-                        info.TransactionId = this.transactionId;
+                        info.TransactionId = this.TransactionId;
                         info.Type = (int)TransactionType.CommitTwoPhase;
 
                         this.connection.CheckConnected();
                         this.connection.SyncRequest(info);
 
-                        Tracer.Debug("Transaction Commit Done TX id: " + this.transactionId);
+                        Tracer.Debug("Transaction Commit Done TX id: " + this.TransactionId);
 
-                        RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+                        RecoveryLogger.LogRecovered(this.TransactionId as XATransactionId);
 
                         // if server responds that nothing needs to be done, then reply done.
                         enlistment.Done();
@@ -299,7 +299,7 @@ namespace Apache.NMS.ActiveMQ
                 catch (Exception ex)
                 {
                     Tracer.DebugFormat("Transaction[{0}] Commit failed with error: {1}",
-                                       this.transactionId, ex.Message);
+                                       this.TransactionId, ex.Message);
                     try
                     {
                         this.connection.OnException(ex);
@@ -312,7 +312,7 @@ namespace Apache.NMS.ActiveMQ
                 finally
                 {
                     this.currentEnlistment = null;
-                    this.transactionId = null;
+                    this.TransactionId = null;
                     this.netTxState = TxState.None;
 
                     CountDownLatch latch = this.recoveryComplete;
@@ -332,22 +332,22 @@ namespace Apache.NMS.ActiveMQ
             {
                 try
                 {
-                    Tracer.Debug("Single Phase Commit notification received for TX id: " + this.transactionId);
+                    Tracer.Debug("Single Phase Commit notification received for TX id: " + this.TransactionId);
 
-                    if (this.transactionId != null)
+                    if (this.TransactionId != null)
                     {
                         BeforeEnd();
 
                         // Now notify the broker that a new XA'ish transaction has completed.
                         TransactionInfo info = new TransactionInfo();
                         info.ConnectionId = this.connection.ConnectionId;
-                        info.TransactionId = this.transactionId;
+                        info.TransactionId = this.TransactionId;
                         info.Type = (int)TransactionType.CommitOnePhase;
 
                         this.connection.CheckConnected();
                         this.connection.SyncRequest(info);
 
-                        Tracer.Debug("Transaction Single Phase Commit Done TX id: " + this.transactionId);
+                        Tracer.Debug("Transaction Single Phase Commit Done TX id: " + this.TransactionId);
 
                         // if server responds that nothing needs to be done, then reply done.
                         enlistment.Done();
@@ -358,7 +358,7 @@ namespace Apache.NMS.ActiveMQ
                 catch (Exception ex)
                 {
                     Tracer.DebugFormat("Transaction[{0}] Single Phase Commit failed with error: {1}",
-                                       this.transactionId, ex.Message);
+                                       this.TransactionId, ex.Message);
                     AfterRollback();
                     enlistment.Done();
                     try
@@ -373,7 +373,7 @@ namespace Apache.NMS.ActiveMQ
                 finally
                 {
                     this.currentEnlistment = null;
-                    this.transactionId = null;
+                    this.TransactionId = null;
                     this.netTxState = TxState.None;
 
                     this.dtcControlEvent.Set();
@@ -387,16 +387,16 @@ namespace Apache.NMS.ActiveMQ
             {
                 try
                 {
-                    Tracer.Debug("Rollback notification received for TX id: " + this.transactionId);
+                    Tracer.Debug("Rollback notification received for TX id: " + this.TransactionId);
 
-                    if (this.transactionId != null)
+                    if (this.TransactionId != null)
                     {
                         BeforeEnd();
 
                         // Now notify the broker that a new XA'ish transaction has started.
                         TransactionInfo info = new TransactionInfo();
                         info.ConnectionId = this.connection.ConnectionId;
-                        info.TransactionId = this.transactionId;
+                        info.TransactionId = this.TransactionId;
                         info.Type = (int)TransactionType.End;
 
                         this.connection.CheckConnected();
@@ -406,9 +406,9 @@ namespace Apache.NMS.ActiveMQ
                         this.connection.CheckConnected();
                         this.connection.SyncRequest(info);
 
-                        Tracer.Debug("Transaction Rollback Done TX id: " + this.transactionId);
+                        Tracer.Debug("Transaction Rollback Done TX id: " + this.TransactionId);
 
-                        RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+                        RecoveryLogger.LogRecovered(this.TransactionId as XATransactionId);
 
                         // if server responds that nothing needs to be done, then reply done.
                         enlistment.Done();
@@ -419,7 +419,7 @@ namespace Apache.NMS.ActiveMQ
                 catch (Exception ex)
                 {
                     Tracer.DebugFormat("Transaction[{0}] Rollback failed with error: {1}",
-                                       this.transactionId, ex.Message);
+                                       this.TransactionId, ex.Message);
                     AfterRollback();
                     try
                     {
@@ -433,7 +433,7 @@ namespace Apache.NMS.ActiveMQ
                 finally
                 {
                     this.currentEnlistment = null;
-                    this.transactionId = null;
+                    this.TransactionId = null;
                     this.netTxState = TxState.None;
 
                     CountDownLatch latch = this.recoveryComplete;
@@ -453,14 +453,14 @@ namespace Apache.NMS.ActiveMQ
             {
                 try
                 {
-                    Tracer.Debug("In Doubt notification received for TX id: " + this.transactionId);
+                    Tracer.Debug("In Doubt notification received for TX id: " + this.TransactionId);
 
                     BeforeEnd();
 
                     // Now notify the broker that Rollback should be performed.
                     TransactionInfo info = new TransactionInfo();
                     info.ConnectionId = this.connection.ConnectionId;
-                    info.TransactionId = this.transactionId;
+                    info.TransactionId = this.TransactionId;
                     info.Type = (int)TransactionType.End;
 
                     this.connection.CheckConnected();
@@ -470,9 +470,9 @@ namespace Apache.NMS.ActiveMQ
                     this.connection.CheckConnected();
                     this.connection.SyncRequest(info);
 
-                    Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.transactionId);
+                    Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.TransactionId);
 
-                    RecoveryLogger.LogRecovered(this.transactionId as XATransactionId);
+                    RecoveryLogger.LogRecovered(this.TransactionId as XATransactionId);
 
                     // if server responds that nothing needs to be done, then reply done.
                     enlistment.Done();
@@ -482,7 +482,7 @@ namespace Apache.NMS.ActiveMQ
                 finally
                 {
                     this.currentEnlistment = null;
-                    this.transactionId = null;
+                    this.TransactionId = null;
                     this.netTxState = TxState.None;
 
                     CountDownLatch latch = this.recoveryComplete;
@@ -563,8 +563,8 @@ namespace Apache.NMS.ActiveMQ
 
                     foreach (KeyValuePair<XATransactionId, byte[]> recoverable in matches)
                     {
-                        this.transactionId = recoverable.Key;
-                        Tracer.Info("Reenlisting recovered TX with Id: " + this.transactionId);
+                        this.TransactionId = recoverable.Key;
+                        Tracer.Info("Reenlisting recovered TX with Id: " + this.TransactionId);
                         this.currentEnlistment =
                             TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
                     }
