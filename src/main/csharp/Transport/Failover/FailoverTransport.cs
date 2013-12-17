@@ -541,6 +541,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                {
 	                    transportToStop = connectedTransport.GetAndSet(null);
 	                }
+
 	            }
 				lock(sleepMutex)
 				{
@@ -712,6 +713,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         ITransport transport = ConnectedTransport;
                         DateTime start = DateTime.Now;
                         bool timedout = false;
+                        TimeSpan timewait = TimeSpan.FromMilliseconds(-1);
+
                         while(transport == null && !disposed && connectionFailure == null)
                         {
                             Tracer.Debug("Waiting for transport to reconnect.");
@@ -724,11 +727,18 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                                 break;
                             }
 
+                            if(this.timeout > 0)
+                            {
+                                // Set the timeout for waiting to be at most 100ms past the maximum timeout length.
+                                int remainingTime = (this.timeout - elapsed) + 100;
+                                timewait = TimeSpan.FromMilliseconds(remainingTime);
+                            }
+
                             // Release so that the reconnect task can run
                             try
                             {
-                                // Wait for something.  The mutex will be pulsed if we connect.
-                                Monitor.Wait(reconnectMutex, 100);
+                                // Wait for something.  The mutex will be pulsed if we connect, or are shut down.
+                                Monitor.Wait(reconnectMutex, timewait);
                             }
                             catch(ThreadInterruptedException e)
                             {
