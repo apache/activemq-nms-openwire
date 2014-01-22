@@ -846,6 +846,9 @@ namespace Apache.NMS.ActiveMQ
 					ExceptionResponse exceptionResponse = (ExceptionResponse) response;
 					Exception exception = CreateExceptionFromBrokerError(exceptionResponse.Exception);
 
+                    Tracer.DebugFormat("Error returned for request {0} error type: {1}",
+                                       command, exception);
+
 					// Security exception on connect means this Connection is unusable, close the
 					// transport now to free its resources.
 					if (exception is NMSSecurityException && command.IsConnectionInfo)
@@ -983,7 +986,19 @@ namespace Apache.NMS.ActiveMQ
 										{
 											ExceptionResponse error = response as ExceptionResponse;
 											NMSException exception = CreateExceptionFromBrokerError(error.Exception);
-											if(exception is InvalidClientIDException)
+                                            if (exception is NMSSecurityException)
+                                            {
+                                                try
+                                                {
+                                                    transport.Dispose();
+                                                }
+                                                catch
+                                                {
+                                                }
+
+                                                throw exception;
+                                            }
+											else if(exception is InvalidClientIDException)
 											{
 												// This is non-recoverable.
 												// Shutdown the transport connection, and re-create it, but don't start it.
