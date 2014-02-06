@@ -28,6 +28,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string clientCertSubject;
         private string clientCertFilename;
         private string clientCertPassword;
+        private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
         private bool acceptInvalidBrokerCert = false;
@@ -60,6 +61,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { this.clientCertPassword = value; }
         }        
 
+        public string BrokerCertFilename
+        {
+            get { return this.brokerCertFilename; }
+            set { this.brokerCertFilename = value; }
+        }
+
         public bool AcceptInvalidBrokerCert
         {
             get { return this.acceptInvalidBrokerCert; }
@@ -86,6 +93,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             transport.ClientCertSubject = HttpUtility.UrlDecode(this.clientCertSubject);
             transport.ClientCertFilename = this.clientCertFilename;
             transport.ClientCertPassword = this.clientCertPassword;
+            transport.BrokerCertFilename = this.brokerCertFilename;
             transport.ServerName = this.serverName;
             transport.KeyStoreLocation = this.keyStoreLocation;
             transport.KeyStoreName = this.keyStoreName;

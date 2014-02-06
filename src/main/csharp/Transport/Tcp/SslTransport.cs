@@ -30,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string clientCertSubject;
         private string clientCertFilename;
         private string clientCertPassword;
+        private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
         private bool acceptInvalidBrokerCert = false;
@@ -84,6 +85,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         }
 
         /// <summary>
+        /// Indicates the location of the Broker Certificate to use when the Broker
+        /// is using a self-signed certificate.
+        /// </summary>
+        public string BrokerCertFilename
+        {
+            get { return this.brokerCertFilename; }
+            set { this.brokerCertFilename = value; }
+        }
+
+        /// <summary>
         /// Indicates if the SslTransport should ignore any errors in the supplied Broker
         /// certificate and connect anyway, this is useful in testing with a default AMQ
         /// broker certificate that is self signed.
@@ -113,18 +124,22 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                 return this.sslStream;
             }
 
+            var remoteCertificateValidationCallback =
+                String.IsNullOrEmpty(this.brokerCertFilename) ?
+                    new RemoteCertificateValidationCallback(ValidateServerCertificate) :
+                    new RemoteCertificateValidationCallback(ValidateSelfSignedServerCertificate);
+
             this.sslStream = new SslStream(
                 new NetworkStream(this.socket),
                 false,
-                new RemoteCertificateValidationCallback(ValidateServerCertificate),
-                new LocalCertificateSelectionCallback(SelectLocalCertificate) );
+                remoteCertificateValidationCallback,
+                SelectLocalCertificate);
 
             try
             {
-
                 string remoteCertName = this.serverName ?? this.RemoteAddress.Host;
                 Tracer.Debug("Authorizing as Client for Server: " + remoteCertName);
-                sslStream.AuthenticateAsClient(remoteCertName, LoadCertificates(), SslProtocols.Default, false);
+                sslStream.AuthenticateAsClient(remoteCertName, LoadClientCertificates(), SslProtocols.Default, false);
                 Tracer.Debug("Server is Authenticated = " + sslStream.IsAuthenticated);
                 Tracer.Debug("Server is Encrypted = " + sslStream.IsEncrypted);
             }
@@ -177,6 +192,55 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             return AcceptInvalidBrokerCert;
         }
 
+        private bool ValidateSelfSignedServerCertificate(object sender,
+                                                         X509Certificate certificate,
+                                                         X509Chain chain,
+                                                         SslPolicyErrors sslPolicyErrors)
+        {
+            Tracer.DebugFormat("ValidateSelfSignedServerCertificate: Issued By {0}", certificate.Issuer);
+
+            // We ignore SslPolicyErrors because we do our own checks.
+
+            if (chain.ChainElements.Count != 1 || !chain.ChainElements[0].Certificate.Equals(certificate))
+            {
+                Tracer.Error("Received unexpected certificate chain from server");
+                return false;
+            }
+
+            if (CorrectSelfSignedCertificate(certificate)) 
+            {
+                return true;
+            }
+
+            Tracer.Error("Server doesn't have the expected self-signed certificate");
+
+            // Configuration may or may not allow us to connect with an invalid broker cert.
+            return AcceptInvalidBrokerCert;
+        }
+
+        private bool CorrectSelfSignedCertificate(X509Certificate receivedCertificate)
+        {
+            X509Certificate2 expectedCertificate = new X509Certificate2(this.brokerCertFilename);
+
+            byte[] receivedBytes = receivedCertificate.GetRawCertData();
+            byte[] expectedBytes = expectedCertificate.GetRawCertData();
+
+            if (receivedBytes.Length != expectedBytes.Length) 
+            {
+                return false;
+            }
+
+            for (int i = 0; i < receivedBytes.Length; i++)
+            {
+                if (receivedBytes[i] != expectedBytes[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private X509Certificate SelectLocalCertificate(object sender,
                                                        string targetHost,
                                                        X509CertificateCollection localCertificates,
@@ -207,7 +271,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             return null;
         }
 
-        private X509Certificate2Collection LoadCertificates()
+        private X509Certificate2Collection LoadClientCertificates()
         {
             X509Certificate2Collection collection = new X509Certificate2Collection();
 
