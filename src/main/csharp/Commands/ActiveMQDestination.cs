@@ -95,6 +95,10 @@ namespace Apache.NMS.ActiveMQ.Commands
 			//this.advisory = name != null && name.StartsWith(ADVISORY_PREFIX);
 		}
 
+        public void Dispose()
+        {
+        }
+
 		public bool IsTopic
 		{
 			get
