@@ -455,7 +455,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal virtual MessageProducer DoCreateMessageProducer(ProducerId id, ActiveMQDestination destination)
         {
-            return new MessageProducer(this, GetNextProducerId(), destination, this.RequestTimeout);
+            return new MessageProducer(this, id, destination, this.RequestTimeout);
         }
 
         public IMessageConsumer CreateConsumer(IDestination destination)
