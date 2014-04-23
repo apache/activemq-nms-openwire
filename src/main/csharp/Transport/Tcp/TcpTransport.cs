@@ -188,6 +188,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
 		public void Close()
 		{
+			Thread theReadThread = null;
+
 			lock(myLock)
 			{
 				if(closed.CompareAndSet(false, true))
@@ -238,20 +240,27 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					{
 					}
 
-					if(null != readThread)
+					theReadThread = this.readThread;
+					this.readThread = null;
+					this.started = false;
+				}
+			}
+
+			// Don't block on closing the read thread within the lock scope.
+			if(null != theReadThread)
+			{
+				try
+				{
+					if(Thread.CurrentThread != theReadThread && theReadThread.IsAlive)
 					{
-						if(Thread.CurrentThread != readThread && readThread.IsAlive)
+						if(!theReadThread.Join((int) MAX_THREAD_WAIT.TotalMilliseconds))
 						{
-							if(!readThread.Join((int) MAX_THREAD_WAIT.TotalMilliseconds))
-							{
-								readThread.Abort();
-							}
+							theReadThread.Abort();
 						}
-
-						readThread = null;
 					}
-
-					started = false;
+				}
+				catch
+				{
 				}
 			}
 		}
