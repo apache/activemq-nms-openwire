@@ -444,7 +444,6 @@ namespace Apache.NMS.ActiveMQ
                 if(producer != null)
                 {
                     this.RemoveProducer(producer.ProducerId);
-                    producer.Close();
                 }
 
                 throw;
@@ -510,7 +509,6 @@ namespace Apache.NMS.ActiveMQ
                 if(consumer != null)
                 {
                     this.RemoveConsumer(consumer);
-                    consumer.Close();
                 }
 
                 throw;
@@ -557,7 +555,6 @@ namespace Apache.NMS.ActiveMQ
                 if(consumer != null)
                 {
                     this.RemoveConsumer(consumer);
-                    consumer.Close();
                 }
 
                 throw;

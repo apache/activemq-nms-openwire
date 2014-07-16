@@ -456,8 +456,8 @@ namespace Apache.NMS.ActiveMQ
 			removeCommand.ObjectId = this.ConsumerId;
 	        if (Tracer.IsDebugEnabled) 
 			{
-				Tracer.DebugFormat("Remove of Consumer[{0}] sent last delivered Id[{1}].", 
-				                   this.ConsumerId, this.lastDeliveredSequenceId);
+                Tracer.DebugFormat("Remove of Consumer[{0}] of destination [{1}] sent last delivered Id[{2}].", 
+				                   this.ConsumerId, this.info.Destination, this.lastDeliveredSequenceId);
 	        }
 	        removeCommand.LastDeliveredSequenceId = lastDeliveredSequenceId;
 	        this.session.Connection.Oneway(removeCommand);

@@ -120,7 +120,8 @@ namespace Apache.NMS.ActiveMQ
 				this.session.Connection.Oneway(removeInfo);
 				if(Tracer.IsDebugEnabled)
 				{
-					Tracer.DebugFormat("Remove of Producer[{0}] sent.", this.ProducerId);
+                    Tracer.DebugFormat("Remove of Producer[{0}] for destination[{1}] sent.", 
+                                       this.ProducerId, this.info.Destination);
 				}
 			}
 		}
