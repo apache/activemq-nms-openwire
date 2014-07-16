@@ -434,7 +434,7 @@ namespace Apache.NMS.ActiveMQ
 		{
 			if(!this.unconsumedMessages.Closed)
 			{
-				if(this.session.IsTransacted && this.session.TransactionContext.InTransaction)
+				if(this.dispatchedMessages.Count != 0 && this.session.IsTransacted && this.session.TransactionContext.InTransaction)
 				{
                     Tracer.DebugFormat("Consumer {0} Registering new ConsumerCloseSynchronization",
                                        this.info.ConsumerId);
@@ -442,7 +442,7 @@ namespace Apache.NMS.ActiveMQ
 				}
 				else
 				{
-                    Tracer.DebugFormat("Consumer {0} No Active TX closing normally.",
+                    Tracer.DebugFormat("Consumer {0} No Active TX or pending acks, closing normally.",
                                        this.info.ConsumerId);
                     this.DoClose();
 				}
