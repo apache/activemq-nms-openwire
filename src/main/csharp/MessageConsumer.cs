@@ -1810,16 +1810,22 @@ namespace Apache.NMS.ActiveMQ
 
 			public void AfterCommit()
 			{
-                Tracer.DebugFormat("ConsumerCloseSynchronization - AfterCommit Called for Consumer {0}.",
-                                   this.consumer.ConsumerId);
-                this.consumer.DoClose();
+                if (!this.consumer.Closed) 
+                {
+                    Tracer.DebugFormat("ConsumerCloseSynchronization - AfterCommit Called for Consumer {0}.",
+                                       this.consumer.ConsumerId);
+                    this.consumer.DoClose();
+                }
 			}
 
 			public void AfterRollback()
 			{
-                Tracer.DebugFormat("ConsumerCloseSynchronization - AfterRollback Called for Consumer {0}.",
-                                   this.consumer.ConsumerId);
-                this.consumer.DoClose();
+                if (!this.consumer.Closed) 
+                {
+                    Tracer.DebugFormat("ConsumerCloseSynchronization - AfterRollback Called for Consumer {0}.",
+                                       this.consumer.ConsumerId);
+                    this.consumer.DoClose();
+                }
 			}
 		}
 
