@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Apache.NMS.ActiveMQ.Threads
@@ -185,21 +186,28 @@ namespace Apache.NMS.ActiveMQ.Threads
 		
 		private bool Iterate()
 		{
-			lock(mutex)
-			{
-				foreach(CompositeTask task in this.tasks)
-				{
-					if(task.IsPending)
-					{
-						task.Iterate();
+		    Task pendingTask = null;
 
-						// Always return true here so that we can check the next
-						// task in the list to see if its done.
-						return true;
-					}
-				}
+            lock (mutex)
+		    {                
+                foreach (CompositeTask task in this.tasks)
+			    {            
+                    if (task.IsPending)
+                    {
+                        pendingTask = task;
+                        break;
+                    }
+                }
+            }
+
+            if (pendingTask != null)
+			{
+                pendingTask.Iterate();
+				// Always return true here so that we can check the next
+			    // task in the list to see if its done.
+				return true;
 			}
-			
+
 			return false;
 		}
     }
