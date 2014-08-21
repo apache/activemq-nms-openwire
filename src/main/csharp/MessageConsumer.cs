@@ -1781,20 +1781,11 @@ namespace Apache.NMS.ActiveMQ
             {
                 ActiveMQMessage amqMessage = dispatch.Message as ActiveMQMessage;
 
-                Tracer.Debug("Checking if Redelivery count is exceeded.");
-                Tracer.DebugFormat("Current policy = {0}", RedeliveryPolicy.MaximumRedeliveries);
-                Tracer.DebugFormat("Message Redelivery Count = {0}", dispatch.RedeliveryCounter);
-                Tracer.DebugFormat("Is Transacted? {0}", session.IsTransacted);
-                Tracer.DebugFormat("Is Message from redelivery plugin? {0}", amqMessage.Properties.Contains("redeliveryDelay"));
-
-                bool result = session.IsTransacted && redeliveryPolicy != null &&
+                return session.IsTransacted && redeliveryPolicy != null &&
                        redeliveryPolicy.MaximumRedeliveries != NO_MAXIMUM_REDELIVERIES &&
                        dispatch.RedeliveryCounter > redeliveryPolicy.MaximumRedeliveries &&
                        // redeliveryCounter > x expected after resend via brokerRedeliveryPlugin
                        !amqMessage.Properties.Contains("redeliveryDelay");
-
-                Tracer.DebugFormat("Exceeded Redelivery Max? {0}", result);
-                return result;
             }
             catch (Exception ignored) 
             {
