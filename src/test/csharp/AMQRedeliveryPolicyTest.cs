@@ -19,6 +19,7 @@ using System;
 using System.Threading;
 using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.Util;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -27,6 +28,7 @@ namespace Apache.NMS.ActiveMQ.Test
     public class AMQRedeliveryPolicyTest : NMSTestSupport
     {
         private const string DESTINATION_NAME = "TEST.RedeliveryPolicyTestDest";
+        private const string DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 
         [Test]
         public void TestExponentialRedeliveryPolicyDelaysDeliveryOnRollback()
@@ -441,6 +443,162 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.IsNotNull(m);
                 Assert.AreEqual("1st", m.Text);
                 session.Rollback();
+            }
+        }
+
+        [Test]
+        public void TestRepeatedRedeliveryReceiveNoCommit() 
+        {
+            using(Connection connection = (Connection) CreateConnection())
+            {
+                connection.Start();
+
+                ISession dlqSession = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+                IDestination destination = dlqSession.GetQueue("TestRepeatedRedeliveryReceiveNoCommit");
+                IDestination dlq = dlqSession.GetQueue("ActiveMQ.DLQ");
+                connection.DeleteDestination(destination);
+                connection.DeleteDestination(dlq);
+                IMessageProducer producer = dlqSession.CreateProducer(destination);
+                producer.Send(dlqSession.CreateTextMessage("1st"));
+                IMessageConsumer dlqConsumer = dlqSession.CreateConsumer(dlq);
+
+                const int maxRedeliveries = 4;
+                for (int i = 0; i <= maxRedeliveries + 1; i++) 
+                {
+                    using(Connection loopConnection = (Connection) CreateConnection())
+                    {
+                        // Receive a message with the JMS API
+                        IRedeliveryPolicy policy = loopConnection.RedeliveryPolicy;
+                        policy.InitialRedeliveryDelay = 0;
+                        policy.UseExponentialBackOff = false;
+                        policy.MaximumRedeliveries = maxRedeliveries;
+
+                        loopConnection.Start();
+                        ISession session = loopConnection.CreateSession(AcknowledgementMode.Transactional);
+                        IMessageConsumer consumer = session.CreateConsumer(destination);
+
+                        ActiveMQTextMessage m = consumer.Receive(TimeSpan.FromMilliseconds(4000)) as ActiveMQTextMessage;
+                        if (m != null) 
+                        {
+                            Tracer.DebugFormat("Received Message: {0} delivery count = {1}", m.Text, m.RedeliveryCounter);
+                        }
+
+                        if (i <= maxRedeliveries)
+                        {
+                            Assert.IsNotNull(m);
+                            Assert.AreEqual("1st", m.Text);
+                            Assert.AreEqual(i, m.RedeliveryCounter);
+                        } 
+                        else
+                        {
+                            Assert.IsNull(m, "null on exceeding redelivery count");
+                        }
+                    }
+                }
+
+                // We should be able to get the message off the DLQ now.
+                ITextMessage msg = dlqConsumer.Receive(TimeSpan.FromMilliseconds(2000)) as ITextMessage;
+                Assert.IsNotNull(msg, "Got message from DLQ");
+                Assert.AreEqual("1st", msg.Text);
+                String cause = msg.Properties.GetString(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY);
+                if (cause != null) 
+                {
+                    Tracer.DebugFormat("Rollback Cause = {0}", cause);
+                    Assert.IsTrue(cause.Contains("RedeliveryPolicy"), "cause exception has no policy ref");
+                }
+                else
+                {
+                    Tracer.Debug("DLQ'd message has no cause tag.");
+                }
+            }
+        }
+
+        [Test]
+        public void TestRepeatedRedeliveryOnMessageNoCommit() 
+        {
+            using(Connection connection = (Connection) CreateConnection())
+            {
+                connection.Start();
+                ISession dlqSession = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+                IDestination destination = dlqSession.GetQueue("TestRepeatedRedeliveryOnMessageNoCommit");
+                IDestination dlq = dlqSession.GetQueue("ActiveMQ.DLQ");
+                connection.DeleteDestination(destination);
+                connection.DeleteDestination(dlq);
+                IMessageProducer producer = dlqSession.CreateProducer(destination);
+                IMessageConsumer dlqConsumer = dlqSession.CreateConsumer(dlq);
+
+                producer.Send(dlqSession.CreateTextMessage("1st"));
+
+                const int maxRedeliveries = 4;
+                Atomic<int> receivedCount = new Atomic<int>(0);
+
+                for (int i = 0; i <= maxRedeliveries + 1; i++) 
+                {
+                    using(Connection loopConnection = (Connection) CreateConnection())
+                    {
+                        IRedeliveryPolicy policy = loopConnection.RedeliveryPolicy;
+                        policy.InitialRedeliveryDelay = 0;
+                        policy.UseExponentialBackOff = false;
+                        policy.MaximumRedeliveries = maxRedeliveries;
+
+                        loopConnection.Start();
+                        ISession session = loopConnection.CreateSession(AcknowledgementMode.Transactional);
+                        IMessageConsumer consumer = session.CreateConsumer(destination);
+                        OnMessageNoCommitCallback callback = new OnMessageNoCommitCallback(receivedCount);
+                        consumer.Listener += new MessageListener(callback.consumer_Listener);
+
+                        if (i <= maxRedeliveries) 
+                        {
+                            Assert.IsTrue(callback.Await(), "listener should have dispatched a message");
+                        } 
+                        else 
+                        {
+                            // final redlivery gets poisoned before dispatch
+                            Assert.IsFalse(callback.Await(), "listener should not have dispatched after max redliveries");
+                        }
+                    }
+                }
+
+                // We should be able to get the message off the DLQ now.
+                ITextMessage msg = dlqConsumer.Receive(TimeSpan.FromMilliseconds(2000)) as ITextMessage;
+                Assert.IsNotNull(msg, "Got message from DLQ");
+                Assert.AreEqual("1st", msg.Text);
+                String cause = msg.Properties.GetString(DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY);
+                if (cause != null) 
+                {
+                    Tracer.DebugFormat("Rollback Cause = {0}", cause);
+                    Assert.IsTrue(cause.Contains("RedeliveryPolicy"), "cause exception has no policy ref");
+                }
+                else
+                {
+                    Tracer.Debug("DLQ'd message has no cause tag.");
+                }
+            }
+        }
+
+        class OnMessageNoCommitCallback
+        {
+            private Atomic<int> receivedCount;
+            private CountDownLatch done = new CountDownLatch(1);
+
+            public OnMessageNoCommitCallback(Atomic<int> receivedCount)
+            {
+                this.receivedCount = receivedCount;
+            }
+
+            public bool Await() 
+            {
+                return done.await(TimeSpan.FromMilliseconds(5000));
+            }
+
+            public void consumer_Listener(IMessage message)
+            {
+                ActiveMQTextMessage m = message as ActiveMQTextMessage;
+                Tracer.DebugFormat("Received Message: {0} delivery count = {1}", m.Text, m.RedeliveryCounter);
+                Assert.AreEqual("1st", m.Text);
+                Assert.AreEqual(receivedCount.Value, m.RedeliveryCounter);
+                receivedCount.GetAndSet(receivedCount.Value + 1);
+                done.countDown();
             }
         }
     }

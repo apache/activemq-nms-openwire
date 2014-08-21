@@ -39,6 +39,8 @@ namespace Apache.NMS.ActiveMQ
 	/// </summary>
 	public class MessageConsumer : IMessageConsumer, IDispatcher
 	{
+        private const int NO_MAXIMUM_REDELIVERIES = -1;
+
         private readonly MessageTransformation messageTransformation;
         private readonly MessageDispatchChannel unconsumedMessages;
         private readonly LinkedList<MessageDispatch> dispatchedMessages = new LinkedList<MessageDispatch>();
@@ -789,7 +791,15 @@ namespace Apache.NMS.ActiveMQ
 						{
 							if(listener != null && this.unconsumedMessages.Running)
 							{
-								dispatchMessage = true;
+                                if (RedeliveryExceeded(dispatch)) 
+                                {
+                                    PosionAck(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery policy limit:" + redeliveryPolicy.MaximumRedeliveries);
+                                    return;
+                                } 
+                                else
+                                {
+								    dispatchMessage = true;
+                                }
 							}
 							else
 							{
@@ -1014,6 +1024,11 @@ namespace Apache.NMS.ActiveMQ
 						}
 					}
 				}
+                else if (RedeliveryExceeded(dispatch))
+                {
+                    Tracer.DebugFormat("[{0}] received with excessive redelivered: {1}", ConsumerId, dispatch);
+                    PosionAck(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery policy limit:" + redeliveryPolicy.MaximumRedeliveries);
+                }
 				else
 				{
 					return dispatch;
@@ -1231,7 +1246,7 @@ namespace Apache.NMS.ActiveMQ
 			}
 
 	        // evaluate both expired and normal msgs as otherwise consumer may get stalled
-			if((0.5 * this.info.PrefetchSize) <= (this.deliveredCounter + this.ackCounter - this.additionalWindowSize))
+			if ((0.5 * this.info.PrefetchSize) <= (this.deliveredCounter + this.ackCounter - this.additionalWindowSize))
 			{
 				this.session.SendAck(pendingAck);
 				this.pendingAck = null;
@@ -1249,6 +1264,18 @@ namespace Apache.NMS.ActiveMQ
 			ack.TransactionId = session.TransactionContext.TransactionId;
 	        this.session.Connection.SyncRequest(ack);
 	    }
+
+        private void PosionAck(MessageDispatch dispatch, string cause)
+        {
+            BrokerError poisonCause = new BrokerError();
+            poisonCause.ExceptionClass = "javax.jms.JMSException";
+            poisonCause.Message = cause;
+
+            MessageAck posionAck = new MessageAck(dispatch, (byte) AckType.PoisonAck, 1);
+            posionAck.FirstMessageId = dispatch.Message.MessageId;
+            posionAck.PoisonCause = poisonCause;
+            this.session.Connection.SyncRequest(posionAck);
+        }
 
 	    private void RegisterSync()
 		{
@@ -1387,14 +1414,19 @@ namespace Apache.NMS.ActiveMQ
                                                this.info.ConsumerId, this.dispatchedMessages.Count, this.redeliveryPolicy.MaximumRedeliveries);
                         }
 
+                        BrokerError poisonCause = new BrokerError();
+                        poisonCause.ExceptionClass = "javax.jms.JMSException";
+                        poisonCause.Message = "Exceeded RedeliveryPolicy limit: " + RedeliveryPolicy.MaximumRedeliveries;
+
 						if (lastMd.RollbackCause != null)
 						{
 							BrokerError cause = new BrokerError();
-							cause.ExceptionClass = "javax.jms.JMSException";
-							cause.Message = lastMd.RollbackCause.Message;
-							ack.PoisonCause = cause;
+                            poisonCause.ExceptionClass = "javax.jms.JMSException";
+                            poisonCause.Message = lastMd.RollbackCause.Message;
+                            poisonCause.Cause = cause;
 						}
                     	ack.FirstMessageId = firstMsgId;
+                        ack.PoisonCause = poisonCause;
 
 						this.session.SendAck(ack);
 
@@ -1742,6 +1774,24 @@ namespace Apache.NMS.ActiveMQ
 				this.transactionId = transactionId;
 			}
 		}
+
+        private bool RedeliveryExceeded(MessageDispatch dispatch) 
+        {
+            try 
+            {
+                ActiveMQMessage amqMessage = dispatch.Message as ActiveMQMessage;
+
+                return session.IsTransacted && redeliveryPolicy != null &&
+                       redeliveryPolicy.MaximumRedeliveries != NO_MAXIMUM_REDELIVERIES &&
+                       dispatch.RedeliveryCounter > redeliveryPolicy.MaximumRedeliveries &&
+                       // redeliveryCounter > x expected after resend via brokerRedeliveryPlugin
+                       !amqMessage.Properties.Contains("redeliveryDelay");
+            }
+            catch (Exception ignored) 
+            {
+                return false;
+            }
+        }
 
 		#endregion
 
