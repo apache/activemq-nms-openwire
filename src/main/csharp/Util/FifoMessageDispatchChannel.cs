@@ -38,18 +38,18 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             get{ return this.mutex; }
         }
-        
+
         public bool Closed
         {
-            get 
+            get
             {
                 lock(this.mutex)
                 {
-                    return this.closed; 
+                    return this.closed;
                 }
             }
-            
-            set 
+
+            set
             {
                 lock(this.mutex)
                 {
@@ -67,7 +67,7 @@ namespace Apache.NMS.ActiveMQ.Util
                     return this.running;
                 }
             }
-            
+
             set
             {
                 lock(this.mutex)
@@ -130,12 +130,12 @@ namespace Apache.NMS.ActiveMQ.Util
                 {
                     this.running = false;
                     this.closed = true;
-                }          
+                }
 
                 Monitor.PulseAll(this.mutex);
-            }            
+            }
         }
-        
+
         public void Enqueue(MessageDispatch dispatch)
         {
             lock(this.mutex)
@@ -163,27 +163,27 @@ namespace Apache.NMS.ActiveMQ.Util
                 {
                     Monitor.Wait(this.mutex, timeout);
                 }
-        
-                if( Closed || !Running || Empty ) 
+
+                if( Closed || !Running || Empty )
                 {
                     return null;
                 }
-        
-                return DequeueNoWait();                      
+
+                return DequeueNoWait();
             }
         }
 
         public MessageDispatch DequeueNoWait()
         {
             MessageDispatch result = null;
-            
+
             lock(this.mutex)
             {
-                if( Closed || !Running || Empty ) 
+                if( Closed || !Running || Empty )
                 {
                     return null;
                 }
-                
+
                 result = channel.First.Value;
                 this.channel.RemoveFirst();
             }
@@ -195,11 +195,11 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             lock(this.mutex)
             {
-                if( Closed || !Running || Empty ) 
+                if( Closed || !Running || Empty )
                 {
                     return null;
                 }
-                
+
                 return channel.First.Value;
             }
         }
@@ -215,7 +215,7 @@ namespace Apache.NMS.ActiveMQ.Util
         public MessageDispatch[] RemoveAll()
         {
             MessageDispatch[] result;
-            
+
             lock(mutex)
             {
                 result = new MessageDispatch[this.Count];
@@ -224,6 +224,14 @@ namespace Apache.NMS.ActiveMQ.Util
             }
 
             return result;
+        }
+
+        public void Signal()
+        {
+            lock(mutex)
+            {
+                Monitor.PulseAll(this.mutex);
+            }
         }
     }
 }
