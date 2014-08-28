@@ -35,6 +35,8 @@ namespace Apache.NMS.ActiveMQ.Commands
         public const byte ID_MESSAGEDISPATCH = 21;
 
         private Exception rollbackCause = null;
+        private long deliverySequenceId;
+        private object consumer;
 
         ConsumerId consumerId;
         ActiveMQDestination destination;
@@ -73,6 +75,18 @@ namespace Apache.NMS.ActiveMQ.Commands
         {
             get { return this.rollbackCause; }
             set { this.rollbackCause = value; }
+        }
+
+        public long DeliverySequenceId
+        {
+            get { return this.deliverySequenceId; }
+            set { this.deliverySequenceId = value; }
+        }
+
+        public object Consumer
+        {
+            get { return this.consumer; }
+            set { this.consumer = value; }
         }
 
         public ConsumerId ConsumerId

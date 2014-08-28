@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
 {
-	public enum TransactionType
+    public enum TransactionType
     {
         Begin = 0, Prepare = 1, CommitOnePhase = 2, CommitTwoPhase = 3, Rollback = 4, Recover=5, Forget = 6, End = 7
     }
@@ -28,7 +29,7 @@ namespace Apache.NMS.ActiveMQ
 
 namespace Apache.NMS.ActiveMQ
 {
-	public class TransactionContext
+    public class TransactionContext
     {
         protected TransactionId transactionId;
         protected readonly Session session;
@@ -36,47 +37,48 @@ namespace Apache.NMS.ActiveMQ
         protected readonly ArrayList synchronizations = ArrayList.Synchronized(new ArrayList());
 
         public TransactionContext(Session session)
-		{
+        {
             this.session = session;
             this.connection = session.Connection;
         }
 
         public bool InTransaction
         {
-            get{ return this.transactionId != null; }
+            get { return this.transactionId != null; }
         }
 
         public virtual bool InLocalTransaction
         {
-            get{ return this.transactionId != null; }
+            get { return this.transactionId != null; }
         }
 
         public TransactionId TransactionId
         {
             get { return transactionId; }
+            protected set { this.transactionId = value; }
         }
-        
+
         public void AddSynchronization(ISynchronization synchronization)
         {
             synchronizations.Add(synchronization);
         }
-        
+
         public void RemoveSynchronization(ISynchronization synchronization)
         {
             synchronizations.Remove(synchronization);
         }
-        
+
         public virtual void Begin()
         {
             if(!InTransaction)
             {
                 this.transactionId = this.session.Connection.CreateLocalTransactionId();
-                
+
                 TransactionInfo info = new TransactionInfo();
                 info.ConnectionId = this.session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.Begin;
-                
+
                 this.session.Connection.Oneway(info);
 
                 SignalTransactionStarted();
@@ -87,54 +89,78 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
         }
-        
+
         public virtual void Rollback()
         {
             if(InTransaction)
             {
-                this.BeforeEnd();
-    
+                try
+                {
+                    this.BeforeEnd();
+                }
+                catch (TransactionRolledBackException canOccurOnFailover)
+                {
+                    Tracer.WarnFormat("Rollback processing error {0}", canOccurOnFailover.Message);
+                }
+
                 if(Tracer.IsDebugEnabled)
                 {
                     Tracer.Debug("Rollback: "  + this.transactionId +
                                  " syncCount: " +
                                  (synchronizations != null ? synchronizations.Count : 0));
                 }
-    
+
                 TransactionInfo info = new TransactionInfo();
                 info.ConnectionId = this.session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.Rollback;
-                
+
                 this.transactionId = null;
                 this.session.Connection.SyncRequest(info);
-    
+
                 this.AfterRollback();
             }
         }
-        
+
         public virtual void Commit()
         {
             if(InTransaction)
             {
-                this.BeforeEnd();
-    
+                try
+                {
+                    this.BeforeEnd();
+                }
+                catch
+                {
+                    Rollback();
+                    throw;
+                }
+
                 if(Tracer.IsDebugEnabled)
                 {
                     Tracer.Debug("Commit: "  + this.transactionId +
                                  " syncCount: " +
                                  (synchronizations != null ? synchronizations.Count : 0));
                 }
-    
+
                 TransactionInfo info = new TransactionInfo();
                 info.ConnectionId = this.session.Connection.ConnectionId;
                 info.TransactionId = transactionId;
                 info.Type = (int) TransactionType.CommitOnePhase;
-                
-                this.transactionId = null;
-                this.session.Connection.SyncRequest(info);
-                
-                this.AfterCommit();
+
+                try
+                {
+                    this.TransactionId = null;
+                    this.session.Connection.SyncRequest(info);
+                    this.AfterCommit();
+                }
+                catch (Exception e)
+                {
+                    Tracer.InfoFormat("Commit failed for transaction {0} - {1}",
+                                      info.TransactionId, e.Message);
+                    AfterRollback();
+                    throw;
+                }
             }
         }
 
@@ -219,7 +245,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-	    #endregion
+        #endregion
 
     }
 }

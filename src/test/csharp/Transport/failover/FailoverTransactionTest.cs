@@ -72,7 +72,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 using(ISession session = connection.CreateSession())
                 {
                     IDestination destination = session.GetQueue(destinationName);
-                    PurgeQueue(connection, destination);
+                    DeleteQueue(connection, destination);
                 }
 
                 Tracer.Debug("Test is putting " + MSG_COUNT + " messages on the queue: " + destinationName);
@@ -89,10 +89,12 @@ namespace Apache.NMS.ActiveMQ.Test
                     }
                     catch(TransactionRolledBackException)
                     {
+                        Tracer.Info("TEST: Caught expected TransactionRolledBackException");
                     }
-                    catch
+                    catch(Exception ex)
                     {
-                        Assert.Fail("Should have thrown a TransactionRolledBackException");
+                        Assert.Fail("Should have thrown a TransactionRolledBackException, but was: " +
+                                    ex.GetType().Name);
                     }
                 }
 
@@ -240,6 +242,50 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
+        [Test]
+        public void TestMessageDeliveredAfterCommitFailsAndRollback()
+        {
+            string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
+            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            using(connection = factory.CreateConnection() as Connection)
+            {
+                using(ISession session = connection.CreateSession())
+                {
+                    IDestination destination = session.GetQueue(destinationName);
+                    DeleteQueue(connection, destination);
+                    PutOneMsgIntoQueue(session, destination);
+                }
+
+                using(ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
+                {
+                    connection.Start();
+
+                    ITransport transport = (connection as Connection).ITransport;
+                    TcpFaultyTransport tcpFaulty = transport.Narrow(typeof(TcpFaultyTransport)) as TcpFaultyTransport;
+                    Assert.IsNotNull(tcpFaulty);
+                    tcpFaulty.OnewayCommandPreProcessor += this.FailOnCommitTransportHook;
+
+                    IMessageConsumer consumer = session.CreateConsumer(session.GetQueue(destinationName));
+                    IMessage message = consumer.Receive(TimeSpan.FromSeconds(30));
+                    Assert.IsNotNull(message, "Message was not delivered");
+                    Tracer.Debug("Commiting transaction");
+
+                    try
+                    {
+                        Tracer.Info("Now attempting to commit the transaction");
+                        session.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        Tracer.InfoFormat("Commit failed as expected. {0}", ex.Message);
+                    }
+
+                    message = consumer.Receive(TimeSpan.FromSeconds(30));
+                    Assert.IsNotNull(message, "message was not redilivered");
+                }
+            }
+        }
+
         public void TransportInterrupted()
         {
             this.interrupted = true;
@@ -252,15 +298,25 @@ namespace Apache.NMS.ActiveMQ.Test
 
         private void PutMsgIntoQueue(ISession session, IDestination destination)
         {
-            PutMsgIntoQueue(session, destination, true);
+            PutMsgIntoQueue(session, destination, true, MSG_COUNT);
+        }
+
+        private void PutOneMsgIntoQueue(ISession session, IDestination destination)
+        {
+            PutMsgIntoQueue(session, destination, true, 1);
         }
 
         private void PutMsgIntoQueue(ISession session, IDestination destination, bool commit)
         {
+            PutMsgIntoQueue(session, destination, commit, MSG_COUNT);
+        }
+
+        private void PutMsgIntoQueue(ISession session, IDestination destination, bool commit, int count)
+        {
             using(IMessageProducer producer = session.CreateProducer(destination))
             {
                 ITextMessage message = session.CreateTextMessage();
-                for(int i = 0; i < MSG_COUNT; ++i)
+                for(int i = 0; i < count; ++i)
                 {
                     message.Text = "Test message " + (i + 1);
                     producer.Send(message);
@@ -284,6 +340,14 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
+        private void DeleteQueue(IConnection connection, IDestination queue)
+        {
+            using (ISession session = connection.CreateSession())
+            {
+                session.DeleteDestination(queue);
+            }
+        }
+
         private void BreakConnection()
         {
             TcpTransport transport = this.connection.ITransport.Narrow(typeof(TcpTransport)) as TcpTransport;
@@ -303,13 +367,13 @@ namespace Apache.NMS.ActiveMQ.Test
                 TransactionInfo txInfo = command as TransactionInfo;
                 if (txInfo.Type == (byte)TransactionType.CommitOnePhase)
                 {
-                    Tracer.Debug("Closing the TcpTransport to simulate an connection drop.");
+                    Tracer.Debug("Exception from the Commit to simulate an connection drop.");
                     commitFailed = true;
-                    (transport as TcpTransport).Close();
+                    TcpTransport tcpTransport = transport as TcpTransport;
+                    tcpTransport.Close();
                 }
             }
         }
-
     }
 }
 

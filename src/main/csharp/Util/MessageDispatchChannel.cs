@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ.Util
         {
             get;
         }
-        
+
         bool Closed
         {
             get;
@@ -61,7 +61,7 @@ namespace Apache.NMS.ActiveMQ.Util
         void Stop();
 
         void Close();
-        
+
         void Enqueue(MessageDispatch dispatch);
 
         void EnqueueFirst(MessageDispatch dispatch);
@@ -75,5 +75,7 @@ namespace Apache.NMS.ActiveMQ.Util
         void Clear();
 
         MessageDispatch[] RemoveAll();
+
+        void Signal();
     }
 }

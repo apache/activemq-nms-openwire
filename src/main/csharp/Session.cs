@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Threading;
 using Apache.NMS.Util;
@@ -57,6 +58,7 @@ namespace Apache.NMS.ActiveMQ
         protected bool disposed = false;
         protected bool closed = false;
         protected bool closing = false;
+        protected Atomic<bool> clearInProgress = new Atomic<bool>();
         private TimeSpan disposeStopTimeout = TimeSpan.FromMilliseconds(30000);
         private TimeSpan closeStopTimeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
         private TimeSpan requestTimeout;
@@ -73,8 +75,8 @@ namespace Apache.NMS.ActiveMQ
             this.requestTimeout = connection.RequestTimeout;
             this.dispatchAsync = connection.DispatchAsync;
             this.transactionContext = CreateTransactionContext();
-			this.exclusive = connection.ExclusiveConsumer;
-			this.retroactive = connection.UseRetroactiveConsumer;
+            this.exclusive = connection.ExclusiveConsumer;
+            this.retroactive = connection.UseRetroactiveConsumer;
 
             Uri brokerUri = connection.BrokerUri;
 
@@ -282,10 +284,26 @@ namespace Apache.NMS.ActiveMQ
             set { this.producerTransformer = value; }
         }
 
-		internal Scheduler Scheduler
-		{
-			get { return this.connection.Scheduler; }
-		}
+        internal Scheduler Scheduler
+        {
+            get { return this.connection.Scheduler; }
+        }
+
+        internal List<MessageConsumer> Consumers
+        {
+            get
+            {
+                List<MessageConsumer> copy = new List<MessageConsumer>();
+                lock(consumers.SyncRoot)
+                {
+                    foreach(MessageConsumer consumer in consumers.Values)
+                    {
+                        copy.Add(consumer);
+                    }
+                }
+                return copy;
+            }
+        }
 
         #endregion
 
@@ -338,13 +356,13 @@ namespace Apache.NMS.ActiveMQ
 
         internal void DoClose()
         {
-			Shutdown();
+            Shutdown();
             RemoveInfo removeInfo = new RemoveInfo();
             removeInfo.ObjectId = this.info.SessionId;
             removeInfo.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
             this.connection.Oneway(removeInfo);
-		}
-		
+        }
+
         internal void Shutdown()
         {
             Tracer.InfoFormat("Executing Shutdown on Session with Id {0}", this.info.SessionId);
@@ -524,18 +542,18 @@ namespace Apache.NMS.ActiveMQ
                 throw new InvalidDestinationException("Cannot create a Consumer with a Null destination");
             }
 
-			if (IsIndividualAcknowledge)
-			{
-				throw new NMSException("Cannot create a durable consumer for a session that is using " +
-				                       "Individual Acknowledgement mode.");
-			}
+            if (IsIndividualAcknowledge)
+            {
+                throw new NMSException("Cannot create a durable consumer for a session that is using " +
+                                       "Individual Acknowledgement mode.");
+            }
 
             ActiveMQDestination dest = ActiveMQDestination.Transform(destination);
             MessageConsumer consumer = null;
 
             try
             {
-                consumer = DoCreateMessageConsumer(GetNextConsumerId(), dest, name, selector, 
+                consumer = DoCreateMessageConsumer(GetNextConsumerId(), dest, name, selector,
                                                    this.connection.PrefetchPolicy.DurableTopicPrefetch,
                                                    this.connection.PrefetchPolicy.MaximumPendingMessageLimit,
                                                    noLocal);
@@ -564,7 +582,7 @@ namespace Apache.NMS.ActiveMQ
         }
 
         internal virtual MessageConsumer DoCreateMessageConsumer(
-            ConsumerId id, ActiveMQDestination destination, string name, string selector, 
+            ConsumerId id, ActiveMQDestination destination, string name, string selector,
             int prefetch, int maxPending, bool noLocal)
         {
             return new MessageConsumer(this, id, destination, name, selector, prefetch,
@@ -825,7 +843,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 consumers.Remove(consumer.ConsumerId);
             }
-			connection.RemoveDispatcher(consumer);
+            connection.RemoveDispatcher(consumer);
         }
 
         public void AddProducer(MessageProducer producer)
@@ -878,13 +896,13 @@ namespace Apache.NMS.ActiveMQ
 
         public void Start()
         {
-			lock(this.consumers.SyncRoot)
-			{
-				foreach(MessageConsumer consumer in this.consumers.Values)
-				{
-					consumer.Start();
-				}
-			}
+            lock(this.consumers.SyncRoot)
+            {
+                foreach(MessageConsumer consumer in this.consumers.Values)
+                {
+                    consumer.Start();
+                }
+            }
 
             if(this.executor != null)
             {
@@ -900,9 +918,13 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        internal void Redispatch(MessageDispatchChannel channel)
+        internal void Redispatch(IDispatcher dispatcher, MessageDispatchChannel channel)
         {
             MessageDispatch[] messages = channel.RemoveAll();
+            foreach (MessageDispatch dispatch in messages)
+            {
+                this.connection.RollbackDuplicate(dispatcher, dispatch.Message);
+            }
             System.Array.Reverse(messages);
 
             foreach(MessageDispatch message in messages)
@@ -926,20 +948,31 @@ namespace Apache.NMS.ActiveMQ
                 this.executor.ClearMessagesInProgress();
             }
 
+            if (this.consumers.Count == 0)
+            {
+                return;
+            }
+
             // Because we are called from inside the Transport Reconnection logic
             // we spawn the Consumer clear to another Thread so that we can avoid
             // any lock contention that might exist between the consumer and the
-            // connection that is reconnecting.  Use the Connection Scheduler so 
-			// that the clear calls are done one at a time to avoid further 
-			// contention on the Connection and Session resources.
-            lock(this.consumers.SyncRoot)
+            // connection that is reconnecting.  Use the Connection Scheduler so
+            // that the clear calls are done one at a time to avoid further
+            // contention on the Connection and Session resources.
+            if (clearInProgress.CompareAndSet(false, true))
             {
-                foreach(MessageConsumer consumer in this.consumers.Values)
+                lock(this.consumers.SyncRoot)
                 {
-                    consumer.InProgressClearRequired();
-					Interlocked.Increment(ref transportInterruptionProcessingComplete);
-					Scheduler.ExecuteAfterDelay(ClearMessages, consumer, 0);
+                    foreach(MessageConsumer consumer in this.consumers.Values)
+                    {
+                        consumer.InProgressClearRequired();
+                        Interlocked.Increment(ref transportInterruptionProcessingComplete);
+                        Scheduler.ExecuteAfterDelay(ClearMessages, consumer, 0);
+                    }
                 }
+
+                // Clear after all consumer have had their ClearMessagesInProgress method called.
+                Scheduler.ExecuteAfterDelay(ResetClearInProgressFlag, clearInProgress, 0);
             }
         }
 
@@ -953,6 +986,12 @@ namespace Apache.NMS.ActiveMQ
             }
 
             consumer.ClearMessagesInProgress();
+        }
+
+        private static void ResetClearInProgressFlag(object value)
+        {
+            Atomic<bool> clearInProgress = value as Atomic<bool>;
+            clearInProgress.Value = false;
         }
 
         internal void Acknowledge()
@@ -986,10 +1025,10 @@ namespace Apache.NMS.ActiveMQ
 
         internal void SendAck(MessageAck ack, bool lazy)
         {
-			if(Tracer.IsDebugEnabled)
-			{
-				Tracer.Debug("Session sending Ack: " + ack);
-			}
+            if(Tracer.IsDebugEnabled)
+            {
+                Tracer.Debug("Session sending Ack: " + ack);
+            }
 
             if(lazy || connection.SendAcksAsync || this.IsTransacted )
             {
@@ -1001,10 +1040,10 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-		protected virtual TransactionContext CreateTransactionContext()
-		{
-			return new TransactionContext(this);
-		}
+        protected virtual TransactionContext CreateTransactionContext()
+        {
+            return new TransactionContext(this);
+        }
 
         private void CheckClosed()
         {
@@ -1055,16 +1094,16 @@ namespace Apache.NMS.ActiveMQ
 
         internal bool IsInUse(ActiveMQTempDestination dest)
         {
-			lock(this.consumers.SyncRoot)
-			{
-				foreach(MessageConsumer consumer in this.consumers.Values)
-				{
-					if(consumer.IsInUse(dest))
-					{
-						return true;
-					}
-				}
-			}
+            lock(this.consumers.SyncRoot)
+            {
+                foreach(MessageConsumer consumer in this.consumers.Values)
+                {
+                    if(consumer.IsInUse(dest))
+                    {
+                        return true;
+                    }
+                }
+            }
 
             return false;
         }
