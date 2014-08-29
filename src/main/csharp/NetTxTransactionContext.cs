@@ -252,7 +252,7 @@ namespace Apache.NMS.ActiveMQ
                     preparingEnlistment.ForceRollback();
                     try
                     {
-                        this.connection.OnException(ex);
+                        this.connection.OnAsyncException(ex);
                     }
                     catch (Exception error)
                     {
@@ -302,7 +302,7 @@ namespace Apache.NMS.ActiveMQ
                                        this.transactionId, ex.Message);
                     try
                     {
-                        this.connection.OnException(ex);
+                        this.connection.OnAsyncException(ex);
                     }
                     catch (Exception error)
                     {
@@ -363,7 +363,7 @@ namespace Apache.NMS.ActiveMQ
                     enlistment.Done();
                     try
                     {
-                        this.connection.OnException(ex);
+                        this.connection.OnAsyncException(ex);
                     }
                     catch (Exception error)
                     {
@@ -423,7 +423,7 @@ namespace Apache.NMS.ActiveMQ
                     AfterRollback();
                     try
                     {
-                        this.connection.OnException(ex);
+                        this.connection.OnAsyncException(ex);
                     }
                     catch (Exception error)
                     {
