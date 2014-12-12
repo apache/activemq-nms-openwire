@@ -31,6 +31,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
+        private string sslProtocol;
         private bool acceptInvalidBrokerCert = false;
         
         public SslTransportFactory() : base()
@@ -85,6 +86,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { this.keyStoreLocation = value; }
         }
 
+        public string SslProtocol
+        {
+            get { return this.sslProtocol; }
+            set { this.sslProtocol = value; }
+        }
+
 		protected override ITransport DoCreateTransport(Uri location, Socket socket, IWireFormat wireFormat )
 		{
             Tracer.Debug("Creating new instance of the SSL Transport.");
@@ -98,6 +105,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             transport.KeyStoreLocation = this.keyStoreLocation;
             transport.KeyStoreName = this.keyStoreName;
             transport.AcceptInvalidBrokerCert = this.acceptInvalidBrokerCert;
+            transport.SslProtocol = this.sslProtocol;
             
             return transport;
 		}		

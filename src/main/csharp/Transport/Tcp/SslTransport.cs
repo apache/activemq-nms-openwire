@@ -33,6 +33,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
+        private string sslProtocol;
         private bool acceptInvalidBrokerCert = false;
 
         private SslStream sslStream;
@@ -117,6 +118,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             set { this.keyStoreLocation = value; }
         }
 
+        public string SslProtocol
+        {
+            get { return this.sslProtocol; }
+            set { this.sslProtocol = value; }
+        }
+
         protected override Stream CreateSocketStream()
         {
             if(this.sslStream != null)
@@ -138,8 +145,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             try
             {
                 string remoteCertName = this.serverName ?? this.RemoteAddress.Host;
-                Tracer.Debug("Authorizing as Client for Server: " + remoteCertName);
-                sslStream.AuthenticateAsClient(remoteCertName, LoadClientCertificates(), SslProtocols.Default, false);
+                Tracer.DebugFormat("Authorizing as Client for Server: {0}", remoteCertName);
+                sslStream.AuthenticateAsClient(remoteCertName, LoadClientCertificates(), GetAllowedProtocol(), false);
                 Tracer.Debug("Server is Authenticated = " + sslStream.IsAuthenticated);
                 Tracer.Debug("Server is Encrypted = " + sslStream.IsEncrypted);
             }
@@ -312,6 +319,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             }
 
             return collection;
+        }
+
+        private SslProtocols GetAllowedProtocol() 
+        {
+            if (!String.IsNullOrEmpty(SslProtocol))
+            {
+                return (SslProtocols)Enum.Parse(typeof(SslProtocols), SslProtocol, true);
+            }
+
+            return SslProtocols.Default;
         }
     }
 }
