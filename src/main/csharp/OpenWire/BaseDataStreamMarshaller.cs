@@ -28,7 +28,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
     /// </summary>
     public abstract class BaseDataStreamMarshaller
     {
-        
         private static readonly String[] HEX_TABLE = new String[]{
             "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
             "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b", "1c", "1d", "1e", "1f",
@@ -55,6 +54,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         {
             return 0;
         }
+
         public virtual void TightMarshal2(
             OpenWireFormat wireFormat,
             Object o,
@@ -70,8 +70,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             BooleanStream bs)
         {
         }
-        
-        
+
         protected virtual DataStructure TightUnmarshalNestedObject(
             OpenWireFormat wireFormat,
             BinaryReader dataIn,
@@ -262,6 +261,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 }
             }
         }
+
         public virtual long TightUnmarshalLong(OpenWireFormat wireFormat, BinaryReader dataIn, BooleanStream bs)
         {
             if (bs.ReadBoolean())
@@ -272,14 +272,14 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 }
                 else
                 {
-                    return dataIn.ReadInt32();
+                    return dataIn.ReadUInt32();
                 }
             }
             else
             {
                 if (bs.ReadBoolean())
                 {
-                    return dataIn.ReadInt16();
+                    return dataIn.ReadUInt16();
                 }
                 else
                 {
@@ -287,6 +287,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 }
             }
         }
+
         protected virtual int TightMarshalObjectArray1(
             OpenWireFormat wireFormat,
             DataStructure[] objects,
@@ -325,7 +326,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 }
             }
         }
-        
         
         protected virtual BrokerError TightUnmarshalBrokerError(
             OpenWireFormat wireFormat,
@@ -422,7 +422,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             }
         }
 
-        
         public virtual void LooseMarshal(
             OpenWireFormat wireFormat,
             Object o,
@@ -436,7 +435,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             BinaryReader dataIn)
         {
         }
-        
         
         protected virtual DataStructure LooseUnmarshalNestedObject(
             OpenWireFormat wireFormat,
@@ -457,48 +455,17 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             OpenWireFormat wireFormat,
             BinaryReader dataIn)
         {
-            /*
-             if (wireFormat.isCacheEnabled()) {
-             if (bs.ReadBoolean()) {
-             short index = dataIndataIn.ReadInt16()Int16();
-             DataStructure value = wireFormat.UnmarshalNestedObject(dataIn, bs);
-             wireFormat.setInUnmarshallCache(index, value);
-             return value;
-             } else {
-             short index = dataIn.ReadInt16();
-             return wireFormat.getFromUnmarshallCache(index);
-             }
-             } else {
-             return wireFormat.UnmarshalNestedObject(dataIn, bs);
-             }
-             */
             return wireFormat.LooseUnmarshalNestedObject(dataIn);
         }
-        
-        
+
         protected virtual void LooseMarshalCachedObject(
             OpenWireFormat wireFormat,
             DataStructure o,
             BinaryWriter dataOut)
         {
-            /*
-             if (wireFormat.isCacheEnabled()) {
-             Short index = wireFormat.getMarshallCacheIndex(o);
-             if (bs.ReadBoolean()) {
-             dataOut.Write(index.shortValue(), dataOut);
-             wireFormat.Marshal2NestedObject(o, dataOut, bs);
-             } else {
-             dataOut.Write(index.shortValue(), dataOut);
-             }
-             } else {
-             wireFormat.Marshal2NestedObject(o, dataOut, bs);
-             }
-             */
             wireFormat.LooseMarshalNestedObject(o, dataOut);
         }
-        
-        
-        
+
         protected virtual String LooseUnmarshalString(BinaryReader dataIn)
         {
             if (dataIn.ReadBoolean())
@@ -510,8 +477,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 return null;
             }
         }
-        
-        
+
         public static void LooseMarshalString(String value, BinaryWriter dataOut)
         {
             dataOut.Write(value != null);
@@ -655,8 +621,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             return new String(text);
         }
         
-        
-                
         /// <summary>
         /// Converts the object to a String
         /// </summary>
@@ -664,6 +628,7 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         {
             return ToString(id.ProducerId) + ":" + id.ProducerSequenceId;
         }
+
         /// <summary>
         /// Converts the object to a String
         /// </summary>
@@ -671,7 +636,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         {
             return id.ConnectionId + ":" + id.SessionId + ":" + id.Value;
         }
-        
         
         /// <summary>
         /// Converts the given transaction ID into a String
@@ -703,7 +667,6 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             }
             return buffer.ToString();
         }
-        
     }
 }
 
