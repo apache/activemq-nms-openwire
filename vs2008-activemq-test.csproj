@@ -140,6 +140,7 @@
     <Compile Include="src\test\csharp\Util\SimplePriorityMessageDispatchChannelTest.cs" />
     <Compile Include="src\test\csharp\VirtualTopicTest.cs" />
     <Compile Include="src\test\csharp\ZeroPrefetchConsumerTest.cs" />
+    <Compile Include="src\test\csharp\OpenWire\BaseDataStreamMarshallerTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="nmsprovider-test.config">
