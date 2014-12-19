@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ
         private bool sendAcksAsync = false;
         private bool dispatchAsync = true;
         private int producerWindowSize = 0;
-        private bool messagePrioritySupported = true;
+        private bool messagePrioritySupported = false;
         private bool watchTopicAdviosires = true;
         private bool optimizeAcknowledge;
         private long optimizeAcknowledgeTimeOut = 300;

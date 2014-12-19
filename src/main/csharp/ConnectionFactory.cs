@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ
 		private int producerWindowSize = 0;
 		private AcknowledgementMode acknowledgementMode = AcknowledgementMode.AutoAcknowledge;
 		private TimeSpan requestTimeout = NMSConstants.defaultRequestTimeout;
-		private bool messagePrioritySupported = true;
+		private bool messagePrioritySupported = false;
         private bool watchTopicAdvisories = true;
     	private bool optimizeAcknowledge;
     	private long optimizeAcknowledgeTimeOut = 300;

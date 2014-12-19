@@ -170,7 +170,9 @@ namespace Apache.NMS.ActiveMQ
             this.info.OptimizedAcknowledge = this.optimizeAcknowledge;
             this.failoverRedeliveryWaitPeriod = session.Connection.ConsumerFailoverRedeliveryWaitPeriod;
             this.nonBlockingRedelivery = session.Connection.NonBlockingRedelivery;
-            this.transactedIndividualAck = session.Connection.TransactedIndividualAck || this.nonBlockingRedelivery;
+            this.transactedIndividualAck = session.Connection.TransactedIndividualAck || 
+                                           session.Connection.MessagePrioritySupported ||
+                                           this.nonBlockingRedelivery;
         }
 
         ~MessageConsumer()
