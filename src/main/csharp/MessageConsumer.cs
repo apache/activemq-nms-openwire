@@ -57,7 +57,7 @@ namespace Apache.NMS.ActiveMQ
 
         private int redeliveryTimeout = 500;
         protected bool disposed = false;
-        private long lastDeliveredSequenceId = 0;
+        private long lastDeliveredSequenceId = -1;
         private int ackCounter = 0;
         private int deliveredCounter = 0;
         private int additionalWindowSize = 0;
