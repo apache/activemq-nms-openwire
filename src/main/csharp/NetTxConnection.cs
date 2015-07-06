@@ -51,6 +51,21 @@ namespace Apache.NMS.ActiveMQ
             return session;
         }
 
+        public INetTxSession CreateNetTxSession(Transaction tx, bool enlistNativeMsDtcResource)
+        {
+            NetTxSession session = (NetTxSession)CreateSession(AcknowledgementMode.Transactional);
+            session.Enlist(tx);
+            session.EnlistsMsDtcNativeResource = enlistNativeMsDtcResource;
+            return session;
+        }
+
+        public INetTxSession CreateNetTxSession(bool enlistNativeMsDtcResource)
+        {
+            NetTxSession session = (NetTxSession)CreateSession(AcknowledgementMode.Transactional);
+            session.EnlistsMsDtcNativeResource = enlistNativeMsDtcResource;
+            return session;
+        }
+
         protected override Session CreateActiveMQSession(AcknowledgementMode ackMode)
         {
             CheckConnected();

@@ -53,7 +53,8 @@ namespace Apache.NMS.ActiveMQ.Test
         private ITrace oldTracer;
 
         protected const string sqlConnectionString =
-            "Data Source=localhost;Initial Catalog=TestDB;User ID=user;Password=password";
+            // "Data Source=localhost;Initial Catalog=TestDB;User ID=user;Password=password";
+            "Data Source=.\\SQLEXPRESS;Initial Catalog=TestDB;Integrated Security = true";
         protected const string testTable = "TestTable";
         protected const string testColumn = "TestID";
         protected const string testQueueName = "TestQueue";
@@ -484,7 +485,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             IList entries = ExtractDataSet();
 
-            using (INetTxSession session = connection.CreateNetTxSession())
+            using (INetTxSession session = connection.CreateNetTxSession(true))
             {
                 IQueue queue = session.GetQueue(testQueueName);
 
@@ -531,7 +532,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             IList entries = ExtractDataSet();
 
-            using (INetTxSession session = connection.CreateNetTxSession())
+            using (INetTxSession session = connection.CreateNetTxSession(true))
             {
                 IQueue queue = session.GetQueue(testQueueName);
 
@@ -578,7 +579,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void ReadFromQueueAndInsertIntoDbWithCommit(INetTxConnection connection)
         {
-            using (INetTxSession session = connection.CreateNetTxSession())
+            using (INetTxSession session = connection.CreateNetTxSession(true))
             {
                 IQueue queue = session.GetQueue(testQueueName);
 
@@ -619,7 +620,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void ReadFromQueueAndInsertIntoDbWithScopeAborted(INetTxConnection connection)
         {
-            using (INetTxSession session = connection.CreateNetTxSession())
+            using (INetTxSession session = connection.CreateNetTxSession(true))
             {
                 IQueue queue = session.GetQueue(testQueueName);
 
