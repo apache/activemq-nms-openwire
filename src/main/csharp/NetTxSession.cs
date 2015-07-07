@@ -32,6 +32,7 @@ namespace Apache.NMS.ActiveMQ
         {
             this.transactionContext = TransactionContext as NetTxTransactionContext;
             this.transactionContext.InitializeDtcTxContext();
+            this.enlistMsDtcNativeResources = false;
         }
 
         /// <summary>
@@ -49,6 +50,14 @@ namespace Apache.NMS.ActiveMQ
             }
 
             this.EnrollInSpecifiedTransaction(tx);
+        }
+
+        private bool enlistMsDtcNativeResources;
+
+        public bool EnlistsMsDtcNativeResource
+        {
+            get { return enlistMsDtcNativeResources; }
+            set { enlistMsDtcNativeResources = value; }
         }
 
         /// <summary>
@@ -173,6 +182,7 @@ namespace Apache.NMS.ActiveMQ
             this.currentTransactionId = tx.TransactionInformation.LocalIdentifier; 
             transactionContext.Begin(tx);
         }
+        
     }
 }
 

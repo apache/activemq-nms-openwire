@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Transactions;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
@@ -75,9 +76,29 @@ namespace Apache.NMS.ActiveMQ
                         // distributed TX manager we need to wait whenever the TX is being
                         // controlled by the DTC as it completes all operations async and
                         // we cannot start consumption again until all its tasks have completed.)
-                        waitForDtcWaitHandle = this.transactionContext.InNetTransaction &&
-                                               this.transactionContext.NetTxState ==
-                                               NetTxTransactionContext.TxState.Pending;
+                        var currentTransactionId = transactionContext.TransactionId as XATransactionId;
+                        string currentLocalTxId = currentTransactionId != null
+                            ? UTF8Encoding.UTF8.GetString(currentTransactionId.GlobalTransactionId)
+                            : "NONE";
+
+                        if (Transaction.Current != null)
+                        {
+                            waitForDtcWaitHandle = this.transactionContext.InNetTransaction &&
+                                               this.transactionContext.NetTxState == NetTxTransactionContext.TxState.Pending ||
+                                               currentLocalTxId != Transaction.Current.TransactionInformation.LocalIdentifier;
+                        }
+                        else
+                        {
+                            waitForDtcWaitHandle = this.transactionContext.InNetTransaction &&
+                                               this.transactionContext.NetTxState == NetTxTransactionContext.TxState.Pending;
+                        }
+                        
+                    }
+
+                    //if session EnlistMsDtcNativeResource the transaction does not need to wait
+                    if (this.session.EnlistsMsDtcNativeResource)
+                    {
+                        waitForDtcWaitHandle = false;
                     }
 
                     if (waitForDtcWaitHandle)
