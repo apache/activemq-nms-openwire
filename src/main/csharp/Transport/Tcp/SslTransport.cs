@@ -314,7 +314,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
                 X509Store store = new X509Store(name, location);
                 store.Open(OpenFlags.ReadOnly);
-                collection = store.Certificates;
+                X509Certificate2[] certificates = new X509Certificate2[store.Certificates.Count];
+                store.Certificates.CopyTo(certificates, 0);
+                collection.AddRange(certificates);
                 store.Close();
             }
 
