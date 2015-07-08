@@ -372,7 +372,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
                 if(null == socket)
                 {
-                    throw new SocketException();
+                    const int RTSSL_HANDSHAKE_FAILURE = -2;
+                    throw new SocketException(RTSSL_HANDSHAKE_FAILURE);
                 }
             }
             catch(Exception ex)
