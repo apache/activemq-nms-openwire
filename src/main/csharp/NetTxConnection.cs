@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Text.RegularExpressions;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Util;
@@ -95,18 +96,20 @@ namespace Apache.NMS.ActiveMQ
 
         private static Guid GuidFromId(string id)
         {
-            // Remove the ID: prefix, that's non-unique to be sure
-            string resId = id.TrimStart("ID:".ToCharArray());
-
-            // Remaing parts should be host-port-timestamp-instance:sequence
-            string[] parts = resId.Split(":-".ToCharArray());
-
+            MatchCollection matches = Regex.Matches(id, @"(\d+)-(\d+)-(\d+):(\d+)$");
+            if(0 == matches.Count)
+            {
+                throw new FormatException(string.Format("Unable to extract a GUID from string '{0}'", id));
+            }
+ 
+            GroupCollection groups = matches[0].Groups;
+ 
             // We don't use the hostname here, just the remaining bits.
-            int a = Int32.Parse(parts[parts.Length-4]);
-            short b = Int16.Parse(parts[parts.Length-2]);
-            short c = Int16.Parse(parts[parts.Length-1]);
-            byte[] d = System.BitConverter.GetBytes(Int64.Parse(parts[parts.Length-3]));
-
+            int a = Int32.Parse(groups[1].Value);
+            short b = Int16.Parse(groups[3].Value);
+            short c = Int16.Parse(groups[4].Value);
+            byte[] d = BitConverter.GetBytes(Int64.Parse(groups[2].Value));
+ 
             return new Guid(a, b, c, d);
         }
     }
