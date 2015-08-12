@@ -1065,6 +1065,22 @@ namespace Apache.NMS.ActiveMQ
                                        ConsumerId, dispatch);
                     PosionAck(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery " +
                                         "policy limit:" + redeliveryPolicy.MaximumRedeliveries);
+
+                    // Refresh the dispatch time
+                    dispatchTime = DateTime.Now;
+
+                    if(dispatchTime > deadline)
+                    {
+                        // Out of time.
+                        timeout = TimeSpan.Zero;
+                    }
+                    else
+                    {
+                        // Adjust the timeout to the remaining time.
+                        timeout = deadline - dispatchTime;
+                    }
+
+                    SendPullRequest((long) timeout.TotalMilliseconds);
                 }
                 else
                 {
