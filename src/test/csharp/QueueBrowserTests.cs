@@ -250,7 +250,6 @@ namespace Apache.NMS.ActiveMQ.Test
                 IEnumerator enumeration = browser.GetEnumerator();
                 while (enumeration.MoveNext())
                 {
-                    ITextMessage message = enumeration.Current as ITextMessage;
                     browsed++;
                 }
             }
