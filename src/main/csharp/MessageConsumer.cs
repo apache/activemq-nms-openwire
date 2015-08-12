@@ -507,7 +507,7 @@ namespace Apache.NMS.ActiveMQ
                     this.session.Scheduler.Cancel(this.optimizedAckTask);
                 }
 
-                if (this.session.IsClientAcknowledge)
+                if (this.session.IsClientAcknowledge || this.session.IsIndividualAcknowledge)
                 {
                     if (!this.info.Browser)
                     {
