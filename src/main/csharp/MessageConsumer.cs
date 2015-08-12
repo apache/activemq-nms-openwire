@@ -1058,6 +1058,8 @@ namespace Apache.NMS.ActiveMQ
                             timeout = deadline - dispatchTime;
                         }
                     }
+
+                    SendPullRequest((long) timeout.TotalMilliseconds);
                 }
                 else if (RedeliveryExceeded(dispatch))
                 {
@@ -1069,15 +1071,18 @@ namespace Apache.NMS.ActiveMQ
                     // Refresh the dispatch time
                     dispatchTime = DateTime.Now;
 
-                    if(dispatchTime > deadline)
+                    if(timeout > TimeSpan.Zero && !this.unconsumedMessages.Closed)
                     {
-                        // Out of time.
-                        timeout = TimeSpan.Zero;
-                    }
-                    else
-                    {
-                        // Adjust the timeout to the remaining time.
-                        timeout = deadline - dispatchTime;
+                        if(dispatchTime > deadline)
+                        {
+                            // Out of time.
+                            timeout = TimeSpan.Zero;
+                        }
+                        else
+                        {
+                            // Adjust the timeout to the remaining time.
+                            timeout = deadline - dispatchTime;
+                        }
                     }
 
                     SendPullRequest((long) timeout.TotalMilliseconds);
