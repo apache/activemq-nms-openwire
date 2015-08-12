@@ -1035,7 +1035,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     return null;
                 }
-                else if(!IgnoreExpiration && dispatch.Message.IsExpired())
+                else if(ConsumeExpiredMessage(dispatch))
                 {
                     Tracer.DebugFormat("Consumer[{0}] received expired message: {1}",
                                        ConsumerId, dispatch.Message.MessageId);
@@ -1071,6 +1071,16 @@ namespace Apache.NMS.ActiveMQ
                     return dispatch;
                 }
             }
+        }
+
+        private bool ConsumeExpiredMessage(MessageDispatch dispatch) 
+        {
+            if (dispatch.Message.IsExpired()) 
+            {
+                return !info.Browser && !IgnoreExpiration;
+            }
+
+            return false;
         }
 
         public virtual void BeforeMessageIsConsumed(MessageDispatch dispatch)

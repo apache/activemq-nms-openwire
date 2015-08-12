@@ -205,6 +205,76 @@ namespace Apache.NMS.ActiveMQ.Test
                 IQueueBrowser browser = session.CreateBrowser(queue);
 				browser.Close();
             }
-        }		
+        }
+
+        [Test]
+        public void TestBrowsingExpiration()
+        {
+            const int MESSAGES_TO_SEND = 50;
+            const string QUEUE_NAME = "TEST.TestBrowsingExpiration";
+
+            SendTestMessages(MESSAGES_TO_SEND, QUEUE_NAME);
+
+            // Browse the queue.
+            using (Connection connection = CreateConnection() as Connection)
+            using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            {
+                connection.Start();
+                int browsed = Browse(QUEUE_NAME, connection);
+
+                // The number of messages browsed should be equal to the number of
+                // messages sent.
+                Assert.AreEqual(MESSAGES_TO_SEND, browsed);
+
+                // Broker expired message period is 30 seconds by default
+                for (int i = 0; i < 12; ++i)
+                {
+                    Thread.Sleep(5000);
+                    browsed = Browse(QUEUE_NAME, connection);
+                }
+
+                session.DeleteDestination(session.GetQueue(QUEUE_NAME));
+
+                Assert.AreEqual(0, browsed);
+            }
+        }
+
+        private int Browse(String queueName, Connection connection)
+        {
+            int browsed = 0;
+
+            using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            using (IQueue queue = session.GetQueue(queueName))
+            using (IQueueBrowser browser = session.CreateBrowser(queue))
+            {
+                IEnumerator enumeration = browser.GetEnumerator();
+                while (enumeration.MoveNext())
+                {
+                    ITextMessage message = enumeration.Current as ITextMessage;
+                    browsed++;
+                }
+            }
+
+            return browsed;
+        }
+
+        protected void SendTestMessages(int count, String queueName)
+        {
+            // Send the messages to the Queue.
+            using (Connection connection = CreateConnection() as Connection)
+            using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            using (IQueue queue = session.GetQueue(queueName))
+            using (IMessageProducer producer = session.CreateProducer(queue))
+            {
+                for (int i = 1; i <= count; i++) 
+                {
+                    String msgStr = "Message: " + i;
+                    producer.Send(session.CreateTextMessage(msgStr), 
+                                  MsgDeliveryMode.NonPersistent, 
+                                  MsgPriority.Normal, 
+                                  TimeSpan.FromMilliseconds(1500));
+                }
+            }
+        }
 	}
 }
