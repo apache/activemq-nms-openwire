@@ -154,6 +154,54 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
 
+        [Test]
+        public void TestConsumerReceivePrefetchZeroRedeliveryZero()
+        {
+            const string QUEUE_NAME = "TEST.TestConsumerReceivePrefetchZeroRedeliveryZero";
+
+            using (Connection connection = CreateConnection() as Connection)
+            using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            using (IQueue queue = session.GetQueue(QUEUE_NAME))
+            {              
+                session.DeleteDestination(queue);
+
+                using (IMessageProducer producer = session.CreateProducer(queue))
+                {
+                    ITextMessage textMessage = session.CreateTextMessage("test Message");
+                    producer.Send(textMessage);
+                }
+            }
+
+            // consume and rollback - increase redelivery counter on message
+            using (Connection connection = CreateConnection() as Connection)
+            using (ISession session = connection.CreateSession(AcknowledgementMode.Transactional))
+            using (IQueue queue = session.GetQueue(QUEUE_NAME))
+            using (IMessageConsumer consumer = session.CreateConsumer(queue))
+            {              
+                connection.Start();
+                IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(3000));
+                Assert.IsNotNull(message);
+                session.Rollback();
+            }
+
+            // try consume with timeout - expect it to timeout and return NULL message
+            using (Connection connection = CreateConnection() as Connection)
+            {
+                connection.PrefetchPolicy.All = 0;
+                connection.RedeliveryPolicy.MaximumRedeliveries = 0;
+                connection.Start();
+
+                ISession session = connection.CreateSession(AcknowledgementMode.Transactional);
+                IQueue queue = session.GetQueue(QUEUE_NAME);
+
+                using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                {
+                    IMessage message = consumer.Receive(TimeSpan.FromMilliseconds(3000));
+                    Assert.IsNull(message);
+                }
+            }
+        }
+
         [SetUp]
         public override void SetUp()
         {

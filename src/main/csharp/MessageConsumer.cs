@@ -507,7 +507,7 @@ namespace Apache.NMS.ActiveMQ
                     this.session.Scheduler.Cancel(this.optimizedAckTask);
                 }
 
-                if (this.session.IsClientAcknowledge)
+                if (this.session.IsClientAcknowledge || this.session.IsIndividualAcknowledge)
                 {
                     if (!this.info.Browser)
                     {
@@ -1035,7 +1035,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     return null;
                 }
-                else if(!IgnoreExpiration && dispatch.Message.IsExpired())
+                else if(ConsumeExpiredMessage(dispatch))
                 {
                     Tracer.DebugFormat("Consumer[{0}] received expired message: {1}",
                                        ConsumerId, dispatch.Message.MessageId);
@@ -1058,6 +1058,8 @@ namespace Apache.NMS.ActiveMQ
                             timeout = deadline - dispatchTime;
                         }
                     }
+
+                    SendPullRequest((long) timeout.TotalMilliseconds);
                 }
                 else if (RedeliveryExceeded(dispatch))
                 {
@@ -1065,12 +1067,41 @@ namespace Apache.NMS.ActiveMQ
                                        ConsumerId, dispatch);
                     PosionAck(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery " +
                                         "policy limit:" + redeliveryPolicy.MaximumRedeliveries);
+
+                    // Refresh the dispatch time
+                    dispatchTime = DateTime.Now;
+
+                    if(timeout > TimeSpan.Zero && !this.unconsumedMessages.Closed)
+                    {
+                        if(dispatchTime > deadline)
+                        {
+                            // Out of time.
+                            timeout = TimeSpan.Zero;
+                        }
+                        else
+                        {
+                            // Adjust the timeout to the remaining time.
+                            timeout = deadline - dispatchTime;
+                        }
+                    }
+
+                    SendPullRequest((long) timeout.TotalMilliseconds);
                 }
                 else
                 {
                     return dispatch;
                 }
             }
+        }
+
+        private bool ConsumeExpiredMessage(MessageDispatch dispatch) 
+        {
+            if (dispatch.Message.IsExpired()) 
+            {
+                return !info.Browser && !IgnoreExpiration;
+            }
+
+            return false;
         }
 
         public virtual void BeforeMessageIsConsumed(MessageDispatch dispatch)
