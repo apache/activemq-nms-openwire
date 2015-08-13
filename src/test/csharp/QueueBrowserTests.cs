@@ -213,12 +213,15 @@ namespace Apache.NMS.ActiveMQ.Test
             const int MESSAGES_TO_SEND = 50;
             const string QUEUE_NAME = "TEST.TestBrowsingExpiration";
 
-            SendTestMessages(MESSAGES_TO_SEND, QUEUE_NAME);
-
             // Browse the queue.
             using (Connection connection = CreateConnection() as Connection)
             using (ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
+            using (IQueue queue = session.GetQueue(QUEUE_NAME))
             {
+                session.DeleteDestination(queue);
+
+                SendTestMessages(MESSAGES_TO_SEND, QUEUE_NAME);
+
                 connection.Start();
                 int browsed = Browse(QUEUE_NAME, connection);
 
@@ -250,6 +253,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 IEnumerator enumeration = browser.GetEnumerator();
                 while (enumeration.MoveNext())
                 {
+                    ITextMessage message = enumeration.Current as ITextMessage;
+                    Tracer.DebugFormat("Browsed message: {0}", message.NMSMessageId);
                     browsed++;
                 }
             }
