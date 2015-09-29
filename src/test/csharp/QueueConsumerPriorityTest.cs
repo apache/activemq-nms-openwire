@@ -101,6 +101,10 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             IConnection conn = createConnection(true);
 
+            Connection connection = conn as Connection;
+            Assert.IsNotNull(connection);
+            connection.MessagePrioritySupported = true;
+
             ISession receiverSession = conn.CreateSession();
             ISession senderSession = conn.CreateSession();
 
