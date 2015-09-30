@@ -713,11 +713,13 @@ namespace Apache.NMS.ActiveMQ
                         }
                     }
 
+                    long lastDeliveredSequenceId = -1;
                     lock(sessions.SyncRoot)
                     {
                         foreach(Session session in sessions)
                         {
                             session.Shutdown();
+                            lastDeliveredSequenceId = Math.Max(lastDeliveredSequenceId, session.LastDeliveredSequenceId);
                         }
                     }
                     sessions.Clear();
@@ -740,7 +742,7 @@ namespace Apache.NMS.ActiveMQ
                     // inform the broker of a remove, and if the transport is failed, why bother.
                     if(connected.Value && !transportFailed.Value)
                     {
-                        DisposeOf(ConnectionId);
+                        DisposeOf(ConnectionId, lastDeliveredSequenceId);
                         ShutdownInfo shutdowninfo = new ShutdownInfo();
                         transport.Oneway(shutdowninfo);
                     }
@@ -908,12 +910,14 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void DisposeOf(DataStructure objectId)
+        private void DisposeOf(DataStructure objectId, long lastDeliveredSequenceId)
         {
             try
             {
                 RemoveInfo command = new RemoveInfo();
                 command.ObjectId = objectId;
+                command.LastDeliveredSequenceId = lastDeliveredSequenceId;
+
                 if(asyncClose)
                 {
                     Tracer.DebugFormat("Connection[{0}]: Asynchronously disposing of Connection.", this.ConnectionId);
