@@ -305,6 +305,11 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        internal long LastDeliveredSequenceId
+        {
+            get { return this.lastDeliveredSequenceId; }
+        }
+
         #endregion
 
         #region ISession Members
