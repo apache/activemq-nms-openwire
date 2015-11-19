@@ -883,10 +883,10 @@ namespace Apache.NMS.ActiveMQ
                     }
                     catch(Exception e)
                     {
+                        dispatch.RollbackCause = e;
                         if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || IsIndividualAcknowledge)
                         {
                             // Schedule redelivery and possible dlq processing
-                            dispatch.RollbackCause = e;
                             Rollback();
                         }
                         else
@@ -1094,9 +1094,9 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private bool ConsumeExpiredMessage(MessageDispatch dispatch) 
+        private bool ConsumeExpiredMessage(MessageDispatch dispatch)
         {
-            if (dispatch.Message.IsExpired()) 
+            if (dispatch.Message.IsExpired())
             {
                 return !info.Browser && !IgnoreExpiration;
             }
@@ -1480,7 +1480,9 @@ namespace Apache.NMS.ActiveMQ
                             cause.ExceptionClass = "javax.jms.JMSException";
                             cause.Message = lastMd.RollbackCause.Message;
                             poisonCause.Cause = cause;
+                            poisonCause.Message = poisonCause.Message + " cause: " + lastMd.RollbackCause.Message;
                         }
+
                         ack.FirstMessageId = firstMsgId;
                         ack.PoisonCause = poisonCause;
 
