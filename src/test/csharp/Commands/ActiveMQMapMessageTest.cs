@@ -19,15 +19,17 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.Text;
+using Apache.NMS;
+using Apache.NMS.Test;
+using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test.Commands
 {    
     [TestFixture]
-    public class ActiveMQMapMessageTest
+    public class ActiveMQMapMessageTest : NMSTestSupport
     {
-
         private string name = "testName";
         
         [Test]
@@ -305,7 +307,6 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             catch(MessageFormatException)
             {
             }
-    
         }
     
         [Test]
@@ -457,7 +458,8 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             {
             }
             
-            try {
+            try 
+            {
                 msg.Body.SetFloat("float", 1.5f);
                 Assert.Fail("should throw exception");
             } 
@@ -543,6 +545,47 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             msg.Body.GetShort("short");
             msg.Body.GetString("string");
         }
-        
+
+        [Test]
+        public void TestMessageQueueDequeQueueDequeue()
+        {
+            using (IConnection connection = CreateConnection())
+            using (ISession session = connection.CreateSession())
+            {
+                IDestination destination = session.GetQueue("TestMessageQueueDequeQueueDequeue");
+
+                (connection as Connection).DeleteDestination(destination);
+
+                using (IMessageConsumer consumer = session.CreateConsumer(destination))
+                using (IMessageProducer producer = session.CreateProducer(destination))
+                {
+                    connection.Start();
+
+                    producer.DeliveryMode = MsgDeliveryMode.Persistent;
+
+                    IMapMessage request = session.CreateMapMessage();
+                    request.Body.SetString("Unit-Test-Key", "Unit-Test-Value");
+                    Assert.IsNotNull(request, "request is null");
+                    Assert.IsTrue(request.Body.Contains("Unit-Test-Key"), "Unit-Test-Key does not exist");
+                    producer.Send(request);
+
+                    // Relay from Queue back again.
+                    IMessage received = consumer.Receive(TimeSpan.FromSeconds(2));
+                    Assert.IsNotNull(received);
+                    IMapMessage mapMessage = received as IMapMessage;
+                    Assert.IsNotNull(mapMessage);
+                    producer.Send(mapMessage);
+
+                    // Read it again and validate.
+                    received = consumer.Receive(TimeSpan.FromSeconds(2));
+                    Assert.IsNotNull(received);
+                    mapMessage = received as IMapMessage;
+                    Assert.IsNotNull(mapMessage, "currentMessage is null");
+
+                    // This entry in the map message should not be removed
+                    Assert.IsTrue(mapMessage.Body.Contains("Unit-Test-Key"), "Unit-Test-Key does not exist");
+                }
+            }
+        }
     }
 }

@@ -91,11 +91,7 @@ namespace Apache.NMS.ActiveMQ.Commands
 
 		public override void BeforeMarshall(OpenWireFormat wireFormat)
 		{
-			if(body == null)
-			{
-				Content = null;
-			}
-			else
+            if (this.Content == null && this.body != null && this.body.Count > 0)
 			{
 				MemoryStream buffer = new MemoryStream();
 				Stream target = buffer;
