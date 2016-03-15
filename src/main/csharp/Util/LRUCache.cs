@@ -47,6 +47,7 @@ namespace Apache.NMS.ActiveMQ.Util
 		public void Clear()
 		{
 			dictionary.Clear();
+            entries.Clear();
 		}
 
         public int Count
@@ -65,12 +66,12 @@ namespace Apache.NMS.ActiveMQ.Util
 			get { return dictionary[key]; }
 			set 
 			{ 
-				TValue currentValue = default (TValue);
+				TValue currentValue;
 				// Moved used item to end of list since it been used again.
 				if (dictionary.TryGetValue(key, out currentValue))
 				{
 					KeyValuePair<TKey, TValue> entry = 
-						new KeyValuePair<TKey, TValue>(key, value);
+                        new KeyValuePair<TKey, TValue>(key, currentValue);
 					entries.Remove(entry);
 				}
 
