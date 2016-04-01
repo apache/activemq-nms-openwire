@@ -460,7 +460,7 @@ namespace Apache.NMS.ActiveMQ
                 producer.ProducerTransformer = this.ProducerTransformer;
 
                 this.AddProducer(producer);
-                this.Connection.Oneway(producer.ProducerInfo);
+                this.Connection.SyncRequest(producer.ProducerInfo);
             }
             catch(Exception)
             {
