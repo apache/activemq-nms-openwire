@@ -177,7 +177,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             }
 
             Tracer.WarnFormat("Certificate error: {0}", sslPolicyErrors.ToString());
-            if(sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors)
+            if((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) > 0)
             {
                 Tracer.Error("Chain Status errors: ");
                 foreach( X509ChainStatus status in chain.ChainStatus )
@@ -186,11 +186,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                     Tracer.Error("*** Chain Status information: " + status.StatusInformation);
                 }
             }
-            else if(sslPolicyErrors == SslPolicyErrors.RemoteCertificateNameMismatch)
+            else if((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) > 0)
             {
                 Tracer.Error("Mismatch between Remote Cert Name.");
             }
-            else if(sslPolicyErrors == SslPolicyErrors.RemoteCertificateNotAvailable)
+            else if((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) > 0)
             {
                 Tracer.Error("The Remote Certificate was not Available.");
             }
