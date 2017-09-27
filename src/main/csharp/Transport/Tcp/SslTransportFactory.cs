@@ -28,6 +28,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string clientCertSubject;
         private string clientCertFilename;
         private string clientCertPassword;
+        private string clientCertBytes;
         private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
@@ -61,6 +62,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             get { return this.clientCertPassword; }
             set { this.clientCertPassword = value; }
         }        
+
+        public string ClientCertBytes
+        {
+            get { return this.clientCertBytes; }
+            set { this.clientCertBytes = value; }
+        }
 
         public string BrokerCertFilename
         {
@@ -100,6 +107,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             transport.ClientCertSubject = HttpUtility.UrlDecode(this.clientCertSubject);
             transport.ClientCertFilename = this.clientCertFilename;
             transport.ClientCertPassword = this.clientCertPassword;
+            transport.ClientCertBytes = HttpUtility.UrlDecode(this.clientCertBytes);
             transport.BrokerCertFilename = this.brokerCertFilename;
             transport.ServerName = this.serverName;
             transport.KeyStoreLocation = this.keyStoreLocation;

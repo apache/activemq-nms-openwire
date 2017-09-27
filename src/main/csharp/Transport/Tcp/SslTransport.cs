@@ -30,6 +30,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string clientCertSubject;
         private string clientCertFilename;
         private string clientCertPassword;
+        private string clientCertBytes;
         private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
@@ -74,6 +75,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         {
             get { return this.clientCertFilename; }
             set { this.clientCertFilename = value; }
+        }
+
+        public string ClientCertBytes
+        {
+            get { return this.clientCertBytes; }
+            set { this.clientCertBytes = value; }
         }
 
         /// <summary>
@@ -286,6 +293,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             {
                 Tracer.Debug("Attempting to load Client Certificate from file := " + this.clientCertFilename);
                 X509Certificate2 certificate = new X509Certificate2(this.clientCertFilename, this.clientCertPassword);
+                Tracer.Debug("Loaded Client Certificate := " + certificate.ToString());
+
+                collection.Add(certificate);
+            }
+            else if(!String.IsNullOrEmpty(this.clientCertBytes))
+            {
+                Tracer.Debug("Attempting to load Client Certificate from bytes provided");
+                var certBytes = Convert.FromBase64String(this.clientCertBytes);
+                X509Certificate2 certificate = new X509Certificate2(certBytes, this.clientCertPassword);
                 Tracer.Debug("Loaded Client Certificate := " + certificate.ToString());
 
                 collection.Add(certificate);
