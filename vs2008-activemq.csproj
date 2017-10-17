@@ -1269,6 +1269,7 @@
     <Compile Include="src\main\csharp\Transport\ResponseCorrelator.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="src\main\csharp\Transport\Tcp\SslContext.cs" />
     <Compile Include="src\main\csharp\Transport\Tcp\SslTransport.cs" />
     <Compile Include="src\main\csharp\Transport\Tcp\SslTransportFactory.cs" />
     <Compile Include="src\main\csharp\Transport\Tcp\TcpTransport.cs">
