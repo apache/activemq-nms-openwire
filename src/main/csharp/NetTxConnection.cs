@@ -96,6 +96,10 @@ namespace Apache.NMS.ActiveMQ
 
         private static Guid GuidFromId(string id)
         {
+            Guid result;
+            if (Guid.TryParse(id, out result))
+                return result;
+
             MatchCollection matches = Regex.Matches(id, @"(\d+)-(\d+)-(\d+):(\d+)$");
             if(0 == matches.Count)
             {
