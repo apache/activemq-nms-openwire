@@ -18,6 +18,7 @@
 using System;
 using System.Web;
 using System.Net.Sockets;
+using System.Configuration;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
@@ -36,6 +37,15 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         
         public SslTransportFactory() : base()
         {
+	    this.ClientCertSubject = HttpUtility.UrlDecode(ConfigurationManager.AppSettings["ClientCertSubject"]);
+            this.ClientCertFilename = ConfigurationManager.AppSettings["ClientCertFilename"];
+            this.ClientCertPassword = ConfigurationManager.AppSettings["ClientCertPassword"];
+            this.BrokerCertFilename = ConfigurationManager.AppSettings["BrokerCertFilename"];
+            this.ServerName = ConfigurationManager.AppSettings["ServerName"];
+            this.KeyStoreLocation = ConfigurationManager.AppSettings["KeyStoreLocation"];
+            this.KeyStoreName = ConfigurationManager.AppSettings["KeyStoreName"];
+            this.AcceptInvalidBrokerCert = ConfigurationManager.AppSettings["AcceptInvalidBrokerCert"] == "true";
+            this.SslProtocol = ConfigurationManager.AppSettings["SslProtocol"];
         }
 
         public string ServerName
