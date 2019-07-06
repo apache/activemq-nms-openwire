@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
+    <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\LICENSE.txt" Link="LICENSE.txt" />
+    <Content Include="..\NOTICE.txt" Link="NOTICE.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Apache.NMS" Version="1.8.0" />
+  </ItemGroup>
+
+</Project>

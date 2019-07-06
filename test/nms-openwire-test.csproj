@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <RootNamespace>Apache.NMS.ActiveMQ.Test</RootNamespace>
+    <AssemblyName>Apache.NMS.ActiveMQ.Test</AssemblyName>
+    <ApplicationIcon />
+    <OutputType>Library</OutputType>
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\LICENSE.txt" Link="LICENSE.txt" />
+    <Content Include="..\NOTICE.txt" Link="NOTICE.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\nms-openwire.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Apache.NMS.Test">
+      <HintPath>..\ext_bin\Apache.NMS.Test.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
