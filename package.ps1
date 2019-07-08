@@ -72,7 +72,7 @@ Copy-Item test -Destination temp\test -Recurse
 # clean up debug artifacts if there are any
 Get-ChildItem temp -Include bin, obj -Recurse | Remove-Item -Recurse
 
-Compress-Archive -Path temp\*, LICENSE.txt, NOTICE.txt, keyfile, nms.sln, package.ps1 -Update -DestinationPath $zipfile
+Compress-Archive -Path temp\*, LICENSE.txt, NOTICE.txt, keyfile, nms-openwire.sln, package.ps1 -Update -DestinationPath $zipfile
 
 write-progress "Removing temp files"
 Remove-Item temp -Recurse
