@@ -4,6 +4,21 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
+    <Version>1.8.0</Version>
+    <Company>Apache Software Foundation</Company>
+    <Product>Apache ActiveMQ</Product>
+    <Description>Apache NMS (.Net Standard Messaging Library): Openwire implementation of Apache NMS API</Description>
+    <Copyright>Copyright (C) 2005-2019 Apache Software Foundation</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageProjectUrl>https://activemq.apache.org/components/nms/</PackageProjectUrl>
+    <PackageIconUrl>https://activemq.apache.org/assets/img/activemq_logo_icon.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/apache/activemq-nms-openwire</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>apache;activemq;nms;api;net;messaging</PackageTags>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>NMSKey.snk</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Apache ActiveMQ</Authors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +28,13 @@
 
   <ItemGroup>
     <PackageReference Include="Apache.NMS" Version="1.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\activemq-nms-api\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

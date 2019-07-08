@@ -7,6 +7,21 @@
     <ApplicationIcon />
     <OutputType>Library</OutputType>
     <StartupObject />
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Company>Apache Software Foundation</Company>
+    <Authors>Apache ActiveMQ</Authors>
+    <Product>Apache NMS ActiveMQ</Product>
+    <Description>Apache NMS (.Net Standard Messaging Library) Test Suite</Description>
+    <Copyright>Copyright (C) 2005-2019 Apache Software Foundation</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageProjectUrl>https://activemq.apache.org/components/nms/</PackageProjectUrl>
+    <PackageIconUrl>https://activemq.apache.org/assets/img/activemq_logo_icon.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/apache/activemq-nms-openwire</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>apache;activemq;nms;api;net;test;messaging</PackageTags>
+    <Version>1.8.0</Version>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>NMSKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +43,13 @@
     <Reference Include="Apache.NMS.Test">
       <HintPath>..\ext_bin\Apache.NMS.Test.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

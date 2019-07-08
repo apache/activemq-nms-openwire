@@ -15,55 +15,72 @@
 
 $pkgname = "Apache.NMS.ActiveMQ"
 $pkgver = "1.8-SNAPSHOT"
-$configurations = "release", "debug"
-$frameworks = "mono-2.0", "net-2.0", "net-3.5", "net-4.0"
+$frameworks = "net35", "net40", "netstandard2.0"
 
 write-progress "Creating package directory." "Initializing..."
-if(!(test-path package))
-{
-    md package
+if (!(test-path package)) {
+    mkdir package
+}
+else {
+    # Clean package content if exists
+    Remove-Item package\* -Recurse
 }
 
-if(test-path build)
-{
-    pushd build
+if (test-path build) {
+    Push-Location build
 
     $pkgdir = "..\package"
 
     write-progress "Packaging Application files." "Scanning..."
     $zipfile = "$pkgdir\$pkgname-$pkgver-bin.zip"
-    zip -9 -u -j "$zipfile" ..\LICENSE.txt
-    zip -9 -u -j "$zipfile" ..\NOTICE.txt
-    foreach($configuration in $configurations)
-    {
-        foreach($framework in $frameworks)
-        {
-            zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.dll"
-            zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.xml"
-            zip -9 -u "$zipfile" "$framework\$configuration\nmsprovider*.config"
-            zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.Test.dll"
-            zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.Test.xml"
-            if($framework -ieq "mono-2.0")
-            {
-                zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.dll.mdb"
-                zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.Test.dll.mdb"
-            }
-            else
-            {
-                zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.pdb"
-                zip -9 -u "$zipfile" "$framework\$configuration\$pkgname.Test.pdb"
-            }
-        }
-    }
 
-    popd
+    Compress-Archive -Path ..\LICENSE.txt, ..\NOTICE.txt -Update -DestinationPath $zipfile        
+    
+    # clean up temp
+    Remove-Item temp -Recurse -ErrorAction Ignore
+
+    foreach ($framework in $frameworks) {
+        Copy-Item $framework -Destination temp\$framework -Recurse
+
+        # clean up third party binaries
+        Get-ChildItem temp -File -Exclude "*Apache.NMS*" -Recurse | Remove-Item -Recurse
+
+        Compress-Archive -Path "temp\$framework" -Update -DestinationPath $zipfile
+    }
+    
+    $nupkg = "$pkgname.$pkgver.nupkg"
+    $nupkgdestination = "$pkgdir\$nupkg"
+    Copy-Item -Path $nupkg -Destination $nupkgdestination
+
+    # clean up temp
+    Remove-Item temp -Recurse -ErrorAction Inquire
+
+    Pop-Location
 }
 
 write-progress "Packaging Source code files." "Scanning..."
 $pkgdir = "package"
 $zipfile = "$pkgdir\$pkgname-$pkgver-src.zip"
 
-zip -9 -u "$zipfile" LICENSE.txt NOTICE.txt nant-common.xml nant.build package.ps1 vs2008-activemq-test.csproj vs2008-activemq.csproj vs2008-activemq.sln nmsprovider*.config
-zip -9 -u -r "$zipfile" keyfile src
+# clean temp dir if exists
+Remove-Item temp -Recurse -ErrorAction Ignore
+
+# copy files to temp dir
+Copy-Item src -Destination temp\src -Recurse
+Copy-Item test -Destination temp\test -Recurse
+
+# clean up debug artifacts if there are any
+Get-ChildItem temp -Include bin, obj -Recurse | Remove-Item -Recurse
+
+Compress-Archive -Path temp\*, LICENSE.txt, NOTICE.txt, keyfile, nms.sln, package.ps1 -Update -DestinationPath $zipfile
+
+write-progress "Removing temp files"
+Remove-Item temp -Recurse
+
+write-progress "Packaging Docs" "Scanning..."
+$pkgdir = "package"
+$zipfile = "$pkgdir\$pkgname-$pkgver-docs.zip"
+
+Compress-Archive -Path "docs\_site\*", "LICENSE.txt", "NOTICE.txt" -Update -DestinationPath $zipfile
 
 write-progress -Completed "Packaging" "Complete."
