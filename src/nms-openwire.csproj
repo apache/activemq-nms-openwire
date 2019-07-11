@@ -21,6 +21,10 @@
     <Authors>Apache ActiveMQ</Authors>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\..\build\</OutputPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="..\LICENSE.txt" Link="LICENSE.txt" />
     <Content Include="..\NOTICE.txt" Link="NOTICE.txt" />
