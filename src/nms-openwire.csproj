@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>net35;net40;netstandard2.0</TargetFrameworks>
     <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
     <Version>1.8.0</Version>
     <Company>Apache Software Foundation</Company>
-    <Product>Apache ActiveMQ</Product>
+    <Product>Apache NMS OpenWire</Product>
     <Description>Apache NMS (.Net Standard Messaging Library): Openwire implementation of Apache NMS API</Description>
     <Copyright>Copyright (C) 2005-2019 Apache Software Foundation</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -30,12 +30,20 @@
     <Content Include="..\NOTICE.txt" Link="NOTICE.txt" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net35'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net40'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Apache.NMS" Version="1.8.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\activemq-nms-api\LICENSE.txt">
+    <None Include="..\LICENSE.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>

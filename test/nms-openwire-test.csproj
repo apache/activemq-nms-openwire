@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFrameworks>net35;net40;netcoreapp2.2</TargetFrameworks>
     <RootNamespace>Apache.NMS.ActiveMQ.Test</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ.Test</AssemblyName>
     <ApplicationIcon />
@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Apache Software Foundation</Company>
     <Authors>Apache ActiveMQ</Authors>
-    <Product>Apache NMS ActiveMQ</Product>
+    <Product>Apache NMS OpenWire Test</Product>
     <Description>Apache NMS (.Net Standard Messaging Library) Test Suite</Description>
     <Copyright>Copyright (C) 2005-2019 Apache Software Foundation</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -39,6 +39,27 @@
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net35'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net40'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+
+
+
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net35'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net40'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+  
 
   <ItemGroup>
     <ProjectReference Include="..\src\nms-openwire.csproj" />
