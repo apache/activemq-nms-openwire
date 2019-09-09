@@ -50,7 +50,7 @@ namespace ActiveMQ.Transport
 	                {
 	                    try
 						{
-							if (maxWait > TimeSpan.MinValue) 
+							if (maxWait > TimeSpan.Zero) 
 							{
 		                        latch.await(maxWait);
 							}
