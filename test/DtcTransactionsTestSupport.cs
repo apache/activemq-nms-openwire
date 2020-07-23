@@ -19,13 +19,14 @@ using System;
 using System.IO;
 using System.Transactions;
 using System.Threading;
-
+using System.Xml.Linq;
 using NUnit.Framework;
 using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using System.Data.SqlClient;
 using System.Collections;
+using System.Data;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
@@ -52,21 +53,56 @@ namespace Apache.NMS.ActiveMQ.Test
         
         private ITrace oldTracer;
 
-        protected const string sqlConnectionString =
-            // "Data Source=localhost;Initial Catalog=TestDB;User ID=user;Password=password";
-            "Data Source=.\\SQLEXPRESS;Initial Catalog=TestDB;Integrated Security = true";
-        protected const string testTable = "TestTable";
-        protected const string testColumn = "TestID";
-        protected const string testQueueName = "TestQueue";
-        protected const string connectionURI = "tcpfaulty://${activemqhost}:61616";
+        protected static string createDbConnectionString = string.Empty;
+        protected static string createTableConnectionString = string.Empty;
+        protected static string testDbName = string.Empty;
+        protected static string testTable = string.Empty;
+        protected static string testColumn = string.Empty;
+        protected static string testQueueName = string.Empty;
+        protected static string testDbFileNameLocation = string.Empty;
+        protected static string connectionUri = string.Empty;
 
         [SetUp]
         public override void SetUp()
         {
+            var currentFilePath = Directory.GetCurrentDirectory();
+            var xElement = XElement.Load(currentFilePath + "\\test\\TestDbConfig.xml");
+
+            var testDbConnectionString = xElement.Element("createDbConnectionString");
+            if (testDbConnectionString != null) createDbConnectionString = testDbConnectionString.Attribute("name")?.Value;
+
+            var testTableConnectionString = xElement.Element("createTableConnectionString");
+            if (testTableConnectionString != null) createTableConnectionString = testTableConnectionString.Attribute("name")?.Value;
+
+            var table = xElement.Element("testSqlTable");
+            if (table != null) testTable = table.Attribute("name")?.Value;
+
+            var column = xElement.Element("testSqlColumn");
+            if (column != null) testColumn = column.Attribute("name")?.Value;
+
+            var dbName = xElement.Element("testDbName");
+            if (dbName != null) testDbName = dbName.Attribute("name")?.Value;
+
+            var queueName = xElement.Element("testSqlQueueName");
+            if (queueName != null) testQueueName = queueName.Attribute("name")?.Value;
+
+            var fileName = xElement.Element("dbFileNameLocation");
+            if (fileName != null) testDbFileNameLocation = fileName.Attribute("name")?.Value;
+
+            var conUri = xElement.Element("connectionURI");
+            if (conUri != null) connectionUri = conUri.Attribute("name")?.Value;
+
             this.oldTracer = Tracer.Trace;
             this.nonExistantPath = Path.Combine(Directory.GetCurrentDirectory(), Guid.NewGuid().ToString());
 
             base.SetUp();
+
+            if (!CheckDatabaseExists(createDbConnectionString, testDbName))
+            {
+                CreateTestDb();
+                CreateTestTable();
+            }
+
 
             PurgeDestination();
         }
@@ -81,6 +117,104 @@ namespace Apache.NMS.ActiveMQ.Test
             Tracer.Trace = this.oldTracer;
         }
 
+        private bool CheckDatabaseExists(string sqlTmpConnectionString, string databaseName)
+        {
+            bool result;
+            try
+            {
+                var tmpConn = new SqlConnection(sqlTmpConnectionString);
+
+                var sqlCreateDbQuery = $"SELECT database_id FROM sys.databases WHERE Name = '{databaseName}'";
+
+                using (tmpConn)
+                {
+                    using (var sqlCmd = new SqlCommand(sqlCreateDbQuery, tmpConn))
+                    {
+                        tmpConn.Open();
+
+                        var resultObj = sqlCmd.ExecuteScalar();
+
+                        var databaseId = 0;
+
+                        if (resultObj != null)
+                        {
+                            int.TryParse(resultObj.ToString(), out databaseId);
+                        }
+
+                        tmpConn.Close();
+
+                        result = (databaseId > 0);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+        private void CreateTestDb()
+        {
+            //var createConnection = new SqlConnection("Data Source=WKRKL-F1493EW;Trusted_Connection=yes;User ID=Rafal.Bak;Password=Miesiac*2");
+            var createConnection = new SqlConnection(createDbConnectionString);
+
+            var createDb = "CREATE DATABASE " + testDbName + " ON PRIMARY " +
+                           "(NAME = " + testDbName + ", " +
+                           "FILENAME = '" + testDbFileNameLocation + "\\MyDatabaseData.mdf', " +
+                           "SIZE = 8192KB, MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB) " +
+                           "LOG ON (NAME = TestDB_log, " +
+                           "FILENAME = '" + testDbFileNameLocation + "\\MyDatabaseLog.ldf', " +
+                           "SIZE = 8192KB, " +
+                           "MAXSIZE = 2048GB," +
+                           "FILEGROWTH = 65536KB) ";
+
+            var createDbCommand = new SqlCommand(createDb, createConnection);
+            try
+            {
+                createConnection.Open();
+                createDbCommand.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+            finally
+            {
+                if (createConnection.State == ConnectionState.Open)
+                {
+                    createConnection.Close();
+                }
+            }
+        }
+
+        private void CreateTestTable()
+        {
+            var createConnection = new SqlConnection(createTableConnectionString);
+
+            var createTable = "CREATE TABLE [dbo].[" + testTable + "]([" + testColumn +
+                              "][nchar](10) NULL ) ON [PRIMARY]";
+
+            var createTableCommand = new SqlCommand(createTable, createConnection);
+            try
+            {
+                createConnection.Open();
+                createTableCommand.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+            finally
+            {
+                if (createConnection.State == ConnectionState.Open)
+                {
+                    createConnection.Close();
+                }
+            }
+        }
+
         protected void OnException(Exception ex)
         {
             Tracer.DebugFormat("Test Driver received Error Notification: {0}", ex.Message);
@@ -90,25 +224,21 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void PrepareDatabase()
         {
-            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+            using (var sqlConnection = new SqlConnection(createDbConnectionString))
             {
                 sqlConnection.Open();
 
                 // remove all data from test table
-                using (SqlCommand sqlCommand = new SqlCommand(string.Format("TRUNCATE TABLE {0}", testTable), sqlConnection))
+                using (SqlCommand sqlCommand = new SqlCommand($"TRUNCATE TABLE {testTable}", sqlConnection))
                 {
                     sqlCommand.ExecuteNonQuery();
                 }
 
                 // add some data to test table
-                for (int i = 0; i < MSG_COUNT; ++i)
+                for (var i = 0; i < MSG_COUNT; ++i)
                 {
-                    using (SqlCommand sqlCommand = new SqlCommand(
-                        string.Format(
-                                        "INSERT INTO {0} ({1}) values ({2})",
-                                        testTable,
-                                        testColumn,
-                                        i), sqlConnection))
+                    using (var sqlCommand = new SqlCommand(
+                        $"INSERT INTO {testTable} ({testColumn}) values ({i})", sqlConnection))
                     {
                         sqlCommand.ExecuteNonQuery();
                     }
@@ -120,12 +250,12 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void PurgeDatabase()
         {
-            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+            using (var sqlConnection = new SqlConnection(createDbConnectionString))
             {
                 sqlConnection.Open();
 
                 // remove all data from test table
-                using (SqlCommand sqlCommand = new SqlCommand(string.Format("TRUNCATE TABLE {0}", testTable), sqlConnection))
+                using (var sqlCommand = new SqlCommand($"TRUNCATE TABLE {testTable}", sqlConnection))
                 {
                     sqlCommand.ExecuteNonQuery();
                 }
@@ -138,17 +268,17 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             IList entries = new ArrayList();
 
-            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+            using (var sqlConnection = new SqlConnection(createDbConnectionString))
             {
                 sqlConnection.Open();
 
-                using (SqlCommand sqlReadCommand = new SqlCommand(
-                    string.Format("SELECT {0} FROM {1}", testColumn, testTable), sqlConnection))
-                using (SqlDataReader reader = sqlReadCommand.ExecuteReader())
+                using (var sqlReadCommand = new SqlCommand(
+                    $"SELECT {testColumn} FROM {testTable}", sqlConnection))
+                using (var reader = sqlReadCommand.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        entries.Add("Hello World " + (int)reader[0]);
+                        entries.Add("Hello World " + (string)reader[0]);
                     }
                 }
             }
@@ -158,13 +288,13 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void VerifyDatabaseTableIsEmpty()
         {
-            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+            using (var sqlConnection = new SqlConnection(createDbConnectionString))
             {
                 sqlConnection.Open();
-                SqlCommand sqlCommand = new SqlCommand(
-                    string.Format("SELECT COUNT(*) FROM {0}", testTable),
+                var sqlCommand = new SqlCommand(
+                    $"SELECT COUNT(*) FROM {testTable}",
                     sqlConnection);
-                int count = (int)sqlCommand.ExecuteScalar();
+                var count = (int)sqlCommand.ExecuteScalar();
                 Assert.AreEqual(0, count, "wrong number of rows in DB");
             }
         }
@@ -176,13 +306,13 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void VerifyDatabaseTableIsFull(int expected)
         {
-            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+            using (var sqlConnection = new SqlConnection(createDbConnectionString))
             {
                 sqlConnection.Open();
-                SqlCommand sqlCommand = new SqlCommand(
-                    string.Format("SELECT COUNT(*) FROM {0}", testTable),
+                var sqlCommand = new SqlCommand(
+                    $"SELECT COUNT(*) FROM {testTable}",
                     sqlConnection);
-                int count = (int)sqlCommand.ExecuteScalar();
+                var count = (int)sqlCommand.ExecuteScalar();
                 Assert.AreEqual(expected, count, "wrong number of rows in DB");
             }
         }
@@ -193,19 +323,20 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void DeleteDestination()
         {
-            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
-            using (Connection connection = factory.CreateConnection() as Connection)
+            using (var connection = factory.CreateConnection() as Connection)
             {
-                using (ISession session = connection.CreateSession())
+                using (var session = connection.CreateSession())
                 {
-                    IQueue queue = session.GetQueue(testQueueName);
+                    var queue = session.GetQueue(testQueueName);
                     try
                     {
                         connection.DeleteDestination(queue);
                     }
-                    catch
+                    catch(Exception e)
                     {
+                        throw new Exception(e.Message);
                     }
                 }
             }
@@ -213,14 +344,14 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void PurgeDestination()
         {
-            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
-            using (IConnection connection = factory.CreateConnection())
+            using (var connection = factory.CreateConnection())
             {
                 connection.Start();
 
-                using (ISession session = connection.CreateSession())
-                using (IMessageConsumer consumer = session.CreateConsumer(session.GetQueue(testQueueName)))
+                using (var session = connection.CreateSession())
+                using (var consumer = session.CreateConsumer(session.GetQueue(testQueueName)))
                 {
                     IMessage recvd;
                     while ((recvd = consumer.Receive(TimeSpan.FromMilliseconds(3000))) != null)
@@ -238,18 +369,18 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void PurgeAndFillQueue(int msgCount)
         {
-            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
-            using (IConnection connection = factory.CreateConnection())
+            using (var connection = factory.CreateConnection())
             {
                 connection.Start();
 
-                using (ISession session = connection.CreateSession())
+                using (var session = connection.CreateSession())
                 {
-                    IQueue queue = session.GetQueue(testQueueName);
+                    var queue = session.GetQueue(testQueueName);
 
                     // empty queue
-                    using (IMessageConsumer consumer = session.CreateConsumer(queue))
+                    using (var consumer = session.CreateConsumer(queue))
                     {
                         while ((consumer.Receive(TimeSpan.FromMilliseconds(2000))) != null)
                         {
@@ -257,11 +388,11 @@ namespace Apache.NMS.ActiveMQ.Test
                     }
 
                     // enqueue several messages
-                    using (IMessageProducer producer = session.CreateProducer(queue))
+                    using (var producer = session.CreateProducer(queue))
                     {
                         producer.DeliveryMode = MsgDeliveryMode.Persistent;
 
-                        for (int i = 0; i < msgCount; i++)
+                        for (var i = 0; i < msgCount; i++)
                         {
                             producer.Send(session.CreateTextMessage(i.ToString()));
                         }
@@ -281,7 +412,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void VerifyBrokerQueueCountNoRecovery(int expectedNumberOfMessages)
         {
-            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
             using (IConnection connection = factory.CreateConnection())
             {
@@ -312,12 +443,12 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected void VerifyBrokerQueueCount()
         {
-            VerifyBrokerQueueCount(MSG_COUNT, connectionURI);
+            VerifyBrokerQueueCount(MSG_COUNT, connectionUri);
         }
 
         protected void VerifyBrokerQueueCount(int expectedCount)
         {
-            VerifyBrokerQueueCount(expectedCount, connectionURI);
+            VerifyBrokerQueueCount(expectedCount, connectionUri);
         }
 
         protected void VerifyBrokerQueueCount(string connectionUri)
@@ -366,7 +497,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         protected static void VerifyBrokerStateNoRecover(int expectedNumberOfMessages)
         {
-            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
             using (IConnection connection = factory.CreateConnection())
             {
@@ -497,7 +628,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         producer.DeliveryMode = MsgDeliveryMode.Persistent;
 
                         using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                        using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                        using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         {
                             sqlConnection.Open();
 
@@ -544,7 +675,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         producer.DeliveryMode = MsgDeliveryMode.Persistent;
 
                         using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                        using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                        using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         {
                             sqlConnection.Open();
 
@@ -589,7 +720,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     using (IMessageConsumer consumer = session.CreateConsumer(queue))
                     {
                         using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                        using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                        using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         using (SqlCommand sqlInsertCommand = new SqlCommand())
                         {
                             sqlConnection.Open();
@@ -630,7 +761,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     using (IMessageConsumer consumer = session.CreateConsumer(queue))
                     {
                         using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                        using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                        using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         using (SqlCommand sqlInsertCommand = new SqlCommand())
                         {
                             sqlConnection.Open();

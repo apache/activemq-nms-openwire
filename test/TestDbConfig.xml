@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<root>
+  <createDbConnectionString name="Data Source=WKRKL-F1400EW;User ID=test.user;Password=Password*01"/>
+  <createTableConnectionString name="Data Source=WKRKL-F1400EW;Initial Catalog=TestDB;User ID=test.user;Password=Password*01"/>
+  <testSqlTable name="TestTable"/>
+  <testSqlColumn name="TestID"/>
+  <testSqlQueueName name="TestQueue"/>
+  <testDbName name="TestDB"/>
+  <dbFileNameLocation name="C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\"/>
+  <connectionURI name="tcpfaulty://${activemqhost}:61616"/>
+</root>

@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             base.SetUp();
 
-            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionUri));
             this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
@@ -60,7 +60,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     using (IMessageConsumer consumer = session.CreateConsumer(queue))
                     {
                         using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                        using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                        using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         using (SqlCommand sqlInsertCommand = new SqlCommand())
                         {
                             sqlConnection.Open();
@@ -80,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
 
             // check that others message have status redelivered = false
-            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
             using (IConnection connection = checkFactory.CreateConnection())
             {
@@ -126,7 +126,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         using (IMessageConsumer consumer = session.CreateConsumer(queue))
                         {
                             using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                            using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                             using (SqlCommand sqlInsertCommand = new SqlCommand())
                             {
                                 sqlConnection.Open();
@@ -151,7 +151,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
 
             // check that others message have status redelivered = false
-            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
             using (IConnection connection = checkFactory.CreateConnection())
             {
@@ -197,7 +197,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         for (int i = 0; i < receiveCount; i++)
                         {
                             using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                            using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                             using (SqlCommand sqlInsertCommand = new SqlCommand())
                             {
                                 sqlConnection.Open();
@@ -221,7 +221,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Tracer.Debug("First stage ok");
 
             // check that others message have status redelivered = false
-            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
             using (IConnection connection = checkFactory.CreateConnection())
             {
@@ -269,7 +269,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         for (int i = 0; i < receiveCount; i++)
                         {
                             using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
-                            using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                            using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                             using (SqlCommand sqlInsertCommand = new SqlCommand())
                             {
                                 sqlConnection.Open();
@@ -292,7 +292,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Tracer.Debug("First stage ok");
 
             // check that others message have status redelivered = false
-            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionURI));
+            IConnectionFactory checkFactory = new ConnectionFactory(ReplaceEnvVar(connectionUri));
 
             using (IConnection connection = checkFactory.CreateConnection())
             {
@@ -409,7 +409,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             const string logLocation = @".\RecoveryDir";
             string newConnectionUri =
-                connectionURI + "?nms.RecoveryPolicy.RecoveryLogger.Location=" + logLocation +
+                connectionUri + "?nms.RecoveryPolicy.RecoveryLogger.Location=" + logLocation +
                                 "&nms.configuredResourceManagerId=" + 
                                 dtcFactory.ConfiguredResourceManagerId;
 
@@ -712,7 +712,7 @@ namespace Apache.NMS.ActiveMQ.Test
             try
             {
                 using (TransactionScope scoped = new TransactionScope(batchTxControl))
-                using (SqlConnection sqlConnection = new SqlConnection(sqlConnectionString))
+                using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                 using (SqlCommand sqlInsertCommand = new SqlCommand())
                 {
                     sqlConnection.Open();

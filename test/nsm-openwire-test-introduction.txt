@@ -1,0 +1,15 @@
+How to correcty run nms-openwire-tests ?
+
+Requirements:
+- installed broker ActiveMQ 5 (https://activemq.apache.org/components/classic/download/)
+- installer SQL Server 
+
+1) When the software listed above is installed, 
+   log in to SQL Server(using Windows Authentication) and create new login e.g:
+   -Login name: "testuser"
+   -Password: "Password*01"
+   -Check option "SQL Server authentication"
+
+2) Open "TestDbConfig.xml" and go to "createDbConnectionString" and "createTableConnectionString".
+   Update "User ID" and "Password" like was set in new SQL Server login. 
+   Update server name e.g value for "Data Source" is a computer name. 
