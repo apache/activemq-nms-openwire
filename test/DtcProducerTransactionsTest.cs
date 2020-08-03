@@ -34,7 +34,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             base.SetUp();
 
-            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionUri));
             this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
@@ -149,7 +149,7 @@ namespace Apache.NMS.ActiveMQ.Test
             PrepareDatabase();
 
             string newConnectionUri = 
-                connectionURI + "?nms.RecoveryPolicy.RecoveryLoggerType=harness" +
+                connectionUri + "?nms.RecoveryPolicy.RecoveryLoggerType=harness" +
                                 "&nms.configuredResourceManagerId=" +
                                 dtcFactory.ConfiguredResourceManagerId;
 

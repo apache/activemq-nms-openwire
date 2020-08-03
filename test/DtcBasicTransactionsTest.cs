@@ -31,7 +31,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             base.SetUp();
 
-            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionURI));
+            this.dtcFactory = new NetTxConnectionFactory(ReplaceEnvVar(connectionUri));
             this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 

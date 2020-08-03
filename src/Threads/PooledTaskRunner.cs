@@ -16,7 +16,9 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Apache.NMS.ActiveMQ.Threads
 {
@@ -116,22 +118,22 @@ namespace Apache.NMS.ActiveMQ.Threads
             {
                 _shutdown = true;
 
-                if(runningThread != System.Threading.Thread.CurrentThread)
+                if (runningThread != Thread.CurrentThread)
                 {
                     if(iterating)
                     {
-                        System.Threading.Thread.Sleep(timeout);
+                        Thread.Sleep(timeout);
                     }
 
                     if(iterating)
                     {
                         runningThread.Abort();
-                    }
+					}
                 }
             }
         }
 
-		public void Shutdown()
+        public void Shutdown()
 		{
 			Shutdown(new TimeSpan(Timeout.Infinite));
 		}

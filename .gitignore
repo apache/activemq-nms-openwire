@@ -8,3 +8,14 @@
 /test/bin/Debug/netcoreapp2.2
 /test/obj
 /src/bin/Debug/netstandard2.0
+
+bin/
+obj/
+build/
+.idea/
+*.csproj.user
+nms.sln.startup.json
+build/
+package/
+nms.sln.DotSettings.user
+tools/
