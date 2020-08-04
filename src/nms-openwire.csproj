@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
+    <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
+    <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
+    <Version>1.8.0</Version>
+    <Company>Apache Software Foundation</Company>
+    <Product>Apache NMS OpenWire</Product>
+    <Description>Apache NMS (.Net Standard Messaging Library): Openwire implementation of Apache NMS API</Description>
+    <Copyright>Copyright (C) 2005-2019 Apache Software Foundation</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageProjectUrl>https://activemq.apache.org/components/nms/</PackageProjectUrl>
+    <PackageIconUrl>https://activemq.apache.org/assets/img/activemq_logo_icon.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/apache/activemq-nms-openwire</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>apache;activemq;nms;api;net;messaging</PackageTags>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>NMSKey.snk</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Apache ActiveMQ</Authors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\..\build\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\LICENSE.txt" Link="LICENSE.txt" />
+    <Content Include="..\NOTICE.txt" Link="NOTICE.txt" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net35'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net40'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Apache.NMS" Version="1.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Runtime">
+      <Version>4.3.1</Version>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

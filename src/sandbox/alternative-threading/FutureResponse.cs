@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-using ActiveMQ.Commands;
 using System;
 using System.Threading;
 using ActiveMQ.Util;
+using Apache.NMS;
+using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.Util;
 
 namespace ActiveMQ.Transport
 {
@@ -48,7 +50,7 @@ namespace ActiveMQ.Transport
 	                {
 	                    try
 						{
-							if (maxWait > 0) 
+							if (maxWait > TimeSpan.Zero) 
 							{
 		                        latch.await(maxWait);
 							}
