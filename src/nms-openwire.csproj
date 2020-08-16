@@ -18,16 +18,18 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>NMSKey.snk</AssemblyOriginatorKeyFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Authors>Apache ActiveMQ</Authors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>..\..\build\</OutputPath>
+    <OutputPath>..\build\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\LICENSE.txt" Link="LICENSE.txt" />
-    <Content Include="..\NOTICE.txt" Link="NOTICE.txt" />
+    <None Include="..\LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
+    <None Include="..\NOTICE.txt" Pack="true" PackagePath="NOTICE.txt" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net35'">
@@ -40,13 +42,6 @@
 
   <ItemGroup>
     <PackageReference Include="Apache.NMS" Version="1.8.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\LICENSE.txt">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

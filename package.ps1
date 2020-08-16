@@ -14,8 +14,8 @@
 # limitations under the License.
 
 $pkgname = "Apache.NMS.ActiveMQ"
-$pkgver = "1.8-SNAPSHOT"
-$frameworks = "net35", "net40", "netstandard2.0"
+$pkgver = "1.8.0"
+$frameworks = "net40", "netstandard2.0"
 
 write-progress "Creating package directory." "Initializing..."
 if (!(test-path package)) {
@@ -51,6 +51,10 @@ if (test-path build) {
     $nupkg = "$pkgname.$pkgver.nupkg"
     $nupkgdestination = "$pkgdir\$nupkg"
     Copy-Item -Path $nupkg -Destination $nupkgdestination
+
+    $snupkg = "$pkgname.$pkgver.snupkg"
+    $snupkgdestination = "$pkgdir\$snupkg"
+    Copy-Item -Path $snupkg -Destination $snupkgdestination
 
     # clean up temp
     Remove-Item temp -Recurse -ErrorAction Inquire
