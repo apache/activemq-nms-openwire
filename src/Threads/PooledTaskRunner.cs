@@ -106,34 +106,34 @@ namespace Apache.NMS.ActiveMQ.Threads
 				{
 					if(iterating)
 					{
-						System.Threading.Thread.Sleep(timeout);
+						Monitor.Wait(runable, timeout);
 					}
 				}
 			}
 		}
 
-        public void ShutdownWithAbort(TimeSpan timeout)
+    public void ShutdownWithAbort(TimeSpan timeout)
+    {
+      lock(runable)
+      {
+        _shutdown = true;
+
+        if (runningThread != Thread.CurrentThread)
         {
-            lock(runable)
-            {
-                _shutdown = true;
-
-                if (runningThread != Thread.CurrentThread)
-                {
-                    if(iterating)
-                    {
-                        Thread.Sleep(timeout);
-                    }
-
-                    if(iterating)
-                    {
-                        runningThread.Abort();
+          if(iterating)
+          {
+						Monitor.Wait(runable, timeout);
 					}
-                }
-            }
-        }
 
-        public void Shutdown()
+          if(iterating)
+          {
+              runningThread.Abort();
+					}
+        }
+			}
+    }
+
+    public void Shutdown()
 		{
 			Shutdown(new TimeSpan(Timeout.Infinite));
 		}
@@ -146,6 +146,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 				if(_shutdown)
 				{
 					iterating = false;
+					Monitor.PulseAll(runable);
 					return;
 				}
 				iterating = true;
@@ -170,9 +171,13 @@ namespace Apache.NMS.ActiveMQ.Threads
 				lock(runable)
 				{
 					iterating = false;
-					if(_shutdown)
+					Monitor.PulseAll(runable);
+					if (_shutdown)
 					{
 						queued = false;
+						// Seems superfluous, but Java implementation has 
+						// another notify here so we'll do the same
+						Monitor.PulseAll(runable);
 					}
 					else
 					{
