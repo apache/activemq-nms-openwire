@@ -34,7 +34,11 @@ if (test-path build) {
     write-progress "Packaging Application files." "Scanning..."
     $zipfile = "$pkgdir\$pkgname-$pkgver-bin.zip"
 
-    Compress-Archive -Path ..\LICENSE.txt, ..\NOTICE.txt -Update -DestinationPath $zipfile        
+    $directory = "$pkgname-$pkgver-bin"
+    mkdir $directory
+
+    Copy-Item ..\LICENSE.txt -Destination $directory
+    Copy-Item ..\NOTICE.txt -Destination $directory
     
     # clean up temp
     Remove-Item temp -Recurse -ErrorAction Ignore
@@ -45,8 +49,12 @@ if (test-path build) {
         # clean up third party binaries
         Get-ChildItem temp -File -Exclude "*Apache.NMS*" -Recurse | Remove-Item -Recurse
 
-        Compress-Archive -Path "temp\$framework" -Update -DestinationPath $zipfile
+        Copy-Item -Path "temp\$framework" -Destination $directory -Recurse
     }
+
+    Compress-Archive -Path $directory -Update -DestinationPath $zipfile
+
+    Remove-Item $directory -Recurse -ErrorAction Ignore
     
     $nupkg = "$pkgname.$pkgver.nupkg"
     $nupkgdestination = "$pkgdir\$nupkg"
@@ -66,25 +74,40 @@ write-progress "Packaging Source code files." "Scanning..."
 $pkgdir = "package"
 $zipfile = "$pkgdir\$pkgname-$pkgver-src.zip"
 
+$directory = "$pkgname-$pkgver-src"
+mkdir $directory
+
 # clean temp dir if exists
 Remove-Item temp -Recurse -ErrorAction Ignore
 
 # copy files to temp dir
-Copy-Item src -Destination temp\src -Recurse
-Copy-Item test -Destination temp\test -Recurse
+Copy-Item src -Destination "$directory\src" -Recurse
+Copy-Item test -Destination "$directory\test" -Recurse
 
 # clean up debug artifacts if there are any
-Get-ChildItem temp -Include bin, obj -Recurse | Remove-Item -Recurse
+Get-ChildItem $directory -Include bin, obj -Recurse | Remove-Item -Recurse
 
-Compress-Archive -Path temp\*, LICENSE.txt, NOTICE.txt, keyfile, nms-openwire.sln, package.ps1 -Update -DestinationPath $zipfile
+Copy-Item .\LICENSE.txt -Destination $directory
+Copy-Item .\NOTICE.txt -Destination $directory
+Copy-Item .\keyfile -Destination $directory -Recurse
+Copy-Item .\nms-openwire.sln -Destination $directory
+Copy-Item .\package.ps1 -Destination $directory
 
-write-progress "Removing temp files"
-Remove-Item temp -Recurse
+Compress-Archive -Path $directory -DestinationPath $zipfile
 
-write-progress "Packaging Docs" "Scanning..."
-$pkgdir = "package"
+Remove-Item $directory -Recurse -ErrorAction Ignore
+
+write-progress "Packaging Docs"
 $zipfile = "$pkgdir\$pkgname-$pkgver-docs.zip"
+$directory = "$pkgname-$pkgver-docs"
+mkdir $directory
 
-Compress-Archive -Path "docs\_site\*", "LICENSE.txt", "NOTICE.txt" -Update -DestinationPath $zipfile
+Copy-Item -Path .\docs\_site\* -Destination $directory -Recurse
+Copy-Item .\LICENSE.txt -Destination $directory
+Copy-Item .\NOTICE.txt -Destination $directory
+
+Compress-Archive -Path $directory -DestinationPath $zipfile
+
+Remove-Item $directory -Recurse -ErrorAction Ignore
 
 write-progress -Completed "Packaging" "Complete."
