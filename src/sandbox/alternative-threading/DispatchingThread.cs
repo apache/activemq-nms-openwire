@@ -17,6 +17,7 @@
 using ActiveMQ.Util;
 using System;
 using System.Threading;
+using Apache.NMS;
 
 
 namespace ActiveMQ

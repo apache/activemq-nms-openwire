@@ -60,7 +60,7 @@ namespace ActiveMQ.Util
 		/// <summary>
 		/// Waits forever for the latch to be completed
 		/// <summary>
-        public bool await()
+        public bool Await()
         {
             lock (mutex)
             {
@@ -77,7 +77,7 @@ namespace ActiveMQ.Util
 		/// Waits the specified amount of time for the latch
 		/// returning true if the latch was acquired
 		/// <summary>
-        public bool await(TimeSpan timeout)
+        public bool Await(TimeSpan timeout)
         {
 			DateTime end = DateTime.Now.Add(timeout);
             lock (mutex)
@@ -101,11 +101,11 @@ namespace ActiveMQ.Util
 		/// Waits the specified amount of time for the latch
 		/// returning true if the latch was acquired
 		/// <summary>
-        public bool await(int millis)
+        public bool Await(int millis)
         {
 			long ticks = millis * (1000000 / 100); // 1,000,000 nanos in a millisecond
 			TimeSpan span = new TimeSpan(ticks);
-			return await(span);
+			return Await(span);
 		}
     }
 }
