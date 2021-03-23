@@ -97,6 +97,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             Tracer.Debug("Creating new instance of the SSL Transport.");
 			SslTransport transport = new SslTransport(location, socket, wireFormat);
 
+            if (this.sslProtocol == null)
+            {
+                this.sslProtocol = SslContext.GetCurrent().SslProtocol;
+            }
+            else
+            {
+                SslContext.GetCurrent().SslProtocol = this.sslProtocol;
+            }
+            Tracer.DebugFormat("SslProtocol: {0}", this.sslProtocol);
+            
             transport.ClientCertSubject = HttpUtility.UrlDecode(this.clientCertSubject);
             transport.ClientCertFilename = this.clientCertFilename;
             transport.ClientCertPassword = this.clientCertPassword;
