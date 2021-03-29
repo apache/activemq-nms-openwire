@@ -90,6 +90,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	 	private bool priorityBackup = false;
     	private List<Uri> priorityList = new List<Uri>();
     	private bool priorityBackupAvailable = false;
+        private String sslProtocol = null;
 
 		// Not Sure how to work these back in with all the changes.
 		//private int asyncTimeout = 45000;
@@ -1032,6 +1033,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
         private bool DoConnect()
         {
+            if (this.sslProtocol != null)
+            {
+                Tcp.SslContext.GetCurrent().SslProtocol = this.sslProtocol;
+            }
+
             lock(reconnectMutex)
             {
 				if (disposed || connectionFailure != null)
@@ -1205,6 +1211,11 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                            }
 
 	                            connected = true;
+                                if (this.sslProtocol == null)
+                                {
+                                    this.sslProtocol = Tcp.SslContext.GetCurrent().SslProtocol;
+                                }
+
 	                            return false;
 	                        }
 							catch (Exception e) 
