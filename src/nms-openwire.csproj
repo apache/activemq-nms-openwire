@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
     <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
     <Version>1.8.0</Version>
@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <PackageReference Include="Apache.NMS" Version="1.8.0" />
+    <PackageReference Include="SharpZipLib" Version="1.3.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
