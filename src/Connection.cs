@@ -1018,7 +1018,7 @@ namespace Apache.NMS.ActiveMQ
 
                                                 throw exception;
                                             }
-                                            else if(exception is InvalidClientIDException)
+                                            else if(exception is InvalidClientIDException || exception is BrokerException)
                                             {
                                                 // This is non-recoverable.
                                                 // Shutdown the transport connection, and re-create it, but don't start it.
@@ -1034,6 +1034,7 @@ namespace Apache.NMS.ActiveMQ
                                 catch(BrokerException)
                                 {
                                     // We Swallow the generic version and throw ConnectionClosedException
+                                    throw;
                                 }
                                 catch(NMSException)
                                 {

@@ -19,3 +19,5 @@ build/
 package/
 nms.sln.DotSettings.user
 tools/
+
+.DS_store
