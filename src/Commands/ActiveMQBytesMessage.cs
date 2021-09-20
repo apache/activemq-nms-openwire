@@ -562,7 +562,17 @@ namespace Apache.NMS.ActiveMQ.Commands
 			}
 		}
 
-        /// <summary>
+		public override bool IsBodyAssignableTo(Type type)
+		{
+			return Content != null && type.IsAssignableFrom(typeof(byte[]));
+		}
+
+		protected override T GetBody<T>()
+		{
+			return (T)(object)Content;
+		}
+
+		/// <summary>
         /// Used when the message compression is enabled to track how many bytes
         /// the EndianBinaryWriter actually writes to the stream before compression
         /// so that the receiving client can read off the real bodylength from the

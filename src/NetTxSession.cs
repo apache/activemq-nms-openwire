@@ -17,8 +17,10 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -31,7 +33,7 @@ namespace Apache.NMS.ActiveMQ
             : base(connection, id, AcknowledgementMode.AutoAcknowledge)
         {
             this.transactionContext = TransactionContext as NetTxTransactionContext;
-            this.transactionContext.InitializeDtcTxContext();
+            this.transactionContext.InitializeDtcTxContextAsync().GetAsyncResult();
             this.enlistMsDtcNativeResources = false;
         }
 
@@ -50,6 +52,12 @@ namespace Apache.NMS.ActiveMQ
             }
 
             this.EnrollInSpecifiedTransaction(tx);
+        }
+
+        public Task EnlistAsync(Transaction tx)
+        {
+            Enlist(tx);
+            return Task.CompletedTask;
         }
 
         private bool enlistMsDtcNativeResources;
@@ -88,15 +96,16 @@ namespace Apache.NMS.ActiveMQ
             {
                 if (transactionContext.InNetTransaction)
                 {
-                    lock (transactionContext.SyncRoot)
+                    using(var nmsLock = transactionContext.SyncRoot.Lock())
                     {
                         if (transactionContext.InNetTransaction)
                         {
                             // Must wait for all the DTC operations to complete before
                             // moving on from this close call.
-                            Monitor.Exit(transactionContext.SyncRoot);
+                            
+                            nmsLock.Dispose();
                             this.transactionContext.DtcWaitHandle.WaitOne();
-                            Monitor.Enter(transactionContext.SyncRoot);
+                            nmsLock.Enter();
                         }
                     }
                 }
@@ -136,7 +145,7 @@ namespace Apache.NMS.ActiveMQ
 
         internal override void DoStartTransaction()
         {
-            lock (transactionContext.SyncRoot)
+            using(var nmsLock = transactionContext.SyncRoot.Lock())
             {
                 while (transactionContext.InNetTransaction &&
                        (transactionContext.NetTxState == NetTxTransactionContext.TxState.Pending ||
@@ -149,9 +158,12 @@ namespace Apache.NMS.ActiveMQ
                     }
                     // To late to participate in this TX, we have to wait for it to complete then
                     // we can create a new TX and start from there.
-                    Monitor.Exit(transactionContext.SyncRoot);
+                    
+                    nmsLock.Dispose();
+                    
                     transactionContext.DtcWaitHandle.WaitOne();
-                    Monitor.Enter(transactionContext.SyncRoot);
+                 
+                    nmsLock.Enter();
                 }
  
                 if (!transactionContext.InNetTransaction && Transaction.Current != null)

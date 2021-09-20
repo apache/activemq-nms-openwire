@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Mock;
@@ -130,7 +131,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				MockTransport transport = (MockTransport) connection.ITransport.Narrow(typeof(MockTransport));
 
-                transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
+                transport.OutgoingCommand = new CommandHandlerAsync(OnOutgoingCommand);
 
                 connection.Start();
 
@@ -144,7 +145,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        public void OnOutgoingCommand(ITransport transport, Command command)
+        public async Task OnOutgoingCommand(ITransport transport, Command command)
         {
             if(command.IsConnectionInfo)
             {

@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Apache.NMS;
 using Apache.NMS.Util;
 using Apache.NMS.Test;
@@ -355,7 +356,7 @@ namespace Apache.NMS.ActiveMQ.Test
             transport.Close();
         }
 
-        public void FailOnCommitTransportHook(ITransport transport, Command command)
+        public async Task FailOnCommitTransportHook(ITransport transport, Command command)
         {
             if (commitFailed)
             {

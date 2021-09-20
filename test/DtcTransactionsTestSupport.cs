@@ -27,6 +27,7 @@ using Apache.NMS.ActiveMQ.Transport;
 using System.Data.SqlClient;
 using System.Collections;
 using System.Data;
+using System.Threading.Tasks;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
@@ -558,7 +559,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         #region Transport Hools for controlling failure point.
 
-        public void FailOnPrepareTransportHook(ITransport transport, Command command)
+        public async Task FailOnPrepareTransportHook(ITransport transport, Command command)
         {
             if (command is TransactionInfo)
             {
@@ -572,7 +573,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        public void FailOnRollbackTransportHook(ITransport transport, Command command)
+        public async Task FailOnRollbackTransportHook(ITransport transport, Command command)
         {
             if (command is TransactionInfo)
             {
@@ -585,7 +586,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        public void FailOnCommitTransportHook(ITransport transport, Command command)
+        public async Task FailOnCommitTransportHook(ITransport transport, Command command)
         {
             if (command is TransactionInfo)
             {
@@ -627,7 +628,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         producer.DeliveryMode = MsgDeliveryMode.Persistent;
 
-                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         {
                             sqlConnection.Open();
@@ -674,7 +675,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         producer.DeliveryMode = MsgDeliveryMode.Persistent;
 
-                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         {
                             sqlConnection.Open();
@@ -719,7 +720,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 {
                     using (IMessageConsumer consumer = session.CreateConsumer(queue))
                     {
-                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         using (SqlCommand sqlInsertCommand = new SqlCommand())
                         {
@@ -760,7 +761,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 {
                     using (IMessageConsumer consumer = session.CreateConsumer(queue))
                     {
-                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         using (SqlCommand sqlInsertCommand = new SqlCommand())
                         {

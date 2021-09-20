@@ -17,9 +17,11 @@
 
 using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -45,11 +47,26 @@ namespace Apache.NMS.ActiveMQ
             return (INetTxSession) CreateSession(AcknowledgementMode.Transactional);
         }
 
+        public Task<INetTxSession> CreateNetTxSessionAsync()
+        {
+            return Task.FromResult(CreateNetTxSession());
+        }
+
         public INetTxSession CreateNetTxSession(Transaction tx)
         {
             NetTxSession session = (NetTxSession)CreateSession(AcknowledgementMode.Transactional);
             session.Enlist(tx);
             return session;
+        }
+
+        public Task<INetTxSession> CreateNetTxSessionAsync(Transaction tx)
+        {
+            return Task.FromResult(CreateNetTxSession(tx));
+        }
+
+        public Task<INetTxSession> CreateNetTxSessionAsync(bool enlistsNativeMsDtcResource)
+        {
+            return Task.FromResult(CreateNetTxSession(enlistsNativeMsDtcResource));
         }
 
         public INetTxSession CreateNetTxSession(Transaction tx, bool enlistNativeMsDtcResource)
@@ -60,6 +77,11 @@ namespace Apache.NMS.ActiveMQ
             return session;
         }
 
+        public Task<INetTxSession> CreateNetTxSessionAsync(Transaction tx, bool enlistsNativeMsDtcResource)
+        {
+            return Task.FromResult(CreateNetTxSession(tx, enlistsNativeMsDtcResource));
+        }
+
         public INetTxSession CreateNetTxSession(bool enlistNativeMsDtcResource)
         {
             NetTxSession session = (NetTxSession)CreateSession(AcknowledgementMode.Transactional);
@@ -67,9 +89,9 @@ namespace Apache.NMS.ActiveMQ
             return session;
         }
 
-        protected override Session CreateActiveMQSession(AcknowledgementMode ackMode)
+        protected override async Task<ISession> CreateActiveMQSessionAsync(AcknowledgementMode ackMode)
         {
-            CheckConnected();
+            await CheckConnectedAsync().Await();
             return new NetTxSession(this, NextSessionId);
         }
 

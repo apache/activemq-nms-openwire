@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.ActiveMQ.Commands;
+using Task = System.Threading.Tasks.Task;
 
 namespace Apache.NMS.ActiveMQ.Transport.Discovery
 {
@@ -121,6 +122,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
             set { discoveryUri = value; }
         }
 
+   
+
         public bool IsStarted
         {
             get { return started.Value; }
@@ -167,6 +170,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
 
         #endregion
 
+        public Task StartAsync()
+        {
+            Start();
+            return Task.CompletedTask;
+        }
+        
         public void Start()
         {
             if (started.CompareAndSet(false, true)) {                                      
@@ -207,6 +216,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Discovery
                     Tracer.DebugFormat("Failed to properly shutdown agent executor {0}", this);
                 }
             }
+        }
+
+        public Task StopAsync()
+        {
+            Stop();
+            return Task.CompletedTask;
         }
 
         public void Dispose()

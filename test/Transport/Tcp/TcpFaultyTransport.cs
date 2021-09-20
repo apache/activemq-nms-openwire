@@ -19,13 +19,14 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
     public class TcpFaultyTransport : TcpTransport
     {		
-		private CommandHandler onewayCommandPreProcessor;
-		private CommandHandler onewayCommandPostProcessor;
+		private CommandHandlerAsync onewayCommandPreProcessor;
+		private CommandHandlerAsync onewayCommandPostProcessor;
 				
         public TcpFaultyTransport(Uri location, Socket socket, IWireFormat wireFormat) :
             base(location, socket, wireFormat)
@@ -37,13 +38,13 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             Dispose(false);
         }		
 
-		public CommandHandler OnewayCommandPreProcessor 
+		public CommandHandlerAsync OnewayCommandPreProcessor 
 		{
 			get { return this.onewayCommandPreProcessor; }
 			set { this.onewayCommandPreProcessor = value; }
 		}
 
-		public CommandHandler OnewayCommandPostProcessor 
+		public CommandHandlerAsync OnewayCommandPostProcessor 
 		{
 			get { return this.onewayCommandPostProcessor; }
 			set { this.onewayCommandPostProcessor = value; }
@@ -53,14 +54,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         {
             if(this.onewayCommandPreProcessor != null)
             {
-                this.onewayCommandPreProcessor(this, command);
+                this.onewayCommandPreProcessor(this, command).GetAsyncResult();
             }
 
             base.Oneway(command);
 
             if(this.onewayCommandPostProcessor != null)
             {
-                this.onewayCommandPostProcessor(this, command);
+                this.onewayCommandPostProcessor(this, command).GetAsyncResult();
             }
         }
     }

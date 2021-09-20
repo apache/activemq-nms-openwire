@@ -16,11 +16,12 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
-	public delegate void CommandHandler(ITransport sender, Command command);
+	public delegate Task CommandHandlerAsync(ITransport sender, Command command);
 	public delegate void ExceptionHandler(ITransport sender, Exception command);
 	public delegate void InterruptedHandler(ITransport sender);
 	public delegate void ResumedHandler(ITransport sender);
@@ -39,7 +40,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// receiver before returning.
         /// </summary>
         /// <param name="command">
-        /// A <see cref="Command"/>
+        /// A <see cref="CommandAsync"/>
         /// </param>
 		void Oneway(Command command);
 
@@ -49,7 +50,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// caller can use to wait on the Broker's response.
         /// </summary>
         /// <param name="command">
-        /// A <see cref="Command"/>
+        /// A <see cref="CommandAsync"/>
         /// </param>
         /// <returns>
         /// A <see cref="FutureResponse"/>
@@ -61,19 +62,19 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// returning, this version waits indefinitely for a response.
         /// </summary>
         /// <param name="command">
-        /// A <see cref="Command"/>
+        /// A <see cref="CommandAsync"/>
         /// </param>
         /// <returns>
         /// A <see cref="Response"/>
         /// </returns>
-		Response Request(Command command);
+		Task<Response> RequestAsync(Command command);
 
         /// <summary>
         /// Sends a Command to the Broker and waits for the given TimeSpan to expire for a
         /// response before returning.
         /// </summary>
         /// <param name="command">
-        /// A <see cref="Command"/>
+        /// A <see cref="CommandAsync"/>
         /// </param>
         /// <param name="timeout">
         /// A <see cref="TimeSpan"/>
@@ -81,7 +82,7 @@ namespace Apache.NMS.ActiveMQ.Transport
         /// <returns>
         /// A <see cref="Response"/>
         /// </returns>
-		Response Request(Command command, TimeSpan timeout);
+		Task<Response> RequestAsync(Command command, TimeSpan timeout);
 
 		/// <summary>
         /// Allows a caller to find a specific type of Transport in the Chain of
@@ -117,7 +118,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 			set;
 		}
 
-		CommandHandler Command
+		CommandHandlerAsync CommandAsync
 		{
 			get;
 			set;

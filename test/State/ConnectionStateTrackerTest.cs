@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.State;
@@ -42,12 +43,12 @@ namespace Apache.NMS.ActiveMQ.Test
 				return null;
 			}
 
-			public Response Request(Command command)
+			public Task<Response> RequestAsync(Command command)
 			{
 				return null;
 			}
 
-			public Response Request(Command command, TimeSpan timeout)
+			public Task<Response> RequestAsync(Command command, TimeSpan timeout)
 			{
 				return null;
 			}
@@ -61,7 +62,13 @@ namespace Apache.NMS.ActiveMQ.Test
 			{
 			}
 
-			public bool IsStarted
+	        public Task StartAsync()
+	        {
+		        Start();
+		        return Task.CompletedTask;
+	        }
+
+	        public bool IsStarted
 			{
 				get { return true; }
 			}
@@ -69,6 +76,12 @@ namespace Apache.NMS.ActiveMQ.Test
 	        public void Stop() 
 			{
 			}
+
+	        public Task StopAsync()
+	        {
+		        Stop();
+		        return Task.CompletedTask;
+	        }
 
 	        public void Dispose() 
 			{
@@ -114,7 +127,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				set {}
 			}
 
-			public CommandHandler Command
+			public CommandHandlerAsync CommandAsync
 			{
 				get { return null; }
 				set {}

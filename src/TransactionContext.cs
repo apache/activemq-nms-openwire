@@ -18,6 +18,9 @@
 using System;
 using System.Collections;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
+using Task = System.Threading.Tasks.Task;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -91,11 +94,15 @@ namespace Apache.NMS.ActiveMQ
 
         public virtual void Rollback()
         {
+            RollbackAsync().GetAsyncResult();
+        }
+        public virtual async Task RollbackAsync()
+        {
             if(InTransaction)
             {
                 try
                 {
-                    this.BeforeEnd();
+                    await this.BeforeEndAsync().Await();
                 }
                 catch (TransactionRolledBackException canOccurOnFailover)
                 {
@@ -115,7 +122,7 @@ namespace Apache.NMS.ActiveMQ
                 info.Type = (int) TransactionType.Rollback;
 
                 this.TransactionId = null;
-                this.session.Connection.SyncRequest(info);
+                await this.session.Connection.SyncRequestAsync(info).Await();
 
                 this.AfterRollback();
             }
@@ -123,15 +130,19 @@ namespace Apache.NMS.ActiveMQ
 
         public virtual void Commit()
         {
+            CommitAsync().GetAsyncResult();
+        }
+        public virtual async Task CommitAsync()
+        {
             if(InTransaction)
             {
                 try
                 {
-                    this.BeforeEnd();
+                    await this.BeforeEndAsync().Await();
                 }
                 catch
                 {
-                    Rollback();
+                    await RollbackAsync().Await();
                     throw;
                 }
 
@@ -150,7 +161,7 @@ namespace Apache.NMS.ActiveMQ
                 try
                 {
                     this.TransactionId = null;
-                    this.session.Connection.SyncRequest(info);
+                    await this.session.Connection.SyncRequestAsync(info).Await();
                     this.AfterCommit();
                 }
                 catch (Exception e)
@@ -163,15 +174,17 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        internal void BeforeEnd()
+        internal Task BeforeEndAsync()
         {
             lock(this.synchronizations.SyncRoot)
             {
                 foreach(ISynchronization synchronization in this.synchronizations)
                 {
-                    synchronization.BeforeEnd();
+                    synchronization.BeforeEndAsync().GetAsyncResult();
                 }
             }
+            
+            return Task.CompletedTask;
         }
 
         internal void AfterCommit()
@@ -182,7 +195,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     foreach(ISynchronization synchronization in this.synchronizations)
                     {
-                        synchronization.AfterCommit();
+                        synchronization.AfterCommitAsync().GetAsyncResult();
                     }
 
                     SignalTransactionCommitted();
@@ -202,7 +215,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     foreach(ISynchronization synchronization in this.synchronizations)
                     {
-                        synchronization.AfterRollback();
+                        synchronization.AfterRollbackAsync().GetAsyncResult();
                     }
 
                     SignalTransactionRolledBack();

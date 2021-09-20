@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.Util;
 
@@ -25,8 +26,13 @@ namespace Apache.NMS.ActiveMQ.Transport
 	/// <summary>
 	/// Handles asynchronous responses
 	/// </summary>
-	public class FutureResponse
+	public class FutureResponse : TaskCompletionSource<Response>
 	{
+		public FutureResponse() : base(TaskCreationOptions.RunContinuationsAsynchronously)
+		{
+			
+		}
+		
 		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
 		public TimeSpan ResponseTimeout
 		{
@@ -42,6 +48,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 			// Blocks the caller until a value has been set
 			get
 			{
+				
+				
 				lock(latch)
 				{
 					if(null != response)
@@ -85,6 +93,8 @@ namespace Apache.NMS.ActiveMQ.Transport
 				}
 
 				latch.countDown();
+				
+				this.SetResult(value);
 			}
 		}
 	}

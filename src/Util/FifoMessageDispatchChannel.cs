@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.Util
 {
@@ -27,14 +28,14 @@ namespace Apache.NMS.ActiveMQ.Util
     /// </summary>
     public class FifoMessageDispatchChannel : MessageDispatchChannel
     {
-        private readonly Mutex mutex = new Mutex();
+        private readonly NmsSynchronizationMonitor mutex = new NmsSynchronizationMonitor();
         private bool closed;
         private bool running;
         private readonly LinkedList<MessageDispatch> channel = new LinkedList<MessageDispatch>();
 
         #region Properties
 
-        public object SyncRoot
+        public NmsSynchronizationMonitor SyncRoot
         {
             get{ return this.mutex; }
         }

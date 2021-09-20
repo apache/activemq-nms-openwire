@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Commands;
@@ -49,12 +50,12 @@ namespace Apache.NMS.ActiveMQ.Test
         {
         }
 
-        public void OnPreProcessCommand(ITransport transport, Command command)
+        public async Task OnPreProcessCommand(ITransport transport, Command command)
         {
             this.preProcessorFired = true;
         }
 
-        public void OnPostProcessCommand(ITransport transport, Command command)
+        public async Task OnPostProcessCommand(ITransport transport, Command command)
         {
             this.postProcessorFired = true;
         }
@@ -72,8 +73,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.IsNotNull(transport);
 
                 TcpFaultyTransport testee = transport as TcpFaultyTransport;
-                testee.OnewayCommandPreProcessor += new CommandHandler(this.OnPreProcessCommand);
-                testee.OnewayCommandPostProcessor += new CommandHandler(this.OnPostProcessCommand);
+                testee.OnewayCommandPreProcessor += new CommandHandlerAsync(this.OnPreProcessCommand);
+                testee.OnewayCommandPostProcessor += new CommandHandlerAsync(this.OnPostProcessCommand);
 
                 using(ISession session = connection.CreateSession())
                 {

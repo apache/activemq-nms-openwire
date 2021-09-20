@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport
@@ -26,7 +27,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 	public class TransportFilter : ITransport
 	{
 		protected readonly ITransport next;
-		protected CommandHandler commandHandler;
+		protected CommandHandlerAsync commandHandlerAsync;
 		protected ExceptionHandler exceptionHandler;
 		protected InterruptedHandler interruptedHandler;
 		protected ResumedHandler resumedHandler;
@@ -35,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		public TransportFilter(ITransport next)
 		{
 			this.next = next;
-			this.next.Command = new CommandHandler(OnCommand);
+			this.next.CommandAsync = new CommandHandlerAsync(OnCommand);
 			this.next.Exception = new ExceptionHandler(OnException);
             this.next.Interrupted = new InterruptedHandler(OnInterrupted);
             this.next.Resumed = new ResumedHandler(OnResumed);
@@ -46,9 +47,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 			Dispose(false);
 		}
 
-		protected virtual void OnCommand(ITransport sender, Command command)
+		protected virtual Task OnCommand(ITransport sender, Command command)
 		{
-			this.commandHandler(sender, command);
+			return this.commandHandlerAsync(sender, command);
 		}
 
 		protected virtual void OnException(ITransport sender, Exception command)
@@ -96,9 +97,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// </summary>
 		/// <returns>A Response</returns>
 		/// <param name="command">A  Command</param>
-		public virtual Response Request(Command command)
+		public virtual Task<Response> RequestAsync(Command command)
 		{			
-			return Request(command, TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite));
+			return RequestAsync(command, TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite));
 		}
 
 		/// <summary>
@@ -107,9 +108,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// <returns>A Response</returns>
 		/// <param name="command">A  Command</param>
 		/// <param name="timeout">Timeout in milliseconds</param>
-		public virtual Response Request(Command command, TimeSpan timeout)
+		public virtual Task<Response> RequestAsync(Command command, TimeSpan timeout)
 		{
-			return this.next.Request(command, timeout);
+			return this.next.RequestAsync(command, timeout);
 		}
 
 		/// <summary>
@@ -117,7 +118,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		/// </summary>
 		public virtual void Start()
 		{
-			if(commandHandler == null)
+			if(commandHandlerAsync == null)
 			{
 				throw new InvalidOperationException("command cannot be null when Start is called.");
 			}
@@ -128,6 +129,12 @@ namespace Apache.NMS.ActiveMQ.Transport
 			}
 
 			this.next.Start();
+		}
+
+		public Task StartAsync()
+		{
+			Start();
+			return Task.CompletedTask;
 		}
 
 		/// <summary>
@@ -166,10 +173,10 @@ namespace Apache.NMS.ActiveMQ.Transport
 			}
 		}
 
-		public CommandHandler Command
+		public CommandHandlerAsync CommandAsync
 		{
-			get { return commandHandler; }
-			set { this.commandHandler = value; }
+			get { return commandHandlerAsync; }
+			set { this.commandHandlerAsync = value; }
 		}
 
 		public ExceptionHandler Exception
@@ -195,7 +202,13 @@ namespace Apache.NMS.ActiveMQ.Transport
             this.next.Stop();
 		}
 
-        public Object Narrow(Type type)
+		public Task StopAsync()
+		{
+			Stop();
+			return Task.CompletedTask;
+		}
+
+		public Object Narrow(Type type)
         {
             if( this.GetType().Equals( type ) ) {
                 return this;

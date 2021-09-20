@@ -18,7 +18,9 @@
 using System;
 using System.Collections;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -85,15 +87,40 @@ namespace Apache.NMS.ActiveMQ.Transport
 			return future;
         }
 
-        public override Response Request(Command command, TimeSpan timeout)
+        public override Task<Response> RequestAsync(Command command, TimeSpan timeout)
         {
+	        TaskCompletionSource<Response> taskCompletionSource = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+			if (timeout.TotalMilliseconds > 0)
+	        {
+		        CancellationTokenSource ct = new CancellationTokenSource(timeout);
+		        ct.Token.Register(() =>
+		        {
+			        taskCompletionSource.TrySetException(new RequestTimedOutException(timeout));
+		        }, false);
+	        }
+    
             FutureResponse future = AsyncRequest(command);
-            future.ResponseTimeout = timeout;
-            Response response = future.Response;
-            return response;
+            
+            _ = future.Task.ContinueWith(t =>
+            {
+	            if (t.IsCompleted)
+	            {
+		            taskCompletionSource.SetResult(t.Result);
+	            }
+	            else if (t.IsFaulted)
+	            {
+		            taskCompletionSource.SetException(t.Exception);
+	            }
+	            else if (t.IsCanceled)
+	            {
+		            taskCompletionSource.SetCanceled();
+	            }
+            });
+            
+            return taskCompletionSource.Task;
         }
 
-        protected override void OnCommand(ITransport sender, Command command)
+        protected override async Task OnCommand(ITransport sender, Command command)
         {
             if(command.IsResponse)
             {
@@ -116,7 +143,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             }
             else
             {
-                this.commandHandler(sender, command);
+                await this.commandHandlerAsync(sender, command).Await();
             }
         }
 		

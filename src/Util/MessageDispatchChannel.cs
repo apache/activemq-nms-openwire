@@ -17,6 +17,7 @@
 
 using System;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.Util
 {
@@ -29,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Util
     /// </summary>
     public interface MessageDispatchChannel
     {
-        object SyncRoot
+        NmsSynchronizationMonitor SyncRoot
         {
             get;
         }

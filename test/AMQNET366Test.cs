@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS;
 using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Transport;
@@ -41,7 +42,7 @@ namespace Apache.NMS.ActiveMQ.Test
             base.SetUp();
         }
 
-        [Test, Timeout(60000)]
+        [Test, Timeout(80000)]
         public void TestConnection()
         {
             IConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionUri));
@@ -79,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        public void FailOnKeepAlive(ITransport transport, Command command)
+        public async Task FailOnKeepAlive(ITransport transport, Command command)
         {
             if (command.IsKeepAliveInfo)
             {

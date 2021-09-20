@@ -45,7 +45,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     IDestination destination = session.CreateTemporaryQueue();
                     using(IMessageProducer producer = session.CreateProducer(destination))
                     {
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             Assert.IsNotNull(Transaction.Current);
                             for(int i = 0; i < MSG_COUNT; ++i)
@@ -61,7 +61,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         Thread.Sleep(100);
 
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
@@ -103,7 +103,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     IDestination destination = session.CreateTemporaryQueue();
                     using(IMessageProducer producer = session.CreateProducer(destination))
                     {
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             Assert.IsNotNull(Transaction.Current);
                             for(int i = 0; i < MSG_COUNT; ++i)
@@ -117,7 +117,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         Thread.Sleep(100);
 
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
@@ -151,7 +151,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     IDestination destination = session.CreateTemporaryQueue();
                     using(IMessageProducer producer = session.CreateProducer(destination))
                     {
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             Assert.IsNotNull(Transaction.Current);
                             for(int i = 0; i < MSG_COUNT; ++i)
@@ -166,7 +166,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         Thread.Sleep(200);
 
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
@@ -175,7 +175,7 @@ namespace Apache.NMS.ActiveMQ.Test
                             }
                         }
 
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
@@ -189,7 +189,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         Thread.Sleep(200);
 
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             for(int i = 0; i < MSG_COUNT; ++i)
                             {
@@ -230,7 +230,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     destination = session.CreateTemporaryQueue();
                     using(IMessageProducer producer = session.CreateProducer(destination))
                     {
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             Assert.IsFalse(this.transactionStarted);
 
@@ -261,7 +261,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
                     using(IMessageConsumer consumer = session.CreateConsumer(destination))
                     {
-                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using(TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         {
                             Assert.IsFalse(this.transactionStarted);
 

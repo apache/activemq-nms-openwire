@@ -16,9 +16,10 @@
  */
 
 using System;
-
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -44,7 +45,7 @@ namespace Apache.NMS.ActiveMQ
             this.info.NoLocal = true;
 
             this.connection.AddDispatcher(consumerId, this);
-            this.connection.SyncRequest(this.info);
+            this.connection.SyncRequestAsync(this.info).GetAsyncResult();
         }
 
         internal void Dispose()
@@ -66,7 +67,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void Dispatch(MessageDispatch messageDispatch)
+        public Task Dispatch_Async(MessageDispatch messageDispatch)
         {
             // Auto ack messages when we reach 75% of the prefetch
             deliveredCounter++;
@@ -101,6 +102,8 @@ namespace Apache.NMS.ActiveMQ
                 // This can happen across networks
                 Tracer.Debug("Unexpected message was dispatched to the AdvisoryConsumer: " + messageDispatch);
             }
+            
+            return Task.CompletedTask;
         }
 
         private void ProcessDestinationInfo(DestinationInfo destInfo)

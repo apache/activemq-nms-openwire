@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.OpenWire;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport
@@ -68,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             next.Oneway(command);
         }
 
-        protected override void OnCommand(ITransport sender, Command command)
+        protected override async Task OnCommand(ITransport sender, Command command)
         {
             if ( command.IsWireFormatInfo )
             {
@@ -79,7 +81,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                     {
                         throw new IOException("Remote wire format magic is invalid");
                     }
-                    wireInfoSentDownLatch.await(negotiateTimeout);
+                    wireInfoSentDownLatch.@await(negotiateTimeout);
                     wireFormat.RenegotiateWireFormat(info);
                 }
                 catch (Exception e)
@@ -91,7 +93,7 @@ namespace Apache.NMS.ActiveMQ.Transport
                     readyCountDownLatch.countDown();
                 }
             }
-            this.commandHandler(sender, command);
+            await this.commandHandlerAsync(sender, command).Await();
         }
 
         protected override void OnException(ITransport sender, Exception command)

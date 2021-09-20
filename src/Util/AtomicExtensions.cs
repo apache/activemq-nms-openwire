@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,26 +15,29 @@
  * limitations under the License.
  */
 
-using System.Threading.Tasks;
+using System;
+using Apache.NMS.Util;
 
-namespace Apache.NMS.ActiveMQ
+namespace Apache.NMS.ActiveMQ.Util
 {
-	public interface ISynchronization
+    public static class AtomicExtensions
     {
-        /// <summary>
-        /// Called before a commit or rollback is applied.
-        /// </summary>
-        Task BeforeEndAsync();
+        public static long IncrementAndGet(this Atomic<long> atomicRef)
+        {
+            lock (atomicRef)
+            {
+                atomicRef.Value++;
+                return atomicRef.Value;
+            }
+        }
         
-        /// <summary>
-        /// Called after a commit
-        /// </summary>
-        Task AfterCommitAsync();
-        
-        /// <summary>
-        /// Called after a transaction rollback
-        /// </summary>
-        Task AfterRollbackAsync();
+        public static long DecrementAndGet(this Atomic<long> atomicRef)
+        {
+            lock (atomicRef)
+            {
+                atomicRef.Value--;
+                return atomicRef.Value;
+            }
+        }
     }
 }
-

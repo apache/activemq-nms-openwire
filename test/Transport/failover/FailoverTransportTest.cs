@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS;
 using Apache.NMS.Util;
 using Apache.NMS.Test;
@@ -27,6 +28,7 @@ using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
 using Apache.NMS.ActiveMQ.Transport.Mock;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -56,13 +58,13 @@ namespace Apache.NMS.ActiveMQ.Test
 			exceptions.Add(exception);
 		}
 
-		private void OnCommand(ITransport transport, Command command)
+		private async Task OnCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("Test: Received Command from Transport: {0}", command);
 			received.Add(command);
 		}
 
-		private void OnOutgoingCommand(ITransport transport, Command command)
+		private async Task OnOutgoingCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("FailoverTransportTest::OnOutgoingCommand - {0}", command);
 			sent.Add(command);
@@ -84,13 +86,13 @@ namespace Apache.NMS.ActiveMQ.Test
 		private void VerifyCommandHandlerSetting(ITransport transport, MockTransport mock)
 		{
 			// Walk the stack of wrapper transports.
-			ITransport failoverTransportTarget = mock.Command.Target as ITransport;
+			ITransport failoverTransportTarget = mock.CommandAsync.Target as ITransport;
 			Assert.IsNotNull(failoverTransportTarget);
-			ITransport mutexTransportTarget = failoverTransportTarget.Command.Target as ITransport;
+			ITransport mutexTransportTarget = failoverTransportTarget.CommandAsync.Target as ITransport;
 			Assert.IsNotNull(mutexTransportTarget);
-			ITransport responseCorrelatorTransportTarget = mutexTransportTarget.Command.Target as ITransport;
+			ITransport responseCorrelatorTransportTarget = mutexTransportTarget.CommandAsync.Target as ITransport;
 			Assert.IsNotNull(responseCorrelatorTransportTarget);
-			Assert.AreEqual(transport.Command.Target, responseCorrelatorTransportTarget.Command.Target);
+			Assert.AreEqual(transport.CommandAsync.Target, responseCorrelatorTransportTarget.CommandAsync.Target);
 		}
 
 		[SetUp]
@@ -118,7 +120,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			{
 				Assert.IsNotNull(transport);
 
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -143,7 +145,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -169,7 +171,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -197,7 +199,7 @@ namespace Apache.NMS.ActiveMQ.Test
             using(ITransport transport = factory.CreateTransport(uri))
             {
                 Assert.IsNotNull(transport);
-                transport.Command = OnCommand;
+                transport.CommandAsync = OnCommand;
                 transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -225,7 +227,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -257,7 +259,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -283,7 +285,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -318,7 +320,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test]
-		public void FailoverTransportSendRequestTest()
+		public async Task FailoverTransportSendRequestTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
 			FailoverTransportFactory factory = new FailoverTransportFactory();
@@ -326,7 +328,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -337,7 +339,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				failover.Resumed = OnResumed;
 
-				transport.Start();
+				await transport.StartAsync();
 				Thread.Sleep(1000);
 				Assert.IsTrue(failover.IsConnected);
 
@@ -353,7 +355,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				for(int i = 0; i < numMessages; ++i)
 				{
-					transport.Request(message);
+					await transport.RequestAsync(message);
 				}
 
 				Thread.Sleep(1000);
@@ -372,7 +374,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -421,7 +423,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -449,7 +451,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -475,7 +477,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				for(int i = 0; i < numMessages; ++i)
 				{
-					transport.Request(message);
+					transport.RequestAsync(message).GetAsyncResult();
 				}
 
 				Thread.Sleep(1000);
@@ -495,7 +497,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -567,7 +569,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -606,7 +608,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -638,7 +640,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test]
-		public void OpenWireCommandsTest()
+		public async Task OpenWireCommandsTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
 			FailoverTransportFactory factory = new FailoverTransportFactory();
@@ -646,7 +648,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			using(ITransport transport = factory.CreateTransport(uri))
 			{
 				Assert.IsNotNull(transport);
-				transport.Command = OnCommand;
+				transport.CommandAsync = OnCommand;
 				transport.Exception = OnException;
 				transport.Resumed = OnResumed;
 				transport.Interrupted = OnInterrupted;
@@ -655,25 +657,25 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsNotNull(failover);
 				Assert.IsFalse(failover.Randomize);
 
-				transport.Start();
+				await transport.StartAsync();
 				Thread.Sleep(1000);
 				Assert.IsTrue(failover.IsConnected);
 
 				ConnectionInfo connection = createConnection();
-				transport.Request(connection);
+				await transport.RequestAsync(connection);
 				SessionInfo session1 = createSession(connection);
-				transport.Request(session1);
+				await transport.RequestAsync(session1);
 				SessionInfo session2 = createSession(connection);
-				transport.Request(session2);
+				await transport.RequestAsync(session2);
 				ConsumerInfo consumer1 = createConsumer(session1);
-				transport.Request(consumer1);
+				await transport.RequestAsync(consumer1);
 				ConsumerInfo consumer2 = createConsumer(session1);
-				transport.Request(consumer2);
+				await transport.RequestAsync(consumer2);
 				ConsumerInfo consumer3 = createConsumer(session2);
-				transport.Request(consumer3);
+				await transport.RequestAsync(consumer3);
 
 				ProducerInfo producer1 = createProducer(session2);
-				transport.Request(producer1);
+				await transport.RequestAsync(producer1);
 
 				// Remove the Producers
 				disposeOf(transport, producer1);

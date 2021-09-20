@@ -21,10 +21,13 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Text;
 using System.Net;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.State;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
+using Task = Apache.NMS.ActiveMQ.Threads.Task;
 
 namespace Apache.NMS.ActiveMQ.Transport.Failover
 {
@@ -45,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
         private readonly List<Uri> uris = new List<Uri>();
         private readonly List<Uri> updated = new List<Uri>();
 
-        private CommandHandler commandHandler;
+        private CommandHandlerAsync commandHandlerAsync;
         private ExceptionHandler exceptionHandler;
         private InterruptedHandler interruptedHandler;
         private ResumedHandler resumedHandler;
@@ -181,12 +184,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
         #region Property Accessors
 
-        public CommandHandler Command
+        public CommandHandlerAsync CommandAsync
         {
-            get { return commandHandler; }
+            get { return commandHandlerAsync; }
             set 
 			{ 
-				commandHandler = value; 
+				commandHandlerAsync = value; 
 				listenerLatch.countDown();
 			}
         }
@@ -401,6 +404,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             get { return connectedToPriority; }
         }
 
+        public System.Threading.Tasks.Task StartAsync()
+        {
+	        Start();
+	        return System.Threading.Tasks.Task.CompletedTask;
+        }
+
         public bool IsStarted
         {
             get { return started; }
@@ -428,8 +437,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             }
         }
 
-        public void DisposedOnCommand(ITransport sender, Command c)
+        public System.Threading.Tasks.Task DisposedOnCommand(ITransport sender, Command c)
         {
+	        return System.Threading.Tasks.Task.CompletedTask;
         }
 
         public void DisposedOnException(ITransport sender, Exception e)
@@ -565,7 +575,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                ITransport transport = backup.Transport;
 	                if (transport != null) 
 					{
-	                    transport.Command = DisposedOnCommand;
+	                    transport.CommandAsync = DisposedOnCommand;
 						transport.Exception = DisposedOnException;
 	                    backupsToStop.Add(transport);
 	                }
@@ -594,22 +604,28 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             }
         }
 
+        public System.Threading.Tasks.Task StopAsync()
+        {
+	        Stop();
+	        return System.Threading.Tasks.Task.CompletedTask;
+        }
+
         public FutureResponse AsyncRequest(Command command)
         {
             throw new ApplicationException("FailoverTransport does not implement AsyncRequest(Command)");
         }
 
-        public Response Request(Command command)
+        public Task<Response> RequestAsync(Command command)
         {
             throw new ApplicationException("FailoverTransport does not implement Request(Command)");
         }
 
-        public Response Request(Command command, TimeSpan ts)
+        public Task<Response> RequestAsync(Command command, TimeSpan ts)
         {
             throw new ApplicationException("FailoverTransport does not implement Request(Command, TimeSpan)");
         }
 
-        public void OnCommand(ITransport sender, Command command)
+        public async System.Threading.Tasks.Task OnCommand(ITransport sender, Command command)
         {
             if(command != null)
             {
@@ -649,7 +665,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 }
             }
 
-            this.Command(sender, command);
+            await this.CommandAsync(sender, command).Await();
         }
 
         public void Oneway(Command command)
@@ -672,7 +688,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         // since it would be stale at this point.
                         if(command.ResponseRequired)
                         {
-                            OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                            OnCommand(this, new Response() { CorrelationId = command.CommandId }).GetAsyncResult();
                         }
                         return;
                     }
@@ -685,7 +701,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                             MessageDispatch dispatch = new MessageDispatch();
                             dispatch.ConsumerId = pullRequest.ConsumerId;
                             dispatch.Destination = pullRequest.Destination;
-                            OnCommand(this, dispatch);
+                            OnCommand(this, dispatch).GetAsyncResult();
                         }
                         return;
                     }
@@ -705,7 +721,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                             Tracer.Debug("Inflight MessageAck being dropped as stale.");
                             if(command.ResponseRequired)
                             {
-                                OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                                OnCommand(this, new Response() { CorrelationId = command.CommandId }).GetAsyncResult();
                             }
                             return;
                         }
@@ -997,7 +1013,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                 if(command.IsMessageAck)
                 {
                     Tracer.Debug("Stored MessageAck being dropped as stale.");
-                    OnCommand(this, new Response() { CorrelationId = command.CommandId });
+                    OnCommand(this, new Response() { CorrelationId = command.CommandId }).GetAsyncResult();
                     continue;
                 }
 
@@ -1165,7 +1181,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                                transport = TransportFactory.CompositeConnect(uri);
 	                            }
 
-                                transport.Command = OnCommand;
+                                transport.CommandAsync = OnCommand;
                                 transport.Exception = OnException;
 	                            transport.Start();
 
@@ -1313,7 +1329,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                                 if(!backups.Contains(bt))
                                 {
                                     ITransport t = TransportFactory.CompositeConnect(uri);
-                                    t.Command = bt.OnCommand;
+                                    t.CommandAsync = bt.OnCommand;
                                     t.Exception = bt.OnException;
                                     t.Start();
                                     bt.Transport = t;
@@ -1534,7 +1550,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 		public void DisposeTransport(ITransport transport) 
 		{
-			transport.Command = DisposedOnCommand;
+			transport.CommandAsync = DisposedOnCommand;
 			transport.Exception = DisposedOnException;
 
 			try 

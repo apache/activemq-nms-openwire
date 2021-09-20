@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp2.2</TargetFrameworks>
     <RootNamespace>Apache.NMS.ActiveMQ.Test</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ.Test</AssemblyName>
     <ApplicationIcon />
@@ -19,9 +18,11 @@
     <RepositoryUrl>https://github.com/apache/activemq-nms-openwire</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>apache;activemq;nms;api;net;test;messaging</PackageTags>
-    <Version>1.8.0</Version>
+    <Version>2.0.0</Version>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>NMSKey.snk</AssemblyOriginatorKeyFile>
+    <LangVersion>8</LangVersion>
+    <TargetFrameworks>net472;netcoreapp3.1</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
