@@ -130,10 +130,9 @@ namespace Apache.NMS.ActiveMQ
                 try
                 {
                     Guid rmId = ResourceManagerGuid;
-
+                     
                     // Enlist this object in the transaction.
-                    this.currentEnlistment =
-                        transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
+                    this.currentEnlistment = transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
 
                     // In case of a exception in the current method the transaction will be rolled back.
                     // Until Begin Transaction is completed we consider to be in a rollback scenario.

@@ -15,11 +15,8 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
-using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -28,74 +25,13 @@ namespace Apache.NMS.ActiveMQ.Transport
 	/// </summary>
 	public class FutureResponse : TaskCompletionSource<Response>
 	{
-		public FutureResponse() : base(TaskCreationOptions.RunContinuationsAsynchronously)
+		public FutureResponse(): base(TaskCreationOptions.RunContinuationsAsynchronously)
 		{
-			
 		}
 		
-		private TimeSpan maxWait = TimeSpan.FromMilliseconds(Timeout.Infinite);
-		public TimeSpan ResponseTimeout
-		{
-			get { return maxWait; }
-			set { maxWait = value; }
-		}
-
-		private readonly CountDownLatch latch = new CountDownLatch(1);
-		private Response response;
-
 		public Response Response
 		{
-			// Blocks the caller until a value has been set
-			get
-			{
-				
-				
-				lock(latch)
-				{
-					if(null != response)
-					{
-						return response;
-					}
-				}
-
-				try
-				{
-					if(!latch.await(maxWait) && response == null)
-					{
-						throw new RequestTimedOutException(maxWait);
-					}
-				}
-				catch(RequestTimedOutException e)
-				{
-					Tracer.Error("Caught Timeout Exception while waiting on monitor: " + e);
-					throw;
-				}
-				catch(Exception e)
-				{
-					Tracer.Error("Caught Exception while waiting on monitor: " + e);
-				}
-				
-				if(response == null && maxWait.TotalMilliseconds > 0)
-				{
-				}
-
-				lock(latch)
-				{
-					return response;
-				}
-			}
-
-			set
-			{
-				lock(latch)
-				{
-					response = value;
-				}
-
-				latch.countDown();
-				
-				this.SetResult(value);
-			}
+			set => SetResult(value);
 		}
 	}
 }

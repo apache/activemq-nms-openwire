@@ -17,14 +17,10 @@
 
 using System;
 using System.Threading.Tasks;
-using Apache.NMS;
-using Apache.NMS.Util;
-using Apache.NMS.Test;
-using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
-using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Transport.Tcp;
+using Apache.NMS.Test;
 using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -51,11 +47,11 @@ namespace Apache.NMS.ActiveMQ.Test
             this.commitFailed = false;
         }
 
-        [Test]
+        [Test][Timeout(50_000)]
         public void FailoverAfterCommitSentTest()
         {
             string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
-            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(uri));
             using(connection = factory.CreateConnection() as Connection)
             {
                 connection.ConnectionInterruptedListener +=
@@ -121,11 +117,11 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
-        [Test]
+        [Test][Timeout(50_000)]
         public void FailoverBeforeCommitSentTest()
         {
             string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
-            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(uri));
             using(connection = factory.CreateConnection() as Connection)
             {
                 connection.ConnectionInterruptedListener +=
@@ -186,11 +182,11 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
-        [Test]
+        [Test][Timeout(50_000)]
         public void FailoverWithShortLivedProducerTest()
         {
             string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
-            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(uri));
             using(connection = factory.CreateConnection() as Connection)
             {
                 connection.ConnectionInterruptedListener +=
@@ -243,11 +239,11 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
-        [Test]
+        [Test][Timeout(50_000)]
         public void TestMessageDeliveredAfterCommitFailsAndRollback()
         {
             string uri = "failover:(tcpfaulty://${activemqhost}:61616?transport.useLogging=true)";
-            IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
+            IConnectionFactory factory = new ConnectionFactory(ReplaceEnvVar(uri));
             using(connection = factory.CreateConnection() as Connection)
             {
                 using(ISession session = connection.CreateSession())

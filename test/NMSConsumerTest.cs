@@ -159,7 +159,7 @@ namespace Apache.NMS.ActiveMQ.Test
             ParameterizedThreadStart threadStart =
                 delegate(object o)
                 {
-                    IMessageConsumer consumer = (IMessageConsumer)o;
+                    var consumer = (INMSConsumer)o;
                     IMessage message = consumer.Receive(TimeSpan.FromSeconds(2));
                     Assert.IsNotNull(message);
                 };

@@ -87,37 +87,28 @@ namespace Apache.NMS.ActiveMQ.Transport
 			return future;
         }
 
-        public override Task<Response> RequestAsync(Command command, TimeSpan timeout)
+        public override async Task<Response> RequestAsync(Command command, TimeSpan timeout)
         {
-	        TaskCompletionSource<Response> taskCompletionSource = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-			if (timeout.TotalMilliseconds > 0)
-	        {
-		        CancellationTokenSource ct = new CancellationTokenSource(timeout);
-		        ct.Token.Register(() =>
-		        {
-			        taskCompletionSource.TrySetException(new RequestTimedOutException(timeout));
-		        }, false);
-	        }
-    
             FutureResponse future = AsyncRequest(command);
-            
-            _ = future.Task.ContinueWith(t =>
+            if (timeout.TotalMilliseconds > 0)
             {
-	            if (t.IsCompleted)
+	            using (CancellationTokenSource ct = new CancellationTokenSource(timeout))
 	            {
-		            taskCompletionSource.SetResult(t.Result);
+		            ct.Token.Register(() =>
+		            {
+			            if (future.TrySetException(new RequestTimedOutException(timeout)))
+			            {
+				            requestMap.Remove(command.CommandId);
+			            }
+		            }, false);
+
+		            return await future.Task;
 	            }
-	            else if (t.IsFaulted)
-	            {
-		            taskCompletionSource.SetException(t.Exception);
-	            }
-	            else if (t.IsCanceled)
-	            {
-		            taskCompletionSource.SetCanceled();
-	            }
-            });
-            
-            return taskCompletionSource.Task;
+            }
+            else
+            {
+	            return await future.Task;
+            }
         }
 
         protected override async Task OnCommand(ITransport sender, Command command)

@@ -712,7 +712,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             try
             {
-                using (TransactionScope scoped = new TransactionScope(batchTxControl))
+                using (TransactionScope scoped = new TransactionScope(batchTxControl, TransactionScopeAsyncFlowOption.Enabled))
                 using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                 using (SqlCommand sqlInsertCommand = new SqlCommand())
                 {
