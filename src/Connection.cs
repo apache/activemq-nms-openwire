@@ -1033,12 +1033,12 @@ namespace Apache.NMS.ActiveMQ
                                         if(!(response is ExceptionResponse))
                                         {
                                             connected.Value = true;
-                                            if(this.watchTopicAdviosires)
+                                            if (this.watchTopicAdviosires)
                                             {
                                                 ConsumerId id = new ConsumerId(
                                                     new SessionId(info.ConnectionId, -1),
                                                     Interlocked.Increment(ref this.consumerIdCounter));
-                                                this.advisoryConsumer = new AdvisoryConsumer(this, id);
+                                                this.advisoryConsumer = await AdvisoryConsumer.CreateAsync(this, id).Await();
                                             }
                                         }
                                         else

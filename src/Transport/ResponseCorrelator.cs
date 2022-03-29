@@ -89,26 +89,27 @@ namespace Apache.NMS.ActiveMQ.Transport
 
         public override async Task<Response> RequestAsync(Command command, TimeSpan timeout)
         {
-            FutureResponse future = AsyncRequest(command);
-            if (timeout.TotalMilliseconds > 0)
-            {
-	            using (CancellationTokenSource ct = new CancellationTokenSource(timeout))
-	            {
-		            ct.Token.Register(() =>
-		            {
-			            if (future.TrySetException(new RequestTimedOutException(timeout)))
-			            {
-				            requestMap.Remove(command.CommandId);
-			            }
-		            }, false);
-
-		            return await future.Task;
-	            }
-            }
-            else
-            {
-	            return await future.Task;
-            }
+	        FutureResponse future = AsyncRequest(command);
+	        if (timeout.TotalMilliseconds > 0)
+	        {
+		        using (CancellationTokenSource ct = new CancellationTokenSource(timeout))
+		        {
+			        using (ct.Token.Register(() =>
+			               {
+				               if (future.TrySetException(new RequestTimedOutException(timeout)))
+				               {
+					               requestMap.Remove(command.CommandId);
+				               }
+			               }, false))
+			        {
+				        return await future.Task;
+			        }
+		        }
+	        }
+	        else
+	        {
+		        return await future.Task;
+	        }
         }
 
         protected override async Task OnCommand(ITransport sender, Command command)

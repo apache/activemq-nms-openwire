@@ -25,12 +25,12 @@ namespace Apache.NMS.ActiveMQ.Util.Synchronization
         
         public static T GetAsyncResult<T>(this Task<T> task)
         {
-            return task.Await().GetAwaiter().GetResult();
+            return task.GetAwaiter().GetResult();
         }
         
         public static void GetAsyncResult(this Task task)
         {
-            task.Await().GetAwaiter().GetResult();
+            task.GetAwaiter().GetResult();
         }
 
         public static async Task AwaitRunContinuationAsync(this Task task)

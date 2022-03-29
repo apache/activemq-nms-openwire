@@ -31,7 +31,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 		
 		public Response Response
 		{
-			set => SetResult(value);
+			set => TrySetResult(value);
 		}
 	}
 }
