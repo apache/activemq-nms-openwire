@@ -8,7 +8,7 @@
     <Company>Apache Software Foundation</Company>
     <Product>Apache NMS OpenWire</Product>
     <Description>Apache NMS (.Net Standard Messaging Library): Openwire implementation of Apache NMS API</Description>
-    <Copyright>Copyright (C) 2005-2021 Apache Software Foundation</Copyright>
+    <Copyright>Copyright (C) 2005-2022 Apache Software Foundation</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageProjectUrl>https://activemq.apache.org/components/nms/</PackageProjectUrl>
     <PackageIconUrl>https://activemq.apache.org/assets/img/activemq_logo_icon.png</PackageIconUrl>
