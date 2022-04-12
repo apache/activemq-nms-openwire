@@ -330,7 +330,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
                 return (SslProtocols)Enum.Parse(typeof(SslProtocols), SslProtocol, true);
             }
 
-            return SslProtocols.Default;
+            return SslProtocols.None;
         }
     }
 }
