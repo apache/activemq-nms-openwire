@@ -33,16 +33,17 @@ namespace Apache.NMS.ActiveMQ.Test
     public class AMQNET366Test : NMSTestSupport
     {
         private IConnection connection;
-        private bool connectionClosed = false;
+        private ManualResetEvent exceptionOccuredEvent;
         private readonly String connectionUri = "activemq:tcpfaulty://${activemqhost}:61616";
 
         [SetUp]
         public override void SetUp()
         {
+            exceptionOccuredEvent = new ManualResetEvent(false);
             base.SetUp();
         }
 
-        [Test, Timeout(80000)]
+        [Test, Timeout(30_000)]
         public void TestConnection()
         {
             IConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionUri));
@@ -66,16 +67,8 @@ namespace Apache.NMS.ActiveMQ.Test
 
                     connection.Start();
 
-                    int count = 30;
-                    while (count-- > 0)
-                    {
-                        if (!connectionClosed)
-                        {
-                            Thread.Sleep(TimeSpan.FromSeconds(3));
-                        }
-                    }
-
-                    Assert.IsTrue(connectionClosed);
+                    Assert.IsTrue(exceptionOccuredEvent.WaitOne(TimeSpan.FromSeconds(30 * 3)),
+                        "Exception didnt occured within waiting time");
                 }
             }
         }
@@ -106,7 +99,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             Tracer.Debug("Connection signalled an Exception");
             connection.Close();
-            this.connectionClosed = true;
+            exceptionOccuredEvent.Set();
         }
     }
 }

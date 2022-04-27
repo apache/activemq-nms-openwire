@@ -28,6 +28,8 @@ namespace Apache.NMS.ActiveMQ.Threads
     {
         private readonly Mutex mutex = new Mutex();
         private readonly Thread theThread = null;
+        private AsyncLocal<bool> workExecutionContextCurrentlyProcessing = new AsyncLocal<bool>();
+        
         private readonly LinkedList<CompositeTask> tasks = new LinkedList<CompositeTask>();
 
         private bool terminated = false;
@@ -78,7 +80,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 
                 // Wait till the thread stops ( no need to wait if shutdown
                 // is called from thread that is shutting down)
-                if(Thread.CurrentThread != this.theThread && !this.terminated) 
+                if(!workExecutionContextCurrentlyProcessing.Value && !this.terminated) 
                 {
                     Monitor.Wait(this.mutex, timeout);
                 }
@@ -103,7 +105,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 
                 // Wait till the thread stops ( no need to wait if shutdown
                 // is called from thread that is shutting down)
-                if(Thread.CurrentThread != this.theThread && !this.terminated)
+                if(!workExecutionContextCurrentlyProcessing.Value/*Thread.CurrentThread != this.theThread*/ && !this.terminated)
                 {
                     Monitor.Wait(this.mutex, timeout);
 
@@ -132,8 +134,9 @@ namespace Apache.NMS.ActiveMQ.Threads
 
         internal void Run()
         {
-            try 
+            try
             {
+                workExecutionContextCurrentlyProcessing.Value = true;
                 while(true) 
                 {
                     lock(this.mutex) 
@@ -172,7 +175,8 @@ namespace Apache.NMS.ActiveMQ.Threads
             {
             }
             finally
-            {        
+            {
+                workExecutionContextCurrentlyProcessing.Value = false;
                 // Make sure we notify any waiting threads that thread
                 // has terminated.
                 lock(this.mutex)

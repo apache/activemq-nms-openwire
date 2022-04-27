@@ -35,7 +35,8 @@ namespace Apache.NMS.ActiveMQ.Threads
         private bool closing = false;
         private bool closed = false;
         private ManualResetEvent executionComplete = new ManualResetEvent(true);
-        private Thread workThread = null;
+        private AsyncLocal<bool> workExecutionContextCurrentlyProcessing = new AsyncLocal<bool>();
+        
 
         /// <summary>
         /// Represents an asynchronous task that is executed on the ThreadPool
@@ -153,7 +154,7 @@ namespace Apache.NMS.ActiveMQ.Threads
                 {
 					// If called from the worker thread we can't check this as it 
 					// will deadlock us, just return whatever the closed state is.
-                    if(this.running && Thread.CurrentThread != this.workThread)
+                    if (this.running && !workExecutionContextCurrentlyProcessing.Value)
                     {
                         syncRoot.ReleaseMutex();
                         this.closed = this.executionComplete.WaitOne(timeout, false);
@@ -173,8 +174,6 @@ namespace Apache.NMS.ActiveMQ.Threads
 
             lock(syncRoot)
             {
-                this.workThread = Thread.CurrentThread;
-
                 if(this.workQueue.Count == 0)
                 {
                     this.running = false;
@@ -187,11 +186,12 @@ namespace Apache.NMS.ActiveMQ.Threads
 
             try
             {
+                workExecutionContextCurrentlyProcessing.Value = true;
                 theTask.Run();
             }
             finally
             {
-                this.workThread = null;
+                workExecutionContextCurrentlyProcessing.Value = false;
 
                 if(this.workQueue.Count == 0)
                 {
