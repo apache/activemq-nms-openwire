@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
@@ -44,7 +45,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			asyncErrorLatch.countDown();
         }
 
-        public void OnCommand(ITransport transport, Command command)
+        public async Task OnCommand(ITransport transport, Command command)
         {
             Tracer.Debug("Test: Received Command from Transport: " + command );
             received.Add( command );
@@ -88,7 +89,7 @@ namespace Apache.NMS.ActiveMQ.Test
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
 
             monitor.Exception += new ExceptionHandler(OnException);
-            monitor.Command += new CommandHandler(OnCommand);
+            monitor.CommandAsync += new CommandHandlerAsync(OnCommand);
 
             // Send the local one for the monitor to record.
             monitor.Oneway( this.localWireFormatInfo );
@@ -111,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Test
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
 
             monitor.Exception += new ExceptionHandler(OnException);
-            monitor.Command += new CommandHandler(OnCommand);
+            monitor.CommandAsync += new CommandHandlerAsync(OnCommand);
             monitor.Start();
 
             // Send the local one for the monitor to record.
@@ -138,7 +139,7 @@ namespace Apache.NMS.ActiveMQ.Test
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
 
             monitor.Exception += new ExceptionHandler(OnException);
-            monitor.Command += new CommandHandler(OnCommand);
+            monitor.CommandAsync += new CommandHandlerAsync(OnCommand);
             monitor.Start();
 
             // Send the local one for the monitor to record.

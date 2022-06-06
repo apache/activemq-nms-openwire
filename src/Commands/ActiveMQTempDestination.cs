@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 
 namespace Apache.NMS.ActiveMQ.Commands
 {
@@ -85,6 +86,12 @@ namespace Apache.NMS.ActiveMQ.Commands
 			return o;
 		}
 
+		public Task DeleteAsync()
+		{
+			Delete();
+			return Task.CompletedTask;
+		}
+		
         public void Delete()
         {
             if(this.connection != null)

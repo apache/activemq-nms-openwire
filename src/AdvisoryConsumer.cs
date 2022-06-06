@@ -16,9 +16,10 @@
  */
 
 using System;
-
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -34,7 +35,16 @@ namespace Apache.NMS.ActiveMQ
         private bool closed = false;
         private int deliveredCounter = 0;
 
-        internal AdvisoryConsumer(Connection connection, ConsumerId consumerId) : base()
+        internal static async Task<AdvisoryConsumer> CreateAsync(Connection connection, ConsumerId consumerId)
+        {
+            var advisoryConsumer = new AdvisoryConsumer(connection, consumerId);
+            connection.AddDispatcher(consumerId, advisoryConsumer);
+            await connection.SyncRequestAsync(advisoryConsumer.info).Await();
+            
+            return advisoryConsumer;
+        }
+
+        private AdvisoryConsumer(Connection connection, ConsumerId consumerId) : base()
         {
             this.connection = connection;
             this.info = new ConsumerInfo();
@@ -42,9 +52,6 @@ namespace Apache.NMS.ActiveMQ
             this.info.Destination = AdvisorySupport.TEMP_DESTINATION_COMPOSITE_ADVISORY_TOPIC;
             this.info.PrefetchSize = 1000;
             this.info.NoLocal = true;
-
-            this.connection.AddDispatcher(consumerId, this);
-            this.connection.SyncRequest(this.info);
         }
 
         internal void Dispose()
@@ -66,7 +73,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void Dispatch(MessageDispatch messageDispatch)
+        public Task Dispatch_Async(MessageDispatch messageDispatch)
         {
             // Auto ack messages when we reach 75% of the prefetch
             deliveredCounter++;
@@ -101,6 +108,8 @@ namespace Apache.NMS.ActiveMQ
                 // This can happen across networks
                 Tracer.Debug("Unexpected message was dispatched to the AdvisoryConsumer: " + messageDispatch);
             }
+            
+            return Task.CompletedTask;
         }
 
         private void ProcessDestinationInfo(DestinationInfo destInfo)

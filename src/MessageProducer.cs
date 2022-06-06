@@ -17,9 +17,11 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -30,7 +32,7 @@ namespace Apache.NMS.ActiveMQ
 	{
 		private readonly Session session;
 		private readonly MemoryUsage usage = null;
-		private readonly object closedLock = new object();
+		private readonly NmsSynchronizationMonitor closedLock = new NmsSynchronizationMonitor();
 		private bool closed = false;
 		private readonly ProducerInfo info;
 		private int producerSequenceId = 0;
@@ -105,9 +107,16 @@ namespace Apache.NMS.ActiveMQ
 			disposed = true;
 		}
 
+		
+
 		public void Close()
 		{
-			lock(closedLock)
+			CloseAsync().GetAsyncResult();
+		}
+
+		public async Task CloseAsync()
+		{
+			using(await closedLock.LockAsync().Await())
 			{
 				if(closed)
 				{
@@ -120,8 +129,8 @@ namespace Apache.NMS.ActiveMQ
 				this.session.Connection.Oneway(removeInfo);
 				if(Tracer.IsDebugEnabled)
 				{
-                    Tracer.DebugFormat("Remove of Producer[{0}] for destination[{1}] sent.", 
-                                       this.ProducerId, this.info.Destination);
+					Tracer.DebugFormat("Remove of Producer[{0}] for destination[{1}] sent.", 
+						this.ProducerId, this.info.Destination);
 				}
 			}
 		}
@@ -133,7 +142,7 @@ namespace Apache.NMS.ActiveMQ
 		/// </summary>
 		internal void Shutdown()
 		{
-			lock(closedLock)
+			using(closedLock.Lock())
 			{
 				if(closed)
 				{
@@ -178,7 +187,33 @@ namespace Apache.NMS.ActiveMQ
 			Send(destination, message, deliveryMode, priority, timeToLive, true);
 		}
 
-		protected void Send(IDestination destination, IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority, TimeSpan timeToLive, bool specifiedTimeToLive)
+		public Task SendAsync(IMessage message)
+		{
+			return SendAsync(info.Destination, message, this.msgDeliveryMode, this.msgPriority, this.msgTimeToLive, false);
+		}
+
+		public Task SendAsync(IDestination destination, IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority,
+			TimeSpan timeToLive)
+		{
+			return SendAsync(destination, message, deliveryMode, priority, timeToLive, true);
+		}
+		public Task SendAsync(IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority, TimeSpan timeToLive)
+		{
+			return SendAsync(info.Destination, message, deliveryMode, priority, timeToLive, true);
+		}
+
+		public Task SendAsync(IDestination destination, IMessage message)
+		{
+			return SendAsync(destination, message, this.msgDeliveryMode, this.msgPriority, this.msgTimeToLive, false);
+		}
+
+		protected void Send(IDestination destination, IMessage message, MsgDeliveryMode deliveryMode,
+			MsgPriority priority, TimeSpan timeToLive, bool specifiedTimeToLive)
+		{
+			SendAsync(destination, message, deliveryMode, priority, timeToLive, specifiedTimeToLive).GetAsyncResult();
+		}
+		
+		protected async Task SendAsync(IDestination destination, IMessage message, MsgDeliveryMode deliveryMode, MsgPriority priority, TimeSpan timeToLive, bool specifiedTimeToLive)
 		{
 			if(null == destination)
 			{
@@ -253,14 +288,14 @@ namespace Apache.NMS.ActiveMQ
 				usage.WaitForSpace();
 			}
 
-			lock(closedLock)
+			using(await closedLock.LockAsync().Await())
 			{
 				if(closed)
 				{
 					throw new ConnectionClosedException();
 				}
 
-				session.DoSend(dest, activeMessage, this, this.usage, this.RequestTimeout);
+				await session.DoSendAsync(dest, activeMessage, this, this.usage, this.RequestTimeout).Await();
 			}
 		}
 
@@ -310,7 +345,18 @@ namespace Apache.NMS.ActiveMQ
 			set { this.disableMessageTimestamp = value; }
 		}
 
+		public TimeSpan DeliveryDelay
+		{
+			get => throw new NotImplementedException();
+			set => throw new NotImplementedException();
+		}
+
 		private ProducerTransformerDelegate producerTransformer;
+		public Task<IStreamMessage> CreateStreamMessageAsync()
+		{
+			return Task.FromResult(CreateStreamMessage());
+		}
+
 		public ProducerTransformerDelegate ProducerTransformer
 		{
 			get { return this.producerTransformer; }
@@ -322,9 +368,19 @@ namespace Apache.NMS.ActiveMQ
 			return session.CreateMessage();
 		}
 
+		public Task<IMessage> CreateMessageAsync()
+		{
+			return Task.FromResult(CreateMessage());
+		}
+
 		public ITextMessage CreateTextMessage()
 		{
 			return session.CreateTextMessage();
+		}
+
+		public Task<ITextMessage> CreateTextMessageAsync()
+		{
+			return Task.FromResult(CreateTextMessage());
 		}
 
 		public ITextMessage CreateTextMessage(string text)
@@ -332,9 +388,19 @@ namespace Apache.NMS.ActiveMQ
 			return session.CreateTextMessage(text);
 		}
 
+		public Task<ITextMessage> CreateTextMessageAsync(string text)
+		{
+			return Task.FromResult(CreateTextMessage(text));
+		}
+
 		public IMapMessage CreateMapMessage()
 		{
 			return session.CreateMapMessage();
+		}
+
+		public Task<IMapMessage> CreateMapMessageAsync()
+		{
+			return Task.FromResult(CreateMapMessage());
 		}
 
 		public IObjectMessage CreateObjectMessage(object body)
@@ -342,14 +408,29 @@ namespace Apache.NMS.ActiveMQ
 			return session.CreateObjectMessage(body);
 		}
 
+		public Task<IObjectMessage> CreateObjectMessageAsync(object body)
+		{
+			return Task.FromResult(CreateObjectMessage(body));
+		}
+
 		public IBytesMessage CreateBytesMessage()
 		{
 			return session.CreateBytesMessage();
 		}
 
+		public Task<IBytesMessage> CreateBytesMessageAsync()
+		{
+			return Task.FromResult(CreateBytesMessage());
+		}
+
 		public IBytesMessage CreateBytesMessage(byte[] body)
 		{
 			return session.CreateBytesMessage(body);
+		}
+
+		public Task<IBytesMessage> CreateBytesMessageAsync(byte[] body)
+		{
+			return Task.FromResult(CreateBytesMessage(body));
 		}
 
 		public IStreamMessage CreateStreamMessage()

@@ -18,7 +18,9 @@
 using System;
 using System.Collections;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -85,15 +87,32 @@ namespace Apache.NMS.ActiveMQ.Transport
 			return future;
         }
 
-        public override Response Request(Command command, TimeSpan timeout)
+        public override async Task<Response> RequestAsync(Command command, TimeSpan timeout)
         {
-            FutureResponse future = AsyncRequest(command);
-            future.ResponseTimeout = timeout;
-            Response response = future.Response;
-            return response;
+	        FutureResponse future = AsyncRequest(command);
+	        if (timeout.TotalMilliseconds > 0)
+	        {
+		        using (CancellationTokenSource ct = new CancellationTokenSource(timeout))
+		        {
+			        using (ct.Token.Register(() =>
+			               {
+				               if (future.TrySetException(new RequestTimedOutException(timeout)))
+				               {
+					               requestMap.Remove(command.CommandId);
+				               }
+			               }, false))
+			        {
+				        return await future.Task;
+			        }
+		        }
+	        }
+	        else
+	        {
+		        return await future.Task;
+	        }
         }
 
-        protected override void OnCommand(ITransport sender, Command command)
+        protected override async Task OnCommand(ITransport sender, Command command)
         {
             if(command.IsResponse)
             {
@@ -116,7 +135,7 @@ namespace Apache.NMS.ActiveMQ.Transport
             }
             else
             {
-                this.commandHandler(sender, command);
+                await this.commandHandlerAsync(sender, command).Await();
             }
         }
 		

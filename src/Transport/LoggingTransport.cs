@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.Transport
 {
@@ -28,9 +30,9 @@ namespace Apache.NMS.ActiveMQ.Transport
 		public LoggingTransport(ITransport next) : base(next) {
 		}
 		
-		protected override void OnCommand(ITransport sender, Command command) {
+		protected override async Task OnCommand(ITransport sender, Command command) {
 			Tracer.Info("RECEIVED: " + command);
-			this.commandHandler(sender, command);
+			await this.commandHandlerAsync(sender, command).Await();
 		}
 		
 		protected override void OnException(ITransport sender, Exception error) {

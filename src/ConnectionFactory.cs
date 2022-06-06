@@ -17,8 +17,10 @@
 
 using System;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Transport;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 using Apache.NMS.Policies;
 
@@ -115,7 +117,57 @@ namespace Apache.NMS.ActiveMQ
             return CreateActiveMQConnection(userName, password);
 		}
 
-        protected virtual Connection CreateActiveMQConnection()
+		public Task<IConnection> CreateConnectionAsync()
+		{
+			return Task.FromResult(CreateConnection());
+		}
+
+		public Task<IConnection> CreateConnectionAsync(string userName, string password)
+		{
+			return Task.FromResult(CreateConnection(userName, password));
+		}
+
+		public INMSContext CreateContext()
+		{
+			return new NmsContext((Connection)CreateConnection(), acknowledgementMode);
+		}
+
+		public INMSContext CreateContext(AcknowledgementMode ackMode)
+		{
+			return new NmsContext((Connection)CreateConnection(), ackMode);
+		}
+
+		public INMSContext CreateContext(string userName, string password)
+		{
+			return new NmsContext((Connection)CreateConnection(userName, password), acknowledgementMode);
+		}
+
+		public INMSContext CreateContext(string userName, string password, AcknowledgementMode ackMode)
+		{
+			return new NmsContext((Connection)CreateConnection(userName, password), ackMode);
+		}
+
+		public async Task<INMSContext> CreateContextAsync()
+		{
+			return new NmsContext((Connection)await CreateConnectionAsync().Await(), acknowledgementMode);
+		}
+
+		public async Task<INMSContext> CreateContextAsync(AcknowledgementMode ackMode)
+		{
+			return new NmsContext((Connection)await CreateConnectionAsync().Await(), ackMode);
+		}
+
+		public async Task<INMSContext> CreateContextAsync(string userName, string password)
+		{
+			return new NmsContext((Connection)await CreateConnectionAsync(userName, password).Await(), acknowledgementMode);
+		}
+
+		public async Task<INMSContext> CreateContextAsync(string userName, string password, AcknowledgementMode ackMode)
+		{
+			return new NmsContext((Connection)await CreateConnectionAsync(userName, password).Await(), ackMode);
+		}
+
+		protected virtual Connection CreateActiveMQConnection()
         {
             return CreateActiveMQConnection(connectionUserName, connectionPassword);
         }

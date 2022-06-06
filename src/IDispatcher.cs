@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ
@@ -25,6 +26,6 @@ namespace Apache.NMS.ActiveMQ
     /// </summary>
     public interface IDispatcher
     {
-        void Dispatch(MessageDispatch messageDispatch);
+        Task Dispatch_Async(MessageDispatch messageDispatch);
     }
 }

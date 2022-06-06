@@ -19,10 +19,13 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
+using Task = System.Threading.Tasks.Task;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -46,6 +49,7 @@ namespace Apache.NMS.ActiveMQ
 
         private readonly MessageTransformation messageTransformation;
         private readonly MessageDispatchChannel unconsumedMessages;
+        private readonly NmsSynchronizationMonitor deliveredMessagesLock = new NmsSynchronizationMonitor();
         private readonly LinkedList<MessageDispatch> deliveredMessages = new LinkedList<MessageDispatch>();
         private readonly ConsumerInfo info;
         private readonly Session session;
@@ -308,6 +312,8 @@ namespace Apache.NMS.ActiveMQ
             set { this.consumerTransformer = value; }
         }
 
+        public string MessageSelector => info?.Selector;
+
         public event MessageListener Listener
         {
             add
@@ -339,24 +345,34 @@ namespace Apache.NMS.ActiveMQ
 
         public IMessage Receive()
         {
+            return ReceiveAsync().GetAsyncResult();
+        }
+        
+        public async Task<IMessage> ReceiveAsync()
+        {
             CheckClosed();
             CheckMessageListener();
 
             SendPullRequest(0);
-            MessageDispatch dispatch = this.Dequeue(TimeSpan.FromMilliseconds(-1));
+            MessageDispatch dispatch = await this.DequeueAsync(TimeSpan.FromMilliseconds(-1)).Await();
 
             if(dispatch == null)
             {
                 return null;
             }
 
-            BeforeMessageIsConsumed(dispatch);
-            AfterMessageIsConsumed(dispatch, false);
+            await BeforeMessageIsConsumedAsync(dispatch).Await();
+            await AfterMessageIsConsumedAsync(dispatch, false).Await();
 
             return CreateActiveMQMessage(dispatch);
         }
 
         public IMessage Receive(TimeSpan timeout)
+        {
+            return ReceiveAsync(timeout).GetAsyncResult();
+        }
+        
+        public async Task<IMessage> ReceiveAsync(TimeSpan timeout)
         {
             CheckClosed();
             CheckMessageListener();
@@ -366,11 +382,11 @@ namespace Apache.NMS.ActiveMQ
 
             if(this.PrefetchSize == 0)
             {
-                dispatch = this.Dequeue(TimeSpan.FromMilliseconds(-1));
+                dispatch = await this.DequeueAsync(TimeSpan.FromMilliseconds(-1)).Await();
             }
             else
             {
-                dispatch = this.Dequeue(timeout);
+                dispatch = await this.DequeueAsync(timeout).Await();
             }
 
             if(dispatch == null)
@@ -378,13 +394,18 @@ namespace Apache.NMS.ActiveMQ
                 return null;
             }
 
-            BeforeMessageIsConsumed(dispatch);
-            AfterMessageIsConsumed(dispatch, false);
+            await BeforeMessageIsConsumedAsync(dispatch).Await();
+            await AfterMessageIsConsumedAsync(dispatch, false).Await();
 
             return CreateActiveMQMessage(dispatch);
         }
 
         public IMessage ReceiveNoWait()
+        {
+            return ReceiveNoWaitAsync().GetAsyncResult();
+        }
+        
+        public async Task<IMessage> ReceiveNoWaitAsync()
         {
             CheckClosed();
             CheckMessageListener();
@@ -394,11 +415,11 @@ namespace Apache.NMS.ActiveMQ
 
             if(this.PrefetchSize == 0)
             {
-                dispatch = this.Dequeue(TimeSpan.FromMilliseconds(-1));
+                dispatch = await this.DequeueAsync(TimeSpan.FromMilliseconds(-1)).Await();
             }
             else
             {
-                dispatch = this.Dequeue(TimeSpan.Zero);
+                dispatch = await this.DequeueAsync(TimeSpan.Zero).Await();
             }
 
             if(dispatch == null)
@@ -406,8 +427,8 @@ namespace Apache.NMS.ActiveMQ
                 return null;
             }
 
-            BeforeMessageIsConsumed(dispatch);
-            AfterMessageIsConsumed(dispatch, false);
+            await BeforeMessageIsConsumedAsync(dispatch).Await();
+            await AfterMessageIsConsumedAsync(dispatch, false).Await();
 
             return CreateActiveMQMessage(dispatch);
         }
@@ -439,6 +460,11 @@ namespace Apache.NMS.ActiveMQ
 
         public virtual void Close()
         {
+            CloseAsync().GetAsyncResult();
+        }
+        
+        public virtual async Task CloseAsync()
+        {
             if(!this.unconsumedMessages.Closed)
             {
                 if(this.deliveredMessages.Count != 0 && this.session.IsTransacted && this.session.TransactionContext.InTransaction)
@@ -451,14 +477,14 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.DebugFormat("Consumer[{0}] No Active TX or pending acks, closing normally.",
                                        this.info.ConsumerId);
-                    this.DoClose();
+                    await this.DoCloseAsync().Await();
                 }
             }
         }
 
-        internal void DoClose()
+        internal async Task DoCloseAsync()
         {
-            Shutdown();
+            await ShutdownAsync().Await();
             RemoveInfo removeCommand = new RemoveInfo();
             removeCommand.ObjectId = this.ConsumerId;
             if (Tracer.IsDebugEnabled)
@@ -476,7 +502,7 @@ namespace Apache.NMS.ActiveMQ
         /// send any message to the Broker as the parent close will take care of
         /// removing its child resources at the broker.
         /// </summary>
-        internal void Shutdown()
+        internal async Task ShutdownAsync()
         {
             if(!this.unconsumedMessages.Closed)
             {
@@ -492,7 +518,7 @@ namespace Apache.NMS.ActiveMQ
                     DeliverAcks();
                     if(this.IsAutoAcknowledgeBatch)
                     {
-                        Acknowledge();
+                        await AcknowledgeAsync().Await();
                     }
                 }
 
@@ -513,7 +539,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         // rollback duplicates that aren't acknowledged
                         LinkedList<MessageDispatch> temp = null;
-                        lock(this.deliveredMessages)
+                        using(await this.deliveredMessagesLock.LockAsync().Await())
                         {
                             temp = new LinkedList<MessageDispatch>(this.deliveredMessages);
                         }
@@ -527,7 +553,7 @@ namespace Apache.NMS.ActiveMQ
 
                 if(!this.session.IsTransacted)
                 {
-                    lock(this.deliveredMessages)
+                    using(await this.deliveredMessagesLock.LockAsync().Await())
                     {
                         deliveredMessages.Clear();
                     }
@@ -570,11 +596,11 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        protected void DoIndividualAcknowledge(ActiveMQMessage message)
+        protected async System.Threading.Tasks.Task DoIndividualAcknowledgeAsync(ActiveMQMessage message)
         {
             MessageDispatch dispatch = null;
 
-            lock(this.deliveredMessages)
+            using(await this.deliveredMessagesLock.LockAsync().Await())
             {
                 foreach(MessageDispatch originalDispatch in this.deliveredMessages)
                 {
@@ -598,7 +624,7 @@ namespace Apache.NMS.ActiveMQ
             MessageAck ack = new MessageAck(dispatch, (byte) AckType.IndividualAck, 1);
             Tracer.DebugFormat("Consumer[{0}] sending Individual Ack for MessageId: {1}",
                                ConsumerId, ack.LastMessageId);
-            this.session.SendAck(ack);
+            await this.session.SendAckAsync(ack).Await();
         }
 
         protected void DoNothingAcknowledge(ActiveMQMessage message)
@@ -638,7 +664,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(this.IsAutoAcknowledgeEach)
                 {
-                    lock(this.deliveredMessages)
+                    using(this.deliveredMessagesLock.Lock())
                     {
                         ack = MakeAckForAllDeliveredMessages(AckType.ConsumedAck);
                         if(ack != null)
@@ -667,7 +693,8 @@ namespace Apache.NMS.ActiveMQ
                         this.executor = new ThreadPoolExecutor();
                     }
 
-                    this.executor.QueueUserWorkItem(AsyncDeliverAck, ack);
+                    // queue to sync pool so we have to make it sync method
+                    this.executor.QueueUserWorkItem( (obj) => AsyncDeliverAckAsync(obj).GetAsyncResult(), ack);
                 }
                 else
                 {
@@ -676,12 +703,12 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void AsyncDeliverAck(object ack)
+        private async System.Threading.Tasks.Task AsyncDeliverAckAsync(object ack)
         {
             MessageAck pending = ack as MessageAck;
             try
             {
-                this.session.SendAck(pending, true);
+                await this.session.SendAckAsync(pending, true).Await();
             }
             catch
             {
@@ -707,7 +734,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 // Called from a thread in the ThreadPool, so we wait until we can
                 // get a lock on the unconsumed list then we clear it.
-                lock(this.unconsumedMessages.SyncRoot)
+                using(this.unconsumedMessages.SyncRoot.Lock())
                 {
                     if(inProgressClearRequiredFlag)
                     {
@@ -740,7 +767,7 @@ namespace Apache.NMS.ActiveMQ
         {
             if (this.clearDeliveredList)
             {
-                lock(this.deliveredMessages)
+                using(this.deliveredMessagesLock.Lock())
                 {
                     if (!this.clearDeliveredList || deliveredMessages.Count == 0)
                     {
@@ -791,7 +818,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public virtual void Dispatch(MessageDispatch dispatch)
+        public virtual async Task Dispatch_Async(MessageDispatch dispatch)
         {
             MessageListener listener = this.listener;
             bool dispatchMessage = false;
@@ -801,7 +828,7 @@ namespace Apache.NMS.ActiveMQ
                 ClearMessagesInProgress();
                 ClearDeliveredList();
 
-                lock(this.unconsumedMessages.SyncRoot)
+                using(await this.unconsumedMessages.SyncRoot.LockAsync().Await())
                 {
                     if(!this.unconsumedMessages.Closed)
                     {
@@ -811,7 +838,7 @@ namespace Apache.NMS.ActiveMQ
                             {
                                 if (RedeliveryExceeded(dispatch))
                                 {
-                                    PosionAck(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery policy limit:" + redeliveryPolicy.MaximumRedeliveries);
+                                    await PosionAckAsync(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery policy limit:" + redeliveryPolicy.MaximumRedeliveries).Await();
                                     return;
                                 }
                                 else
@@ -840,11 +867,11 @@ namespace Apache.NMS.ActiveMQ
                                                    ConsumerId, previouslyDeliveredMessages.TransactionId, dispatch.Message);
                                 if (TransactedIndividualAck)
                                 {
-                                    ImmediateIndividualTransactedAck(dispatch);
+                                    await ImmediateIndividualTransactedAckAsync(dispatch).Await();
                                 }
                                 else
                                 {
-                                    this.session.SendAck(new MessageAck(dispatch, (byte) AckType.DeliveredAck, 1));
+                                    await this.session.SendAckAsync(new MessageAck(dispatch, (byte) AckType.DeliveredAck, 1)).Await();
                                 }
                             }
                             else if ((consumerWithPendingTransaction = RedeliveryPendingInCompetingTransaction(dispatch)) != null)
@@ -852,13 +879,13 @@ namespace Apache.NMS.ActiveMQ
                                 Tracer.WarnFormat("Consumer[{0}] delivering duplicate [{1}], pending transaction completion on ({1}) will rollback",
                                                   ConsumerId, dispatch.Message, consumerWithPendingTransaction);
                                 this.session.Connection.RollbackDuplicate(this, dispatch.Message);
-                                Dispatch(dispatch);
+                                await Dispatch_Async(dispatch).Await();
                             }
                             else
                             {
                                 Tracer.WarnFormat("Consumer[{0}] suppressing duplicate delivery on connection, poison acking: ({1})",
                                                   ConsumerId, dispatch);
-                                PosionAck(dispatch, "Suppressing duplicate delivery on connection, consumer " + ConsumerId);
+                                await PosionAckAsync(dispatch, "Suppressing duplicate delivery on connection, consumer " + ConsumerId).Await();
                             }
                         }
                     }
@@ -868,7 +895,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     ActiveMQMessage message = CreateActiveMQMessage(dispatch);
 
-                    this.BeforeMessageIsConsumed(dispatch);
+                    await BeforeMessageIsConsumedAsync(dispatch).Await();
 
                     try
                     {
@@ -879,7 +906,7 @@ namespace Apache.NMS.ActiveMQ
                             listener(message);
                         }
 
-                        this.AfterMessageIsConsumed(dispatch, expired);
+                        await this.AfterMessageIsConsumedAsync(dispatch, expired).Await();
                     }
                     catch(Exception e)
                     {
@@ -887,12 +914,12 @@ namespace Apache.NMS.ActiveMQ
                         if(IsAutoAcknowledgeBatch || IsAutoAcknowledgeEach || IsIndividualAcknowledge)
                         {
                             // Schedule redelivery and possible dlq processing
-                            Rollback();
+                            await RollbackAsync().Await();
                         }
                         else
                         {
                             // Transacted or Client ack: Deliver the next message.
-                            this.AfterMessageIsConsumed(dispatch, false);
+                            await this.AfterMessageIsConsumedAsync(dispatch, false).Await();
                         }
 
                         Tracer.ErrorFormat("Consumer[{0}] Exception while processing message: {1}", this.info.ConsumerId, e);
@@ -923,7 +950,7 @@ namespace Apache.NMS.ActiveMQ
         {
             if (session.IsTransacted)
             {
-                lock (this.deliveredMessages)
+                using(this.deliveredMessagesLock.Lock())
                 {
                     if (previouslyDeliveredMessages != null)
                     {
@@ -966,7 +993,7 @@ namespace Apache.NMS.ActiveMQ
                 MessageDispatch dispatch = this.unconsumedMessages.DequeueNoWait();
                 if(dispatch != null)
                 {
-                    this.Dispatch(dispatch);
+                    this.Dispatch_Async(dispatch).GetAsyncResult();
                     return true;
                 }
             }
@@ -988,7 +1015,7 @@ namespace Apache.NMS.ActiveMQ
         /// <returns>
         /// A <see cref="MessageDispatch"/>
         /// </returns>
-        private MessageDispatch Dequeue(TimeSpan timeout)
+        private async Task<MessageDispatch> DequeueAsync(TimeSpan timeout)
         {
             DateTime deadline = DateTime.Now;
 
@@ -1040,8 +1067,8 @@ namespace Apache.NMS.ActiveMQ
                     Tracer.DebugFormat("Consumer[{0}] received expired message: {1}",
                                        ConsumerId, dispatch.Message.MessageId);
 
-                    BeforeMessageIsConsumed(dispatch);
-                    AfterMessageIsConsumed(dispatch, true);
+                    await BeforeMessageIsConsumedAsync(dispatch).Await();
+                    await AfterMessageIsConsumedAsync(dispatch, true).Await();
                     // Refresh the dispatch time
                     dispatchTime = DateTime.Now;
 
@@ -1065,8 +1092,8 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.DebugFormat("Consumer[{0}] received with excessive redelivered: {1}",
                                        ConsumerId, dispatch);
-                    PosionAck(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery " +
-                                        "policy limit:" + redeliveryPolicy.MaximumRedeliveries);
+                    await PosionAckAsync(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery " +
+                                                   "policy limit:" + redeliveryPolicy.MaximumRedeliveries).Await();
 
                     // Refresh the dispatch time
                     dispatchTime = DateTime.Now;
@@ -1104,14 +1131,14 @@ namespace Apache.NMS.ActiveMQ
             return false;
         }
 
-        public virtual void BeforeMessageIsConsumed(MessageDispatch dispatch)
+        public virtual async Task BeforeMessageIsConsumedAsync(MessageDispatch dispatch)
         {
             dispatch.DeliverySequenceId = session.NextDeliveryId;
             this.lastDeliveredSequenceId = dispatch.Message.MessageId.BrokerSequenceId;
 
             if (!IsAutoAcknowledgeBatch)
             {
-                lock(this.deliveredMessages)
+                using(await this.deliveredMessagesLock.LockAsync().Await())
                 {
                     this.deliveredMessages.AddFirst(dispatch);
                 }
@@ -1120,11 +1147,11 @@ namespace Apache.NMS.ActiveMQ
                 {
                     if (this.transactedIndividualAck)
                     {
-                        ImmediateIndividualTransactedAck(dispatch);
+                        await ImmediateIndividualTransactedAckAsync(dispatch).Await();
                     }
                     else
                     {
-                        this.AckLater(dispatch, AckType.DeliveredAck);
+                        await this.AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
                     }
                 }
             }
@@ -1152,7 +1179,7 @@ namespace Apache.NMS.ActiveMQ
             return false;
         }
 
-        public virtual void AfterMessageIsConsumed(MessageDispatch dispatch, bool expired)
+        public virtual async Task AfterMessageIsConsumedAsync(MessageDispatch dispatch, bool expired)
         {
             if(this.unconsumedMessages.Closed)
             {
@@ -1161,7 +1188,7 @@ namespace Apache.NMS.ActiveMQ
 
             if(expired)
             {
-                Acknowledge(dispatch, AckType.ExpiredAck);
+                await AcknowledgeAsync(dispatch, AckType.ExpiredAck).Await();
             }
             else
             {
@@ -1173,7 +1200,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     if(this.deliveringAcks.CompareAndSet(false, true))
                     {
-                        lock(this.deliveredMessages)
+                        using(await this.deliveredMessagesLock.LockAsync().Await())
                         {
                             if(this.deliveredMessages.Count != 0)
                             {
@@ -1188,7 +1215,7 @@ namespace Apache.NMS.ActiveMQ
                                         {
                                             this.deliveredMessages.Clear();
                                             this.ackCounter = 0;
-                                            this.session.SendAck(ack);
+                                            await this.session.SendAckAsync(ack).Await();
                                             this.optimizeAckTimestamp = DateTime.Now;
                                         }
                                         // as further optimization send ack for expired msgs wehn
@@ -1198,7 +1225,7 @@ namespace Apache.NMS.ActiveMQ
                                         // as used in ackLater()
                                         if (this.pendingAck != null && this.deliveredCounter > 0)
                                         {
-                                            this.session.SendAck(pendingAck);
+                                            await this.session.SendAckAsync(pendingAck).Await();
                                             this.pendingAck = null;
                                             this.deliveredCounter = 0;
                                         }
@@ -1210,7 +1237,7 @@ namespace Apache.NMS.ActiveMQ
                                     if (ack != null)
                                     {
                                         this.deliveredMessages.Clear();
-                                        this.session.SendAck(ack);
+                                        await this.session.SendAckAsync(ack).Await();
                                     }
                                 }
                             }
@@ -1220,20 +1247,20 @@ namespace Apache.NMS.ActiveMQ
                 }
                 else if(this.IsAutoAcknowledgeBatch)
                 {
-                    AckLater(dispatch, AckType.ConsumedAck);
+                    await AckLaterAsync(dispatch, AckType.ConsumedAck).Await();
                 }
                 else if(IsClientAcknowledge || IsIndividualAcknowledge)
                 {
                     bool messageAckedByConsumer = false;
 
-                    lock(this.deliveredMessages)
+                    using(await this.deliveredMessagesLock.LockAsync().Await())
                     {
                         messageAckedByConsumer = this.deliveredMessages.Contains(dispatch);
                     }
 
                     if(messageAckedByConsumer)
                     {
-                        AckLater(dispatch, AckType.DeliveredAck);
+                        await AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
                     }
                 }
                 else
@@ -1245,7 +1272,7 @@ namespace Apache.NMS.ActiveMQ
 
         private MessageAck MakeAckForAllDeliveredMessages(AckType type)
         {
-            lock(this.deliveredMessages)
+            using(this.deliveredMessagesLock.Lock())
             {
                 if(this.deliveredMessages.Count == 0)
                 {
@@ -1259,7 +1286,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void AckLater(MessageDispatch dispatch, AckType type)
+        private async Task AckLaterAsync(MessageDispatch dispatch, AckType type)
         {
             // Don't acknowledge now, but we may need to let the broker know the
             // consumer got the message to expand the pre-fetch window
@@ -1296,7 +1323,7 @@ namespace Apache.NMS.ActiveMQ
                     Tracer.DebugFormat("Consumer[{0}] Sending old pending ack {1}, new pending: {2}",
                                        ConsumerId, oldPendingAck, pendingAck);
 
-                    this.session.SendAck(oldPendingAck);
+                    await this.session.SendAckAsync(oldPendingAck).Await();
                 }
                 else
                 {
@@ -1308,24 +1335,24 @@ namespace Apache.NMS.ActiveMQ
             // evaluate both expired and normal msgs as otherwise consumer may get stalled
             if ((0.5 * this.info.PrefetchSize) <= (this.deliveredCounter + this.ackCounter - this.additionalWindowSize))
             {
-                this.session.SendAck(pendingAck);
+                await this.session.SendAckAsync(pendingAck).Await();
                 this.pendingAck = null;
                 this.deliveredCounter = 0;
                 this.additionalWindowSize = 0;
             }
         }
 
-        private void ImmediateIndividualTransactedAck(MessageDispatch dispatch)
+        private async System.Threading.Tasks.Task ImmediateIndividualTransactedAckAsync(MessageDispatch dispatch)
         {
             // acks accumulate on the broker pending transaction completion to indicate
             // delivery status
             RegisterSync();
             MessageAck ack = new MessageAck(dispatch, (byte) AckType.IndividualAck, 1);
             ack.TransactionId = session.TransactionContext.TransactionId;
-            this.session.Connection.SyncRequest(ack);
+            await this.session.Connection.SyncRequestAsync(ack).Await();
         }
 
-        private void PosionAck(MessageDispatch dispatch, string cause)
+        private async Task PosionAckAsync(MessageDispatch dispatch, string cause)
         {
             BrokerError poisonCause = new BrokerError();
             poisonCause.ExceptionClass = "javax.jms.JMSException";
@@ -1334,7 +1361,7 @@ namespace Apache.NMS.ActiveMQ
             MessageAck posionAck = new MessageAck(dispatch, (byte) AckType.PoisonAck, 1);
             posionAck.FirstMessageId = dispatch.Message.MessageId;
             posionAck.PoisonCause = poisonCause;
-            this.session.SendAck(posionAck);
+            await this.session.SendAckAsync(posionAck).Await();
         }
 
         private void RegisterSync()
@@ -1354,22 +1381,23 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void Acknowledge(MessageDispatch dispatch, AckType ackType)
+        private async Task AcknowledgeAsync(MessageDispatch dispatch, AckType ackType)
         {
             MessageAck ack = new MessageAck(dispatch, (byte) ackType, 1);
-            this.session.SendAck(ack);
-            lock(this.deliveredMessages)
+            
+            await this.session.SendAckAsync(ack).Await();
+            using(await this.deliveredMessagesLock.LockAsync().Await())
             {
                 deliveredMessages.Remove(dispatch);
             }
         }
 
-        internal void Acknowledge()
+        internal async Task AcknowledgeAsync()
         {
             ClearDeliveredList();
             WaitForRedeliveries();
 
-            lock(this.deliveredMessages)
+            using(await this.deliveredMessagesLock.LockAsync().Await())
             {
                 // Acknowledge all messages so far.
                 MessageAck ack = MakeAckForAllDeliveredMessages(AckType.ConsumedAck);
@@ -1389,7 +1417,7 @@ namespace Apache.NMS.ActiveMQ
                     ack.TransactionId = this.session.TransactionContext.TransactionId;
                 }
 
-                this.session.SendAck(ack);
+                await this.session.SendAckAsync(ack).Await();
                 this.pendingAck = null;
 
                 // Adjust the counters
@@ -1403,9 +1431,9 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        internal void Commit()
+        internal async Task CommitAsync()
         {
-            lock(this.deliveredMessages)
+            using(await this.deliveredMessagesLock.LockAsync().Await())
             {
                 this.deliveredMessages.Clear();
                 ClearPreviouslyDelivered();
@@ -1414,17 +1442,17 @@ namespace Apache.NMS.ActiveMQ
             this.redeliveryDelay = 0;
         }
 
-        internal void Rollback()
+        internal async Task RollbackAsync()
         {
             ClearDeliveredList();
-            lock(this.unconsumedMessages.SyncRoot)
+            using(await this.unconsumedMessages.SyncRoot.LockAsync().Await())
             {
                 if (this.optimizeAcknowledge)
                 {
                     // remove messages read but not acked at the broker yet through optimizeAcknowledge
                     if (!this.info.Browser)
                     {
-                        lock(this.deliveredMessages)
+                        using(await this.deliveredMessagesLock.LockAsync().Await())
                         {
                             for (int i = 0; (i < this.deliveredMessages.Count) && (i < ackCounter); i++)
                             {
@@ -1436,7 +1464,8 @@ namespace Apache.NMS.ActiveMQ
                         }
                     }
                 }
-                lock(this.deliveredMessages)
+                
+                using(await this.deliveredMessagesLock.LockAsync().Await())
                 {
                     RollbackPreviouslyDeliveredAndNotRedelivered();
                     if(this.deliveredMessages.Count == 0)
@@ -1486,7 +1515,7 @@ namespace Apache.NMS.ActiveMQ
                         ack.FirstMessageId = firstMsgId;
                         ack.PoisonCause = poisonCause;
 
-                        this.session.SendAck(ack);
+                        await this.session.SendAckAsync(ack).Await();
 
                         // Adjust the window size.
                         additionalWindowSize = Math.Max(0, this.additionalWindowSize - this.deliveredMessages.Count);
@@ -1502,7 +1531,7 @@ namespace Apache.NMS.ActiveMQ
                         {
                             MessageAck ack = new MessageAck(lastMd, (byte) AckType.RedeliveredAck, deliveredMessages.Count);
                             ack.FirstMessageId = firstMsgId;
-                            this.session.SendAck(ack, true);
+                            await this.session.SendAckAsync(ack, true).Await();
                         }
 
                         if (this.nonBlockingRedelivery)
@@ -1597,7 +1626,7 @@ namespace Apache.NMS.ActiveMQ
 
                     foreach (MessageDispatch dispatch in pendingRedeliveries)
                     {
-                        session.Dispatch(dispatch);
+                        session.Dispatch_Async(dispatch).GetAsyncResult();
                     }
                 }
             }
@@ -1628,7 +1657,7 @@ namespace Apache.NMS.ActiveMQ
             }
             else if(IsIndividualAcknowledge)
             {
-                message.Acknowledger += new AcknowledgeHandler(DoIndividualAcknowledge);
+                message.Acknowledger += new AcknowledgeHandler((message) => DoIndividualAcknowledgeAsync(message).GetAsyncResult()); // ASYNC
             }
             else
             {
@@ -1711,7 +1740,8 @@ namespace Apache.NMS.ActiveMQ
                 do
                 {
                     numberNotReplayed = 0;
-                    lock(this.deliveredMessages)
+                    
+                    using(this.deliveredMessagesLock.Lock())
                     {
                         if (previouslyDeliveredMessages != null)
                         {
@@ -1861,7 +1891,7 @@ namespace Apache.NMS.ActiveMQ
                 this.consumer = consumer;
             }
 
-            public void BeforeEnd()
+            public async Task BeforeEndAsync()
             {
                 Tracer.DebugFormat("Consumer[{0}] MessageConsumerSynchronization - BeforeEnd Called",
                                    this.consumer.ConsumerId);
@@ -1870,32 +1900,32 @@ namespace Apache.NMS.ActiveMQ
                 {
                     this.consumer.ClearDeliveredList();
                     this.consumer.WaitForRedeliveries();
-                    lock(this.consumer.deliveredMessages)
+                    using(await this.consumer.deliveredMessagesLock.LockAsync().Await())
                     {
                         this.consumer.RollbackOnFailedRecoveryRedelivery();
                     }
                 }
                 else
                 {
-                    this.consumer.Acknowledge();
+                    await this.consumer.AcknowledgeAsync().Await();
                 }
 
                 this.consumer.synchronizationRegistered = false;
             }
 
-            public void AfterCommit()
+            public async Task AfterCommitAsync()
             {
                 Tracer.DebugFormat("Consumer[{0}] MessageConsumerSynchronization - AfterCommit Called.",
                                    this.consumer.ConsumerId);
-                this.consumer.Commit();
+                await this.consumer.CommitAsync().Await();
                 this.consumer.synchronizationRegistered = false;
             }
 
-            public void AfterRollback()
+            public async Task AfterRollbackAsync()
             {
                 Tracer.DebugFormat("Consumer[{0}] MessageConsumerSynchronization - AfterRollback.",
                                    this.consumer.ConsumerId);
-                this.consumer.Rollback();
+                await this.consumer.RollbackAsync().Await();
                 this.consumer.synchronizationRegistered = false;
             }
         }
@@ -1909,27 +1939,28 @@ namespace Apache.NMS.ActiveMQ
                 this.consumer = consumer;
             }
 
-            public void BeforeEnd()
+            public Task BeforeEndAsync()
             {
+                return Task.CompletedTask;
             }
 
-            public void AfterCommit()
+            public async Task AfterCommitAsync()
             {
                 if (!this.consumer.Closed)
                 {
                     Tracer.DebugFormat("Consumer[{0}] ConsumerCloseSynchronization - AfterCommit Called.",
                                        this.consumer.ConsumerId);
-                    this.consumer.DoClose();
+                    await this.consumer.DoCloseAsync().Await();
                 }
             }
 
-            public void AfterRollback()
+            public async Task AfterRollbackAsync()
             {
                 if (!this.consumer.Closed)
                 {
                     Tracer.DebugFormat("Consumer[{0}] ConsumerCloseSynchronization - AfterRollback Called.",
                                        this.consumer.ConsumerId);
-                    this.consumer.DoClose();
+                    await this.consumer.DoCloseAsync().Await();
                 }
             }
         }

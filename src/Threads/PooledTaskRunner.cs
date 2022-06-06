@@ -30,18 +30,23 @@ namespace Apache.NMS.ActiveMQ.Threads
 		private bool queued;
 		private bool _shutdown;
 		private bool iterating;
+
+		private AsyncLocal<bool> workExecutionContextCurrentlyProcessing = new AsyncLocal<bool>();
 		private volatile System.Threading.Thread runningThread;
 
 		public void Run(Object o)
 		{
 			PooledTaskRunner p = o as PooledTaskRunner;
-			p.runningThread = System.Threading.Thread.CurrentThread;
+			
 			try
 			{
+				p.runningThread = System.Threading.Thread.CurrentThread;
+				p.workExecutionContextCurrentlyProcessing.Value = true;
 				p.RunTask();
 			}
 			finally
 			{
+				p.workExecutionContextCurrentlyProcessing.Value = false;
 				p.runningThread = null;
 			}
 		}
@@ -102,7 +107,7 @@ namespace Apache.NMS.ActiveMQ.Threads
 				// because a call to iterate can result in
 				// shutDown() being called, which would wait forever
 				// waiting for iterating to finish
-				if(runningThread != System.Threading.Thread.CurrentThread)
+				if (!workExecutionContextCurrentlyProcessing.Value)
 				{
 					if(iterating)
 					{
@@ -118,7 +123,7 @@ namespace Apache.NMS.ActiveMQ.Threads
             {
                 _shutdown = true;
 
-                if (runningThread != Thread.CurrentThread)
+                if (!workExecutionContextCurrentlyProcessing.Value)
                 {
                     if(iterating)
                     {

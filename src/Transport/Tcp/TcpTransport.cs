@@ -19,7 +19,9 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
@@ -43,7 +45,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		private int timeout = -1;
 		private int asynctimeout = -1;
 
-		private CommandHandler commandHandler;
+		private CommandHandlerAsync commandHandlerAsync;
 		private ExceptionHandler exceptionHandler;
 		private InterruptedHandler interruptedHandler;
 		private ResumedHandler resumedHandler;
@@ -95,7 +97,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			{
 				if(!started)
 				{
-					if(null == commandHandler)
+					if(null == commandHandlerAsync)
 					{
 						throw new InvalidOperationException(
 								"command cannot be null when Start is called.");
@@ -120,6 +122,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 					readThread.Start();
 				}
 			}
+		}
+
+		public Task StartAsync()
+		{
+			Start();
+			return Task.CompletedTask;
 		}
 
 		/// <summary>
@@ -171,12 +179,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 #endif
 		}
 
-		public Response Request(Command command)
+		public Task<Response> RequestAsync(Command command)
 		{
 			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
 		}
 
-		public Response Request(Command command, TimeSpan timeout)
+		public Task<Response> RequestAsync(Command command, TimeSpan timeout)
 		{
 			throw new NotImplementedException("Use a ResponseCorrelator if you want to issue Request calls");
 		}
@@ -184,6 +192,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 		public void Stop()
 		{
 			Close();
+		}
+
+		public Task StopAsync()
+		{
+			Stop();
+			return Task.CompletedTask;
 		}
 
 		public void Close()
@@ -329,7 +343,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 				{
 					if(command != null)
 					{
-						this.commandHandler(this, command);
+						this.commandHandlerAsync(this, command).GetAsyncResult();
 					}
 				}
 				catch(Exception e)
@@ -361,10 +375,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 			set { this.asynctimeout = value; }
 		}
 
-		public CommandHandler Command
+		public CommandHandlerAsync CommandAsync
 		{
-			get { return commandHandler; }
-			set { this.commandHandler = value; }
+			get { return commandHandlerAsync; }
+			set { this.commandHandlerAsync = value; }
 		}
 
 		public ExceptionHandler Exception

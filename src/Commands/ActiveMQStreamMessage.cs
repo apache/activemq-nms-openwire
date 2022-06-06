@@ -826,6 +826,11 @@ namespace Apache.NMS.ActiveMQ.Commands
 				this.byteBuffer = null;
 			}
 		}
+
+		public override bool IsBodyAssignableTo(Type type)
+		{
+			return false;
+		}
 	}
 }
 

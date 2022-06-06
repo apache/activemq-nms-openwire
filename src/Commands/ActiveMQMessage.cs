@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.State;
 using Apache.NMS.Util;
@@ -91,7 +92,13 @@ namespace Apache.NMS.ActiveMQ.Commands
             Acknowledger(this);
 		}
 
-	    public virtual void ClearBody()
+		public Task AcknowledgeAsync()
+		{
+			Acknowledge();
+			return Task.CompletedTask;
+		}
+
+		public virtual void ClearBody()
 		{
 			this.ReadOnlyBody = false;
 			this.Content = null;
@@ -102,6 +109,26 @@ namespace Apache.NMS.ActiveMQ.Commands
 			this.MarshalledProperties = null;
 			this.ReadOnlyProperties = false;
 			this.Properties.Clear();
+		}
+
+		public T Body<T>()
+		{
+			if (IsBodyAssignableTo(typeof(T)))
+			{
+				return GetBody<T>();
+			}
+
+			throw new MessageFormatException("Message body cannot be read as type: " + typeof(T));
+		}
+		
+		public virtual bool IsBodyAssignableTo(Type type)
+		{
+			return false;
+		}
+
+		protected virtual T GetBody<T>()
+		{
+			throw new NotImplementedException();
 		}
 
 		protected void FailIfReadOnlyBody()
@@ -325,6 +352,8 @@ namespace Apache.NMS.ActiveMQ.Commands
 			get { return Type; }
 			set { Type = value; }
 		}
+
+		public DateTime NMSDeliveryTime { get => throw new NotImplementedException(); set => throw new NotImplementedException(); } //ASYNC TODO
 
 		#endregion
 

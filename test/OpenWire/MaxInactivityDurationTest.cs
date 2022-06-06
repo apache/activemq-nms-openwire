@@ -38,7 +38,7 @@ namespace Apache.NMS.ActiveMQ.Test
 										"&wireFormat.maxInactivityDuration=10000" +
 										"&connection.asyncClose=false";
 
-			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
+			NMSConnectionFactory factory = new NMSConnectionFactory(ReplaceEnvVar(testuri));
 			using(IConnection connection = factory.CreateConnection("", ""))
 			{
 				connection.Start();
@@ -83,7 +83,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 			string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616?wireFormat.maxInactivityDuration={0}", inactivityDuration);
 	
-			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
+			NMSConnectionFactory factory = new NMSConnectionFactory(ReplaceEnvVar(testuri));
 
 			// We measure the initial resource counts, and then allow a certain fudge factor for the resources
 			// to fluctuate at run-time.  We allow for a certain amount of fluctuation, but if the counts

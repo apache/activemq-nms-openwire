@@ -18,8 +18,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
+using Task = Apache.NMS.ActiveMQ.Threads.Task;
 
 #if NETCF
 using ThreadInterruptedException = System.Exception;
@@ -52,8 +55,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		private int numSentKeppAliveInfos = 0;
 		private int nextCommandId = 0;
 		private readonly Uri connectedUri;
-		private CommandHandler commandHandler;
-        private CommandHandler outgoingCommandHandler;
+		private CommandHandlerAsync commandHandlerAsync;
+        private CommandHandlerAsync outgoingCommandHandlerAsync;
 		private ExceptionHandler exceptionHandler;
 		private InterruptedHandler interruptedHandler;
 		private ResumedHandler resumedHandler;
@@ -106,7 +109,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 
 				// Send all the responses.
 				Tracer.Debug("MockTransport Async Task: Simulate receive of Command: " + command.ToString());
-				this.parent.Command(this.parent, command);
+				this.parent.CommandAsync(this.parent, command).GetAsyncResult();
 
 				return parent.receiveQueue.Count != 0;
 			}
@@ -127,12 +130,12 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			Dispose(false);
 		}
 
-		public Response Request(Command command)
+		public Task<Response> RequestAsync(Command command)
 		{
-			return this.Request(command, TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite));
+			return this.RequestAsync(command, TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite));
 		}
 
-		public Response Request(Command command, TimeSpan timeout)
+		public Task<Response> RequestAsync(Command command, TimeSpan timeout)
 		{
 			Tracer.Debug("MockTransport sending Request Command: " + command.ToString());
 
@@ -155,7 +158,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			command.CommandId = Interlocked.Increment(ref this.nextCommandId);
 			command.ResponseRequired = true;
 
-			return this.responseBuilder.BuildResponse(command);
+			return System.Threading.Tasks.Task.FromResult<Response>(this.responseBuilder.BuildResponse(command));
 		}
 
 		public void Oneway(Command command)
@@ -224,14 +227,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			FutureResponse response = new FutureResponse();
 
 			// Delegate to the Request method, it doesn't block.
-			response.Response = this.Request(command);
+			response.Response = this.RequestAsync(command).ConfigureAwait(false).GetAwaiter().GetResult();
 
 			return response;
 		}
 
 		public void Start()
 		{
-			if(commandHandler == null)
+			if(commandHandlerAsync == null)
 			{
 				throw new InvalidOperationException("command cannot be null when Start is called.");
 			}
@@ -244,9 +247,21 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			this.started = true;
 		}
 
+		public System.Threading.Tasks.Task StartAsync()
+		{
+			Start();
+			return System.Threading.Tasks.Task.CompletedTask;
+		}
+
 		public void Stop()
 		{
 			this.started = false;
+		}
+
+		public System.Threading.Tasks.Task StopAsync()
+		{
+			Stop();
+			return System.Threading.Tasks.Task.CompletedTask;
 		}
 
 		public void Dispose()
@@ -268,7 +283,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 		/// receiving a new message from the Broker.
 		/// </summary>
 		/// <param name="command">
-		/// A <see cref="Command"/>
+		/// A <see cref="CommandAsync"/>
 		/// </param>
 		public void InjectCommand(Command command)
 		{
@@ -313,16 +328,16 @@ namespace Apache.NMS.ActiveMQ.Transport.Mock
 			set { this.asynctimeout = value; }
 		}
 
-		public CommandHandler Command
+		public CommandHandlerAsync CommandAsync
 		{
-			get { return commandHandler; }
-			set { this.commandHandler = value; }
+			get { return commandHandlerAsync; }
+			set { this.commandHandlerAsync = value; }
 		}
 
-        public CommandHandler OutgoingCommand
+        public CommandHandlerAsync OutgoingCommand
         {
-            get { return outgoingCommandHandler; }
-            set { this.outgoingCommandHandler = value; }
+            get { return outgoingCommandHandlerAsync; }
+            set { this.outgoingCommandHandlerAsync = value; }
         }
         
 		public ExceptionHandler Exception

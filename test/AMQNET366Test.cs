@@ -17,6 +17,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS;
 using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Transport;
@@ -32,16 +33,17 @@ namespace Apache.NMS.ActiveMQ.Test
     public class AMQNET366Test : NMSTestSupport
     {
         private IConnection connection;
-        private bool connectionClosed = false;
+        private ManualResetEvent exceptionOccuredEvent;
         private readonly String connectionUri = "activemq:tcpfaulty://${activemqhost}:61616";
 
         [SetUp]
         public override void SetUp()
         {
+            exceptionOccuredEvent = new ManualResetEvent(false);
             base.SetUp();
         }
 
-        [Test, Timeout(60000)]
+        [Test, Timeout(30_000)]
         public void TestConnection()
         {
             IConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionUri));
@@ -65,21 +67,13 @@ namespace Apache.NMS.ActiveMQ.Test
 
                     connection.Start();
 
-                    int count = 30;
-                    while (count-- > 0)
-                    {
-                        if (!connectionClosed)
-                        {
-                            Thread.Sleep(TimeSpan.FromSeconds(3));
-                        }
-                    }
-
-                    Assert.IsTrue(connectionClosed);
+                    Assert.IsTrue(exceptionOccuredEvent.WaitOne(TimeSpan.FromSeconds(30 * 3)),
+                        "Exception didnt occured within waiting time");
                 }
             }
         }
 
-        public void FailOnKeepAlive(ITransport transport, Command command)
+        public async Task FailOnKeepAlive(ITransport transport, Command command)
         {
             if (command.IsKeepAliveInfo)
             {
@@ -105,7 +99,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             Tracer.Debug("Connection signalled an Exception");
             connection.Close();
-            this.connectionClosed = true;
+            exceptionOccuredEvent.Set();
         }
     }
 }

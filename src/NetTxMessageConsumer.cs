@@ -18,8 +18,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -38,14 +40,15 @@ namespace Apache.NMS.ActiveMQ
             this.transactionContext = session.TransactionContext as NetTxTransactionContext;
         }
 
-        public override void Close()
+        
+        public override async Task CloseAsync()
         {
             if (this.Closed)
             {
                 return;
             }
 
-            lock (this.transactionContext.SyncRoot)
+            using(await this.transactionContext.SyncRoot.LockAsync().Await())
             {
                 if (this.session.IsTransacted || this.session.TransactionContext.InTransaction)
                 {
@@ -58,19 +61,19 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.DebugFormat("Consumer {0} No Active TX closing normally.",
                                        this.ConsumerId);
-                    this.DoClose();                            
+                    await this.DoCloseAsync().Await();                            
                 }
             }
         }
 
-        public override void BeforeMessageIsConsumed(MessageDispatch dispatch)
+        public override async Task BeforeMessageIsConsumedAsync(MessageDispatch dispatch)
         {
             if (!IsAutoAcknowledgeBatch)
             {
                 if (this.session.IsTransacted)
                 {
                     bool waitForDtcWaitHandle = false;
-                    lock (this.transactionContext.SyncRoot)
+                    using (await this.transactionContext.SyncRoot.LockAsync().Await())
                     {
                         // In the case where the consumer is operating in concert with a
                         // distributed TX manager we need to wait whenever the TX is being
@@ -108,7 +111,7 @@ namespace Apache.NMS.ActiveMQ
                 }
             }
 
-            base.BeforeMessageIsConsumed(dispatch);
+            await base.BeforeMessageIsConsumedAsync(dispatch).Await();
         }
 
     }

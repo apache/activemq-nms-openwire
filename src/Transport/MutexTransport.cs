@@ -16,6 +16,7 @@
  */
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport
@@ -87,12 +88,12 @@ namespace Apache.NMS.ActiveMQ.Transport
 			}
 		}
 
-		public override Response Request(Command command, TimeSpan timeout)
+		public override Task<Response> RequestAsync(Command command, TimeSpan timeout)
 		{
 			GetTransmissionLock((int) timeout.TotalMilliseconds);
 			try
 			{
-				return base.Request(command, timeout);
+				return base.RequestAsync(command, timeout);
 			}
 			finally
 			{

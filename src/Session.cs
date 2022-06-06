@@ -20,10 +20,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
+using Task = System.Threading.Tasks.Task;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -35,9 +38,11 @@ namespace Apache.NMS.ActiveMQ
         /// <summary>
         /// Private object used for synchronization, instead of public "this"
         /// </summary>
-        private readonly object myLock = new object();
+        private readonly NmsSynchronizationMonitor myLock = new NmsSynchronizationMonitor();
 
+        private readonly NmsSynchronizationMonitor consumersLock = new NmsSynchronizationMonitor();
         private readonly IDictionary consumers = Hashtable.Synchronized(new Hashtable());
+        private readonly NmsSynchronizationMonitor producersLock = new NmsSynchronizationMonitor();
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
 
         private readonly SessionExecutor executor;
@@ -261,6 +266,12 @@ namespace Apache.NMS.ActiveMQ
         }
 
         private ConsumerTransformerDelegate consumerTransformer;
+        public Task RollbackAsync()
+        {
+            Rollback();
+            return Task.CompletedTask;
+        }
+
         /// <summary>
         /// A Delegate that is called each time a Message is dispatched to allow the client to do
         /// any necessary transformations on the received message before it is delivered.
@@ -294,7 +305,8 @@ namespace Apache.NMS.ActiveMQ
             get
             {
                 List<MessageConsumer> copy = new List<MessageConsumer>();
-                lock(consumers.SyncRoot)
+                
+                using(consumersLock.Lock())
                 {
                     foreach(MessageConsumer consumer in consumers.Values)
                     {
@@ -342,14 +354,24 @@ namespace Apache.NMS.ActiveMQ
             this.disposed = true;
         }
 
+        public Task<IStreamMessage> CreateStreamMessageAsync()
+        {
+            return Task.FromResult(CreateStreamMessage());
+        }
+
         public virtual void Close()
+        {
+            CloseAsync().GetAsyncResult();
+        }
+        
+        public virtual async Task CloseAsync()
         {
             if (!this.closed)
             {
                 try
                 {
                     Tracer.InfoFormat("Closing The Session with Id {0}", this.info.SessionId);
-                    DoClose();
+                    await DoCloseAsync().Await();
                     Tracer.InfoFormat("Closed The Session with Id {0}", this.info.SessionId);
                 }
                 catch (Exception ex)
@@ -359,16 +381,16 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        internal void DoClose()
+        internal async Task DoCloseAsync()
         {
-            Shutdown();
+            await ShutdownAsync().Await();
             RemoveInfo removeInfo = new RemoveInfo();
             removeInfo.ObjectId = this.info.SessionId;
             removeInfo.LastDeliveredSequenceId = this.lastDeliveredSequenceId;
             this.connection.Oneway(removeInfo);
         }
 
-        internal void Shutdown()
+        internal async Task ShutdownAsync()
         {
             Tracer.InfoFormat("Executing Shutdown on Session with Id {0}", this.info.SessionId);
 
@@ -377,7 +399,7 @@ namespace Apache.NMS.ActiveMQ
                 return;
             }
 
-            lock(myLock)
+            using(await myLock.LockAsync().Await())
             {
                 if(this.closed || this.closing)
                 {
@@ -391,33 +413,36 @@ namespace Apache.NMS.ActiveMQ
                     // Stop all message deliveries from this Session
                     this.executor.Stop(this.closeStopTimeout);
 
-                    lock(consumers.SyncRoot)
+                    using(await consumersLock.LockAsync().Await())
                     {
                         foreach(MessageConsumer consumer in consumers.Values)
                         {
                             consumer.FailureError = this.connection.FirstFailureError;
-                            consumer.Shutdown();
+                            consumer.ShutdownAsync().GetAsyncResult();
                             this.lastDeliveredSequenceId =
                                 Math.Max(this.lastDeliveredSequenceId, consumer.LastDeliveredSequenceId);
                         }
+                        // tried to move here
+                        consumers.Clear();
                     }
-                    consumers.Clear();
+                    
 
-                    lock(producers.SyncRoot)
+                    using(await producersLock.LockAsync().Await())
                     {
                         foreach(MessageProducer producer in producers.Values)
                         {
                             producer.Shutdown();
                         }
+                        producers.Clear();
                     }
-                    producers.Clear();
+                    
 
                     // If in a local transaction we just roll back at this point.
                     if (this.IsTransacted && this.transactionContext.InLocalTransaction)
                     {
                         try
                         {
-                            this.transactionContext.Rollback();
+                            await this.transactionContext.RollbackAsync().Await();
                         }
                         catch
                         {
@@ -443,7 +468,17 @@ namespace Apache.NMS.ActiveMQ
             return CreateProducer(null);
         }
 
+        public Task<IMessageProducer> CreateProducerAsync()
+        {
+            return CreateProducerAsync(null);
+        }
+
         public IMessageProducer CreateProducer(IDestination destination)
+        {
+            return CreateProducerAsync(destination).GetAsyncResult();
+        }
+        
+        public async Task<IMessageProducer> CreateProducerAsync(IDestination destination)
         {
             MessageProducer producer = null;
 
@@ -460,7 +495,7 @@ namespace Apache.NMS.ActiveMQ
                 producer.ProducerTransformer = this.ProducerTransformer;
 
                 this.AddProducer(producer);
-                this.Connection.SyncRequest(producer.ProducerInfo);
+                await this.Connection.SyncRequestAsync(producer.ProducerInfo).Await();
             }
             catch(Exception)
             {
@@ -485,12 +520,26 @@ namespace Apache.NMS.ActiveMQ
             return CreateConsumer(destination, null, false);
         }
 
+        public Task<IMessageConsumer> CreateConsumerAsync(IDestination destination)
+        {
+            return CreateConsumerAsync(destination, null, false);
+        }
+
         public IMessageConsumer CreateConsumer(IDestination destination, string selector)
         {
             return CreateConsumer(destination, selector, false);
         }
 
+        public Task<IMessageConsumer> CreateConsumerAsync(IDestination destination, string selector)
+        {
+            return CreateConsumerAsync(destination, selector, false);
+        }
+
         public IMessageConsumer CreateConsumer(IDestination destination, string selector, bool noLocal)
+        {
+            return CreateConsumerAsync(destination, selector, noLocal).GetAsyncResult();
+        }
+        public async Task<IMessageConsumer> CreateConsumerAsync(IDestination destination, string selector, bool noLocal)
         {
             if(destination == null)
             {
@@ -520,7 +569,7 @@ namespace Apache.NMS.ActiveMQ
                 consumer.ConsumerTransformer = this.ConsumerTransformer;
 
                 this.AddConsumer(consumer);
-                this.Connection.SyncRequest(consumer.ConsumerInfo);
+                await this.Connection.SyncRequestAsync(consumer.ConsumerInfo).Await();
 
                 if(this.Connection.IsStarted)
                 {
@@ -540,7 +589,32 @@ namespace Apache.NMS.ActiveMQ
             return consumer;
         }
 
+        public IMessageConsumer CreateDurableConsumer(ITopic destination, string name)
+        {
+            return CreateDurableConsumerAsync(destination, name, null, false).GetAsyncResult();
+        }
+
+        public Task<IMessageConsumer> CreateDurableConsumerAsync(ITopic destination, string name)
+        {
+            return CreateDurableConsumerAsync(destination, name, null, false);
+        }
+
+        public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector)
+        {
+            return CreateDurableConsumerAsync(destination, name, selector, false).GetAsyncResult();
+        }
+
+        public Task<IMessageConsumer> CreateDurableConsumerAsync(ITopic destination, string name, string selector)
+        {
+            return CreateDurableConsumerAsync(destination, name, selector, false);
+        }
+
         public IMessageConsumer CreateDurableConsumer(ITopic destination, string name, string selector, bool noLocal)
+        {
+            return CreateDurableConsumerAsync(destination, name, selector, noLocal).GetAsyncResult();
+        }
+        
+        public async Task<IMessageConsumer> CreateDurableConsumerAsync(ITopic destination, string name, string selector, bool noLocal)
         {
             if(destination == null)
             {
@@ -566,7 +640,7 @@ namespace Apache.NMS.ActiveMQ
                 consumer.ConsumerTransformer = this.ConsumerTransformer;
 
                 this.AddConsumer(consumer);
-                this.Connection.SyncRequest(consumer.ConsumerInfo);
+                await this.Connection.SyncRequestAsync(consumer.ConsumerInfo).Await();
 
                 if(this.Connection.IsStarted)
                 {
@@ -586,6 +660,46 @@ namespace Apache.NMS.ActiveMQ
             return consumer;
         }
 
+        public IMessageConsumer CreateSharedConsumer(ITopic destination, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IMessageConsumer> CreateSharedConsumerAsync(ITopic destination, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IMessageConsumer CreateSharedConsumer(ITopic destination, string name, string selector)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IMessageConsumer> CreateSharedConsumerAsync(ITopic destination, string name, string selector)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IMessageConsumer CreateSharedDurableConsumer(ITopic destination, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IMessageConsumer> CreateSharedDurableConsumerAsync(ITopic destination, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IMessageConsumer CreateSharedDurableConsumer(ITopic destination, string name, string selector)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IMessageConsumer> CreateSharedDurableConsumerAsync(ITopic destination, string name, string selector)
+        {
+            throw new NotImplementedException();
+        }
+
         internal virtual MessageConsumer DoCreateMessageConsumer(
             ConsumerId id, ActiveMQDestination destination, string name, string selector,
             int prefetch, int maxPending, bool noLocal)
@@ -594,18 +708,38 @@ namespace Apache.NMS.ActiveMQ
                                        maxPending, noLocal, false, this.DispatchAsync);
         }
 
+        public void Unsubscribe(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UnsubscribeAsync(string name)
+        {
+            throw new NotImplementedException();
+        }
+        
         public void DeleteDurableConsumer(string name)
+        {
+            DeleteDurableConsumerAsync(name).GetAsyncResult();
+        }
+
+        public async Task DeleteDurableConsumerAsync(string name)
         {
             RemoveSubscriptionInfo command = new RemoveSubscriptionInfo();
             command.ConnectionId = Connection.ConnectionId;
             command.ClientId = Connection.ClientId;
             command.SubcriptionName = name;
-            this.connection.SyncRequest(command);
+            await this.connection.SyncRequestAsync(command).Await();
         }
 
         public IQueueBrowser CreateBrowser(IQueue queue)
         {
             return this.CreateBrowser(queue, null);
+        }
+
+        public Task<IQueueBrowser> CreateBrowserAsync(IQueue queue)
+        {
+            return Task.FromResult(CreateBrowser(queue));
         }
 
         public IQueueBrowser CreateBrowser(IQueue queue, string selector)
@@ -635,9 +769,19 @@ namespace Apache.NMS.ActiveMQ
             return browser;
         }
 
+        public Task<IQueueBrowser> CreateBrowserAsync(IQueue queue, string selector)
+        {
+            return Task.FromResult(CreateBrowser(queue, selector));
+        }
+
         public IQueue GetQueue(string name)
         {
             return new ActiveMQQueue(name);
+        }
+
+        public Task<IQueue> GetQueueAsync(string name)
+        {
+            return Task.FromResult(GetQueue(name));
         }
 
         public ITopic GetTopic(string name)
@@ -645,14 +789,29 @@ namespace Apache.NMS.ActiveMQ
             return new ActiveMQTopic(name);
         }
 
+        public Task<ITopic> GetTopicAsync(string name)
+        {
+            return Task.FromResult(GetTopic(name));
+        }
+
         public ITemporaryQueue CreateTemporaryQueue()
         {
-            return (ITemporaryQueue)this.connection.CreateTemporaryDestination(false);
+            return CreateTemporaryQueueAsync().GetAsyncResult();
+        }
+        
+        public async Task<ITemporaryQueue> CreateTemporaryQueueAsync()
+        {
+            return (ITemporaryQueue) await this.connection.CreateTemporaryDestinationAsync(false).Await();
         }
 
         public ITemporaryTopic CreateTemporaryTopic()
         {
-            return (ITemporaryTopic)this.connection.CreateTemporaryDestination(true);
+            return CreateTemporaryTopicAsync().GetAsyncResult();
+        }
+        
+        public async Task<ITemporaryTopic> CreateTemporaryTopicAsync()
+        {
+            return (ITemporaryTopic) await this.connection.CreateTemporaryDestinationAsync(true).Await();
         }
 
         /// <summary>
@@ -663,10 +822,21 @@ namespace Apache.NMS.ActiveMQ
             this.connection.DeleteDestination(destination);
         }
 
+        public Task DeleteDestinationAsync(IDestination destination)
+        {
+            DeleteDestination(destination);
+            return Task.CompletedTask;
+        }
+
         public IMessage CreateMessage()
         {
             ActiveMQMessage answer = new ActiveMQMessage();
             return ConfigureMessage(answer) as IMessage;
+        }
+
+        public Task<IMessage> CreateMessageAsync()
+        {
+            return Task.FromResult(CreateMessage());
         }
 
         public ITextMessage CreateTextMessage()
@@ -675,10 +845,20 @@ namespace Apache.NMS.ActiveMQ
             return ConfigureMessage(answer) as ITextMessage;
         }
 
+        public Task<ITextMessage> CreateTextMessageAsync()
+        {
+            return Task.FromResult(CreateTextMessage());
+        }
+
         public ITextMessage CreateTextMessage(string text)
         {
             ActiveMQTextMessage answer = new ActiveMQTextMessage(text);
             return ConfigureMessage(answer) as ITextMessage;
+        }
+
+        public Task<ITextMessage> CreateTextMessageAsync(string text)
+        {
+            return Task.FromResult(CreateTextMessage(text));
         }
 
         public IMapMessage CreateMapMessage()
@@ -686,9 +866,24 @@ namespace Apache.NMS.ActiveMQ
             return ConfigureMessage(new ActiveMQMapMessage()) as IMapMessage;
         }
 
+        public Task<IMapMessage> CreateMapMessageAsync()
+        {
+            return Task.FromResult(CreateMapMessage());
+        }
+
+        public Task<IObjectMessage> CreateObjectMessageAsync(object body)
+        {
+            return Task.FromResult(CreateObjectMessage(body));
+        }
+
         public IBytesMessage CreateBytesMessage()
         {
             return ConfigureMessage(new ActiveMQBytesMessage()) as IBytesMessage;
+        }
+
+        public Task<IBytesMessage> CreateBytesMessageAsync()
+        {
+            return Task.FromResult(CreateBytesMessage());
         }
 
         public IBytesMessage CreateBytesMessage(byte[] body)
@@ -696,6 +891,11 @@ namespace Apache.NMS.ActiveMQ
             ActiveMQBytesMessage answer = new ActiveMQBytesMessage();
             answer.Content = body;
             return ConfigureMessage(answer) as IBytesMessage;
+        }
+
+        public Task<IBytesMessage> CreateBytesMessageAsync(byte[] body)
+        {
+            return Task.FromResult(CreateBytesMessage(body));
         }
 
         public IStreamMessage CreateStreamMessage()
@@ -710,9 +910,21 @@ namespace Apache.NMS.ActiveMQ
             return ConfigureMessage(answer) as IObjectMessage;
         }
 
+        public Task AcknowledgeAsync()
+        {
+            Acknowledge();
+            return Task.CompletedTask;
+        }
+
         public void Commit()
         {
             this.DoCommit();
+        }
+
+        public Task CommitAsync()
+        {
+            Commit();
+            return Task.CompletedTask;
         }
 
         public void Rollback()
@@ -720,7 +932,7 @@ namespace Apache.NMS.ActiveMQ
             this.DoRollback();
         }
 
-        public void Recover()
+        public async Task RecoverAsync()
         {
             CheckClosed();
 
@@ -729,18 +941,28 @@ namespace Apache.NMS.ActiveMQ
                 throw new IllegalStateException("Cannot Recover a Transacted Session");
             }
 
-            lock(this.consumers.SyncRoot)
+            using(await this.consumersLock.LockAsync().Await())
             {
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
-                    consumer.Rollback();
+                    await consumer.RollbackAsync().Await();
                 }
             }
         }
 
+        public void Recover()
+        {
+            RecoverAsync().GetAsyncResult();
+        }
+
+        void ISession.Acknowledge()
+        {
+            Acknowledge();
+        }
+
         #endregion
 
-        internal void DoSend(ActiveMQDestination destination, ActiveMQMessage message,
+        internal async Task DoSendAsync(ActiveMQDestination destination, ActiveMQMessage message,
                              MessageProducer producer, MemoryUsage producerWindow, TimeSpan sendTimeout)
         {
             ActiveMQMessage msg = message;
@@ -785,11 +1007,11 @@ namespace Apache.NMS.ActiveMQ
             {
                 if(sendTimeout.TotalMilliseconds > 0)
                 {
-                    this.connection.SyncRequest(msg, sendTimeout);
+                    await this.connection.SyncRequestAsync(msg, sendTimeout).Await();
                 }
                 else
                 {
-                    this.connection.SyncRequest(msg);
+                    await this.connection.SyncRequestAsync(msg).Await();
                 }
             }
         }
@@ -836,7 +1058,10 @@ namespace Apache.NMS.ActiveMQ
                 ConsumerId id = consumer.ConsumerId;
 
                 // Registered with Connection before we register at the broker.
-                consumers[id] = consumer;
+                using (consumersLock.Lock())
+                {
+                    consumers[id] = consumer;
+                }
                 connection.AddDispatcher(id, this);
             }
         }
@@ -846,7 +1071,10 @@ namespace Apache.NMS.ActiveMQ
             connection.RemoveDispatcher(consumer.ConsumerId);
             if(!this.closing)
             {
-                consumers.Remove(consumer.ConsumerId);
+                using (consumersLock.Lock())
+                {
+                    consumers.Remove(consumer.ConsumerId);
+                }
             }
             connection.RemoveDispatcher(consumer);
         }
@@ -857,7 +1085,11 @@ namespace Apache.NMS.ActiveMQ
             {
                 ProducerId id = producer.ProducerId;
 
-                this.producers[id] = producer;
+                using (producersLock.Lock())
+                {
+                    this.producers[id] = producer;
+                }
+
                 this.connection.AddProducer(id, producer);
             }
         }
@@ -865,9 +1097,12 @@ namespace Apache.NMS.ActiveMQ
         public void RemoveProducer(ProducerId objectId)
         {
             connection.RemoveProducer(objectId);
-            if(!this.closing)
+            if (!this.closing)
             {
-                producers.Remove(objectId);
+                using (producersLock.Lock())
+                {
+                    producers.Remove(objectId);
+                }
             }
         }
 
@@ -901,7 +1136,7 @@ namespace Apache.NMS.ActiveMQ
 
         public void Start()
         {
-            lock(this.consumers.SyncRoot)
+            using(this.consumersLock.Lock())
             {
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
@@ -938,12 +1173,14 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        public void Dispatch(MessageDispatch dispatch)
+        public Task Dispatch_Async(MessageDispatch dispatch)
         {
             if(this.executor != null)
             {
                 this.executor.Execute(dispatch);
             }
+
+            return Task.CompletedTask;
         }
 
         internal void ClearMessagesInProgress(ref long transportInterruptionProcessingComplete)
@@ -966,7 +1203,7 @@ namespace Apache.NMS.ActiveMQ
             // contention on the Connection and Session resources.
             if (clearInProgress.CompareAndSet(false, true))
             {
-                lock(this.consumers.SyncRoot)
+                using(this.consumersLock.Lock())
                 {
                     foreach(MessageConsumer consumer in this.consumers.Values)
                     {
@@ -1001,11 +1238,11 @@ namespace Apache.NMS.ActiveMQ
 
         internal void Acknowledge()
         {
-            lock(this.consumers.SyncRoot)
+            using(this.consumersLock.Lock())
             {
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {
-                    consumer.Acknowledge();
+                    consumer.AcknowledgeAsync().GetAsyncResult();
                 }
             }
         }
@@ -1023,12 +1260,12 @@ namespace Apache.NMS.ActiveMQ
             return message;
         }
 
-        internal void SendAck(MessageAck ack)
+        internal Task SendAckAsync(MessageAck ack)
         {
-            this.SendAck(ack, false);
+            return this.SendAckAsync(ack, false);
         }
 
-        internal void SendAck(MessageAck ack, bool lazy)
+        internal async Task SendAckAsync(MessageAck ack, bool lazy)
         {
             if(Tracer.IsDebugEnabled)
             {
@@ -1041,7 +1278,7 @@ namespace Apache.NMS.ActiveMQ
             }
             else
             {
-                this.connection.SyncRequest(ack);
+                await this.connection.SyncRequestAsync(ack).Await();
             }
         }
 
@@ -1080,26 +1317,27 @@ namespace Apache.NMS.ActiveMQ
                 this.session = session;
             }
 
-            public void BeforeEnd()
+            public Task BeforeEndAsync()
             {
+                return Task.CompletedTask;
             }
 
-            public void AfterCommit()
+            public async Task AfterCommitAsync()
             {
                 Tracer.Debug("SessionCloseSynchronization AfterCommit called for Session: " + session.SessionId);
-                session.DoClose();
+                await session.DoCloseAsync().Await();
             }
 
-            public void AfterRollback()
+            public async Task AfterRollbackAsync()
             {
                 Tracer.Debug("SessionCloseSynchronization AfterRollback called for Session: " + session.SessionId);
-                session.DoClose();
+                await session.DoCloseAsync().Await();
             }
         }
 
         internal bool IsInUse(ActiveMQTempDestination dest)
         {
-            lock(this.consumers.SyncRoot)
+            using(this.consumersLock.Lock())
             {
                 foreach(MessageConsumer consumer in this.consumers.Values)
                 {

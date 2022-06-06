@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System;
 using System.IO;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.Util;
@@ -111,6 +112,16 @@ namespace Apache.NMS.ActiveMQ.Commands
 			Tracer.Debug("BeforeMarshalling, content is: " + Content);
 
 			base.BeforeMarshall(wireFormat);
+		}
+
+		public override bool IsBodyAssignableTo(Type type)
+		{
+			return Content != null && type.IsAssignableFrom(typeof(IPrimitiveMap));
+		}
+
+		protected override T GetBody<T>()
+		{
+			return (T)Body;
 		}
 	}
 }

@@ -59,7 +59,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     // read message from queue and insert into db table
                     using (IMessageConsumer consumer = session.CreateConsumer(queue))
                     {
-                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                        using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                         using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                         using (SqlCommand sqlInsertCommand = new SqlCommand())
                         {
@@ -125,7 +125,7 @@ namespace Apache.NMS.ActiveMQ.Test
                         // read message from queue and insert into db table
                         using (IMessageConsumer consumer = session.CreateConsumer(queue))
                         {
-                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                             using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                             using (SqlCommand sqlInsertCommand = new SqlCommand())
                             {
@@ -196,7 +196,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         for (int i = 0; i < receiveCount; i++)
                         {
-                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                             using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                             using (SqlCommand sqlInsertCommand = new SqlCommand())
                             {
@@ -268,7 +268,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     {
                         for (int i = 0; i < receiveCount; i++)
                         {
-                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                            using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                             using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                             using (SqlCommand sqlInsertCommand = new SqlCommand())
                             {
@@ -585,6 +585,7 @@ namespace Apache.NMS.ActiveMQ.Test
             PurgeAndFillQueue(messageCount);
 
             var enlistment = new TestSinglePhaseCommit();
+            var rand = new Random();
 
             using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())
             {
@@ -600,12 +601,12 @@ namespace Apache.NMS.ActiveMQ.Test
                         {
                             try
                             {
-                                using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                                using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                                 {
                                     ITextMessage message = consumer.Receive(TimeSpan.FromMilliseconds(10000)) as ITextMessage;
 
                                     Transaction.Current.EnlistDurable(Guid.NewGuid(), enlistment, EnlistmentOptions.None);
-                                    if (new Random().Next(2) == 0)
+                                    if (rand.Next(2) == 0)
                                     {
                                         Tracer.InfoFormat("Throwing random Exception for Message {0}", message.NMSMessageId);
                                         throw new Exception();
@@ -682,7 +683,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
                 for (int i = 0; i < BATCH_COUNT; ++i)
                 {
-                    using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew))
+                    using (TransactionScope scoped = new TransactionScope(TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled))
                     {
                         session.Enlist(Transaction.Current);
 
@@ -711,7 +712,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             try
             {
-                using (TransactionScope scoped = new TransactionScope(batchTxControl))
+                using (TransactionScope scoped = new TransactionScope(batchTxControl, TransactionScopeAsyncFlowOption.Enabled))
                 using (SqlConnection sqlConnection = new SqlConnection(createDbConnectionString))
                 using (SqlCommand sqlInsertCommand = new SqlCommand())
                 {

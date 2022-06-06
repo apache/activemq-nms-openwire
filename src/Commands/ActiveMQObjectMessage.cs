@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.IO;
 
 #if !(PocketPC||NETCF||NETCF_2_0)
@@ -93,6 +94,17 @@ namespace Apache.NMS.ActiveMQ.Commands
 #endif
             }
         }
+
+        public override bool IsBodyAssignableTo(Type type)
+        {
+            return Content != null && type.IsInstanceOfType(Body);
+        }
+
+        protected override T GetBody<T>()
+        {
+            return (T)Body;
+        }
+
 
 #if !(PocketPC||NETCF||NETCF_2_0)
         public override void BeforeMarshall(OpenWireFormat wireFormat)

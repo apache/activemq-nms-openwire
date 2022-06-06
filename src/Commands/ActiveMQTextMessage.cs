@@ -140,7 +140,18 @@ namespace Apache.NMS.ActiveMQ.Commands
             }
 
             return base.Size();
-        }        
+        }
+
+        public override bool IsBodyAssignableTo(Type type)
+        {
+	        return Content != null && type.IsAssignableFrom(type);
+        }
+
+        protected override T GetBody<T>()
+        {
+	        return (T)(object)Text;
+        }
 	}
+	
 }
 

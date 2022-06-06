@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+using System.Collections;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ.Commands;
 
@@ -83,6 +84,62 @@ namespace Apache.NMS.ActiveMQ.Util
         }
 
         #endregion
+        
+        
+        public static void CopyMap(IPrimitiveMap source, IPrimitiveMap target)
+        {
+            foreach (object key in source.Keys)
+            {
+                string name = key.ToString();
+                object value = source[name];
+
+                switch (value)
+                {
+                    case bool boolValue:
+                        target.SetBool(name, boolValue);
+                        break;
+                    case char charValue:
+                        target.SetChar(name, charValue);
+                        break;
+                    case string stringValue:
+                        target.SetString(name, stringValue);
+                        break;
+                    case byte byteValue:
+                        target.SetByte(name, byteValue);
+                        break;
+                    case short shortValue:
+                        target.SetShort(name, shortValue);
+                        break;
+                    case int intValue:
+                        target.SetInt(name, intValue);
+                        break;
+                    case long longValue:
+                        target.SetLong(name, longValue);
+                        break;
+                    case float floatValue:
+                        target.SetFloat(name, floatValue);
+                        break;
+                    case double doubleValue:
+                        target.SetDouble(name, doubleValue);
+                        break;
+                    case byte[] bytesValue:
+                        target.SetBytes(name, bytesValue);
+                        break;
+                    case IList listValue:
+                        target.SetList(name, listValue);
+                        break;
+                    case IDictionary dictionaryValue:
+                        target.SetDictionary(name, dictionaryValue);
+                        break;
+                    case object objectValue:
+                        if (target is IPrimitiveMap primitiveMapBase)
+                        {
+                            primitiveMapBase[name] = objectValue;
+                        }
+                        break;
+                }
+            }
+        }
     }
 }
 

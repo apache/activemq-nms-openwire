@@ -19,9 +19,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Transactions;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transactions;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
@@ -32,6 +34,9 @@ namespace Apache.NMS.ActiveMQ
         private const int XA_READONLY = 3;
 
         private Enlistment currentEnlistment;
+
+        private static readonly NmsSynchronizationMonitor recoveredResourceManagerIdsLock =
+            new NmsSynchronizationMonitor();
         private static readonly Dictionary<string, bool> recoveredResourceManagerIds = new Dictionary<string, bool>();
 
         public NetTxTransactionContext(Session session) : base(session)
@@ -77,7 +82,7 @@ namespace Apache.NMS.ActiveMQ
         // Once the DTC calls prepare we lock this object and don't unlock it again until
         // the TX has either completed or terminated, the users of this class should use
         // this sync point when the TX is a DTC version as opposed to a local one.
-        private readonly object syncObject = new Mutex();
+        private readonly NmsSynchronizationMonitor syncObject = new NmsSynchronizationMonitor(); //Mutex();
 
         public enum TxState
         {
@@ -86,7 +91,7 @@ namespace Apache.NMS.ActiveMQ
 
         private TxState netTxState = TxState.None;
 
-        public object SyncRoot
+        public NmsSynchronizationMonitor SyncRoot
         {
             get { return this.syncObject; }
         }
@@ -111,7 +116,7 @@ namespace Apache.NMS.ActiveMQ
 
         public void Begin(Transaction transaction)
         {
-            lock (syncObject)
+            using(syncObject.Lock())
             {
                 dtcControlEvent.Reset();
 
@@ -125,10 +130,9 @@ namespace Apache.NMS.ActiveMQ
                 try
                 {
                     Guid rmId = ResourceManagerGuid;
-
+                     
                     // Enlist this object in the transaction.
-                    this.currentEnlistment =
-                        transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
+                    this.currentEnlistment = transaction.EnlistDurable(rmId, this, EnlistmentOptions.None);
 
                     // In case of a exception in the current method the transaction will be rolled back.
                     // Until Begin Transaction is completed we consider to be in a rollback scenario.
@@ -185,7 +189,12 @@ namespace Apache.NMS.ActiveMQ
 
         public void Prepare(PreparingEnlistment preparingEnlistment)
         {
-            lock (this.syncObject)
+            PrepareAsync(preparingEnlistment).GetAsyncResult();
+        }
+
+        public async Task PrepareAsync(PreparingEnlistment preparingEnlistment)
+        {
+            using (await this.syncObject.LockAsync().Await())
             {
                 this.netTxState = TxState.Pending;
 
@@ -193,7 +202,7 @@ namespace Apache.NMS.ActiveMQ
                 {
                     Tracer.Debug("Prepare notification received for TX id: " + this.TransactionId);
 
-                    BeforeEnd();
+                    await BeforeEndAsync().Await();
 
                     // Before sending the request to the broker, log the recovery bits, if
                     // this fails we can't prepare and the TX should be rolled back.
@@ -206,12 +215,12 @@ namespace Apache.NMS.ActiveMQ
                     info.TransactionId = this.TransactionId;
                     info.Type = (int)TransactionType.End;
 
-                    this.connection.CheckConnected();
-                    this.connection.SyncRequest((TransactionInfo) info.Clone());
+                    await this.connection.CheckConnectedAsync().Await();
+                    await this.connection.SyncRequestAsync((TransactionInfo) info.Clone()).Await();
 
                     // Prepare the Transaction for commit.
                     info.Type = (int)TransactionType.Prepare;
-                    IntegerResponse response = (IntegerResponse)this.connection.SyncRequest(info);
+                    IntegerResponse response = (IntegerResponse) await this.connection.SyncRequestAsync(info).Await();
                     if (response.Result == XA_READONLY)
                     {
                         Tracer.Debug("Transaction Prepare done and doesn't need a commit, TX id: " + this.TransactionId);
@@ -269,7 +278,12 @@ namespace Apache.NMS.ActiveMQ
 
         public void Commit(Enlistment enlistment)
         {
-            lock (this.syncObject)
+            CommitAsync(enlistment).GetAsyncResult();
+        }
+
+        public async Task CommitAsync(Enlistment enlistment)
+        {
+            using(await this.syncObject.LockAsync().Await())
             {
                 try
                 {
@@ -283,8 +297,8 @@ namespace Apache.NMS.ActiveMQ
                         info.TransactionId = this.TransactionId;
                         info.Type = (int)TransactionType.CommitTwoPhase;
 
-                        this.connection.CheckConnected();
-                        this.connection.SyncRequest(info);
+                        await this.connection.CheckConnectedAsync().Await();
+                        await this.connection.SyncRequestAsync(info).Await();
 
                         Tracer.Debug("Transaction Commit Done TX id: " + this.TransactionId);
 
@@ -326,9 +340,15 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+
+
         public void SinglePhaseCommit(SinglePhaseEnlistment enlistment)
         {
-            lock (this.syncObject)
+            SinglePhaseCommitAsync(enlistment).GetAsyncResult();
+        }
+        public async Task SinglePhaseCommitAsync(SinglePhaseEnlistment enlistment)
+        {
+            using(await this.syncObject.LockAsync().Await())
             {
                 try
                 {
@@ -336,7 +356,7 @@ namespace Apache.NMS.ActiveMQ
 
                     if (this.TransactionId != null)
                     {
-                        BeforeEnd();
+                        await BeforeEndAsync().Await();
 
                         // Now notify the broker that a new XA'ish transaction has completed.
                         TransactionInfo info = new TransactionInfo();
@@ -344,8 +364,8 @@ namespace Apache.NMS.ActiveMQ
                         info.TransactionId = this.TransactionId;
                         info.Type = (int)TransactionType.CommitOnePhase;
 
-                        this.connection.CheckConnected();
-                        this.connection.SyncRequest(info);
+                        await this.connection.CheckConnectedAsync().Await();
+                        await this.connection.SyncRequestAsync(info).Await();
 
                         Tracer.Debug("Transaction Single Phase Commit Done TX id: " + this.TransactionId);
 
@@ -383,7 +403,12 @@ namespace Apache.NMS.ActiveMQ
 
         public void Rollback(Enlistment enlistment)
         {
-            lock (this.syncObject)
+            RollbackAsync(enlistment).GetAsyncResult();
+        }
+        
+        public async Task RollbackAsync(Enlistment enlistment)
+        {
+            using(await this.syncObject.LockAsync().Await())
             {
                 try
                 {
@@ -391,7 +416,7 @@ namespace Apache.NMS.ActiveMQ
 
                     if (this.TransactionId != null)
                     {
-                        BeforeEnd();
+                        await BeforeEndAsync().Await();
 
                         // Now notify the broker that a new XA'ish transaction has started.
                         TransactionInfo info = new TransactionInfo();
@@ -399,12 +424,12 @@ namespace Apache.NMS.ActiveMQ
                         info.TransactionId = this.TransactionId;
                         info.Type = (int)TransactionType.End;
 
-                        this.connection.CheckConnected();
-                        this.connection.SyncRequest((TransactionInfo) info.Clone());
+                        await this.connection.CheckConnectedAsync().Await();
+                        await this.connection.SyncRequestAsync((TransactionInfo) info.Clone()).Await();
 
                         info.Type = (int)TransactionType.Rollback;
-                        this.connection.CheckConnected();
-                        this.connection.SyncRequest(info);
+                        await this.connection.CheckConnectedAsync().Await();
+                        await this.connection.SyncRequestAsync(info).Await();
 
                         Tracer.Debug("Transaction Rollback Done TX id: " + this.TransactionId);
 
@@ -449,13 +474,17 @@ namespace Apache.NMS.ActiveMQ
 
         public void InDoubt(Enlistment enlistment)
         {
-            lock (syncObject)
+            
+        }
+        public async Task InDoubtAsync(Enlistment enlistment)
+        {
+            using(await syncObject.LockAsync().Await())
             {
                 try
                 {
                     Tracer.Debug("In Doubt notification received for TX id: " + this.TransactionId);
 
-                    BeforeEnd();
+                    await BeforeEndAsync().Await();
 
                     // Now notify the broker that Rollback should be performed.
                     TransactionInfo info = new TransactionInfo();
@@ -463,12 +492,12 @@ namespace Apache.NMS.ActiveMQ
                     info.TransactionId = this.TransactionId;
                     info.Type = (int)TransactionType.End;
 
-                    this.connection.CheckConnected();
-                    this.connection.SyncRequest((TransactionInfo) info.Clone());
+                    await this.connection.CheckConnectedAsync().Await();
+                    await this.connection.SyncRequestAsync((TransactionInfo) info.Clone()).Await();
 
                     info.Type = (int)TransactionType.Rollback;
-                    this.connection.CheckConnected();
-                    this.connection.SyncRequest(info);
+                    await this.connection.CheckConnectedAsync().Await();
+                    await this.connection.SyncRequestAsync(info).Await();
 
                     Tracer.Debug("InDoubt Transaction Rollback Done TX id: " + this.TransactionId);
 
@@ -509,14 +538,14 @@ namespace Apache.NMS.ActiveMQ
         /// still alive on the Broker it will be recovered, otherwise the stored
         /// data should be cleared.
         /// </summary>
-        public void InitializeDtcTxContext()
+        public async Task InitializeDtcTxContextAsync()
         {
             string resourceManagerId = ResourceManagerId;
 
             // initialize the logger with the current Resource Manager Id
             RecoveryLogger.Initialize(resourceManagerId);
 
-            lock (recoveredResourceManagerIds)
+            using(await recoveredResourceManagerIdsLock.LockAsync().Await())
             {
                 if (recoveredResourceManagerIds.ContainsKey(resourceManagerId))
                 {
@@ -533,7 +562,7 @@ namespace Apache.NMS.ActiveMQ
                     return;
                 }
 
-                XATransactionId[] recoverables = TryRecoverBrokerTXIds();
+                XATransactionId[] recoverables = await TryRecoverBrokerTXIdsAsync().Await();
                 if (recoverables.Length == 0)
                 {
                     Tracer.Debug("Did not detect any recoverable transactions at Broker.");
@@ -569,7 +598,7 @@ namespace Apache.NMS.ActiveMQ
                             TransactionManager.Reenlist(ResourceManagerGuid, recoverable.Value, this);
                     }
 
-                    this.recoveryComplete.await();
+                    RecoveryCompleteAwait();
                     Tracer.Debug("All Recovered TX enlistments Reports complete, Recovery Complete.");
                     TransactionManager.RecoveryComplete(ResourceManagerGuid);
                     return;
@@ -581,7 +610,12 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private XATransactionId[] TryRecoverBrokerTXIds()
+        private void RecoveryCompleteAwait()
+        {
+            this.recoveryComplete.@await();
+        }
+        
+        private async Task<XATransactionId[]> TryRecoverBrokerTXIdsAsync()
         {
             Tracer.Debug("Checking for Recoverable Transactions on Broker.");
 
@@ -589,8 +623,8 @@ namespace Apache.NMS.ActiveMQ
             info.ConnectionId = this.session.Connection.ConnectionId;
             info.Type = (int)TransactionType.Recover;
 
-            this.connection.CheckConnected();
-            DataArrayResponse response = this.connection.SyncRequest(info) as DataArrayResponse;
+            await this.connection.CheckConnectedAsync().Await();
+            DataArrayResponse response = await this.connection.SyncRequestAsync(info).Await() as DataArrayResponse;
 
             if (response != null && response.Data.Length > 0)
             {

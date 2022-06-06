@@ -19,6 +19,8 @@ using System;
 using System.Collections;
 using Apache.NMS.ActiveMQ.Commands;
 using System.Threading;
+using System.Threading.Tasks;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ
@@ -45,7 +47,7 @@ namespace Apache.NMS.ActiveMQ
 			this.destination = destination;
 			this.selector = selector;
 			this.dispatchAsync = dispatchAsync;
-			this.consumer = CreateConsumer();
+			this.consumer = CreateConsumerAsync().GetAsyncResult();
 		}
 
 		~QueueBrowser()
@@ -83,7 +85,7 @@ namespace Apache.NMS.ActiveMQ
 			disposed = true;
 		}
 
-		private MessageConsumer CreateConsumer()
+		private async Task<MessageConsumer> CreateConsumerAsync()
 		{
 			this.browseDone.Value = false;
 			BrowsingMessageConsumer consumer = null;
@@ -103,7 +105,7 @@ namespace Apache.NMS.ActiveMQ
 					false, true, this.dispatchAsync);
 
 				this.session.AddConsumer(consumer);
-				this.session.Connection.SyncRequest(consumer.ConsumerInfo);
+				await this.session.Connection.SyncRequestAsync(consumer.ConsumerInfo).Await();
 
 				if(this.session.Connection.IsStarted)
 				{
@@ -154,7 +156,7 @@ namespace Apache.NMS.ActiveMQ
 			{
 				if(this.consumer == null)
 				{
-					this.consumer = CreateConsumer();
+					this.consumer = CreateConsumerAsync().GetAsyncResult();
 				}
 			}
 
@@ -241,6 +243,12 @@ namespace Apache.NMS.ActiveMQ
 			}
 		}
 
+		public Task CloseAsync()
+		{
+			Close();
+			return Task.CompletedTask;
+		}
+		
 		public void Close()
 		{
 			lock(myLock)
@@ -264,6 +272,8 @@ namespace Apache.NMS.ActiveMQ
 				}
 			}
 		}
+
+	
 
 		public IQueue Queue
 		{
@@ -310,7 +320,7 @@ namespace Apache.NMS.ActiveMQ
 				DestroyConsumer();
 			}
 
-			consumer = CreateConsumer();
+			consumer = CreateConsumerAsync().GetAsyncResult();
 		}
 
 		public class BrowsingMessageConsumer : MessageConsumer
@@ -325,7 +335,7 @@ namespace Apache.NMS.ActiveMQ
 				this.parent = parent;
 			}
 
-			public override void Dispatch(MessageDispatch md)
+			public override async Task Dispatch_Async(MessageDispatch md)
 			{
 				if(md.Message == null)
 				{
@@ -335,7 +345,7 @@ namespace Apache.NMS.ActiveMQ
 				else
 				{
                     Tracer.Debug("QueueBrowser dispatching next Message to Consumer.");
-					base.Dispatch(md);
+					await base.Dispatch_Async(md).Await();
 				}
 
 				parent.NotifyMessageAvailable();

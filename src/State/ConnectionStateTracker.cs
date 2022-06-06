@@ -21,6 +21,7 @@ using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Util;
 using System.Collections;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ.State
 {
@@ -199,7 +200,7 @@ namespace Apache.NMS.ActiveMQ.State
                     "Transaction completion in doubt due to failover. Forcing rollback of " + command.TransactionId;
                 response.Exception.ExceptionClass = (new TransactionRolledBackException()).GetType().FullName;
                 response.CorrelationId = command.CommandId;
-                transport.Command(transport, response);
+                transport.CommandAsync(transport, response).GetAsyncResult();
             }
         }
 

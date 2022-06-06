@@ -17,6 +17,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Apache.NMS;
 using Apache.NMS.ActiveMQ;
 using Apache.NMS.ActiveMQ.Commands;
@@ -30,8 +31,9 @@ namespace Apache.NMS.ActiveMQ.Test
 	{
         internal class MyDispatcher : IDispatcher
         {
-			public void Dispatch(MessageDispatch messageDispatch)
+			public Task Dispatch_Async(MessageDispatch messageDispatch)
 			{
+				return Task.CompletedTask;
 			}
         }
 

@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 
 namespace Apache.NMS.ActiveMQ.Transport.Failover
@@ -32,8 +33,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
             this.failoverTransport = ft;
         }
 
-        public void OnCommand(ITransport t, Command c)
+        public Task OnCommand(ITransport t, Command c)
         {
+            return Task.CompletedTask;
         }
 
         public void OnException(ITransport t, Exception error)

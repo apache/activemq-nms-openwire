@@ -19,6 +19,7 @@ using System;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Transport
@@ -223,7 +224,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 			next.Stop();
 		}
 
-		protected override void OnCommand(ITransport sender, Command command)
+		protected override async System.Threading.Tasks.Task OnCommand(ITransport sender, Command command)
 		{
 			commandReceived.Value = true;
 			inRead.Value = true;
@@ -260,7 +261,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 						}
 					}
 				}
-				base.OnCommand(sender, command);
+				await base.OnCommand(sender, command).Await();
 			}
 			finally
 			{

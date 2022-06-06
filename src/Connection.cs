@@ -21,12 +21,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Reflection;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Threads;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Failover;
 using Apache.NMS.ActiveMQ.Util;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
+using Task = System.Threading.Tasks.Task;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -70,9 +73,10 @@ namespace Apache.NMS.ActiveMQ
         private WireFormatInfo brokerWireFormatInfo; // from broker
         private readonly IList sessions = ArrayList.Synchronized(new ArrayList());
         private readonly IDictionary producers = Hashtable.Synchronized(new Hashtable());
+        private readonly NmsSynchronizationMonitor dispatchersLock = new NmsSynchronizationMonitor();
         private readonly IDictionary dispatchers = Hashtable.Synchronized(new Hashtable());
         private readonly IDictionary tempDests = Hashtable.Synchronized(new Hashtable());
-        private readonly object connectedLock = new object();
+        private readonly NmsSynchronizationMonitor connectedLock = new NmsSynchronizationMonitor();
         private readonly Atomic<bool> connected = new Atomic<bool>(false);
         private readonly Atomic<bool> closed = new Atomic<bool>(false);
         private readonly Atomic<bool> closing = new Atomic<bool>(false);
@@ -418,7 +422,7 @@ namespace Apache.NMS.ActiveMQ
 
                 this.info.ClientId = value;
                 this.userSpecifiedClientID = true;
-                CheckConnected();
+                CheckConnectedAsync().GetAsyncResult();
             }
         }
 
@@ -536,7 +540,7 @@ namespace Apache.NMS.ActiveMQ
         private void SetTransport(ITransport newTransport)
         {
             this.transport = newTransport;
-            this.transport.Command = new CommandHandler(OnCommand);
+            this.transport.CommandAsync = new CommandHandlerAsync(OnCommandAsync);
             this.transport.Exception = new ExceptionHandler(OnTransportException);
             this.transport.Interrupted = new InterruptedHandler(OnTransportInterrupted);
             this.transport.Resumed = new ResumedHandler(OnTransportResumed);
@@ -548,7 +552,12 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public void Start()
         {
-            CheckConnected();
+            StartAsync().GetAsyncResult();
+        }
+
+        public async System.Threading.Tasks.Task StartAsync()
+        {
+            await CheckConnectedAsync().Await();
             if(started.CompareAndSet(false, true))
             {
                 lock(sessions.SyncRoot)
@@ -588,12 +597,18 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
+        public Task StopAsync()
+        {
+            Stop();
+            return Task.CompletedTask;
+        }
+
         /// <summary>
         /// Creates a new session to work on this connection
         /// </summary>
         public ISession CreateSession()
         {
-            return CreateActiveMQSession(acknowledgementMode);
+            return CreateSessionAsync().GetAsyncResult();
         }
 
         /// <summary>
@@ -601,12 +616,22 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         public ISession CreateSession(AcknowledgementMode sessionAcknowledgementMode)
         {
-            return CreateActiveMQSession(sessionAcknowledgementMode);
+            return CreateSessionAsync(sessionAcknowledgementMode).GetAsyncResult();
         }
 
-        protected virtual Session CreateActiveMQSession(AcknowledgementMode ackMode)
+        public Task<ISession> CreateSessionAsync()
         {
-            CheckConnected();
+            return CreateActiveMQSessionAsync(acknowledgementMode);
+        }
+
+        public Task<ISession> CreateSessionAsync(AcknowledgementMode acknowledgementMode)
+        {
+            return CreateActiveMQSessionAsync(acknowledgementMode);
+        }
+
+        protected virtual async System.Threading.Tasks.Task<ISession> CreateActiveMQSessionAsync(AcknowledgementMode ackMode)
+        {
+            await CheckConnectedAsync().Await();
             return new Session(this, NextSessionId, ackMode);
         }
 
@@ -631,15 +656,23 @@ namespace Apache.NMS.ActiveMQ
         {
             if(!this.closing.Value)
             {
-                this.dispatchers.Add(id, dispatcher);
+                using (dispatchersLock.Lock())
+                {
+                    this.dispatchers.Add(id, dispatcher);
+                }
             }
         }
 
+       
+        
         internal void RemoveDispatcher(ConsumerId id)
         {
             if(!this.closing.Value)
             {
-                this.dispatchers.Remove(id);
+                using (dispatchersLock.Lock())
+                {
+                    this.dispatchers.Remove(id);
+                }
             }
         }
 
@@ -676,12 +709,17 @@ namespace Apache.NMS.ActiveMQ
 
         public void Close()
         {
+            CloseAsync().GetAsyncResult();
+        }
+
+        public async Task CloseAsync()
+        {
             if(!this.closed.Value && !transportFailed.Value)
             {
-                this.Stop();
+                await this.StopAsync().Await();
             }
-
-            lock(connectedLock)
+            
+            using(await connectedLock.LockAsync().Await())
             {
                 if(this.closed.Value)
                 {
@@ -717,7 +755,7 @@ namespace Apache.NMS.ActiveMQ
                     {
                         foreach(Session session in sessions)
                         {
-                            session.Shutdown();
+                            session.ShutdownAsync().GetAsyncResult();
                             lastDeliveredSequenceId = Math.Max(lastDeliveredSequenceId, session.LastDeliveredSequenceId);
                         }
                     }
@@ -732,7 +770,7 @@ namespace Apache.NMS.ActiveMQ
                         this.tempDests.Values.CopyTo(tempDestsToDelete, 0);
                         foreach(ActiveMQTempDestination dest in tempDestsToDelete)
                         {
-                            dest.Delete();
+                            await dest.DeleteAsync().Await();
                         }
                     }
 
@@ -741,7 +779,7 @@ namespace Apache.NMS.ActiveMQ
                     // inform the broker of a remove, and if the transport is failed, why bother.
                     if(connected.Value && !transportFailed.Value)
                     {
-                        DisposeOf(ConnectionId, lastDeliveredSequenceId);
+                        await DisposeOfAsync(ConnectionId, lastDeliveredSequenceId).Await();
                         ShutdownInfo shutdowninfo = new ShutdownInfo();
                         transport.Oneway(shutdowninfo);
                     }
@@ -753,7 +791,7 @@ namespace Apache.NMS.ActiveMQ
                     }
 
                     Tracer.DebugFormat("Connection[{0}]: Disposing of the Transport.", this.ConnectionId);
-                    transport.Stop();
+                    await transport.StopAsync().Await();
                     transport.Dispose();
                 }
                 catch(Exception ex)
@@ -841,9 +879,9 @@ namespace Apache.NMS.ActiveMQ
         /// Performs a synchronous request-response with the broker
         /// </summary>
         ///
-        public Response SyncRequest(Command command)
+        public Task<Response> SyncRequestAsync(Command command)
         {
-            return SyncRequest(command, this.RequestTimeout);
+            return SyncRequestAsync(command, this.RequestTimeout);
         }
 
         /// <summary>
@@ -852,13 +890,13 @@ namespace Apache.NMS.ActiveMQ
         /// <param name="command"></param>
         /// <param name="requestTimeout"></param>
         /// <returns></returns>
-        public Response SyncRequest(Command command, TimeSpan requestTimeout)
+        public async Task<Response> SyncRequestAsync(Command command, TimeSpan requestTimeout)
         {
-            CheckConnected();
+            await CheckConnectedAsync().Await();
 
             try
             {
-                Response response = transport.Request(command, requestTimeout);
+                Response response = await transport.RequestAsync(command, requestTimeout).Await();
                 if(response is ExceptionResponse)
                 {
                     ExceptionResponse exceptionResponse = (ExceptionResponse) response;
@@ -897,7 +935,7 @@ namespace Apache.NMS.ActiveMQ
 
         public void Oneway(Command command)
         {
-            CheckConnected();
+            CheckConnectedAsync().GetAsyncResult();
 
             try
             {
@@ -909,7 +947,7 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        private void DisposeOf(DataStructure objectId, long lastDeliveredSequenceId)
+        private async Task DisposeOfAsync(DataStructure objectId, long lastDeliveredSequenceId)
         {
             try
             {
@@ -936,7 +974,7 @@ namespace Apache.NMS.ActiveMQ
                     // of trying to re-create the same object in the broker faster than
                     // the broker can dispose of the object.  Allow up to 5 seconds to process.
                     Tracer.DebugFormat("Connection[{0}]: Synchronously disposing of Connection.", this.ConnectionId);
-                    SyncRequest(command, TimeSpan.FromSeconds(5));
+                    await SyncRequestAsync(command, TimeSpan.FromSeconds(5)).Await();
                     Tracer.DebugFormat("Connection[{0}]: Synchronously closed of Connection.", this.ConnectionId);
                 }
             }
@@ -950,7 +988,7 @@ namespace Apache.NMS.ActiveMQ
         /// Check and ensure that the connection object is connected.  If it is not
         /// connected or is closed or closing, a ConnectionClosedException is thrown.
         /// </summary>
-        internal void CheckConnected()
+        internal async Task CheckConnectedAsync()
         {
             if(closed.Value)
             {
@@ -964,9 +1002,10 @@ namespace Apache.NMS.ActiveMQ
 
                 while(true)
                 {
-                    if(Monitor.TryEnter(connectedLock))
+                    var nmsLock = await connectedLock.TryLockAsync(1).Await(); // nmsLock != null would mean lock obtaining went ok
+                    if(nmsLock != null)
                     {
-                        try
+                        using(nmsLock)
                         {
                             if(closed.Value || closing.Value)
                             {
@@ -986,20 +1025,20 @@ namespace Apache.NMS.ActiveMQ
                                         // Make sure the transport is started.
                                         if(!this.transport.IsStarted)
                                         {
-                                            this.transport.Start();
+                                            await this.transport.StartAsync().Await();
                                         }
 
                                         // Send the connection and see if an ack/nak is returned.
-                                        Response response = transport.Request(this.info, this.RequestTimeout);
+                                        Response response = await transport.RequestAsync(this.info, this.RequestTimeout).Await();
                                         if(!(response is ExceptionResponse))
                                         {
                                             connected.Value = true;
-                                            if(this.watchTopicAdviosires)
+                                            if (this.watchTopicAdviosires)
                                             {
                                                 ConsumerId id = new ConsumerId(
                                                     new SessionId(info.ConnectionId, -1),
                                                     Interlocked.Increment(ref this.consumerIdCounter));
-                                                this.advisoryConsumer = new AdvisoryConsumer(this, id);
+                                                this.advisoryConsumer = await AdvisoryConsumer.CreateAsync(this, id).Await();
                                             }
                                         }
                                         else
@@ -1023,7 +1062,7 @@ namespace Apache.NMS.ActiveMQ
                                                 // This is non-recoverable.
                                                 // Shutdown the transport connection, and re-create it, but don't start it.
                                                 // It will be started if the connection is re-attempted.
-                                                this.transport.Stop();
+                                                await this.transport.StopAsync().Await();
                                                 ITransport newTransport = TransportFactory.CreateTransport(this.brokerUri);
                                                 SetTransport(newTransport);
                                                 throw exception;
@@ -1040,10 +1079,6 @@ namespace Apache.NMS.ActiveMQ
                                     throw;
                                 }
                             }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(connectedLock);
                         }
                     }
 
@@ -1070,12 +1105,12 @@ namespace Apache.NMS.ActiveMQ
         /// </summary>
         /// <param name="commandTransport">An ITransport</param>
         /// <param name="command">A  Command</param>
-        protected void OnCommand(ITransport commandTransport, Command command)
+        protected async Task OnCommandAsync(ITransport commandTransport, Command command)
         {
             if(command.IsMessageDispatch)
             {
                 WaitForTransportInterruptionProcessingToComplete();
-                DispatchMessage((MessageDispatch) command);
+                await DispatchMessageAsync((MessageDispatch) command).Await();
             }
             else if(command.IsKeepAliveInfo)
             {
@@ -1146,9 +1181,9 @@ namespace Apache.NMS.ActiveMQ
             }
         }
 
-        protected void DispatchMessage(MessageDispatch dispatch)
+        protected async Task DispatchMessageAsync(MessageDispatch dispatch)
         {
-            lock(dispatchers.SyncRoot)
+            using(await dispatchersLock.LockAsync().Await())
             {
                 if(dispatchers.Contains(dispatch.ConsumerId))
                 {
@@ -1164,7 +1199,7 @@ namespace Apache.NMS.ActiveMQ
                         dispatch.Message.RedeliveryCounter = dispatch.RedeliveryCounter;
                     }
 
-                    dispatcher.Dispatch(dispatch);
+                    await dispatcher.Dispatch_Async(dispatch).Await();
 
                     return;
                 }
@@ -1268,7 +1303,7 @@ namespace Apache.NMS.ActiveMQ
             {
                 try
                 {
-                    session.Shutdown();
+                    session.ShutdownAsync().GetAsyncResult();
                 }
                 catch(Exception ex)
                 {
@@ -1379,7 +1414,8 @@ namespace Apache.NMS.ActiveMQ
             get { return new SessionId(this.info.ConnectionId, Interlocked.Increment(ref this.sessionCounter)); }
         }
 
-        public ActiveMQTempDestination CreateTemporaryDestination(bool topic)
+        
+        public async Task<ActiveMQTempDestination> CreateTemporaryDestinationAsync(bool topic)
         {
             ActiveMQTempDestination destination = null;
 
@@ -1399,7 +1435,7 @@ namespace Apache.NMS.ActiveMQ
             command.OperationType = DestinationInfo.ADD_OPERATION_TYPE; // 0 is add
             command.Destination = destination;
 
-            this.SyncRequest(command);
+            await this.SyncRequestAsync(command).Await();
 
             destination = this.AddTempDestination(destination);
             destination.Connection = this;

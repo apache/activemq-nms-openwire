@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Transport;
 using Apache.NMS.ActiveMQ.Transport.Mock;
@@ -45,7 +46,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			MockTransport transport = new MockTransport(mockUri);
 
-			transport.Command = new CommandHandler(OnCommand);
+			transport.CommandAsync = new CommandHandlerAsync(OnCommand);
 			transport.Exception = new ExceptionHandler(OnException);
 
 			transport.Start();
@@ -64,7 +65,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			Tracer.DebugFormat("MockTransportTest::onException - " + exception);
 		}
 
-		public void OnCommand(ITransport transport, Command command)
+		public async Task OnCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("MockTransportTest::OnCommand - " + command);
 		}
@@ -86,13 +87,13 @@ namespace Apache.NMS.ActiveMQ.Test
 			exceptions.Add(exception);
 		}
 
-		public void OnCommand(ITransport transport, Command command)
+		public async Task OnCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("MockTransportTest::OnCommand - " + command);
 			received.Add(command);
 		}
 
-		public void OnOutgoingCommand(ITransport transport, Command command)
+		public async Task OnOutgoingCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command);
 			sent.Add(command);
@@ -106,9 +107,9 @@ namespace Apache.NMS.ActiveMQ.Test
 			received = new List<Command>();
 			exceptions = new List<Exception>();
 
-			transport.Command = new CommandHandler(OnCommand);
+			transport.CommandAsync = new CommandHandlerAsync(OnCommand);
 			transport.Exception = new ExceptionHandler(OnException);
-			transport.OutgoingCommand = new CommandHandler(OnOutgoingCommand);
+			transport.OutgoingCommand = new CommandHandlerAsync(OnOutgoingCommand);
 		}
 
 		[Test]
@@ -124,12 +125,12 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test]
-		public void RequestMessageTest()
+		public async Task RequestMessageTest()
 		{
-			transport.Start();
+			await transport.StartAsync();
 			ActiveMQTextMessage message = new ActiveMQTextMessage();
 			message.Text = "Hello, World";
-			transport.Request(message);
+			await transport.RequestAsync(message);
 			Assert.IsTrue(transport.NumSentMessages == 1);
 			Assert.IsTrue(sent.Count == 1);
 			Assert.AreEqual(message.Text, (sent[0] as ActiveMQTextMessage).Text);
@@ -145,12 +146,12 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test, ExpectedException(typeof(IOException))]
-		public void RequestFailOnSendMessageTest()
+		public async System.Threading.Tasks.Task RequestFailOnSendMessageTest()
 		{
 			transport.FailOnSendMessage = true;
-			transport.Start();
+			await transport.StartAsync();
 			ActiveMQTextMessage message = new ActiveMQTextMessage();
-			Assert.IsNotNull(transport.Request(message));
+			Assert.IsNotNull(await transport.RequestAsync(message));
 		}
 
 		[Test, ExpectedException(typeof(IOException))]
@@ -175,15 +176,15 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		[Test, ExpectedException(typeof(IOException))]
-		public void RequestFailOnSendTwoMessagesTest()
+		public async System.Threading.Tasks.Task RequestFailOnSendTwoMessagesTest()
 		{
 			transport.FailOnSendMessage = true;
 			transport.NumSentMessagesBeforeFail = 2;
-			transport.Start();
+			await transport.StartAsync();
 			ActiveMQTextMessage message = new ActiveMQTextMessage();
-			transport.Request(message);
-			transport.Request(message);
-			transport.Request(message);
+			await transport.RequestAsync(message);
+			await transport.RequestAsync(message);
+			await transport.RequestAsync(message);
 		}
 
 		[Test, ExpectedException(typeof(IOException))]

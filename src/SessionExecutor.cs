@@ -20,6 +20,7 @@ using System.Collections;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util.Synchronization;
 
 namespace Apache.NMS.ActiveMQ
 {
@@ -77,7 +78,7 @@ namespace Apache.NMS.ActiveMQ
         {
             TaskRunner taskRunner = this.taskRunner;
 
-            lock(messageQueue.SyncRoot)
+            using(messageQueue.SyncRoot.Lock())
             {
                 if(this.taskRunner == null)
                 {
@@ -138,7 +139,7 @@ namespace Apache.NMS.ActiveMQ
             this.messageQueue.Close();
         }
 
-        public void Dispatch(MessageDispatch dispatch)
+        public async System.Threading.Tasks.Task DispatchAsync(MessageDispatch dispatch)
         {
             try
             {
@@ -156,7 +157,7 @@ namespace Apache.NMS.ActiveMQ
                 // Otherwise, dispatch the message to the consumer.
                 if(consumer != null)
                 {
-                    consumer.Dispatch(dispatch);
+                    await consumer.Dispatch_Async(dispatch).Await();
                 }
             }
             catch(Exception ex)
@@ -187,7 +188,7 @@ namespace Apache.NMS.ActiveMQ
 
                 if(message != null)
                 {
-                    this.Dispatch(message);
+                    this.DispatchAsync(message).GetAsyncResult();
                     return !messageQueue.Empty;
                 }
 
