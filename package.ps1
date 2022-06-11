@@ -14,8 +14,8 @@
 # limitations under the License.
 
 $pkgname = "Apache.NMS.ActiveMQ"
-$pkgver = "1.8.0"
-$frameworks = "net40", "netstandard2.0"
+$pkgver = "2.0.0"
+$frameworks = "netstandard2.0"
 
 write-progress "Creating package directory." "Initializing..."
 if (!(test-path package)) {
