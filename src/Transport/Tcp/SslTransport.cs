@@ -33,7 +33,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         private string brokerCertFilename;
         private string keyStoreName;
         private string keyStoreLocation;
-        private string sslProtocol;
+        internal string sslProtocol;
         private bool acceptInvalidBrokerCert = false;
 
         private SslStream sslStream;
@@ -121,7 +121,21 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         public string SslProtocol
         {
             get { return this.sslProtocol; }
-            set { this.sslProtocol = value; }
+            set
+            {
+                if (String.IsNullOrEmpty(value))
+                {
+                    this.sslProtocol = null;
+                }
+                else if (Enum.TryParse<SslProtocols>(value, true, out var _))
+                {
+                    this.sslProtocol = value;
+                }
+                else
+                {
+                    throw new ArgumentException($"Requested value '{value}' was not found in {nameof(SslProtocols)}.");
+                }
+            }
         }
 
         protected override Stream CreateSocketStream()
@@ -325,12 +339,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
 
         private SslProtocols GetAllowedProtocol() 
         {
-            if (!String.IsNullOrEmpty(SslProtocol))
-            {
-                return (SslProtocols)Enum.Parse(typeof(SslProtocols), SslProtocol, true);
-            }
-
-            return SslProtocols.Default;
+            Enum.TryParse<SslProtocols>(sslProtocol, true, out var parsedOrNone);
+            return parsedOrNone;
         }
     }
 }
