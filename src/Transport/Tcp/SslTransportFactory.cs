@@ -18,6 +18,7 @@
 using System;
 using System.Web;
 using System.Net.Sockets;
+using System.Security.Authentication;
 
 namespace Apache.NMS.ActiveMQ.Transport.Tcp
 {
@@ -89,7 +90,21 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
         public string SslProtocol
         {
             get { return this.sslProtocol; }
-            set { this.sslProtocol = value; }
+            set
+            {
+                if (String.IsNullOrEmpty(value))
+                {
+                    this.sslProtocol = null;
+                }
+                else if (Enum.TryParse<SslProtocols>(value, true, out var _))
+                {
+                    this.sslProtocol = value;
+                }
+                else
+                {
+                    throw new ArgumentException($"Requested value '{value}' was not found in {nameof(SslProtocols)}.");
+                }
+            }
         }
 
 		protected override ITransport DoCreateTransport(Uri location, Socket socket, IWireFormat wireFormat )
@@ -115,7 +130,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             transport.KeyStoreLocation = this.keyStoreLocation;
             transport.KeyStoreName = this.keyStoreName;
             transport.AcceptInvalidBrokerCert = this.acceptInvalidBrokerCert;
-            transport.SslProtocol = this.sslProtocol;
+            transport.sslProtocol = this.sslProtocol; // bypass revalidation
             
             return transport;
 		}		

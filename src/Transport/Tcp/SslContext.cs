@@ -6,7 +6,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
     {
         private String sslProtocol;
 
-        public SslContext() : this("Tls")
+        public SslContext() : this("None")
         {
         }
 
