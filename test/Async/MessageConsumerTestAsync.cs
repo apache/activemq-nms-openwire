@@ -100,8 +100,8 @@ namespace Apache.NMS.ActiveMQ.Test.Async
                     using (IMessageProducer producer = await session.CreateProducerAsync(queue))
                     {
                         producer.DeliveryMode = MsgDeliveryMode.NonPersistent;
-                        await producer.SendAsync(await producer.CreateTextMessageAsync("First"));
-                        await producer.SendAsync(await producer.CreateTextMessageAsync("Second"));
+                        await producer.SendAsync(producer.CreateTextMessage("First"));
+                        await producer.SendAsync(producer.CreateTextMessage("Second"));
                     }
 
                     using (IMessageConsumer consumer = await session.CreateConsumerAsync(queue))
@@ -196,8 +196,8 @@ namespace Apache.NMS.ActiveMQ.Test.Async
                     using (IMessageProducer producer = await session.CreateProducerAsync(queue))
                     {
                         producer.DeliveryMode = MsgDeliveryMode.Persistent;
-                        await producer.SendAsync(await producer.CreateMessageAsync());
-                        await producer.SendAsync(await producer.CreateMessageAsync());
+                        await producer.SendAsync(producer.CreateMessage());
+                        await producer.SendAsync(producer.CreateMessage());
                         await session.CommitAsync();
 
                         // receive first using a dedicated thread. This works

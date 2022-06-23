@@ -151,6 +151,7 @@ namespace Apache.NMS.ActiveMQ.Test
             {
                 this.info = command as ConnectionInfo;
             }
+            await Task.CompletedTask;
         }
 
         [Test]

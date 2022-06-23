@@ -68,6 +68,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		public async Task OnCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("MockTransportTest::OnCommand - " + command);
+			await Task.CompletedTask;
 		}
 	}
 
@@ -91,12 +92,14 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			Tracer.DebugFormat("MockTransportTest::OnCommand - " + command);
 			received.Add(command);
+			await Task.CompletedTask;
 		}
 
 		public async Task OnOutgoingCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("MockTransportTest::OnOutgoingCommand - " + command);
 			sent.Add(command);
+			await Task.CompletedTask;
 		}
 
 		[SetUp]

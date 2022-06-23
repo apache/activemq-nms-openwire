@@ -185,7 +185,7 @@ namespace Apache.NMS.ActiveMQ.Util.Synchronization
                 nmsLock = await nmsLock.EnterAsync(timeout).Await();
                 return nmsLock;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }

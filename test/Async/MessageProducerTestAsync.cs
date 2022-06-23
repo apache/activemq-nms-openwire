@@ -30,7 +30,6 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 	        [Timeout(20_000)]
     		public async Task TestProducerSendWithExpiry()
     		{
-    			int timeout = 1500;
     			// Uri uri = new Uri(string.Format("tcp://localhost"));
     			// Uris uri = new Uri(string.Format("mock://localhost:61616?transport.respondToMessages=false"));
                 string uri = "tcp://${activemqhost}:61616?transport.useLogging=true";

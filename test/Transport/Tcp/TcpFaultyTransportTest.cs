@@ -53,11 +53,14 @@ namespace Apache.NMS.ActiveMQ.Test
         public async Task OnPreProcessCommand(ITransport transport, Command command)
         {
             this.preProcessorFired = true;
+            await Task.CompletedTask;
         }
 
         public async Task OnPostProcessCommand(ITransport transport, Command command)
         {
             this.postProcessorFired = true;
+            await Task.CompletedTask;
+
         }
 
         [Test, Sequential]

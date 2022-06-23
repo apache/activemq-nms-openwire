@@ -49,6 +49,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             Tracer.Debug("Test: Received Command from Transport: " + command );
             received.Add( command );
+            await Task.CompletedTask;
         }
 
         [SetUp]

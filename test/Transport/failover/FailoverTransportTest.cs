@@ -62,12 +62,14 @@ namespace Apache.NMS.ActiveMQ.Test
 		{
 			Tracer.DebugFormat("Test: Received Command from Transport: {0}", command);
 			received.Add(command);
+			await Task.CompletedTask;
 		}
 
 		private async Task OnOutgoingCommand(ITransport transport, Command command)
 		{
 			Tracer.DebugFormat("FailoverTransportTest::OnOutgoingCommand - {0}", command);
 			sent.Add(command);
+			await Task.CompletedTask;
 		}
 
 		private void OnResumed(ITransport sender)

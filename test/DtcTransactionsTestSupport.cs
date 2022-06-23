@@ -571,6 +571,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     throw new Exception("Error writing Prepare command");
                 }
             }
+            await Task.CompletedTask;
         }
 
         public async Task FailOnRollbackTransportHook(ITransport transport, Command command)
@@ -584,6 +585,8 @@ namespace Apache.NMS.ActiveMQ.Test
                     throw new Exception("Error writing Rollback command");
                 }
             }
+            await Task.CompletedTask;
+
         }
 
         public async Task FailOnCommitTransportHook(ITransport transport, Command command)
@@ -597,6 +600,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     throw new Exception("Error writing Commit command");
                 }
             }
+            await Task.CompletedTask;
         }
 
         #endregion
