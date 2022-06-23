@@ -79,6 +79,7 @@ namespace Apache.NMS.ActiveMQ.Test
             {
                 throw new IOException("Simulated Transport Failure");
             }
+            await Task.CompletedTask;
         }
 
         protected void OnMessage(IMessage receivedMsg)

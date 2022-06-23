@@ -370,6 +370,7 @@ namespace Apache.NMS.ActiveMQ.Test
                     tcpTransport.Close();
                 }
             }
+            await Task.CompletedTask;
         }
     }
 }
