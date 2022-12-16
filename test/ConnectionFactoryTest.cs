@@ -16,7 +16,7 @@
  */
 
 using System;
-
+using System.Threading;
 using Apache.NMS.Test;
 using Apache.NMS.Util;
 using Apache.NMS.ActiveMQ;
@@ -191,6 +191,28 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.AreEqual(sendAcksAsync, connection.SendAcksAsync);
 				Assert.AreEqual(dispatchAsync, connection.DispatchAsync);
 			}
+		}
+
+		[Timeout(10_000)]
+		[Test]
+		public void TestConnectionStartupDontDeadlockOnSingleThreadedSynchContext()
+		{
+			var singleContext = new SingleThreadSimpleTestSynchronizationContext();
+			ManualResetEvent readyEvent = new ManualResetEvent(false);
+			singleContext.Post((state) =>
+			{
+				Uri uri = URISupport.CreateCompatibleUri(ReplaceEnvVar("tcp://${activemqhost}:61616"));
+				ConnectionFactory factory = new ConnectionFactory(uri);
+				Assert.IsNotNull(factory);
+				using (IConnection connection = factory.CreateConnection("", ""))
+				{
+					connection.Start();
+				}
+
+				readyEvent.Set();
+			}, null);
+
+			Assert.AreEqual(true, readyEvent.WaitOne(TimeSpan.FromSeconds(8)));
 		}
 	}
 }

@@ -102,13 +102,13 @@ namespace Apache.NMS.ActiveMQ.Transport
 				               }
 			               }, false))
 			        {
-				        return await future.Task;
+				        return await future.Task.Await();
 			        }
 		        }
 	        }
 	        else
 	        {
-		        return await future.Task;
+		        return await future.Task.Await();
 	        }
         }
 
