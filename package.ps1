@@ -14,7 +14,7 @@
 # limitations under the License.
 
 $pkgname = "Apache.NMS.ActiveMQ"
-$pkgver = "2.0.0"
+$pkgver = "2.0.1"
 $frameworks = "netstandard2.0"
 
 write-progress "Creating package directory." "Initializing..."
