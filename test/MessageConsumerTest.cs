@@ -20,6 +20,7 @@ using Apache.NMS.Test;
 using NUnit.Framework;
 using Apache.NMS.ActiveMQ.Commands;
 using System;
+using System.Runtime.Serialization;
 using Apache.NMS.Util;
 
 namespace Apache.NMS.ActiveMQ.Test
@@ -304,6 +305,92 @@ namespace Apache.NMS.ActiveMQ.Test
                         }
                     }
                 }
+            }
+        }
+        
+        [Test, Timeout(20_000)]
+        public void TestShouldNotDeserializeUntrustedType()
+        {
+            string uri = "activemq:tcp://${{activemqhost}}:61616";
+            var factory = new ConnectionFactory(ReplaceEnvVar(uri))
+            {
+                DeserializationPolicy = new NmsDefaultDeserializationPolicy
+                {
+                    DenyList = typeof(UntrustedType).FullName
+                }
+            };
+            using var connection = factory.CreateConnection("", "");
+
+            connection.Start();
+            var session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+            var queue = session.GetQueue(Guid.NewGuid().ToString());
+            var consumer = session.CreateConsumer(queue);
+            var producer = session.CreateProducer(queue);
+            
+            var message = producer.CreateObjectMessage(new UntrustedType { Prop1 = "foo" });
+            producer.Send(message);
+
+            var receivedMessage = consumer.Receive();
+            var objectMessage = receivedMessage as IObjectMessage;
+            Assert.NotNull(objectMessage);
+            var exception = Assert.Throws<SerializationException>(() =>
+            {
+                _ = objectMessage.Body;
+            });
+            Assert.AreEqual($"Forbidden {typeof(UntrustedType).FullName}! " +
+                            "This type is not trusted to be deserialized under the current configuration. " +
+                            "Please refer to the documentation for more information on how to configure trusted types.",
+                exception.Message);
+        }
+        
+        [Test]
+        public void TestShouldUseCustomDeserializationPolicy()
+        {
+            string uri = "activemq:tcp://${{activemqhost}}:61616";
+            var factory = new ConnectionFactory(ReplaceEnvVar(uri))
+            {
+                DeserializationPolicy = new CustomDeserializationPolicy()
+            };
+            using var connection = factory.CreateConnection("", "");
+            connection.Start();
+            var session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+            var queue = session.GetQueue(Guid.NewGuid().ToString());
+            var consumer = session.CreateConsumer(queue);
+            var producer = session.CreateProducer(queue);
+            
+            var message = producer.CreateObjectMessage(new UntrustedType { Prop1 = "foo" });
+            producer.Send(message);
+
+            var receivedMessage = consumer.Receive();
+            var objectMessage = receivedMessage as IObjectMessage;
+            Assert.NotNull(objectMessage);
+            _ = Assert.Throws<SerializationException>(() =>
+            {
+                _ = objectMessage.Body;
+            });
+        }
+        
+        [Serializable]
+        public class UntrustedType
+        {
+            public string Prop1 { get; set; }
+        }
+
+        private class CustomDeserializationPolicy : INmsDeserializationPolicy
+        {
+            public bool IsTrustedType(IDestination destination, Type type)
+            {
+                if (type == typeof(UntrustedType))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public INmsDeserializationPolicy Clone()
+            {
+                return this;
             }
         }
     }

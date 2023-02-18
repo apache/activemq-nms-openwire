@@ -211,6 +211,28 @@ namespace Apache.NMS.ActiveMQ.Test
 
 				connection.Close();
 			}
-        }		
+        }
+
+        [Test]
+        public void TestSetDeserializationPolicy()
+        {
+	        string baseUri = "activemq:tcp://${{activemqhost}}:61616";
+	        string configuredUri = baseUri +
+	                               "?nms.deserializationPolicy.allowList=a,b,c" +
+	                               "&nms.deserializationPolicy.denyList=c,d,e";
+
+	        var factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(configuredUri));
+
+	        Assert.IsNotNull(factory);
+	        Assert.IsNotNull(factory.ConnectionFactory);
+	        using IConnection connection = factory.CreateConnection("", "");
+	        Assert.IsNotNull(connection);
+	        var amqConnection = connection as Connection;
+	        var deserializationPolicy = amqConnection.DeserializationPolicy as NmsDefaultDeserializationPolicy;
+	        Assert.IsNotNull(deserializationPolicy);
+	        Assert.AreEqual("a,b,c", deserializationPolicy.AllowList);
+	        Assert.AreEqual("c,d,e", deserializationPolicy.DenyList);
+	        connection.Close();
+        }
     }
 }

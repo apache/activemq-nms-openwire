@@ -482,6 +482,8 @@ namespace Apache.NMS.ActiveMQ
             get { return this.compressionPolicy; }
             set { this.compressionPolicy = value; }
         }
+        
+        public INmsDeserializationPolicy DeserializationPolicy { get; set; } = new NmsDefaultDeserializationPolicy();
 
         internal MessageTransformation MessageTransformation
         {
