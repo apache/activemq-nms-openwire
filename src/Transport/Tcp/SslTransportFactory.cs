@@ -131,7 +131,8 @@ namespace Apache.NMS.ActiveMQ.Transport.Tcp
             transport.KeyStoreName = this.keyStoreName;
             transport.AcceptInvalidBrokerCert = this.acceptInvalidBrokerCert;
             transport.sslProtocol = this.sslProtocol; // bypass revalidation
-            
+            transport.SendBufferSize = this.SendBufferSize;
+            transport.ReceiveBufferSize = this.ReceiveBufferSize;
             return transport;
 		}		
 	}
