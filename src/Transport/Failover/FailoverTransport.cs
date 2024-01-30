@@ -94,9 +94,10 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
     	private List<Uri> priorityList = new List<Uri>();
     	private bool priorityBackupAvailable = false;
         private String sslProtocol = null;
+        private string nestedExtraQueryOptions;
 
-		// Not Sure how to work these back in with all the changes.
-		//private int asyncTimeout = 45000;
+        // Not Sure how to work these back in with all the changes.
+        //private int asyncTimeout = 45000;
         //private bool asyncConnect = false;
 
         public FailoverTransport()
@@ -1177,7 +1178,7 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 	                            // URI from the pool until next time around.
 	                            if (transport == null) 
 								{
-	                                uri = iter.Current;
+	                                uri = AddExtraQueryOptions(iter.Current);
 	                                transport = TransportFactory.CompositeConnect(uri);
 	                            }
 
@@ -1310,14 +1311,14 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
                         }
                     }
 
-                    foreach(Uri uri in connectList)
+                    foreach(Uri u in connectList)
                     {
 						if (disposed)
 						{
 							break;
 						}
-
-                        if(ConnectedTransportURI != null && !ConnectedTransportURI.Equals(uri))
+                        Uri uri = AddExtraQueryOptions(u);
+                        if (ConnectedTransportURI != null && !ConnectedTransportURI.Equals(uri))
                         {
                             try
                             {
@@ -1712,5 +1713,35 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 
 	        return result;
 	    }
+
+        public void SetNestedExtraQueryOptions(String nestedExtraQueryOptions)
+        {
+            this.nestedExtraQueryOptions = nestedExtraQueryOptions;
+        }
+
+        private Uri AddExtraQueryOptions(Uri uri)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(nestedExtraQueryOptions))
+                {
+                    if (uri.Query == null)
+                    {
+                        uri = URISupport.CreateUriWithQuery(uri, nestedExtraQueryOptions);
+                    }
+                    else
+                    {
+                        uri = URISupport.CreateUriWithQuery(uri, uri.Query + "&" + nestedExtraQueryOptions);
+                    }
+                    Tracer.Info($"URI with nested parameter is {uri.ToString()}");
+                }
+            }
+            catch (UriFormatException e)
+            {
+                Tracer.Error(e.Message);
+                throw;
+            }
+            return uri;
+        }
     }
 }

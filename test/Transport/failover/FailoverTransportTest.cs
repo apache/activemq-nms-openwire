@@ -162,8 +162,36 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsTrue(failover.IsConnected);
 			}
 		}
+        [Test]
+        public void FailoverTransportWithNestedParametersTest()
+        {
+            Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false&transport.backup=true&nested.transport.failOnSendMessage=true&nested.transport.numSentMessagesBeforeFail=20");
+            FailoverTransportFactory factory = new FailoverTransportFactory();
 
-		[Test]
+            using (ITransport transport = factory.CreateTransport(uri))
+            {
+                Assert.IsNotNull(transport);
+                transport.CommandAsync = OnCommand;
+                transport.Exception = OnException;
+                transport.Resumed = OnResumed;
+                transport.Interrupted = OnInterrupted;
+
+                FailoverTransport failover = transport.Narrow(typeof(FailoverTransport)) as FailoverTransport;
+                Assert.IsNotNull(failover);
+                Assert.IsFalse(failover.Randomize);
+                Assert.IsTrue(failover.Backup);
+
+                transport.Start();
+                Thread.Sleep(1000);
+                Assert.IsTrue(failover.IsConnected);
+
+                MockTransport mock = transport.Narrow(typeof(MockTransport)) as MockTransport;
+                Assert.IsNotNull(mock);
+                Assert.IsTrue(mock.FailOnSendMessage);
+                Assert.AreEqual(20,mock.NumSentMessagesBeforeFail);
+            }
+        }
+        [Test]
 		public void FailoverTransportCreateFailOnCreateTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
