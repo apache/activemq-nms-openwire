@@ -662,12 +662,12 @@ namespace Apache.NMS.ActiveMQ
 
             if(this.deliveringAcks.CompareAndSet(false, true))
             {
-                if(this.IsAutoAcknowledgeEach)
+                using (this.deliveredMessagesLock.Lock())
                 {
-                    using(this.deliveredMessagesLock.Lock())
+                    if (this.IsAutoAcknowledgeEach)
                     {
                         ack = MakeAckForAllDeliveredMessages(AckType.ConsumedAck);
-                        if(ack != null)
+                        if (ack != null)
                         {
                             Tracer.DebugFormat("Consumer[{0}] DeliverAcks clearing the Dispatch list", ConsumerId);
                             this.deliveredMessages.Clear();
@@ -679,11 +679,11 @@ namespace Apache.NMS.ActiveMQ
                             this.pendingAck = null;
                         }
                     }
-                }
-                else if(pendingAck != null && pendingAck.AckType == (byte) AckType.ConsumedAck)
-                {
-                    ack = pendingAck;
-                    pendingAck = null;
+                    else if (pendingAck != null && pendingAck.AckType == (byte)AckType.ConsumedAck)
+                    {
+                        ack = pendingAck;
+                        pendingAck = null;
+                    }
                 }
 
                 if(ack != null)
@@ -1297,48 +1297,52 @@ namespace Apache.NMS.ActiveMQ
 
             this.deliveredCounter++;
 
-            MessageAck oldPendingAck = pendingAck;
+            using (await this.deliveredMessagesLock.LockAsync().Await())
+            {
 
-            pendingAck = new MessageAck(dispatch, (byte) type, deliveredCounter);
+                MessageAck oldPendingAck = pendingAck;
 
-            if(this.session.IsTransacted && this.session.TransactionContext.InTransaction)
-            {
-                pendingAck.TransactionId = this.session.TransactionContext.TransactionId;
-            }
+                pendingAck = new MessageAck(dispatch, (byte)type, deliveredCounter);
 
-            if(oldPendingAck == null)
-            {
-                pendingAck.FirstMessageId = pendingAck.LastMessageId;
-            }
-            else if(oldPendingAck.AckType == pendingAck.AckType)
-            {
-                pendingAck.FirstMessageId = oldPendingAck.FirstMessageId;
-            }
-            else
-            {
-                // old pending ack being superseded by ack of another type, if is is not a delivered
-                // ack and hence important, send it now so it is not lost.
-                if(oldPendingAck.AckType != (byte) AckType.DeliveredAck)
+                if (this.session.IsTransacted && this.session.TransactionContext.InTransaction)
                 {
-                    Tracer.DebugFormat("Consumer[{0}] Sending old pending ack {1}, new pending: {2}",
-                                       ConsumerId, oldPendingAck, pendingAck);
+                    pendingAck.TransactionId = this.session.TransactionContext.TransactionId;
+                }
 
-                    await this.session.SendAckAsync(oldPendingAck).Await();
+                if (oldPendingAck == null)
+                {
+                    pendingAck.FirstMessageId = pendingAck.LastMessageId;
+                }
+                else if (oldPendingAck.AckType == pendingAck.AckType)
+                {
+                    pendingAck.FirstMessageId = oldPendingAck.FirstMessageId;
                 }
                 else
                 {
-                    Tracer.DebugFormat("Consumer[{0}] dropping old pending ack {1}, new pending: {2}",
-                                       ConsumerId, oldPendingAck, pendingAck);
-                }
-            }
+                    // old pending ack being superseded by ack of another type, if is is not a delivered
+                    // ack and hence important, send it now so it is not lost.
+                    if (oldPendingAck.AckType != (byte)AckType.DeliveredAck)
+                    {
+                        Tracer.DebugFormat("Consumer[{0}] Sending old pending ack {1}, new pending: {2}",
+                                           ConsumerId, oldPendingAck, pendingAck);
 
-            // evaluate both expired and normal msgs as otherwise consumer may get stalled
-            if ((0.5 * this.info.PrefetchSize) <= (this.deliveredCounter + this.ackCounter - this.additionalWindowSize))
-            {
-                await this.session.SendAckAsync(pendingAck).Await();
-                this.pendingAck = null;
-                this.deliveredCounter = 0;
-                this.additionalWindowSize = 0;
+                        await this.session.SendAckAsync(oldPendingAck).Await();
+                    }
+                    else
+                    {
+                        Tracer.DebugFormat("Consumer[{0}] dropping old pending ack {1}, new pending: {2}",
+                                           ConsumerId, oldPendingAck, pendingAck);
+                    }
+                }
+
+                // evaluate both expired and normal msgs as otherwise consumer may get stalled
+                if ((0.5 * this.info.PrefetchSize) <= (this.deliveredCounter + this.ackCounter - this.additionalWindowSize))
+                {
+                    await this.session.SendAckAsync(pendingAck).Await();
+                    this.pendingAck = null;
+                    this.deliveredCounter = 0;
+                    this.additionalWindowSize = 0;
+                }
             }
         }
 
