@@ -1293,8 +1293,6 @@ namespace Apache.NMS.ActiveMQ
 
             this.deliveredCounter++;
 
-            using (await this.deliveredMessagesLock.LockAsync().Await())
-            {
 
                 MessageAck oldPendingAck = pendingAck;
 
@@ -1338,7 +1336,6 @@ namespace Apache.NMS.ActiveMQ
                     this.pendingAck = null;
                     this.deliveredCounter = 0;
                     this.additionalWindowSize = 0;
-                }
             }
         }
 
