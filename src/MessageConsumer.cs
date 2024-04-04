@@ -1251,15 +1251,11 @@ namespace Apache.NMS.ActiveMQ
                 }
                 else if(IsClientAcknowledge || IsIndividualAcknowledge)
                 {
-                    bool messageAckedByConsumer = false;
 
                     using(await this.deliveredMessagesLock.LockAsync().Await())
                     {
-                        messageAckedByConsumer = this.deliveredMessages.Contains(dispatch);
-                    }
+                        if (this.deliveredMessages.Contains(dispatch))
 
-                    if(messageAckedByConsumer)
-                    {
                         await AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
                     }
                 }
