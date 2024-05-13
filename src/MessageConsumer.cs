@@ -1255,8 +1255,9 @@ namespace Apache.NMS.ActiveMQ
                     using(await this.deliveredMessagesLock.LockAsync().Await())
                     {
                         if (this.deliveredMessages.Contains(dispatch))
-
-                        await AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
+                        {
+                            await AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
+                        }
                     }
                 }
                 else
