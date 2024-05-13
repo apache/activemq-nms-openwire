@@ -662,12 +662,12 @@ namespace Apache.NMS.ActiveMQ
 
             if(this.deliveringAcks.CompareAndSet(false, true))
             {
-                if(this.IsAutoAcknowledgeEach)
+                using (this.deliveredMessagesLock.Lock())
                 {
-                    using(this.deliveredMessagesLock.Lock())
+                    if (this.IsAutoAcknowledgeEach)
                     {
                         ack = MakeAckForAllDeliveredMessages(AckType.ConsumedAck);
-                        if(ack != null)
+                        if (ack != null)
                         {
                             Tracer.DebugFormat("Consumer[{0}] DeliverAcks clearing the Dispatch list", ConsumerId);
                             this.deliveredMessages.Clear();
@@ -679,11 +679,11 @@ namespace Apache.NMS.ActiveMQ
                             this.pendingAck = null;
                         }
                     }
-                }
-                else if(pendingAck != null && pendingAck.AckType == (byte) AckType.ConsumedAck)
-                {
-                    ack = pendingAck;
-                    pendingAck = null;
+                    else if (pendingAck != null && pendingAck.AckType == (byte)AckType.ConsumedAck)
+                    {
+                        ack = pendingAck;
+                        pendingAck = null;
+                    }
                 }
 
                 if(ack != null)
@@ -1251,16 +1251,13 @@ namespace Apache.NMS.ActiveMQ
                 }
                 else if(IsClientAcknowledge || IsIndividualAcknowledge)
                 {
-                    bool messageAckedByConsumer = false;
 
                     using(await this.deliveredMessagesLock.LockAsync().Await())
                     {
-                        messageAckedByConsumer = this.deliveredMessages.Contains(dispatch);
-                    }
-
-                    if(messageAckedByConsumer)
-                    {
-                        await AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
+                        if (this.deliveredMessages.Contains(dispatch))
+                        {
+                            await AckLaterAsync(dispatch, AckType.DeliveredAck).Await();
+                        }
                     }
                 }
                 else
