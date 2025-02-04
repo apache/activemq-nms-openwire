@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
     <Company>Apache Software Foundation</Company>
     <Product>Apache NMS OpenWire</Product>
     <Description>Apache NMS (.Net Standard Messaging Library): Openwire implementation of Apache NMS API</Description>
