@@ -138,9 +138,9 @@ namespace Apache.NMS.ActiveMQ.Test
             public TestableInactivityMonitor(ITransport next) : base(next) { }
 
             // Expose protected method for testing
-            public async Task TestOnCommand(ITransport sender, Command command)
+            public Task TestOnCommand(ITransport sender, Command command)
             {
-                await OnCommand(sender, command);
+                return OnCommand(sender, command);
             }
         }
         [Test]
@@ -163,6 +163,7 @@ namespace Apache.NMS.ActiveMQ.Test
             var securityException = new NMSSecurityException("Authentication failed");
             TestableInactivityMonitor monitor = new TestableInactivityMonitor(this.transport);
             monitor.Exception += new ExceptionHandler(OnException);
+            monitor.CommandAsync += new CommandHandlerAsync(OnCommand);
             bool exceptionHandlerCalled = false;
             Exception  caughtException = null;
             monitor.Exception += (sender, args) =>
@@ -171,7 +172,8 @@ namespace Apache.NMS.ActiveMQ.Test
                 caughtException = args;
             };
             // Act
-            _ = monitor.TestOnCommand(transport, exceptionResponse);
+            Task task=monitor.TestOnCommand(transport, exceptionResponse);
+            task.Wait();
             // Assert
             Assert.IsTrue(exceptionHandlerCalled, "Exception handler should have been called");
             Assert.IsNotNull(caughtException, "Exception should have been caught");

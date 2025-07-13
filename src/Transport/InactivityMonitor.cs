@@ -241,7 +241,7 @@ namespace Apache.NMS.ActiveMQ.Transport
 					}
 					else
 					{
-                        Tracer.WarnFormat("ExceptionResponse received from the broker:", command.GetType());
+                        Tracer.WarnFormat("ExceptionResponse received from the broker:{0}", command.GetType());
                     }
                 }else if (command.IsKeepAliveInfo)
 				{
