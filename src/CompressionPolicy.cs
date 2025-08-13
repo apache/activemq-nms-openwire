@@ -16,7 +16,6 @@
  */
 
 using System.IO;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 
 
 namespace Apache.NMS.ActiveMQ
@@ -25,12 +24,12 @@ namespace Apache.NMS.ActiveMQ
     {
         public Stream CreateCompressionStream(Stream data)
         {
-            return new DeflaterOutputStream(data);
+            return new System.IO.Compression.DeflateStream(data, System.IO.Compression.CompressionMode.Compress);
         }
 
         public Stream CreateDecompressionStream(Stream data)
         {
-            return new InflaterInputStream(data);
+            return new System.IO.Compression.DeflateStream(data, System.IO.Compression.CompressionMode.Decompress);
         }
 
         public object Clone()
