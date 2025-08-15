@@ -55,42 +55,42 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueSynchRecover()
         {
             destination = new ActiveMQQueue("TEST.Queue-" + DateTime.Now.Ticks);
             DoTestSynchRecover();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueAsynchRecover()
         {
 			destination = new ActiveMQQueue("TEST.Queue-" + DateTime.Now.Ticks);
             DoTestAsynchRecover();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTopicSynchRecover()
         {
 			destination = new ActiveMQTopic("TEST.Topic-" + DateTime.Now.Ticks);
             DoTestSynchRecover();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTopicAsynchRecover()
         {
 			destination = new ActiveMQTopic("TEST.Topic-" + DateTime.Now.Ticks);
             DoTestAsynchRecover();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueAsynchRecoverWithAutoAck()
         {
 			destination = new ActiveMQQueue("TEST.Queue-" + DateTime.Now.Ticks);
             DoTestAsynchRecoverWithAutoAck();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTopicAsynchRecoverWithAutoAck()
         {
 			destination = new ActiveMQTopic("TEST.Topic-" + DateTime.Now.Ticks);
@@ -266,4 +266,3 @@ namespace Apache.NMS.ActiveMQ.Test
         }
     }
 }
-

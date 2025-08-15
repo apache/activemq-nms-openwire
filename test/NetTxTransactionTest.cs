@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Test
     {
         private const int MSG_COUNT = 50;
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedProduceAndConsume(
             [Values("tcp://${activemqhost}:61616")]
             string baseConnectionURI)
@@ -87,7 +87,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedProduceRollbackAndConsume(
             [Values("tcp://${activemqhost}:61616")]
             string baseConnectionURI)
@@ -135,7 +135,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedProduceConsumeRollbackConsume(
             [Values("tcp://${activemqhost}:61616")]
             string baseConnectionURI)
@@ -208,7 +208,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedProduceConsumeWithSessionClose(
             [Values("tcp://${activemqhost}:61616")]
             string baseConnectionURI)

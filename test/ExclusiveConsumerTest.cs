@@ -52,7 +52,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			session.Close();
 		}
     
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestExclusiveConsumerSelectedCreatedFirst()
         {			
             IConnection conn = createConnection(true);
@@ -96,7 +96,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestExclusiveConsumerSelectedCreatedAfter()         
         {
             IConnection conn = createConnection(true);
@@ -140,7 +140,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestFailoverToAnotherExclusiveConsumerCreatedFirst() 
         {
             IConnection conn = createConnection(true);
@@ -200,7 +200,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestFailoverToAnotherExclusiveConsumerCreatedAfter()
         {
             IConnection conn = createConnection(true);
@@ -263,7 +263,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
     
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestFailoverToNonExclusiveConsumer() 
         {
             IConnection conn = createConnection(true);
@@ -318,7 +318,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
     
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestFallbackToExclusiveConsumer() 
         {
             IConnection conn = createConnection(true);

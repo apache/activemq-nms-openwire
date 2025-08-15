@@ -53,7 +53,7 @@ namespace Apache.NMS.ActiveMQ.Test
             base.TearDown();
         }
 
-		[Test]
+		[Test, Timeout(20_000)]
 	    public void TestOptimizedAckWithExpiredMsgs()
 	    {
 	        ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -107,7 +107,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        connection.Close();
 	    }
 
-	    [Test]
+	    [Test, Timeout(20_000)]
 	    public void TestOptimizedAckWithExpiredMsgsSync()
 	    {
 	        ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -157,7 +157,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        connection.Close();
 	    }
 
-	    [Test]
+	    [Test, Timeout(20_000)]
 	    public void testOptimizedAckWithExpiredMsgsSync2()
 	    {
 	        ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -223,4 +223,3 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
-

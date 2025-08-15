@@ -39,7 +39,7 @@ namespace Apache.NMS.ActiveMQ.Test
             base.TearDown();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void InvalidSelectorExceptionTest()
         {
             using(IConnection connection = CreateConnection())
@@ -58,7 +58,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void InvalidClientIdExceptionTest()
         {
             Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));

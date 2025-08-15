@@ -37,7 +37,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 
 		// Maximum time to run is 20 seconds.
-		[Test, Timeout(20000)]
+		[Test, Timeout(20_000)]
 		public void TestRestartInvalidCredentialsWithFailover()
 		{
 			// To run this test successfully, the broker must have secure login enabled.
