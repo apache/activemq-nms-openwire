@@ -91,7 +91,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			Assert.AreEqual(count, target.Count, message);
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void testMessageDeleiveredWhenNonBlockingEnabled()
 		{
 	        session = connection.CreateSession(AcknowledgementMode.Transactional);
@@ -121,7 +121,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        session.Commit();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void testMessageDeleiveredInCorrectOrder()
 		{
 	        session = connection.CreateSession(AcknowledgementMode.Transactional);
@@ -166,7 +166,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        session.Commit();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void testMessageDeleiveryDoesntStop()
 		{
 	        session = connection.CreateSession(AcknowledgementMode.Transactional);
@@ -196,7 +196,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        session.Commit();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void testNonBlockingMessageDeleiveryIsDelayed()		
 		{
 	        connection.RedeliveryPolicy.InitialRedeliveryDelay = 7000;
@@ -252,7 +252,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void testNonBlockingMessageDeleiveryWithRollbacks()
 		{
 	        session = connection.CreateSession(AcknowledgementMode.Transactional);
@@ -290,7 +290,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			session.Rollback();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void testNonBlockingMessageDeleiveryWithAllRolledBack()
 		{
 	        connection.RedeliveryPolicy.MaximumRedeliveries = 3;
@@ -344,4 +344,3 @@ namespace Apache.NMS.ActiveMQ.Test
 	    }
 	}
 }
-

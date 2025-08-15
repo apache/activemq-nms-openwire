@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Test
         private const string DESTINATION_NAME = "TEST.RedeliveryPolicyTestDest";
         private const string DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestExponentialRedeliveryPolicyDelaysDeliveryOnRollback()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -84,7 +84,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestNornalRedeliveryPolicyDelaysDeliveryOnRollback()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -134,7 +134,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestDLQHandling()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -195,7 +195,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestInfiniteMaximumNumberOfRedeliveries()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -258,7 +258,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestZeroMaximumNumberOfRedeliveries()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -295,7 +295,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestURIForRedeliverPolicyHandling()
         {
             string uri1 = "activemq:tcp://${activemqhost}:61616" +
@@ -346,7 +346,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestNornalRedeliveryPolicyOnRollbackUntilTimeToLive()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -395,7 +395,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestNornalRedeliveryPolicyOnRollbackUntilTimeToLiveCallback()
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -446,7 +446,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRepeatedRedeliveryReceiveNoCommit() 
         {
             using(Connection connection = (Connection) CreateConnection())
@@ -513,7 +513,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRepeatedRedeliveryOnMessageNoCommit() 
         {
             using(Connection connection = (Connection) CreateConnection())

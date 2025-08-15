@@ -127,7 +127,7 @@ namespace Apache.NMS.ActiveMQ.Test
             throw new Exception("Test Forcing a Rollback");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueRollbackConsumerListener() 
         {
             connection.Start();
@@ -177,7 +177,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueRollbackSessionListener()
         {
             connection.Start();
@@ -224,7 +224,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueSessionListenerExceptionRetry()
         {
             connection.Start();
@@ -254,7 +254,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestQueueSessionListenerExceptionDlq()
         {
             connection.Start();
@@ -304,7 +304,7 @@ namespace Apache.NMS.ActiveMQ.Test
             throw new Exception("Test force a redelivery");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedQueueSessionListenerExceptionDlq()
         {
             connection.Start();

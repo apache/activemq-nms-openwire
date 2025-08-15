@@ -52,7 +52,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
             this.errorMessage = null;
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public async Task TestBadSelectorDoesNotCloseConnection()
         {
             using (IConnection connection = CreateConnection(TEST_CLIENT_ID))
@@ -88,7 +88,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			}
 		}
 
-        [Test]
+        [Test, Timeout(20_000)]
         public async Task TestAsyncDispatchExceptionRedelivers()
         {
             using (IConnection connection = CreateConnection(TEST_CLIENT_ID))
@@ -173,7 +173,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public async Task ConsumeInTwoThreads()
         {
             ParameterizedThreadStart threadStart =
@@ -215,7 +215,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public async Task TestReceiveIgnoreExpirationMessage(
             [Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge,
                 AcknowledgementMode.DupsOkAcknowledge, AcknowledgementMode.Transactional)]

@@ -63,7 +63,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
         }
 
-        [Test, Sequential]
+        [Test, Sequential, Timeout(20_000)]
         public void TestConnectUsingBasicTransport(
             [Values("tcpfaulty://${activemqhost}:61616", "activemq:tcpfaulty://${activemqhost}:61616")]
             string connectionURI)

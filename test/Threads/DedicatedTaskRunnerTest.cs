@@ -68,7 +68,7 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSimple()
         {
             try

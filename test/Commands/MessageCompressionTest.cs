@@ -56,7 +56,7 @@ namespace Apache.NMS.ActiveMQ.Test
         protected float m = 2.1F;
         protected double n = 2.3;
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTextMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
@@ -86,7 +86,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestObjectMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
@@ -116,7 +116,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestStreamMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
@@ -176,7 +176,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestMapMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)
@@ -235,7 +235,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestBytesMessageCompression()
         {
             using(Connection connection = CreateConnection(TEST_CLIENT_ID) as Connection)

@@ -39,7 +39,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			counter = 0;
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConstructor()
 		{
 		    Scheduler scheduler = new Scheduler("TestConstructor");
@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		    Assert.IsFalse(scheduler.Started);
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestNullWaitCallbackThrows()
 		{
 		    Scheduler scheduler = new Scheduler("TestNullWaitCallbackThrows");
@@ -93,7 +93,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestExecutePeriodically()
 		{
 		    {
@@ -125,7 +125,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		    }
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestExecuteAfterDelay()
 		{
 	        Scheduler scheduler = new Scheduler("TestExecuteAfterDelay");
@@ -140,7 +140,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        scheduler.Stop();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestExecuteAfterDelayNoDelay()
 		{
 	        Scheduler scheduler = new Scheduler("TestExecuteAfterDelay");
@@ -153,7 +153,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        scheduler.Stop();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestCancel()
 		{
 	        Scheduler scheduler = new Scheduler("TestCancel");
@@ -167,7 +167,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        scheduler.Stop();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestStop()
 		{
 	        Scheduler scheduler = new Scheduler("TestStop");

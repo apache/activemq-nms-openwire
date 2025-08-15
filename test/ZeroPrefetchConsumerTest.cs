@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestCannotUseMessageListener()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -48,7 +48,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestPullConsumerWorks() 
         {
             ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -67,7 +67,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestIdleConsumer(
 			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.Transactional)]
 			AcknowledgementMode ackMode) 
@@ -105,7 +105,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
     
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecvRecvCommit(
 			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.Transactional)]
 			AcknowledgementMode ackMode)
@@ -133,7 +133,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTwoConsumers() 
         {
             ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
@@ -154,7 +154,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsNull(answer, "Should have not received a message!");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestConsumerReceivePrefetchZeroRedeliveryZero()
         {
             const string QUEUE_NAME = "TEST.TestConsumerReceivePrefetchZeroRedeliveryZero";
