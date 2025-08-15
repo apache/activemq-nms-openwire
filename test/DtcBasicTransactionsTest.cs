@@ -35,7 +35,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         [ExpectedException(typeof(NMSException))]
         public void TestSessionCreateFailsWithInvalidLogLocation()
         {
@@ -51,7 +51,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedDBReadAndProduce()
         {
             // Test initialize - Fills in DB with data to send.
@@ -74,7 +74,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransacteDequeueAndDbWrite()
         {
             // Test initialize - Fills in DB with data to send.

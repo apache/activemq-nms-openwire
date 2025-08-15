@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class FifoMessageDispatchChannelTest
     {
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestCtor()
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Closed == false );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestStart() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Running == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestStop() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -54,7 +54,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Running == false );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestClose() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -69,7 +69,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Closed == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestEnqueue() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -90,7 +90,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Count == 2 );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestEnqueueFront() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -116,7 +116,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.DequeueNoWait() == dispatch1 );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestPeek() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -146,7 +146,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.DequeueNoWait() == dispatch1 );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestDequeueNoWait() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -176,7 +176,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Empty == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestDequeue() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();
@@ -210,7 +210,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Empty == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRemoveAll() 
         {
             FifoMessageDispatchChannel channel = new FifoMessageDispatchChannel();

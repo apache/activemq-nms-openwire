@@ -32,7 +32,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		protected const int totalMsgs = 5;
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void SendReceiveVirtualTopicMessage(
 			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge,
 				AcknowledgementMode.DupsOkAcknowledge, AcknowledgementMode.Transactional)]
@@ -104,7 +104,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		protected int receivedA;
 		protected int receivedB;
 
-		[Test]
+		[Test, Timeout(20_000)]
 		// Do not use listeners with transactional processing.
 		public void AsyncSendReceiveVirtualTopicMessage(
 			[Values(AcknowledgementMode.AutoAcknowledge, AcknowledgementMode.ClientAcknowledge, AcknowledgementMode.DupsOkAcknowledge)]

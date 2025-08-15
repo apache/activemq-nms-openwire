@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 	[TestFixture]
 	public class ConnectionFactoryTestAsync : NMSTestSupport
 	{
-		[Test]
+		[Test, Timeout(20_000)]
 		[TestCase("tcp://${activemqhost}:61616")]
 		[TestCase("tcp://${activemqhost}:61616")]
 		[TestCase("tcp://${activemqhost}:61616/0.0.0.0:0")]
@@ -99,7 +99,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			}
 		}		
 		
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public async Task TestConnectionFactorySetParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
 			string connectionURI,
@@ -144,7 +144,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			}
 		}
 
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public async Task TestConnectionFactoryParseParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
 			string baseConnectionURI,

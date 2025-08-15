@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class NetTxConnectionFactoryTest : NMSTestSupport
     {
-        [Test]
+        [Test, Timeout(20_000)]
         [TestCase("tcp://${activemqhost}:61616")]
         [TestCase("tcp://${activemqhost}:61616")]
         [TestCase("tcp://${activemqhost}:61616/0.0.0.0:0")]
@@ -104,7 +104,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }       
         
-        [Test, Sequential]
+        [Test, Sequential, Timeout(20_000)]
         public void TestConnectionFactorySetParams(
             [Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
             string connectionURI,
@@ -149,7 +149,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test, Sequential]
+        [Test, Sequential, Timeout(20_000)]
         public void TestConnectionFactoryParseParams(
             [Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
             string baseConnectionURI,
@@ -196,7 +196,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestConfigureRecoveryPolicyLoggerType(
             [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=file")]
             string baseConnectionURI)
@@ -219,7 +219,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
         [TestCase("C:\\Transactions\\RecoveryLogs", true)]
@@ -251,7 +251,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 				
-    	[Test]
+    	[Test, Timeout(20_000)]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
         public void TestConfigureRecoveryPolicyLoggerUsingDefaultLogger(string location, bool autoCreate)
@@ -280,7 +280,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 		
-        [Test]
+        [Test, Timeout(20_000)]
         [ExpectedException( typeof(Apache.NMS.NMSException))]
         public void TestConfigureRecoveryPolicyLoggerTypeWithInvalidType(
             [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=invalid")]
@@ -292,5 +292,3 @@ namespace Apache.NMS.ActiveMQ.Test
         }
     }
 }
-
-

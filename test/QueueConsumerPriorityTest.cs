@@ -96,7 +96,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestPriorityConsumption()
         {
             IConnection conn = createConnection(true);

@@ -34,7 +34,7 @@ namespace Apache.NMS.ActiveMQ.Test
         private static String password = "guest";
         private ConnectionInfo info = null;
 
-		[Test]
+		[Test, Timeout(20_000)]
 		[TestCase("tcp://${activemqhost}:61616")]
         [TestCase("activemq:tcp://${activemqhost}:61616")]
         [TestCase("activemqnettx:tcp://${activemqhost}:61616")]
@@ -102,6 +102,7 @@ namespace Apache.NMS.ActiveMQ.Test
             });
         }
 
+        [Test, Timeout(20_000)]
         [TestCase("(tcp://${activemqhost}:61616,tcp://${activemqhost}:61616)")]
         [TestCase("tcp://${activemqhost}:61616,tcp://${activemqhost}:61616")]
         public void TestURIFailures_UriFormatException(string connectionURI)
@@ -119,7 +120,7 @@ namespace Apache.NMS.ActiveMQ.Test
             });
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestConnectionSendsAuthenticationData()
         {
             NMSConnectionFactory factory = new NMSConnectionFactory("activemq:mock://localhost:61616");
@@ -154,7 +155,7 @@ namespace Apache.NMS.ActiveMQ.Test
             await Task.CompletedTask;
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
 		[TestCase(1, 2, 3, 4, 5)]
 		[TestCase(112, 212, 312, 412, 512)]
         public void TestURIForPrefetchHandling(int queuePreFetch, int queueBrowserPrefetch, int topicPrefetch, int durableTopicPrefetch, int maximumPendingMessageLimit)
@@ -186,7 +187,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
         }
 		
-        [Test]
+        [Test, Timeout(20_000)]
 		[TestCase(0)]
 		[TestCase(1)]
 		[TestCase(1000)]
@@ -213,7 +214,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSetDeserializationPolicy()
         {
 	        string baseUri = "activemq:tcp://${{activemqhost}}:61616";

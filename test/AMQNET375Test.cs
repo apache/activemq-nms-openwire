@@ -25,7 +25,7 @@ using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-	[TestFixture()]
+	[TestFixture]
 	public class AMQNET375Test : NMSTestSupport
 	{
 		#region Constants
@@ -41,7 +41,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		
 		#endregion
 
-		[TestCase]
+		[Test, Timeout(20_000)]
 		public void TestZeroPrefetchConsumerGetsAllMessages()
 		{
 			Send(COUNT);
@@ -123,4 +123,3 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
-

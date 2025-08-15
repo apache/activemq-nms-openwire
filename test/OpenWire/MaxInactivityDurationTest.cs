@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		protected static string DESTINATION_NAME = "TEST.MaxInactivityDuration";
 		protected static string CORRELATION_ID = "MaxInactivityCorrelationID";
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestMaxInactivityDuration()
 		{
 			string testuri = "activemq:tcp://${activemqhost}:61616" +
@@ -73,7 +73,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			producer.Send(request);
 		}
 
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public void TestInactivityMonitorThreadLeak(
 			[Values(0, 1000)]
 			int inactivityDuration)
