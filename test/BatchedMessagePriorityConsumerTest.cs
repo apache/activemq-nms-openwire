@@ -31,13 +31,13 @@ namespace Apache.NMS.ActiveMQ.Test
         protected static string DESTINATION_NAME = "queue://TEST.BatchedMessagePriorityConsumerTest";
         protected static string TEST_CLIENT_ID = "BatchedMessagePriorityConsumerTestID";
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestBatchWithLowPriorityFirstAndClientSupport() 
         {
             DoTestBatchWithLowPriorityFirst(true);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void testBatchWithLowPriorityFirstAndClientSupportOff() 
         {
             DoTestBatchWithLowPriorityFirst(false);

@@ -119,7 +119,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.Pass("When getting here. It is ok");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSendReceiveTransactedBatches()
         {
             ITextMessage message = session.CreateTextMessage("Batch IMessage");
@@ -147,7 +147,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSendRollback()
         {
             IMessage[] outbound = new IMessage[]
@@ -185,7 +185,7 @@ namespace Apache.NMS.ActiveMQ.Test
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSendSessionClose()
         {
             IMessage[] outbound = new IMessage[] {
@@ -227,7 +227,7 @@ namespace Apache.NMS.ActiveMQ.Test
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSendSessionAndConnectionClose()
         {
             IMessage[] outbound = new IMessage[] {
@@ -271,7 +271,7 @@ namespace Apache.NMS.ActiveMQ.Test
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestReceiveRollback()
         {
             IMessage[] outbound = new IMessage[] {
@@ -325,7 +325,7 @@ namespace Apache.NMS.ActiveMQ.Test
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestReceiveTwoThenRollback()
         {
             IMessage[] outbound = new IMessage[] {
@@ -380,7 +380,7 @@ namespace Apache.NMS.ActiveMQ.Test
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSendReceiveWithPrefetchOne() {
             SetPrefetchToOne();
             ReconnectSession();
@@ -412,7 +412,7 @@ namespace Apache.NMS.ActiveMQ.Test
             CommitTx();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestReceiveTwoThenRollbackManyTimes()
         {
             for(int i = 0; i < 5; i++)
@@ -421,21 +421,21 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSendRollbackWithPrefetchOfOne()
         {
             SetPrefetchToOne();
             TestSendRollback();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestReceiveRollbackWithPrefetchOfOne()
         {
             SetPrefetchToOne();
             TestReceiveRollback();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestCloseConsumerBeforeCommit()
         {
             ITextMessage[] outbound = new ITextMessage[] {
@@ -539,7 +539,7 @@ namespace Apache.NMS.ActiveMQ.Test
             return ((Connection) connection).PrefetchPolicy;
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactionEventsFired()
         {
             IMessage[] outbound = new IMessage[]
@@ -594,7 +594,7 @@ namespace Apache.NMS.ActiveMQ.Test
             AssertTextMessagesEqual(outbound, inbound, "Rollback did not work.");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestMessageListenerGeneratesTxEvents()
         {
             messageReceived = false;
@@ -666,7 +666,7 @@ namespace Apache.NMS.ActiveMQ.Test
             transactionRolledBack = true;
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestMessageListener()
         {
             // Send messages

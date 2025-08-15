@@ -112,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.count = 0;
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestConstructor()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -122,7 +122,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(executor.IsShutdown);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestSingleTaskExecuted()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -138,7 +138,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			JoinPool(executor);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTaskParamIsPropagated()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -154,7 +154,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(executor.IsShutdown);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestAllTasksComplete()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -173,7 +173,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(executor.IsShutdown);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestAllTasksCompleteAfterException()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -194,7 +194,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(executor.IsShutdown);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestThatShutdownDoesntPurgeTasks()
         {
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -218,7 +218,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(executor.IsShutdown);
         }
 
-		[Test]
+		[Test, Timeout(20_000)]
 	    public void TestIsTerminated() 
 		{
             ThreadPoolExecutor executor = new ThreadPoolExecutor();
@@ -233,7 +233,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(executor.IsTerminated);
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 	    public void TestAwaitTermination() 
 		{
             ThreadPoolExecutor executor = new ThreadPoolExecutor();

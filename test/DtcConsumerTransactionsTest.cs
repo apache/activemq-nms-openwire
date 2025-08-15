@@ -40,7 +40,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRedelivered()
         {
             // enqueue several messages
@@ -101,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRedeliveredCase2()
         {
             const int messageCount = 300;
@@ -172,7 +172,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRedeliveredCase3()
         {
             const int messageCount = 300;
@@ -242,7 +242,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRedeliveredNoComplete()
         {
             const int messageCount = 300;
@@ -312,7 +312,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoveryAfterCommitFailsBeforeSent()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -344,7 +344,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoveryAfterCommitFailsAfterSent()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -376,7 +376,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestIterativeTransactedConsume()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -404,7 +404,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueueNoRecovery();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestConsumeWithDBInsertLogLocation()
         {
             const string logLocation = @".\RecoveryDir";
@@ -453,7 +453,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.AreEqual(0, Directory.GetFiles(logLocation).Length);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterTransactionScopeAborted()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -478,7 +478,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterRollbackFailWhenScopeAborted()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -508,7 +508,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterFailOnTransactionBeforePrepareSent()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -541,7 +541,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterFailOnTransactionAfterPrepareSent()
         {
             // Test initialize - Fills in queue with data to send and clears the DB.
@@ -574,7 +574,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void MessageShouldEnlistToTheCorrectTransaction()
         {
             const int messageCount = 100;
@@ -662,7 +662,7 @@ namespace Apache.NMS.ActiveMQ.Test
         private DependentTransaction batchTxControl;
         private readonly ManualResetEvent awaitBatchProcessingStart = new ManualResetEvent(false);
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestTransactedAsyncConsumption()
         {
             PurgeDatabase();

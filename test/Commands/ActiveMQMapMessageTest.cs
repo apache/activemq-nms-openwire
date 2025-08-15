@@ -546,7 +546,7 @@ namespace Apache.NMS.ActiveMQ.Test.Commands
             msg.Body.GetString("string");
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestMessageQueueDequeQueueDequeue()
         {
             using (IConnection connection = CreateConnection())

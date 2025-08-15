@@ -192,7 +192,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			this.data = new TestData();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConstructorBool() 
 		{
 			TimerEx t = null;
@@ -215,7 +215,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConstructor() 
 		{
 			TimerEx t = null;
@@ -238,7 +238,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConstructorStringBool() 
 		{
 			TimerEx t = null;
@@ -261,7 +261,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConstructorString() 
 		{
 			TimerEx t = null;
@@ -284,7 +284,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 	    public void TestConstructorThrowsException() 
 		{
 	        try 
@@ -308,7 +308,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        }
 	    }
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestCancel() 
 		{
 			TimerEx t = null;
@@ -387,7 +387,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 	    public void TestPurge()
 		{
 	        TimerEx t = null;
@@ -427,7 +427,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	        }
 	    }
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackDateTime() 
 		{
 			TimerEx t = null;
@@ -520,7 +520,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackWithDelay()
 		{
 			TimerEx t = null;
@@ -544,7 +544,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackWithDelayAsTimeSpan()
 		{
 			TimerEx t = null;
@@ -568,7 +568,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackWithDelayAndPeriod()
 		{
 			TimerEx t = null;
@@ -593,7 +593,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackWithDelayAndPeriodTimeSpan()
 		{
 			TimerEx t = null;
@@ -618,7 +618,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackWithDateTimePeriod()
 		{
 			TimerEx t = null;
@@ -644,7 +644,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleWaitCallbackWithDateTimePeriodTimeSpan()
 		{
 			TimerEx t = null;
@@ -670,7 +670,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleAtFixedRateWaitCallbackWithDelayPeriod()
 		{
 			TimerEx t = null;
@@ -695,7 +695,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleAtFixedRateWaitCallbackWithDelayPeriodTimeSpan()
 		{
 			TimerEx t = null;
@@ -721,7 +721,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleAtFixedRateWaitCallbackWithDateTimePeriod()
 		{
 			TimerEx t = null;
@@ -747,7 +747,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleAtFixedRateWaitCallbackWithDateTimePeriodTimeSpan()
 		{
 			TimerEx t = null;
@@ -773,7 +773,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleTimerTaskDateTime() 
 		{
 			TimerEx t = null;
@@ -873,7 +873,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleTimerTaskDelay() 
 		{
 			TimerEx t = null;
@@ -1000,7 +1000,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleTimerTaskDelayTimeSpan() 
 		{
 			TimerEx t = null;
@@ -1127,7 +1127,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleTimerTaskDelayPeriod() 
 		{
 			TimerEx t = null;
@@ -1286,7 +1286,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleTimerTaskDateTimePeriod() 
 		{
 			TimerEx t = null;
@@ -1403,7 +1403,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleAtFixedRateTimerTaskDelayPeriod()
 		{
 			TimerEx t = null;
@@ -1489,7 +1489,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestScheduleAtFixedRateTimerTaskDateTimePeriod() 
 		{
 			TimerEx t = null;

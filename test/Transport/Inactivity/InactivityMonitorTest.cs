@@ -72,7 +72,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			this.asyncErrorLatch = new CountDownLatch(1);
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestCreate()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
@@ -84,7 +84,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( monitor.IsDisposed == false );
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestReadTimeout()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );
@@ -104,7 +104,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( this.exceptions.Count > 0 );
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestWriteMessageFail()
         {
             this.transport.FailOnKeepAliveInfoSends = true ;
@@ -134,7 +134,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestNonFailureSendCase()
         {
             InactivityMonitor monitor = new InactivityMonitor( this.transport );

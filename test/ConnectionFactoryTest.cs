@@ -28,7 +28,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class ConnectionFactoryTest : NMSTestSupport
 	{
-		[Test]
+		[Test, Timeout(20_000)]
 		[TestCase("tcp://${activemqhost}:61616")]
 		[TestCase("tcp://${activemqhost}:61616")]
 		[TestCase("tcp://${activemqhost}:61616/0.0.0.0:0")]
@@ -101,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}		
 		
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public void TestConnectionFactorySetParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
 			string connectionURI,
@@ -146,7 +146,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public void TestConnectionFactoryParseParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
 			string baseConnectionURI,
@@ -193,8 +193,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Timeout(10_000)]
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConnectionStartupDontDeadlockOnSingleThreadedSynchContext()
 		{
 			var singleContext = new SingleThreadSimpleTestSynchronizationContext();
@@ -216,4 +215,3 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
-
