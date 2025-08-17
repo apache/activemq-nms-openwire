@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Test
             var destination = new Queue("test-queue");
             var policy = new NmsDefaultDeserializationPolicy();
             
-            Assert.True(policy.IsTrustedType(destination, null));
+            Assert.False(policy.IsTrustedType(destination, null));
             Assert.True(policy.IsTrustedType(destination, typeof(Guid)));
             Assert.True(policy.IsTrustedType(destination, typeof(string)));
             Assert.True(policy.IsTrustedType(destination, typeof(bool)));
@@ -39,7 +39,7 @@ namespace Apache.NMS.ActiveMQ.Test
             
             // Only types in System
             policy.AllowList = "System";
-            Assert.True(policy.IsTrustedType(destination, null));
+            Assert.False(policy.IsTrustedType(destination, null));
             Assert.True(policy.IsTrustedType(destination, typeof(Guid)));
             Assert.True(policy.IsTrustedType(destination, typeof(string)));
             Assert.True(policy.IsTrustedType(destination, typeof(bool)));

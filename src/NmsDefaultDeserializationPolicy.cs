@@ -48,7 +48,7 @@ namespace Apache.NMS.ActiveMQ
         
         public bool IsTrustedType(IDestination destination, Type type)
         {
-            var typeName = type.FullName;
+            var typeName = type?.FullName;
             if (typeName == null)
             {
                 return false;
