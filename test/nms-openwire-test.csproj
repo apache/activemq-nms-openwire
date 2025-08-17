@@ -11,8 +11,8 @@
     <Description>Apache NMS (.Net Standard Messaging Library) Test Suite</Description>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>NMSKey.snk</AssemblyOriginatorKeyFile>
-    <LangVersion>8</LangVersion>
     <TargetFramework>net9.0</TargetFramework>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -29,6 +29,7 @@
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.13.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="9.0.6" />
   </ItemGroup>
   
   <ItemGroup>

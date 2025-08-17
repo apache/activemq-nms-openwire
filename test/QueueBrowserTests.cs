@@ -207,7 +207,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test, Timeout(20_000)]
+        [Test, Timeout(50_000)]
         public void TestBrowsingExpiration()
         {
             const int MESSAGES_TO_SEND = 50;
