@@ -311,7 +311,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test, Timeout(20_000)]
         public void TestShouldNotDeserializeUntrustedType()
         {
-            string uri = "activemq:tcp://${{activemqhost}}:61616";
+            string uri = "tcp://${{activemqhost}}:61616";
             var factory = new ConnectionFactory(ReplaceEnvVar(uri))
             {
                 DeserializationPolicy = new NmsDefaultDeserializationPolicy
@@ -346,7 +346,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test, Timeout(20_000)]
         public void TestShouldUseCustomDeserializationPolicy()
         {
-            string uri = "activemq:tcp://${{activemqhost}}:61616";
+            string uri = "tcp://${{activemqhost}}:61616";
             var factory = new ConnectionFactory(ReplaceEnvVar(uri))
             {
                 DeserializationPolicy = new CustomDeserializationPolicy()
@@ -374,7 +374,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test, Timeout(20_000)]
         public void TestShouldNotDeserializeMaliciousType()
         {
-            string uri = "activemq:tcp://${{activemqhost}}:61616" + $"?nms.deserializationPolicy.allowList={typeof(TrustedType).FullName}";
+            string uri = "tcp://${{activemqhost}}:61616" + $"?nms.deserializationPolicy.allowList={typeof(TrustedType).FullName}";
             var factory = new ConnectionFactory(ReplaceEnvVar(uri));
             using var connection = factory.CreateConnection("", "");
 
