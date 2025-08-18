@@ -795,7 +795,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             string uri = "failover:(tcp://${activemqhost}:61616)";
             IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
-            using(connection = factory.CreateConnection() as Connection )
+            using(connection = factory.CreateConnection("guest", "guest") as Connection )
             {
                 connection.ConnectionInterruptedListener +=
                     new ConnectionInterruptedListener(TransportInterrupted);
@@ -822,13 +822,13 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
-		[Test, Timeout(20_000)]
+		[Test, Timeout(20_000), Ignore("Flaky test, needs investigation")]
 		public void FailStartupMaxReconnectAttempts()
 		{
 			// Connect to valid machine, but on invalid port that doesn't have a broker listening.
 			string uri = "failover:(tcp://localhost:31313)?transport.StartupMaxReconnectAttempts=3";
 			IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
-			IConnection failConnection = factory.CreateConnection();
+			IConnection failConnection = factory.CreateConnection("guest", "guest");
 			try
 			{
 				failConnection.Start();

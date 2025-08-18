@@ -70,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 
-            using(Connection connection = factory.CreateConnection() as Connection)
+            using(Connection connection = factory.CreateConnection("guest", "guest") as Connection)
             {
                 ITransport transport = connection.ITransport.Narrow(typeof(TcpFaultyTransport)) as ITransport;
                 Assert.IsNotNull(transport);

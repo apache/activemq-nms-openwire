@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));
                 NetTxConnectionFactory factory = new NetTxConnectionFactory(uri);
                 Assert.IsNotNull(factory);
-                using(IConnection connection = factory.CreateConnection("", ""))
+                using(IConnection connection = factory.CreateConnection("guest", "guest"))
                 {
                     Assert.IsNotNull(connection);
                     
@@ -77,7 +77,7 @@ namespace Apache.NMS.ActiveMQ.Test
             {
                 NetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
                 Assert.IsNotNull(factory);
-                using(IConnection connection = factory.CreateConnection("", ""))
+                using(IConnection connection = factory.CreateConnection("guest", "guest"))
                 {
                     Assert.IsNotNull(connection);
 
@@ -136,7 +136,7 @@ namespace Apache.NMS.ActiveMQ.Test
             factory.SendAcksAsync = sendAcksAsync;
             factory.DispatchAsync = dispatchAsync;
 
-            using(Connection connection = factory.CreateConnection() as Connection)
+            using(Connection connection = factory.CreateConnection("guest", "guest") as Connection)
             {
                 Assert.AreEqual(ackMode, connection.AcknowledgementMode);
                 Assert.AreEqual(asyncSend, connection.AsyncSend);
@@ -203,7 +203,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
-            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            using(INetTxConnection connection = factory.CreateNetTxConnection("guest", "guest"))
             {
                 NetTxConnection netTxConnection = connection as NetTxConnection;
 
@@ -226,11 +226,10 @@ namespace Apache.NMS.ActiveMQ.Test
         [TestCase("\\\\ServerName\\Transactions\\RecoveryLogs", true)]
         public void TestConfigureRecoveryPolicyLogger(string location, bool autoCreate)
         {
-            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
-                                           "?nms.RecoveryPolicy.RecoveryLoggerType=file" +
-                                           "&nms.RecoveryPolicy.RecoveryLogger.Location={0}" +
-                                           "&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={1}",
-                                           location, autoCreate);
+            string testuri = "activemq:tcp://${activemqhost}:61616" +
+                             "?nms.RecoveryPolicy.RecoveryLoggerType=file" +
+                             $"&nms.RecoveryPolicy.RecoveryLogger.Location={location}" +
+                             $"&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={autoCreate}";
 
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 
@@ -256,10 +255,9 @@ namespace Apache.NMS.ActiveMQ.Test
         [TestCase("/var/temp/log/nms/recovery/", false)]
         public void TestConfigureRecoveryPolicyLoggerUsingDefaultLogger(string location, bool autoCreate)
         {
-            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
-                                           "?nms.RecoveryPolicy.RecoveryLogger.Location={0}" +
-                                           "&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={1}",
-                                           location, autoCreate);
+            string testuri = "activemq:tcp://${activemqhost}:61616" +
+                             $"?nms.RecoveryPolicy.RecoveryLogger.Location={location}" +
+                             $"&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={autoCreate}";
 
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 

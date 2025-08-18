@@ -62,7 +62,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 			Assert.IsNotNull(factory);
 			Assert.IsNotNull(factory.ConnectionFactory);
-			using(IConnection connection = factory.CreateConnection("", ""))
+			using(IConnection connection = factory.CreateConnection(username, password))
 			{
 				Assert.IsNotNull(connection);
 				connection.Close();
@@ -94,7 +94,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
                 Assert.IsNotNull(factory);
                 Assert.IsNotNull(factory.ConnectionFactory);
-                using(IConnection connection = factory.CreateConnection("", ""))
+                using(IConnection connection = factory.CreateConnection(username, password))
                 {
                     Assert.IsNotNull(connection);
                     connection.Close();
@@ -112,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
                 Assert.IsNotNull(factory);
                 Assert.IsNotNull(factory.ConnectionFactory);
-                using(IConnection connection = factory.CreateConnection("", ""))
+                using(IConnection connection = factory.CreateConnection(username, password))
                 {
                     Assert.IsNotNull(connection);
                     connection.Close();
@@ -160,19 +160,18 @@ namespace Apache.NMS.ActiveMQ.Test
 		[TestCase(112, 212, 312, 412, 512)]
         public void TestURIForPrefetchHandling(int queuePreFetch, int queueBrowserPrefetch, int topicPrefetch, int durableTopicPrefetch, int maximumPendingMessageLimit)
         {
-            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
-                          				   "?nms.PrefetchPolicy.queuePrefetch={0}" +
-                                           "&nms.PrefetchPolicy.queueBrowserPrefetch={1}" +
-                                           "&nms.PrefetchPolicy.topicPrefetch={2}" +
-                                           "&nms.PrefetchPolicy.durableTopicPrefetch={3}" +
-                                           "&nms.PrefetchPolicy.maximumPendingMessageLimit={4}",
-			                               queuePreFetch, queueBrowserPrefetch, topicPrefetch, durableTopicPrefetch, maximumPendingMessageLimit);
+	        string testuri = "activemq:tcp://${activemqhost}:61616" +
+	                         $"?nms.PrefetchPolicy.queuePrefetch={queuePreFetch}" +
+	                         $"&nms.PrefetchPolicy.queueBrowserPrefetch={queueBrowserPrefetch}" +
+	                         $"&nms.PrefetchPolicy.topicPrefetch={topicPrefetch}" +
+	                         $"&nms.PrefetchPolicy.durableTopicPrefetch={durableTopicPrefetch}" +
+	                         $"&nms.PrefetchPolicy.maximumPendingMessageLimit={maximumPendingMessageLimit}";
 
             NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 
             Assert.IsNotNull(factory);
             Assert.IsNotNull(factory.ConnectionFactory);
-            using(IConnection connection = factory.CreateConnection("", ""))
+            using(IConnection connection = factory.CreateConnection(username, password))
             {
                 Assert.IsNotNull(connection);
 
@@ -193,14 +192,14 @@ namespace Apache.NMS.ActiveMQ.Test
 		[TestCase(1000)]
         public void TestURIForPrefetchHandlingOfAll(int allPreFetch)
         {
-            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
-                          				   "?nms.PrefetchPolicy.all={0}", allPreFetch);
+	        string testuri = "activemq:tcp://${activemqhost}:61616" +
+	                         $"?nms.PrefetchPolicy.all={allPreFetch}";
 
             NMSConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 
             Assert.IsNotNull(factory);
             Assert.IsNotNull(factory.ConnectionFactory);
-            using(IConnection connection = factory.CreateConnection("", ""))
+            using(IConnection connection = factory.CreateConnection(username, password))
             {
                 Assert.IsNotNull(connection);
 
@@ -217,7 +216,7 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test, Timeout(20_000)]
         public void TestSetDeserializationPolicy()
         {
-	        string baseUri = "activemq:tcp://${{activemqhost}}:61616";
+	        string baseUri = "activemq:tcp://${activemqhost}:61616";
 	        string configuredUri = baseUri +
 	                               "?nms.deserializationPolicy.allowList=a,b,c" +
 	                               "&nms.deserializationPolicy.denyList=c,d,e";
@@ -226,7 +225,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 	        Assert.IsNotNull(factory);
 	        Assert.IsNotNull(factory.ConnectionFactory);
-	        using IConnection connection = factory.CreateConnection("", "");
+	        using IConnection connection = factory.CreateConnection(username, password);
 	        Assert.IsNotNull(connection);
 	        var amqConnection = connection as Connection;
 	        var deserializationPolicy = amqConnection.DeserializationPolicy as NmsDefaultDeserializationPolicy;

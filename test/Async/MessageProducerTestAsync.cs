@@ -35,7 +35,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
                 IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
                 
     			// ConnectionFactory factory = new ConnectionFactory(uri);
-    			using(IConnection connection = await factory.CreateConnectionAsync())
+    			using(IConnection connection = await factory.CreateConnectionAsync("guest", "guest"))
     			using(ISession session = await connection.CreateSessionAsync())
     			{
     				IDestination destination = await session.GetTopicAsync("Test");
