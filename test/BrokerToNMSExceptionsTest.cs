@@ -64,14 +64,14 @@ namespace Apache.NMS.ActiveMQ.Test
             Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));
             ConnectionFactory factory = new ConnectionFactory(uri);
             Assert.IsNotNull(factory);
-            using(IConnection connection = factory.CreateConnection())
+            using(IConnection connection = factory.CreateConnection("guest", "guest"))
             {
                 connection.ClientId = "FOO";
                 connection.Start();
 
                 try
                 {
-                    IConnection connection2 = factory.CreateConnection();
+                    IConnection connection2 = factory.CreateConnection("guest", "guest");
                     connection2.ClientId = "FOO";
                     connection2.Start();
                     Assert.Fail("Should throw an InvalidSelectorException");

@@ -46,9 +46,9 @@ namespace Apache.NMS.ActiveMQ.Test
         [Test, Timeout(30_000)]
         public void TestConnection()
         {
-            IConnectionFactory factory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionUri));
+            IConnectionFactory factory = new NMSConnectionFactory(ReplaceEnvVar(connectionUri));
 
-            using (connection = factory.CreateConnection())
+            using (connection = factory.CreateConnection("guest", "guest"))
             using (ISession session = connection.CreateSession())
             {
                 IDestination destination = SessionUtil.GetDestination(session, "queue://TEST.test.in");

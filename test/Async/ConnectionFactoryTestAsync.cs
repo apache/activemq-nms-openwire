@@ -47,7 +47,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 				Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));
 				ConnectionFactory factory = new ConnectionFactory(uri);
 				Assert.IsNotNull(factory);
-				using(IConnection connection = await factory.CreateConnectionAsync("", ""))
+				using(IConnection connection = await factory.CreateConnectionAsync("guest", "guest"))
 				{
 					Assert.IsNotNull(connection);
 					
@@ -74,7 +74,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			{
 				ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 				Assert.IsNotNull(factory);
-				using(IConnection connection = await factory.CreateConnectionAsync("", ""))
+				using(IConnection connection = await factory.CreateConnectionAsync("guest", "guest"))
 				{
 					Assert.IsNotNull(connection);
 
@@ -131,7 +131,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			factory.SendAcksAsync = sendAcksAsync;
 			factory.DispatchAsync = dispatchAsync;
 
-			using(Connection connection = await factory.CreateConnectionAsync() as Connection)
+			using(Connection connection = await factory.CreateConnectionAsync("guest", "guest") as Connection)
 			{
 				Assert.AreEqual(ackMode, connection.AcknowledgementMode);
 				Assert.AreEqual(asyncSend, connection.AsyncSend);
@@ -178,7 +178,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 
 			ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 
-			using(Connection connection = await factory.CreateConnectionAsync() as Connection)
+			using(Connection connection = await factory.CreateConnectionAsync("guest", "guest") as Connection)
 			{
 				Assert.AreEqual(ackMode, connection.AcknowledgementMode);
 				Assert.AreEqual(asyncSend, connection.AsyncSend);
