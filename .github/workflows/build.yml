@@ -17,7 +17,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: '8.0.x'
         
     - name: Start ActiveMQ with Docker Compose
       run: docker compose up -d activemq
@@ -32,7 +32,7 @@ jobs:
       run: dotnet test test/nms-openwire-test.csproj --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory!=Manual"
       env:
         NMSTestBroker: localhost
-        
+        activemqhost: localhost
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()

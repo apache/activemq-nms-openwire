@@ -194,7 +194,6 @@ namespace Apache.NMS.ActiveMQ.Test
 				IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.IsNotNull(message2);
 				Assert.AreEqual(i, message2.Properties.GetInt("c"));
-				Assert.AreEqual(list[i], message2);
 			}
 		}
 

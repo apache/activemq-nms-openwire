@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
-            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            using(INetTxConnection connection = factory.CreateNetTxConnection("guest", "guest"))
             {
                 connection.Start();
 
@@ -94,7 +94,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
-            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            using(INetTxConnection connection = factory.CreateNetTxConnection("guest", "guest"))
             {
                 connection.Start();
 
@@ -142,7 +142,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
-            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            using(INetTxConnection connection = factory.CreateNetTxConnection("guest", "guest"))
             {
                 connection.Start();
 
@@ -215,7 +215,7 @@ namespace Apache.NMS.ActiveMQ.Test
         {
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
-            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            using(INetTxConnection connection = factory.CreateNetTxConnection("guest", "guest"))
             {
                 connection.Start();
 

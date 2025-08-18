@@ -53,7 +53,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		private void Receive(int numberOfMessages)
 		{
             IConnectionFactory connectionFactory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(BrokerUri));
-			using (IConnection connection = connectionFactory.CreateConnection())
+			using (IConnection connection = connectionFactory.CreateConnection("guest", "guest"))
 			{
 				connection.Start();
 
@@ -83,8 +83,8 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		private void Send(int numberOfMessages)
 		{
-            IConnectionFactory connectionFactory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(BrokerUri));
-			using (IConnection connection = connectionFactory.CreateConnection())
+            IConnectionFactory connectionFactory = new NMSConnectionFactory(ReplaceEnvVar(BrokerUri));
+			using (IConnection connection = connectionFactory.CreateConnection("guest", "guest"))
 			{
 				connection.Start();
 

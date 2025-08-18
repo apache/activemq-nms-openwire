@@ -272,7 +272,7 @@ namespace Apache.NMS.ActiveMQ.Test
             string uri = "failover:(tcp://${activemqhost}:61616)";
             IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
 
-            using (IConnection connection = factory.CreateConnection() as Connection)
+            using (IConnection connection = factory.CreateConnection(userName, passWord) as Connection)
             using (ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge))
             using (IQueue queue = session.GetQueue(QUEUE_NAME))
             {
