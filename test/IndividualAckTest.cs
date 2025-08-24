@@ -42,7 +42,7 @@ namespace Apache.NMS.ActiveMQ.Test
             base.TearDown();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestAckedMessageAreConsumed()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
@@ -68,7 +68,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestLastMessageAcked()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
@@ -111,7 +111,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestUnAckedMessageAreNotConsumedOnSessionClose()
         {
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
@@ -138,7 +138,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
 	    public void TestIndividualAcknowledgeMultiMessages_AcknowledgeFirstTest()
 		{
             ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge);
@@ -182,7 +182,7 @@ namespace Apache.NMS.ActiveMQ.Test
             consumer.Close();
 	    }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestManyMessageAckedAfterMessageConsumption()
         {
             int messageCount = 20;
@@ -219,7 +219,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestManyMessageAckedAfterAllConsumption()
         {
             int messageCount = 20;
@@ -261,7 +261,7 @@ namespace Apache.NMS.ActiveMQ.Test
             session.Close();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestIndividualAcksWithClosedConsumerAndAuditSync()
         {
             const int MSG_COUNT = 20;
@@ -272,7 +272,7 @@ namespace Apache.NMS.ActiveMQ.Test
             string uri = "failover:(tcp://${activemqhost}:61616)";
             IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
 
-            using (IConnection connection = factory.CreateConnection() as Connection)
+            using (IConnection connection = factory.CreateConnection(userName, passWord) as Connection)
             using (ISession session = connection.CreateSession(AcknowledgementMode.IndividualAcknowledge))
             using (IQueue queue = session.GetQueue(QUEUE_NAME))
             {

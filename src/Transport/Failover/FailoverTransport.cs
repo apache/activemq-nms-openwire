@@ -468,13 +468,9 @@ namespace Apache.NMS.ActiveMQ.Transport.Failover
 				{
 	                if (CanReconnect()) 
 					{
-                        //Check to see if the exception is a security exception
-                        if (!(e is NMSSecurityException))
-                        {
-                            Tracer.WarnFormat("Transport failed to {0}, attempting to automatically reconnect due to: {1}",
-                                              ConnectedTransportURI, e.Message);
-                            reconnectOk = true;
-                        }                     
+                    	Tracer.WarnFormat("Transport failed to {0}, attempting to automatically reconnect due to: {1}", 
+						                  ConnectedTransportURI, e.Message);
+	                    reconnectOk = true;
 	                }
 
                     initialized = false;

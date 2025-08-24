@@ -24,7 +24,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class MessageProducerTest
 	{
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestProducerSendWithTimeout()
 		{
 			int timeout = 1500;
@@ -60,7 +60,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestCopyOnSend()
 		{
 			Uri uri = new Uri("mock://localhost:61616?connection.CopyMessageOnSend=true");
@@ -84,7 +84,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestNoCopyOnSend()
 		{
 			Uri uri = new Uri("mock://localhost:61616?connection.CopyMessageOnSend=false");

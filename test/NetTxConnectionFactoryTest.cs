@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class NetTxConnectionFactoryTest : NMSTestSupport
     {
-        [Test]
+        [Test, Timeout(20_000)]
         [TestCase("tcp://${activemqhost}:61616")]
         [TestCase("tcp://${activemqhost}:61616")]
         [TestCase("tcp://${activemqhost}:61616/0.0.0.0:0")]
@@ -50,7 +50,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));
                 NetTxConnectionFactory factory = new NetTxConnectionFactory(uri);
                 Assert.IsNotNull(factory);
-                using(IConnection connection = factory.CreateConnection("", ""))
+                using(IConnection connection = factory.CreateConnection("guest", "guest"))
                 {
                     Assert.IsNotNull(connection);
                     
@@ -77,7 +77,7 @@ namespace Apache.NMS.ActiveMQ.Test
             {
                 NetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
                 Assert.IsNotNull(factory);
-                using(IConnection connection = factory.CreateConnection("", ""))
+                using(IConnection connection = factory.CreateConnection("guest", "guest"))
                 {
                     Assert.IsNotNull(connection);
 
@@ -104,7 +104,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }       
         
-        [Test, Sequential]
+        [Test, Sequential, Timeout(20_000)]
         public void TestConnectionFactorySetParams(
             [Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
             string connectionURI,
@@ -136,7 +136,7 @@ namespace Apache.NMS.ActiveMQ.Test
             factory.SendAcksAsync = sendAcksAsync;
             factory.DispatchAsync = dispatchAsync;
 
-            using(Connection connection = factory.CreateConnection() as Connection)
+            using(Connection connection = factory.CreateConnection("guest", "guest") as Connection)
             {
                 Assert.AreEqual(ackMode, connection.AcknowledgementMode);
                 Assert.AreEqual(asyncSend, connection.AsyncSend);
@@ -149,7 +149,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test, Sequential]
+        [Test, Sequential, Timeout(20_000)]
         public void TestConnectionFactoryParseParams(
             [Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
             string baseConnectionURI,
@@ -196,14 +196,14 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestConfigureRecoveryPolicyLoggerType(
             [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=file")]
             string baseConnectionURI)
         {
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(baseConnectionURI));
 
-            using(INetTxConnection connection = factory.CreateNetTxConnection())
+            using(INetTxConnection connection = factory.CreateNetTxConnection("guest", "guest"))
             {
                 NetTxConnection netTxConnection = connection as NetTxConnection;
 
@@ -219,18 +219,17 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
         [TestCase("C:\\Transactions\\RecoveryLogs", true)]
         [TestCase("\\\\ServerName\\Transactions\\RecoveryLogs", true)]
         public void TestConfigureRecoveryPolicyLogger(string location, bool autoCreate)
         {
-            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
-                                           "?nms.RecoveryPolicy.RecoveryLoggerType=file" +
-                                           "&nms.RecoveryPolicy.RecoveryLogger.Location={0}" +
-                                           "&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={1}",
-                                           location, autoCreate);
+            string testuri = "activemq:tcp://${activemqhost}:61616" +
+                             "?nms.RecoveryPolicy.RecoveryLoggerType=file" +
+                             $"&nms.RecoveryPolicy.RecoveryLogger.Location={location}" +
+                             $"&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={autoCreate}";
 
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 
@@ -251,15 +250,14 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 				
-    	[Test]
+    	[Test, Timeout(20_000)]
         [TestCase("/var/log/nms/recovery/", true)]
         [TestCase("/var/temp/log/nms/recovery/", false)]
         public void TestConfigureRecoveryPolicyLoggerUsingDefaultLogger(string location, bool autoCreate)
         {
-            string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616" +
-                                           "?nms.RecoveryPolicy.RecoveryLogger.Location={0}" +
-                                           "&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={1}",
-                                           location, autoCreate);
+            string testuri = "activemq:tcp://${activemqhost}:61616" +
+                             $"?nms.RecoveryPolicy.RecoveryLogger.Location={location}" +
+                             $"&nms.RecoveryPolicy.RecoveryLogger.AutoCreateLocation={autoCreate}";
 
             INetTxConnectionFactory factory = new NetTxConnectionFactory(NMSTestSupport.ReplaceEnvVar(testuri));
 
@@ -280,7 +278,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 		
-        [Test]
+        [Test, Timeout(20_000)]
         [ExpectedException( typeof(Apache.NMS.NMSException))]
         public void TestConfigureRecoveryPolicyLoggerTypeWithInvalidType(
             [Values("tcp://${activemqhost}:61616?nms.RecoveryPolicy.RecoveryLoggerType=invalid")]
@@ -292,5 +290,3 @@ namespace Apache.NMS.ActiveMQ.Test
         }
     }
 }
-
-

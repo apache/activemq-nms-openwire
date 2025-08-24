@@ -26,7 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class SimplePriorityMessageDispatchChannelTest
     {
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestCtor()
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -36,7 +36,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Closed == false );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestStart() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -44,7 +44,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Running == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestStop() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -54,7 +54,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Running == false );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestClose() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -69,7 +69,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Closed == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestEnqueue() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -90,7 +90,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Count == 2 );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestEnqueueFront() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -116,7 +116,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.DequeueNoWait() == dispatch1 );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestPeek() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -155,7 +155,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.DequeueNoWait() == dispatch2 );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestDequeueNoWait() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -197,7 +197,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Empty == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestDequeue() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();
@@ -243,7 +243,7 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue( channel.Empty == true );
         }
         
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRemoveAll() 
         {
             SimplePriorityMessageDispatchChannel channel = new SimplePriorityMessageDispatchChannel();

@@ -1,0 +1,15 @@
+services:
+  activemq:
+    image: apache/activemq-classic:latest
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8161/admin/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    environment:
+      - ACTIVEMQ_CONNECTION_USER=guest
+      - ACTIVEMQ_CONNECTION_PASSWORD=guest

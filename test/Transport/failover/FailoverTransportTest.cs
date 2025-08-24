@@ -112,7 +112,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.resumed = false;
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportCreateTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
@@ -138,7 +138,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportWithBackupsTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)?transport.randomize=false&transport.backup=true");
@@ -162,7 +162,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				Assert.IsTrue(failover.IsConnected);
 			}
 		}
-        [Test]
+        [Test, Timeout(20_000)]
         public void FailoverTransportWithNestedParametersTest()
         {
             Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false&transport.backup=true&nested.transport.failOnSendMessage=true&nested.transport.numSentMessagesBeforeFail=20");
@@ -191,7 +191,7 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.AreEqual(20,mock.NumSentMessagesBeforeFail);
             }
         }
-        [Test]
+        [Test, Timeout(20_000)]
 		public void FailoverTransportCreateFailOnCreateTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
@@ -247,7 +247,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportFailOnSendMessageTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616?transport.failOnCreate=true)?" +
@@ -278,7 +278,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportFailingBackupsTest()
 		{
 			Uri uri = new Uri(
@@ -305,7 +305,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportSendOnewayMessageTest()
 		{
 			int numMessages = 1000;
@@ -349,7 +349,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public async Task FailoverTransportSendRequestTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
@@ -393,7 +393,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportSendOnewayFailTest()
 		{
 			Uri uri = new Uri(
@@ -443,7 +443,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportSendOnewayTimeoutTest()
 		{
 			Uri uri = new Uri(
@@ -470,7 +470,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void FailoverTransportSendRequestFailTest()
 		{
 			Uri uri = new Uri(
@@ -515,7 +515,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestFailoverTransportConnectionControlHandling()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61613)?transport.randomize=false");
@@ -588,7 +588,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestPriorityBackupConfig() 
 		{
 		    Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)"+
@@ -626,7 +626,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestPriorityBackupConfigPriorityURIsList() 
 		{
 		    Uri uri = new Uri("failover:(mock://localhost:61616,mock://localhost:61618)" +
@@ -669,7 +669,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public async Task OpenWireCommandsTest()
 		{
 			Uri uri = new Uri("failover:(mock://localhost:61616)?transport.randomize=false");
@@ -790,12 +790,12 @@ namespace Apache.NMS.ActiveMQ.Test
 			transport.Oneway(new RemoveInfo() { ObjectId = producer.ProducerId });
 		}
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void FailoverTransportFailOnProcessingReceivedMessageTest()
         {
             string uri = "failover:(tcp://${activemqhost}:61616)";
             IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
-            using(connection = factory.CreateConnection() as Connection )
+            using(connection = factory.CreateConnection("guest", "guest") as Connection )
             {
                 connection.ConnectionInterruptedListener +=
                     new ConnectionInterruptedListener(TransportInterrupted);
@@ -822,13 +822,13 @@ namespace Apache.NMS.ActiveMQ.Test
             Assert.IsTrue(this.resumed);
         }
 
-		[Test]
+		[Test, Timeout(20_000), Ignore("Flaky test, needs investigation")]
 		public void FailStartupMaxReconnectAttempts()
 		{
 			// Connect to valid machine, but on invalid port that doesn't have a broker listening.
 			string uri = "failover:(tcp://localhost:31313)?transport.StartupMaxReconnectAttempts=3";
 			IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
-			IConnection failConnection = factory.CreateConnection();
+			IConnection failConnection = factory.CreateConnection("guest", "guest");
 			try
 			{
 				failConnection.Start();

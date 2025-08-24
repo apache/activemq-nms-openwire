@@ -25,7 +25,7 @@ using NUnit.Framework;
 
 namespace Apache.NMS.ActiveMQ.Test
 {
-	[TestFixture()]
+	[TestFixture]
 	public class AMQNET375Test : NMSTestSupport
 	{
 		#region Constants
@@ -41,7 +41,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		
 		#endregion
 
-		[TestCase]
+		[Test, Timeout(20_000)]
 		public void TestZeroPrefetchConsumerGetsAllMessages()
 		{
 			Send(COUNT);
@@ -53,7 +53,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		private void Receive(int numberOfMessages)
 		{
             IConnectionFactory connectionFactory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(BrokerUri));
-			using (IConnection connection = connectionFactory.CreateConnection())
+			using (IConnection connection = connectionFactory.CreateConnection("guest", "guest"))
 			{
 				connection.Start();
 
@@ -83,8 +83,8 @@ namespace Apache.NMS.ActiveMQ.Test
 
 		private void Send(int numberOfMessages)
 		{
-            IConnectionFactory connectionFactory = new NMSConnectionFactory(NMSTestSupport.ReplaceEnvVar(BrokerUri));
-			using (IConnection connection = connectionFactory.CreateConnection())
+            IConnectionFactory connectionFactory = new NMSConnectionFactory(ReplaceEnvVar(BrokerUri));
+			using (IConnection connection = connectionFactory.CreateConnection("guest", "guest"))
 			{
 				connection.Start();
 
@@ -123,4 +123,3 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
-

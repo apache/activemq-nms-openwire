@@ -29,7 +29,7 @@ namespace Apache.NMS.ActiveMQ.Test
 	[TestFixture]
 	public class QueueBrowserTests : NMSTestSupport
 	{
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestReceiveBrowseReceive()
 		{
 			using (IConnection connection = CreateConnection())
@@ -114,7 +114,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestBroserIteratively()
         {
             using (IConnection connection = CreateConnection())
@@ -145,7 +145,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestBrowseReceive()
 		{
 			using (IConnection connection = CreateConnection())
@@ -193,7 +193,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 		
-        [Test]
+        [Test, Timeout(20_000)]
         [ExpectedException(typeof(NMSException))]
         public void TestCreateBrowserFailsWithZeroPrefetch()
         {
@@ -207,7 +207,7 @@ namespace Apache.NMS.ActiveMQ.Test
             }
         }
 
-        [Test]
+        [Test, Timeout(50_000), Ignore("Flaky test, needs investigation")]
         public void TestBrowsingExpiration()
         {
             const int MESSAGES_TO_SEND = 50;

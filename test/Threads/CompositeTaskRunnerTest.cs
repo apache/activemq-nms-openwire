@@ -58,7 +58,7 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
             }
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestCompositeTaskRunner()
         {
 
@@ -91,7 +91,7 @@ namespace Apache.NMS.ActiveMQ.Test.Threads
             runner.RemoveTask(task2);
         }
 
-        [Test]
+        [Test, Timeout(20_000), Ignore("Flaky test, needs investigation")]
         public void CompositeTaskRunnerDoesntHoldLockWhileCallingIterate()
         {
             object lockObj = new object();

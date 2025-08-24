@@ -26,8 +26,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 	public class MessageProducerTestAsync
 	{
 	
-	        [Test]
-	        [Timeout(20_000)]
+	        [Test, Timeout(20_000)]
     		public async Task TestProducerSendWithExpiry()
     		{
     			// Uri uri = new Uri(string.Format("tcp://localhost"));
@@ -36,7 +35,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
                 IConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(uri));
                 
     			// ConnectionFactory factory = new ConnectionFactory(uri);
-    			using(IConnection connection = await factory.CreateConnectionAsync())
+    			using(IConnection connection = await factory.CreateConnectionAsync("guest", "guest"))
     			using(ISession session = await connection.CreateSessionAsync())
     			{
     				IDestination destination = await session.GetTopicAsync("Test");
@@ -54,7 +53,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
     		}
 	
 	
-		[Test][Timeout(20_000)]
+		[Test, Timeout(20_000)]
 		public async Task TestProducerSendWithTimeout()
 		{
 			int timeout = 1500;
@@ -90,7 +89,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public async Task TestCopyOnSend()
 		{
 			Uri uri = new Uri("mock://localhost:61616?connection.CopyMessageOnSend=true");
@@ -114,7 +113,7 @@ namespace Apache.NMS.ActiveMQ.Test.Async
 			}
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public async Task TestNoCopyOnSend()
 		{
 			Uri uri = new Uri("mock://localhost:61616?connection.CopyMessageOnSend=false");

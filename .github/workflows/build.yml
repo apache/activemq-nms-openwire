@@ -1,0 +1,45 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Start ActiveMQ with Docker Compose
+      run: docker compose up -d activemq
+        
+    - name: Restore dependencies
+      run: dotnet restore nms-openwire.sln
+      
+    - name: Build solution
+      run: dotnet build nms-openwire.sln --configuration Release --no-restore
+      
+    - name: Run tests
+      run: dotnet test test/nms-openwire-test.csproj --configuration Release --no-build --verbosity normal --logger trx --results-directory TestResults --filter "TestCategory!=Manual"
+      env:
+        NMSTestBroker: localhost
+        activemqhost: localhost
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: TestResults/*.trx
+        
+    - name: Stop ActiveMQ
+      if: always()
+      run: docker compose down

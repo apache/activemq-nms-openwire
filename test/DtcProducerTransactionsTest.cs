@@ -38,7 +38,7 @@ namespace Apache.NMS.ActiveMQ.Test
             this.dtcFactory.ConfiguredResourceManagerId = Guid.NewGuid().ToString();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterFailOnTransactionCommit()
         {
             // Test initialize - Fills in DB with data to send.
@@ -70,7 +70,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterFailOnTransactionPostCommitSend()
         {
             // Test initialize - Fills in DB with data to send.
@@ -101,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyBrokerQueueCount();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestNoRecoverAfterFailOnTransactionWhenLogDeleted()
         {
             // Test initialize - Fills in DB with data to send.
@@ -142,7 +142,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestNoRecoverAfterFailOnTransactionWhenLogWriteFails()
         {
             // Test initialize - Fills in DB with data to send.
@@ -179,7 +179,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterFailOnTransactionBeforePrepareSent()
         {
             // Test initialize - Fills in DB with data to send.
@@ -207,7 +207,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterFailOnTransactionDuringPrepareSend()
         {
             // Test initialize - Fills in DB with data to send.
@@ -235,7 +235,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterTransactionScopeAborted()
         {
             // Test initialize - Fills in DB with data to send.
@@ -258,7 +258,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestRecoverAfterRollbackFailWhenScopeAborted()
         {
             // Test initialize - Fills in DB with data to send.
@@ -289,7 +289,7 @@ namespace Apache.NMS.ActiveMQ.Test
             VerifyNoMessagesInQueue();
         }
 
-        [Test]
+        [Test, Timeout(20_000)]
         public void TestIterativeTransactedProduceWithDBDelete()
         {
             using (INetTxConnection connection = dtcFactory.CreateNetTxConnection())

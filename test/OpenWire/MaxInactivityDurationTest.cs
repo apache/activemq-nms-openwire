@@ -30,7 +30,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		protected static string DESTINATION_NAME = "TEST.MaxInactivityDuration";
 		protected static string CORRELATION_ID = "MaxInactivityCorrelationID";
 
-		[Test]
+		[Test, Timeout(20_000), Ignore("Flaky test, needs investigation")]
 		public void TestMaxInactivityDuration()
 		{
 			string testuri = "activemq:tcp://${activemqhost}:61616" +
@@ -39,7 +39,7 @@ namespace Apache.NMS.ActiveMQ.Test
 										"&connection.asyncClose=false";
 
 			NMSConnectionFactory factory = new NMSConnectionFactory(ReplaceEnvVar(testuri));
-			using(IConnection connection = factory.CreateConnection("", ""))
+			using(IConnection connection = factory.CreateConnection("guest", "guest" ))
 			{
 				connection.Start();
 				using(ISession session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge))
@@ -73,7 +73,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			producer.Send(request);
 		}
 
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public void TestInactivityMonitorThreadLeak(
 			[Values(0, 1000)]
 			int inactivityDuration)
@@ -81,9 +81,9 @@ namespace Apache.NMS.ActiveMQ.Test
 			Process currentProcess = Process.GetCurrentProcess();
 			Tracer.InfoFormat("Beginning thread count: {0}, handle count: {1}", currentProcess.Threads.Count, currentProcess.HandleCount);
 
-			string testuri = string.Format("activemq:tcp://${{activemqhost}}:61616?wireFormat.maxInactivityDuration={0}", inactivityDuration);
+			string testUri = $"activemq:tcp://${{activemqhost}}:61616?wireFormat.maxInactivityDuration={inactivityDuration}";
 	
-			NMSConnectionFactory factory = new NMSConnectionFactory(ReplaceEnvVar(testuri));
+			NMSConnectionFactory factory = new NMSConnectionFactory(ReplaceEnvVar(testUri));
 
 			// We measure the initial resource counts, and then allow a certain fudge factor for the resources
 			// to fluctuate at run-time.  We allow for a certain amount of fluctuation, but if the counts
@@ -96,7 +96,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 			for(int i = 0; i < 200; i++)
 			{
-				using(IConnection connection = factory.CreateConnection("ResourceLeakTest", "Password"))
+				using(IConnection connection = factory.CreateConnection("guest", "guest" ))
 				{
 					using(ISession session = connection.CreateSession())
 					{

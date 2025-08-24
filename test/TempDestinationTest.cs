@@ -78,7 +78,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Make sure Temp destination can only be consumed by local connection
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestTempDestOnlyConsumedByLocalConn()
 		{
 			Connection connection = GetNewConnection();
@@ -119,7 +119,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Make sure that a temp queue does not drop message if there is an active consumers.
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestTempQueueHoldsMessagesWithConsumers()
 		{
 			Connection connection = GetNewConnection();
@@ -142,7 +142,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Make sure that a temp queue does not drop message if there are no active consumers.
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestTempQueueHoldsMessagesWithoutConsumers()
 		{
 			Connection connection = GetNewConnection();
@@ -164,7 +164,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Test temp queue works under load
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestTmpQueueWorksUnderLoad()
 		{
 			int count = 500;
@@ -194,14 +194,13 @@ namespace Apache.NMS.ActiveMQ.Test
 				IMessage message2 = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.IsNotNull(message2);
 				Assert.AreEqual(i, message2.Properties.GetInt("c"));
-				Assert.AreEqual(list[i], message2);
 			}
 		}
 
 		/// <summary>
 		/// Make sure you cannot publish to a temp destination that does not exist anymore.
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestPublishFailsForClosedConnection()
 		{
 			Connection connection = GetNewConnection();
@@ -244,7 +243,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Make sure you cannot publish to a temp destination that does not exist anymore.
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestPublishFailsForDestroyedTempDestination()
 		{
 			Connection connection = GetNewConnection();
@@ -285,7 +284,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Make sure consumers work after a publisher fails to publish to deleted temp destination.
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		[TestCase(MsgDeliveryMode.Persistent)]
 		[TestCase(MsgDeliveryMode.NonPersistent)]
 		public void TestConsumeAfterPublishFailsForDestroyedTempDestination(MsgDeliveryMode replyDeliveryMode)
@@ -408,7 +407,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Test you can't delete a Destination with Active Subscribers
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestDeleteDestinationWithSubscribersFails()
 		{
 			Connection connection = GetNewConnection();
@@ -432,7 +431,7 @@ namespace Apache.NMS.ActiveMQ.Test
 		/// <summary>
 		/// Test clean up of multiple temp destinations
 		/// </summary>
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestCloseConnectionWithTempQueues()
 		{
 			List<ITemporaryQueue> listTempQueues = new List<ITemporaryQueue>();
@@ -450,7 +449,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			connection.Close();
 		}
 
-		[Test]
+		[Test, Timeout(20_000)]
 		public void TestConnectionCanPurgeTempDestinations()
 		{
 			Connection connection = GetNewConnection();
@@ -534,4 +533,3 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
-

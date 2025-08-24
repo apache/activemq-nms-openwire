@@ -26,9 +26,9 @@ using NUnit.Framework;
 namespace Apache.NMS.ActiveMQ.Test
 {
 	[TestFixture]
-	public class ConnectionFactoryTest : NMSTestSupport
+	public class ConnectionFactoryTest
 	{
-		[Test]
+		[Test, Timeout(20_000)]
 		[TestCase("tcp://${activemqhost}:61616")]
 		[TestCase("tcp://${activemqhost}:61616")]
 		[TestCase("tcp://${activemqhost}:61616/0.0.0.0:0")]
@@ -49,7 +49,7 @@ namespace Apache.NMS.ActiveMQ.Test
 				Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar(connectionURI));
 				ConnectionFactory factory = new ConnectionFactory(uri);
 				Assert.IsNotNull(factory);
-				using(IConnection connection = factory.CreateConnection("", ""))
+				using(IConnection connection = factory.CreateConnection("guest", "guest"))
 				{
 					Assert.IsNotNull(connection);
 					
@@ -76,7 +76,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			{
 				ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 				Assert.IsNotNull(factory);
-				using(IConnection connection = factory.CreateConnection("", ""))
+				using(IConnection connection = factory.CreateConnection("guest", "guest" ))
 				{
 					Assert.IsNotNull(connection);
 
@@ -101,7 +101,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}		
 		
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public void TestConnectionFactorySetParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
 			string connectionURI,
@@ -146,7 +146,7 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Test, Sequential]
+		[Test, Sequential, Timeout(20_000)]
 		public void TestConnectionFactoryParseParams(
 			[Values("tcp://${activemqhost}:61616", "activemq:tcp://${activemqhost}:61616")]
 			string baseConnectionURI,
@@ -180,7 +180,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
 			ConnectionFactory factory = new ConnectionFactory(NMSTestSupport.ReplaceEnvVar(connectionURI));
 
-			using(Connection connection = factory.CreateConnection() as Connection)
+			using(Connection connection = factory.CreateConnection("guest", "guest" ) as Connection)
 			{
 				Assert.AreEqual(ackMode, connection.AcknowledgementMode);
 				Assert.AreEqual(asyncSend, connection.AsyncSend);
@@ -193,18 +193,17 @@ namespace Apache.NMS.ActiveMQ.Test
 			}
 		}
 
-		[Timeout(10_000)]
-		[Test]
-		public void TestConnectionStartupDontDeadlockOnSingleThreadedSynchContext()
+		[Test, Timeout(20_000)]
+		public void TestConnectionStartupDontDeadlockOnSingleThreadedSyncContext()
 		{
 			var singleContext = new SingleThreadSimpleTestSynchronizationContext();
 			ManualResetEvent readyEvent = new ManualResetEvent(false);
 			singleContext.Post((state) =>
 			{
-				Uri uri = URISupport.CreateCompatibleUri(ReplaceEnvVar("tcp://${activemqhost}:61616"));
+				Uri uri = URISupport.CreateCompatibleUri(NMSTestSupport.ReplaceEnvVar("tcp://${activemqhost}:61616"));
 				ConnectionFactory factory = new ConnectionFactory(uri);
 				Assert.IsNotNull(factory);
-				using (IConnection connection = factory.CreateConnection("", ""))
+				using (IConnection connection = factory.CreateConnection("guest", "guest"))
 				{
 					connection.Start();
 				}
@@ -216,4 +215,3 @@ namespace Apache.NMS.ActiveMQ.Test
 		}
 	}
 }
-
