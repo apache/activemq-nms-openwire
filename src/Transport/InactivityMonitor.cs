@@ -19,6 +19,7 @@ using System;
 using System.Threading;
 using Apache.NMS.ActiveMQ.Commands;
 using Apache.NMS.ActiveMQ.Threads;
+using Apache.NMS.ActiveMQ.Util;
 using Apache.NMS.ActiveMQ.Util.Synchronization;
 using Apache.NMS.Util;
 
@@ -230,32 +231,44 @@ namespace Apache.NMS.ActiveMQ.Transport
 			inRead.Value = true;
 			try
 			{
-				if(command.IsKeepAliveInfo)
+                if (command is ExceptionResponse)
+                {
+                    ExceptionResponse error = command as ExceptionResponse;
+                    NMSException exception = ExceptionFromBrokerError.CreateExceptionFromBrokerError(error.Exception);
+                    if (exception is NMSSecurityException)
+                    {
+                        OnException(this, exception);
+					}
+					else
+					{
+                        Tracer.WarnFormat("ExceptionResponse received from the broker:{0}", command.GetType());
+                    }
+                }else if (command.IsKeepAliveInfo)
 				{
 					KeepAliveInfo info = command as KeepAliveInfo;
-					if(info.ResponseRequired)
+					if (info.ResponseRequired)
 					{
 						try
 						{
 							info.ResponseRequired = false;
 							Oneway(info);
 						}
-						catch(IOException ex)
+						catch (IOException ex)
 						{
 							OnException(this, ex);
 						}
 					}
 				}
-				else if(command.IsWireFormatInfo)
+				else if (command.IsWireFormatInfo)
 				{
-					lock(monitor)
+					lock (monitor)
 					{
 						remoteWireFormatInfo = command as WireFormatInfo;
 						try
 						{
 							StartMonitorThreads();
 						}
-						catch(IOException ex)
+						catch (IOException ex)
 						{
 							OnException(this, ex);
 						}
