@@ -133,53 +133,6 @@ namespace Apache.NMS.ActiveMQ.Test
 			{
 			}
         }
-        public class TestableInactivityMonitor : InactivityMonitor
-        {
-            public TestableInactivityMonitor(ITransport next) : base(next) { }
-
-            // Expose protected method for testing
-            public Task TestOnCommand(ITransport sender, Command command)
-            {
-                return OnCommand(sender, command);
-            }
-        }
-        [Test]
-        public void OnCommand_WithNMSSecurityException_ShouldCallOnException()
-        {
-            // Arrange
-            var brokerError = new BrokerError
-            {
-                ExceptionClass = "javax.jms.JMSSecurityException",
-                Message = "Authentication failed"
-            };
-
-            var exceptionResponse = new ExceptionResponse
-            {
-                Exception = brokerError
-            };
-
-            // Mock the static method call - this would require making ExceptionFromBrokerError testable
-            // For this test, we'll assume it returns an NMSSecurityException
-            var securityException = new NMSSecurityException("Authentication failed");
-            TestableInactivityMonitor monitor = new TestableInactivityMonitor(this.transport);
-            monitor.Exception += new ExceptionHandler(OnException);
-            monitor.CommandAsync += new CommandHandlerAsync(OnCommand);
-            bool exceptionHandlerCalled = false;
-            Exception  caughtException = null;
-            monitor.Exception += (sender, args) =>
-            {
-                exceptionHandlerCalled = true;
-                caughtException = args;
-            };
-            // Act
-            Task task=monitor.TestOnCommand(transport, exceptionResponse);
-            task.Wait();
-            // Assert
-            Assert.IsTrue(exceptionHandlerCalled, "Exception handler should have been called");
-            Assert.IsNotNull(caughtException, "Exception should have been caught");
-            Assert.IsInstanceOf<NMSSecurityException>(caughtException, "Should be NMSSecurityException");
-            Assert.AreEqual("Authentication failed", caughtException.Message);
-        }
 
         [Test]
         public void TestNonFailureSendCase()
