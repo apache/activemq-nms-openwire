@@ -343,6 +343,8 @@ namespace Apache.NMS.ActiveMQ
             remove { listener -= value; }
         }
 
+        public event AsyncMessageListener AsyncListener;
+
         public IMessage Receive()
         {
             return ReceiveAsync().GetAsyncResult();

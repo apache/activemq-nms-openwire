@@ -72,7 +72,7 @@ namespace Apache.NMS.ActiveMQ.Test
     
         protected IRedeliveryPolicy GetRedeliveryPolicy() 
         {
-            RedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
+            RedeliveryPolicy redeliveryPolicy = new DefaultRedeliveryPolicy();
             redeliveryPolicy.InitialRedeliveryDelay = 1000;
             redeliveryPolicy.MaximumRedeliveries = 3;
             redeliveryPolicy.BackOffMultiplier = (short)2;

@@ -309,7 +309,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             {
                 int received = 0;
-                int maxRetries = new RedeliveryPolicy().MaximumRedeliveries;
+                int maxRetries = new DefaultRedeliveryPolicy().MaximumRedeliveries;
 
                 while(received < maxRetries)
                 {
@@ -344,7 +344,7 @@ namespace Apache.NMS.ActiveMQ.Test
 
             {
                 int received = 0;
-                int maxRetries = new RedeliveryPolicy().MaximumRedeliveries;
+                int maxRetries = new DefaultRedeliveryPolicy().MaximumRedeliveries;
 
                 while(received < maxRetries)
                 {
@@ -392,7 +392,7 @@ namespace Apache.NMS.ActiveMQ.Test
             {
                 int received = 0;
 
-                int maxRetries = new RedeliveryPolicy().MaximumRedeliveries;
+                int maxRetries = new DefaultRedeliveryPolicy().MaximumRedeliveries;
 
                 while(received < maxRetries)
                 {
