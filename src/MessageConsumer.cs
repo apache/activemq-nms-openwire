@@ -840,7 +840,8 @@ namespace Apache.NMS.ActiveMQ
                             {
                                 if (RedeliveryExceeded(dispatch))
                                 {
-                                    await PosionAckAsync(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery policy limit:" + redeliveryPolicy.MaximumRedeliveries).Await();
+                                    var ackType = (AckType) redeliveryPolicy.GetOutcome(dispatch.Destination);
+                                    await PoisonAckAsync(dispatch, ackType, $"dispatch to {ConsumerId} exceeds redelivery policy limit:{redeliveryPolicy.MaximumRedeliveries}").Await();
                                     return;
                                 }
                                 else
@@ -885,9 +886,8 @@ namespace Apache.NMS.ActiveMQ
                             }
                             else
                             {
-                                Tracer.WarnFormat("Consumer[{0}] suppressing duplicate delivery on connection, poison acking: ({1})",
-                                                  ConsumerId, dispatch);
-                                await PosionAckAsync(dispatch, "Suppressing duplicate delivery on connection, consumer " + ConsumerId).Await();
+                                Tracer.WarnFormat("Consumer[{0}] suppressing duplicate delivery on connection, poison acking: ({1})", ConsumerId, dispatch);
+                                await PoisonAckAsync(dispatch, AckType.PoisonAck, $"Suppressing duplicate delivery on connection, consumer {ConsumerId}").Await();
                             }
                         }
                     }
@@ -1092,10 +1092,9 @@ namespace Apache.NMS.ActiveMQ
                 }
                 else if (RedeliveryExceeded(dispatch))
                 {
-                    Tracer.DebugFormat("Consumer[{0}] received with excessive redelivered: {1}",
-                                       ConsumerId, dispatch);
-                    await PosionAckAsync(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery " +
-                                                   "policy limit:" + redeliveryPolicy.MaximumRedeliveries).Await();
+                    Tracer.DebugFormat("Consumer[{0}] received with excessive redelivered: {1}", ConsumerId, dispatch);
+                    var ackType = (AckType) redeliveryPolicy.GetOutcome(dispatch.Destination);
+                    await PoisonAckAsync(dispatch, ackType, $"dispatch to {ConsumerId} exceeds redelivery policy limit:{redeliveryPolicy.MaximumRedeliveries}").Await();
 
                     // Refresh the dispatch time
                     dispatchTime = DateTime.Now;
@@ -1351,16 +1350,20 @@ namespace Apache.NMS.ActiveMQ
             await this.session.Connection.SyncRequestAsync(ack).Await();
         }
 
-        private async Task PosionAckAsync(MessageDispatch dispatch, string cause)
+        private async Task PoisonAckAsync(MessageDispatch dispatch, AckType ackType, string cause)
         {
-            BrokerError poisonCause = new BrokerError();
-            poisonCause.ExceptionClass = "javax.jms.JMSException";
-            poisonCause.Message = cause;
+            BrokerError poisonCause = new BrokerError
+            {
+                ExceptionClass = "javax.jms.JMSException",
+                Message = cause
+            };
 
-            MessageAck posionAck = new MessageAck(dispatch, (byte) AckType.PoisonAck, 1);
-            posionAck.FirstMessageId = dispatch.Message.MessageId;
-            posionAck.PoisonCause = poisonCause;
-            await this.session.SendAckAsync(posionAck).Await();
+            var poisonAck = new MessageAck(dispatch, (byte) ackType, 1)
+            {
+                FirstMessageId = dispatch.Message.MessageId,
+                PoisonCause = poisonCause
+            };
+            await this.session.SendAckAsync(poisonAck).Await();
         }
 
         private void RegisterSync()
@@ -1493,7 +1496,8 @@ namespace Apache.NMS.ActiveMQ
                        lastMd.Message.RedeliveryCounter > this.redeliveryPolicy.MaximumRedeliveries)
                     {
                         // We need to NACK the messages so that they get sent to the DLQ.
-                        MessageAck ack = new MessageAck(lastMd, (byte) AckType.PoisonAck, deliveredMessages.Count);
+                        var ackType = redeliveryPolicy.GetOutcome(this.info.Destination);
+                        MessageAck ack = new MessageAck(lastMd, (byte) ackType, deliveredMessages.Count);
 
                         Tracer.DebugFormat("Consumer[{0}] Poison Ack of {1} messages aft max redeliveries: {2}",
                                            ConsumerId, this.deliveredMessages.Count, this.redeliveryPolicy.MaximumRedeliveries);
