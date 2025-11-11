@@ -124,6 +124,10 @@ namespace Apache.NMS.ActiveMQ
             remove => ((IMessageConsumer)consumer).Listener -= value;
         }
 
-        public event AsyncMessageListener AsyncListener;
+        event AsyncMessageListener INMSConsumer.AsyncListener
+        {
+            add => ((IMessageConsumer) consumer).AsyncListener += value;
+            remove => ((IMessageConsumer) consumer).AsyncListener -= value;
+        }
     }
 }

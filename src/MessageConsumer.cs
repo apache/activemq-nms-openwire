@@ -83,6 +83,7 @@ namespace Apache.NMS.ActiveMQ
         private ThreadPoolExecutor executor;
 
         private event MessageListener listener;
+        private event AsyncMessageListener asyncListener;
 
         private IRedeliveryPolicy redeliveryPolicy;
         private PreviouslyDeliveredMap previouslyDeliveredMessages;
@@ -319,31 +320,64 @@ namespace Apache.NMS.ActiveMQ
             add
             {
                 CheckClosed();
+                
+                if(PrefetchSize == 0)
+                {
+                    throw new NMSException("Cannot set Asynchronous Listener on a Consumer with a zero Prefetch size");
+                }
+                
+                var wasStarted = session.Started;
+
+                if (wasStarted)
+                {
+                    session.Stop();
+                }
+
+                listener += value;
+                session.Redispatch(this, unconsumedMessages);
+
+                if (wasStarted)
+                {
+                    session.Start();
+                }
+            }
+            remove
+            {
+                listener -= value;
+            }
+        }
+
+        public event AsyncMessageListener AsyncListener
+        {
+            add
+            {
+                CheckClosed();
 
                 if(this.PrefetchSize == 0)
                 {
                     throw new NMSException("Cannot set Asynchronous Listener on a Consumer with a zero Prefetch size");
                 }
+                
+                bool wasStarted = session.Started;
 
-                bool wasStarted = this.session.Started;
-
-                if(wasStarted)
+                if (wasStarted)
                 {
-                    this.session.Stop();
+                    session.Stop();
                 }
 
-                listener += value;
-                this.session.Redispatch(this, this.unconsumedMessages);
+                asyncListener += value;
+                session.Redispatch(this, unconsumedMessages);
 
-                if(wasStarted)
+                if (wasStarted)
                 {
-                    this.session.Start();
+                    session.Start();
                 }
             }
-            remove { listener -= value; }
+            remove
+            {
+                asyncListener -= value;
+            }
         }
-
-        public event AsyncMessageListener AsyncListener;
 
         public IMessage Receive()
         {
@@ -822,7 +856,8 @@ namespace Apache.NMS.ActiveMQ
 
         public virtual async Task Dispatch_Async(MessageDispatch dispatch)
         {
-            MessageListener listener = this.listener;
+            var listener = this.listener;
+            var asyncListener = this.asyncListener;
             bool dispatchMessage = false;
 
             try
@@ -830,13 +865,13 @@ namespace Apache.NMS.ActiveMQ
                 ClearMessagesInProgress();
                 ClearDeliveredList();
 
-                using(await this.unconsumedMessages.SyncRoot.LockAsync().Await())
+                using (await unconsumedMessages.SyncRoot.LockAsync().Await())
                 {
                     if(!this.unconsumedMessages.Closed)
                     {
                         if(this.info.Browser || !session.Connection.IsDuplicate(this, dispatch.Message))
                         {
-                            if(listener != null && this.unconsumedMessages.Running)
+                            if ((listener != null || asyncListener != null) && this.unconsumedMessages.Running)
                             {
                                 if (RedeliveryExceeded(dispatch))
                                 {
@@ -901,11 +936,15 @@ namespace Apache.NMS.ActiveMQ
 
                     try
                     {
-                        bool expired = (!IgnoreExpiration && message.IsExpired());
+                        bool expired = !IgnoreExpiration && message.IsExpired();
 
                         if(!expired)
                         {
-                            listener(message);
+                            listener?.Invoke(message);
+                            if (asyncListener != null)
+                            {
+                                await asyncListener.Invoke(message, CancellationToken.None).Await();
+                            }
                         }
 
                         await this.AfterMessageIsConsumedAsync(dispatch, expired).Await();
@@ -1591,7 +1630,7 @@ namespace Apache.NMS.ActiveMQ
 
             // Only redispatch if there's an async listener otherwise a synchronous
             // consumer will pull them from the local queue.
-            if(this.listener != null)
+            if (HasMessageListener())
             {
                 this.session.Redispatch(this, this.unconsumedMessages);
             }
@@ -1680,15 +1719,15 @@ namespace Apache.NMS.ActiveMQ
 
         private void CheckMessageListener()
         {
-            if(this.listener != null)
+            if(HasMessageListener())
             {
                 throw new NMSException("Cannot set Async listeners on Consumers with a prefetch limit of zero");
             }
         }
 
-        internal bool HasMessageListener()
+        private bool HasMessageListener()
         {
-            return this.listener != null;
+            return listener != null || asyncListener != null;
         }
 
         protected bool IsAutoAcknowledgeEach
