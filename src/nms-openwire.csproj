@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>Apache.NMS.ActiveMQ</RootNamespace>
     <AssemblyName>Apache.NMS.ActiveMQ</AssemblyName>
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <Company>Apache Software Foundation</Company>
     <Product>Apache NMS OpenWire</Product>
     <Description>Apache NMS (.Net Standard Messaging Library): Openwire implementation of Apache NMS API</Description>
@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Apache.NMS" Version="2.0.0" />
+    <PackageReference Include="Apache.NMS" Version="2.2.0" />
     <PackageReference Include="SharpZipLib" Version="1.3.3" />
   </ItemGroup>
 

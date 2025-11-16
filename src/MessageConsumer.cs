@@ -83,9 +83,16 @@ namespace Apache.NMS.ActiveMQ
         private ThreadPoolExecutor executor;
 
         private event MessageListener listener;
+        event AsyncMessageListener asyncListener;
 
         private IRedeliveryPolicy redeliveryPolicy;
         private PreviouslyDeliveredMap previouslyDeliveredMessages;
+
+        public event AsyncMessageListener AsyncListener
+        {
+            add { asyncListener += value; }
+            remove { asyncListener -= value; }
+        }
 
         // Constructor internal to prevent clients from creating an instance.
         internal MessageConsumer(Session session, ConsumerId id, ActiveMQDestination destination,
