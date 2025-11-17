@@ -311,5 +311,62 @@ namespace Apache.NMS.ActiveMQ.Test.Async
                 }
             }
         }
+        
+        [Test, Timeout(20_000)]
+        public async Task TestAsyncListenerWithSession()
+        {
+            using var connection = CreateConnection();
+            using var session = await connection.CreateSessionAsync(AcknowledgementMode.AutoAcknowledge);
+            var queue = await session.GetQueueAsync(Guid.NewGuid().ToString());
+            
+            using var producer = await session.CreateProducerAsync(queue);
+            using var consumer = await session.CreateConsumerAsync(queue);
+
+            var tcs = new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            consumer.AsyncListener += async (msg, _) =>
+            {
+                tcs.TrySetResult(msg);
+                await Task.CompletedTask;
+            };
+
+            await connection.StartAsync();
+
+            var message = await session.CreateTextMessageAsync("Test Async Message");
+            await producer.SendAsync(message);
+
+            var received = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.IsNotNull(received);
+            Assert.IsInstanceOf<ITextMessage>(received);
+            Assert.AreEqual("Test Async Message", ((ITextMessage)received).Text);
+        }
+        
+        [Test, Timeout(20_000)]
+        public async Task TestAsyncListenerWithContext()
+        {
+            using var context = await Factory.CreateContextAsync(userName, passWord, AcknowledgementMode.ClientAcknowledge);
+            var queue = await context.GetQueueAsync(Guid.NewGuid().ToString());
+            
+            using var producer = await context.CreateProducerAsync();
+            using var consumer = await context.CreateConsumerAsync(queue);
+
+            var tcs = new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            consumer.AsyncListener += async (msg, _) =>
+            {
+                tcs.TrySetResult(msg);
+                await Task.CompletedTask;
+            };
+
+            await context.StartAsync();
+
+            var message = await producer.CreateTextMessageAsync("Test Async Message");
+            await producer.SendAsync(queue, message);
+
+            var received = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.IsNotNull(received);
+            Assert.IsInstanceOf<ITextMessage>(received);
+            Assert.AreEqual("Test Async Message", ((ITextMessage)received).Text);
+        }
     }
 }

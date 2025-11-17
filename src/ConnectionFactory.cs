@@ -66,7 +66,7 @@ namespace Apache.NMS.ActiveMQ
 		private int auditDepth = ActiveMQMessageAudit.DEFAULT_WINDOW_SIZE;
     	private int auditMaximumProducerNumber = ActiveMQMessageAudit.MAXIMUM_PRODUCER_COUNT;
 
-		private IRedeliveryPolicy redeliveryPolicy = new RedeliveryPolicy();
+		private IRedeliveryPolicy redeliveryPolicy = new DefaultRedeliveryPolicy();
 		private PrefetchPolicy prefetchPolicy = new PrefetchPolicy();
 		private ICompressionPolicy compressionPolicy = new CompressionPolicy();
 

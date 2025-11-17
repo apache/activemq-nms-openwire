@@ -83,6 +83,7 @@ namespace Apache.NMS.ActiveMQ
         private ThreadPoolExecutor executor;
 
         private event MessageListener listener;
+        private event AsyncMessageListener asyncListener;
 
         private IRedeliveryPolicy redeliveryPolicy;
         private PreviouslyDeliveredMap previouslyDeliveredMessages;
@@ -319,28 +320,63 @@ namespace Apache.NMS.ActiveMQ
             add
             {
                 CheckClosed();
+                
+                if(PrefetchSize == 0)
+                {
+                    throw new NMSException("Cannot set Asynchronous Listener on a Consumer with a zero Prefetch size");
+                }
+                
+                var wasStarted = session.Started;
+
+                if (wasStarted)
+                {
+                    session.Stop();
+                }
+
+                listener += value;
+                session.Redispatch(this, unconsumedMessages);
+
+                if (wasStarted)
+                {
+                    session.Start();
+                }
+            }
+            remove
+            {
+                listener -= value;
+            }
+        }
+
+        public event AsyncMessageListener AsyncListener
+        {
+            add
+            {
+                CheckClosed();
 
                 if(this.PrefetchSize == 0)
                 {
                     throw new NMSException("Cannot set Asynchronous Listener on a Consumer with a zero Prefetch size");
                 }
+                
+                bool wasStarted = session.Started;
 
-                bool wasStarted = this.session.Started;
-
-                if(wasStarted)
+                if (wasStarted)
                 {
-                    this.session.Stop();
+                    session.Stop();
                 }
 
-                listener += value;
-                this.session.Redispatch(this, this.unconsumedMessages);
+                asyncListener += value;
+                session.Redispatch(this, unconsumedMessages);
 
-                if(wasStarted)
+                if (wasStarted)
                 {
-                    this.session.Start();
+                    session.Start();
                 }
             }
-            remove { listener -= value; }
+            remove
+            {
+                asyncListener -= value;
+            }
         }
 
         public IMessage Receive()
@@ -820,7 +856,8 @@ namespace Apache.NMS.ActiveMQ
 
         public virtual async Task Dispatch_Async(MessageDispatch dispatch)
         {
-            MessageListener listener = this.listener;
+            var listener = this.listener;
+            var asyncListener = this.asyncListener;
             bool dispatchMessage = false;
 
             try
@@ -828,17 +865,18 @@ namespace Apache.NMS.ActiveMQ
                 ClearMessagesInProgress();
                 ClearDeliveredList();
 
-                using(await this.unconsumedMessages.SyncRoot.LockAsync().Await())
+                using (await unconsumedMessages.SyncRoot.LockAsync().Await())
                 {
                     if(!this.unconsumedMessages.Closed)
                     {
                         if(this.info.Browser || !session.Connection.IsDuplicate(this, dispatch.Message))
                         {
-                            if(listener != null && this.unconsumedMessages.Running)
+                            if ((listener != null || asyncListener != null) && this.unconsumedMessages.Running)
                             {
                                 if (RedeliveryExceeded(dispatch))
                                 {
-                                    await PosionAckAsync(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery policy limit:" + redeliveryPolicy.MaximumRedeliveries).Await();
+                                    var ackType = (AckType) redeliveryPolicy.GetOutcome(dispatch.Destination);
+                                    await PoisonAckAsync(dispatch, ackType, $"dispatch to {ConsumerId} exceeds redelivery policy limit:{redeliveryPolicy.MaximumRedeliveries}").Await();
                                     return;
                                 }
                                 else
@@ -883,9 +921,8 @@ namespace Apache.NMS.ActiveMQ
                             }
                             else
                             {
-                                Tracer.WarnFormat("Consumer[{0}] suppressing duplicate delivery on connection, poison acking: ({1})",
-                                                  ConsumerId, dispatch);
-                                await PosionAckAsync(dispatch, "Suppressing duplicate delivery on connection, consumer " + ConsumerId).Await();
+                                Tracer.WarnFormat("Consumer[{0}] suppressing duplicate delivery on connection, poison acking: ({1})", ConsumerId, dispatch);
+                                await PoisonAckAsync(dispatch, AckType.PoisonAck, $"Suppressing duplicate delivery on connection, consumer {ConsumerId}").Await();
                             }
                         }
                     }
@@ -899,11 +936,15 @@ namespace Apache.NMS.ActiveMQ
 
                     try
                     {
-                        bool expired = (!IgnoreExpiration && message.IsExpired());
+                        bool expired = !IgnoreExpiration && message.IsExpired();
 
                         if(!expired)
                         {
-                            listener(message);
+                            listener?.Invoke(message);
+                            if (asyncListener != null)
+                            {
+                                await asyncListener.Invoke(message, CancellationToken.None).Await();
+                            }
                         }
 
                         await this.AfterMessageIsConsumedAsync(dispatch, expired).Await();
@@ -1090,10 +1131,9 @@ namespace Apache.NMS.ActiveMQ
                 }
                 else if (RedeliveryExceeded(dispatch))
                 {
-                    Tracer.DebugFormat("Consumer[{0}] received with excessive redelivered: {1}",
-                                       ConsumerId, dispatch);
-                    await PosionAckAsync(dispatch, "dispatch to " + ConsumerId + " exceeds redelivery " +
-                                                   "policy limit:" + redeliveryPolicy.MaximumRedeliveries).Await();
+                    Tracer.DebugFormat("Consumer[{0}] received with excessive redelivered: {1}", ConsumerId, dispatch);
+                    var ackType = (AckType) redeliveryPolicy.GetOutcome(dispatch.Destination);
+                    await PoisonAckAsync(dispatch, ackType, $"dispatch to {ConsumerId} exceeds redelivery policy limit:{redeliveryPolicy.MaximumRedeliveries}").Await();
 
                     // Refresh the dispatch time
                     dispatchTime = DateTime.Now;
@@ -1349,16 +1389,20 @@ namespace Apache.NMS.ActiveMQ
             await this.session.Connection.SyncRequestAsync(ack).Await();
         }
 
-        private async Task PosionAckAsync(MessageDispatch dispatch, string cause)
+        private async Task PoisonAckAsync(MessageDispatch dispatch, AckType ackType, string cause)
         {
-            BrokerError poisonCause = new BrokerError();
-            poisonCause.ExceptionClass = "javax.jms.JMSException";
-            poisonCause.Message = cause;
+            BrokerError poisonCause = new BrokerError
+            {
+                ExceptionClass = "javax.jms.JMSException",
+                Message = cause
+            };
 
-            MessageAck posionAck = new MessageAck(dispatch, (byte) AckType.PoisonAck, 1);
-            posionAck.FirstMessageId = dispatch.Message.MessageId;
-            posionAck.PoisonCause = poisonCause;
-            await this.session.SendAckAsync(posionAck).Await();
+            var poisonAck = new MessageAck(dispatch, (byte) ackType, 1)
+            {
+                FirstMessageId = dispatch.Message.MessageId,
+                PoisonCause = poisonCause
+            };
+            await this.session.SendAckAsync(poisonAck).Await();
         }
 
         private void RegisterSync()
@@ -1491,7 +1535,8 @@ namespace Apache.NMS.ActiveMQ
                        lastMd.Message.RedeliveryCounter > this.redeliveryPolicy.MaximumRedeliveries)
                     {
                         // We need to NACK the messages so that they get sent to the DLQ.
-                        MessageAck ack = new MessageAck(lastMd, (byte) AckType.PoisonAck, deliveredMessages.Count);
+                        var ackType = redeliveryPolicy.GetOutcome(this.info.Destination);
+                        MessageAck ack = new MessageAck(lastMd, (byte) ackType, deliveredMessages.Count);
 
                         Tracer.DebugFormat("Consumer[{0}] Poison Ack of {1} messages aft max redeliveries: {2}",
                                            ConsumerId, this.deliveredMessages.Count, this.redeliveryPolicy.MaximumRedeliveries);
@@ -1585,7 +1630,7 @@ namespace Apache.NMS.ActiveMQ
 
             // Only redispatch if there's an async listener otherwise a synchronous
             // consumer will pull them from the local queue.
-            if(this.listener != null)
+            if (HasMessageListener())
             {
                 this.session.Redispatch(this, this.unconsumedMessages);
             }
@@ -1674,15 +1719,15 @@ namespace Apache.NMS.ActiveMQ
 
         private void CheckMessageListener()
         {
-            if(this.listener != null)
+            if(HasMessageListener())
             {
                 throw new NMSException("Cannot set Async listeners on Consumers with a prefetch limit of zero");
             }
         }
 
-        internal bool HasMessageListener()
+        private bool HasMessageListener()
         {
-            return this.listener != null;
+            return listener != null || asyncListener != null;
         }
 
         protected bool IsAutoAcknowledgeEach

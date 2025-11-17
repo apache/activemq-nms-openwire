@@ -19,6 +19,7 @@ using System;
 using System.Threading;
 using Apache.NMS.Test;
 using Apache.NMS.ActiveMQ.Commands;
+using Apache.NMS.Policies;
 using Apache.NMS.Util;
 using NUnit.Framework;
 
@@ -27,7 +28,9 @@ namespace Apache.NMS.ActiveMQ.Test
     [TestFixture]
     public class AMQRedeliveryPolicyTest : NMSTestSupport
     {
-        private const string DESTINATION_NAME = "TEST.RedeliveryPolicyTestDest";
+        private const string DLQ_QUEUE_NAME = "ActiveMQ.DLQ";
+        private const int MAX_REDELIVERIES = 1;
+        private const int RECEIVE_TIMEOUT_SECONDS = 5;
         private const string DLQ_DELIVERY_FAILURE_CAUSE_PROPERTY = "dlqDeliveryFailureCause";
 
         [Test, Timeout(20_000)]
@@ -599,6 +602,216 @@ namespace Apache.NMS.ActiveMQ.Test
                 Assert.AreEqual(receivedCount.Value, m.RedeliveryCounter);
                 receivedCount.GetAndSet(receivedCount.Value + 1);
                 done.countDown();
+            }
+        }
+
+        [Test, Timeout(20_000)]
+        public void TestConsumedAckOutcomeDiscardsMessageAfterMaxRedeliveriesInTransactionalSession()
+        {
+            DrainQueue(DLQ_QUEUE_NAME);
+
+            var connectionFactory = new ConnectionFactory(Factory.BrokerUri)
+            {
+                RedeliveryPolicy = new CustomRedeliveryPolicy
+                {
+                    Outcome = (int) AckType.ConsumedAck,
+                    MaximumRedeliveries = MAX_REDELIVERIES
+                }
+            };
+
+            var queueName = Guid.NewGuid().ToString();
+
+            using var connection = connectionFactory.CreateConnection(userName, passWord);
+            connection.Start();
+
+            using var session = connection.CreateSession(AcknowledgementMode.Transactional);
+            var queue = session.GetQueue(queueName);
+            using var producer = session.CreateProducer(queue);
+            using var consumer = session.CreateConsumer(queue);
+
+            var message = session.CreateTextMessage("Test Message");
+            producer.Send(message);
+            session.Commit();
+
+            // First delivery - consume and rollback
+            var receivedMessage = consumer.Receive(TimeSpan.FromSeconds(RECEIVE_TIMEOUT_SECONDS));
+            Assert.IsNotNull(receivedMessage, "Should have received the message on first delivery");
+            session.Rollback();
+
+            // Second delivery (redelivery #1) - consume and rollback, exceeding max redeliveries
+            receivedMessage = consumer.Receive(TimeSpan.FromSeconds(RECEIVE_TIMEOUT_SECONDS));
+            Assert.IsNotNull(receivedMessage, "Should have received the redelivered message");
+            session.Rollback();
+
+            // Verify the message is no longer in the queue (consumed due to ConsumedAck outcome)
+            Assert.IsTrue(IsQueueEmpty(queueName), "Queue should be empty after exceeding max redeliveries with ConsumedAck outcome");
+
+            // Verify the message was not sent to DLQ (ConsumedAck discards the message)
+            Assert.IsTrue(IsQueueEmpty(DLQ_QUEUE_NAME), "DLQ should be empty when using ConsumedAck outcome");
+        }
+
+        [Test, Timeout(20_000)]
+        public void TestConsumedAckOutcomeRejectsMessageOnReceiveAfterRedeliveryLimitExceededInPreviousSessions()
+        {
+            DrainQueue(DLQ_QUEUE_NAME);
+
+            var connectionFactory = new ConnectionFactory(Factory.BrokerUri)
+            {
+                RedeliveryPolicy = new CustomRedeliveryPolicy
+                {
+                    Outcome = (int) AckType.ConsumedAck,
+                    MaximumRedeliveries = MAX_REDELIVERIES
+                }
+            };
+            var queueName = Guid.NewGuid().ToString();
+
+            // Send initial message
+            SendMessage(connectionFactory, queueName, "Test Message");
+            
+            ExceedRedeliveryLimitInNonTransactionalSessions(connectionFactory, queueName, MAX_REDELIVERIES + 1);
+
+            // Verify the message is still in the queue
+            Assert.IsFalse(IsQueueEmpty(queueName), "Message should still be in queue after non-transactional redeliveries");
+
+            // Attempt to consume in a transactional session - message should be rejected on arrival
+            using (var connection = connectionFactory.CreateConnection(userName, passWord))
+            {
+                connection.Start();
+                using var session = connection.CreateSession(AcknowledgementMode.Transactional);
+                var destination = session.GetQueue(queueName);
+                using var consumer = session.CreateConsumer(destination);
+
+                var receivedMessage = consumer.Receive(TimeSpan.FromMilliseconds(50));
+                Assert.IsNull(receivedMessage, "Message should be rejected on arrival when redelivery limit already exceeded");
+            }
+
+            // Verify the message was discarded (not in original queue or DLQ)
+            Assert.IsTrue(IsQueueEmpty(queueName), "Queue should be empty after message rejection");
+            Assert.IsTrue(IsQueueEmpty(DLQ_QUEUE_NAME), "DLQ should be empty when using ConsumedAck outcome");
+        }
+
+        [Test, Timeout(20_000)]
+        public void TestConsumedAckOutcomeRejectsMessageOnListenerDeliveryAfterRedeliveryLimitExceededInPreviousSessions()
+        {
+            DrainQueue(DLQ_QUEUE_NAME);
+
+            var connectionFactory = new ConnectionFactory(Factory.BrokerUri)
+            {
+                RedeliveryPolicy = new CustomRedeliveryPolicy
+                {
+                    Outcome = (int) AckType.ConsumedAck,
+                    MaximumRedeliveries = MAX_REDELIVERIES
+                }
+            };
+            var queueName = Guid.NewGuid().ToString();
+
+            // Send initial message
+            SendMessage(connectionFactory, queueName, "Test Message");
+            
+            ExceedRedeliveryLimitInNonTransactionalSessions(connectionFactory, queueName, MAX_REDELIVERIES + 1);
+
+            // Verify the message is still in the queue
+            Assert.IsFalse(IsQueueEmpty(queueName), "Message should still be in queue after non-transactional redeliveries");
+
+            // Attempt to consume with a listener in a transactional session - message should be rejected on arrival
+            using (var connection = connectionFactory.CreateConnection(userName, passWord))
+            {
+                var messageReceived = false;
+
+                using var session = connection.CreateSession(AcknowledgementMode.Transactional);
+                var destination = session.GetQueue(queueName);
+                using var consumer = session.CreateConsumer(destination);
+
+                consumer.Listener += _ => { messageReceived = true; };
+
+                connection.Start();
+
+                // Wait for the queue to be empty (message rejected) or timeout
+                SpinWait.SpinUntil(() => IsQueueEmpty(queueName), TimeSpan.FromSeconds(RECEIVE_TIMEOUT_SECONDS));
+
+                Assert.IsFalse(messageReceived, "Message listener should not have been invoked when message is rejected on arrival");
+            }
+
+            // Verify the message was discarded (not in DLQ)
+            Assert.IsTrue(IsQueueEmpty(DLQ_QUEUE_NAME), "DLQ should be empty when using ConsumedAck outcome");
+        }
+
+        private void SendMessage(ConnectionFactory connectionFactory, string queueName, string messageText)
+        {
+            using var connection = connectionFactory.CreateConnection(userName, passWord);
+            using var session = connection.CreateSession();
+            var destination = session.GetQueue(queueName);
+            using var producer = session.CreateProducer(destination);
+            var message = session.CreateTextMessage(messageText);
+            producer.Send(message);
+        }
+
+        /// <summary>
+        /// Consume the message multiple times without acknowledgment using ClientAcknowledge mode
+        /// This increments the redelivery counter but won't trigger RedeliveryExceeded handling
+        /// since that only happens in transactional sessions
+        /// </summary>
+        private void ExceedRedeliveryLimitInNonTransactionalSessions(ConnectionFactory connectionFactory, string queueName, int attemptCount)
+        {
+            for (int i = 0; i < attemptCount; i++)
+            {
+                using var connection = connectionFactory.CreateConnection(userName, passWord);
+                connection.Start();
+                using var session = connection.CreateSession(AcknowledgementMode.ClientAcknowledge);
+                var destination = session.GetQueue(queueName);
+                using var consumer = session.CreateConsumer(destination);
+
+                var receivedMessage = consumer.Receive(TimeSpan.FromSeconds(RECEIVE_TIMEOUT_SECONDS));
+                Assert.IsNotNull(receivedMessage, $"Should have received the message on attempt {i + 1}");
+                // Deliberately not acknowledging to trigger redelivery
+            }
+        }
+
+        private bool IsQueueEmpty(string queueName)
+        {
+            var connectionFactory = (ConnectionFactory) Factory;
+            using var connection = connectionFactory.CreateConnection(userName, passWord);
+            connection.Start();
+            using var session = connection.CreateSession(AcknowledgementMode.ClientAcknowledge);
+            var queue = session.GetQueue(queueName);
+            using var browser = session.CreateBrowser(queue);
+
+            var enumerator = browser.GetEnumerator();
+            using var _ = enumerator as IDisposable;
+            return !enumerator.MoveNext();
+        }
+
+        private void DrainQueue(string queueName)
+        {
+            if (IsQueueEmpty(queueName))
+            {
+                return;
+            }
+
+            var connectionFactory = (ConnectionFactory) Factory;
+            using var connection = connectionFactory.CreateConnection(userName, passWord);
+            connection.Start();
+            using var session = connection.CreateSession(AcknowledgementMode.AutoAcknowledge);
+            var queue = session.GetQueue(queueName);
+            using var consumer = session.CreateConsumer(queue);
+
+            while (true)
+            {
+                var message = consumer.ReceiveNoWait();
+                if (message == null)
+                {
+                    break;
+                }
+            }
+        }
+
+        private class CustomRedeliveryPolicy : RedeliveryPolicy
+        {
+            public int Outcome { get; set; }
+
+            public override int GetOutcome(IDestination destination)
+            {
+                return Outcome;
             }
         }
     }
