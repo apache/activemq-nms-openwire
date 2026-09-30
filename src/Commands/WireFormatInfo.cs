@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.Text;
 using Apache.NMS.ActiveMQ.OpenWire;
 using Apache.NMS.ActiveMQ.State;
@@ -165,6 +166,22 @@ namespace Apache.NMS.ActiveMQ.Commands
                                         : 0);
             }
             set { Properties["MaxInactivityDurationInitialDelay"] = value; }
+        }
+        public long MaxFrameSize
+        {
+            get
+            {
+                object prop = Properties["MaxFrameSize"];
+                return (null != prop
+                                        ? Convert.ToInt64(prop)
+                                        : 0);
+            }
+            set { Properties["MaxFrameSize"] = value; }
+        }
+        public bool MaxFrameSizeEnabled
+        {
+            get { return true.Equals(Properties["MaxFrameSizeEnabled"]); }
+            set { Properties["MaxFrameSizeEnabled"] = value; }
         }
         public int CacheSize
         {

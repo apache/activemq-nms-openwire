@@ -92,11 +92,23 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 			} else if( arrayLimit == 0x80 ) {
 				arrayLimit = dataIn.ReadInt16();
 			}
+			if( arrayLimit < 0 ) {
+				throw new System.IO.IOException("BooleanStream length is negative (" + arrayLimit + "); frame is corrupt or hostile.");
+			}
 			if( data.Length < arrayLimit ) {
 				data = new byte[arrayLimit];
 			}
 			
-            dataIn.Read(data, 0, arrayLimit);
+            int offset = 0;
+            while (offset < arrayLimit)
+            {
+                int read = dataIn.Read(data, offset, arrayLimit - offset);
+                if (read <= 0)
+                {
+                    throw new System.IO.EndOfStreamException("Unexpected end of stream reading BooleanStream.");
+                }
+                offset += read;
+            }
             Clear();
         }
         
