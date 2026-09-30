@@ -76,7 +76,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V10
             info.Priority = dataIn.ReadByte();
 
             if (bs.ReadBoolean()) {
-                short size = dataIn.ReadInt16();
+                int size = dataIn.ReadInt16() & 0xFFFF;
+                CheckLength(size, dataIn);
                 BrokerId[] value = new BrokerId[size];
                 for( int i=0; i < size; i++ ) {
                     value[i] = (BrokerId) TightUnmarshalNestedObject(wireFormat,dataIn, bs);
@@ -92,7 +93,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V10
             info.NoRangeAcks = bs.ReadBoolean();
 
             if (bs.ReadBoolean()) {
-                short size = dataIn.ReadInt16();
+                int size = dataIn.ReadInt16() & 0xFFFF;
+                CheckLength(size, dataIn);
                 ConsumerId[] value = new ConsumerId[size];
                 for( int i=0; i < size; i++ ) {
                     value[i] = (ConsumerId) TightUnmarshalNestedObject(wireFormat,dataIn, bs);
@@ -184,7 +186,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V10
             info.Priority = dataIn.ReadByte();
 
             if (dataIn.ReadBoolean()) {
-                short size = dataIn.ReadInt16();
+                int size = dataIn.ReadInt16() & 0xFFFF;
+                CheckLength(size, dataIn);
                 BrokerId[] value = new BrokerId[size];
                 for( int i=0; i < size; i++ ) {
                     value[i] = (BrokerId) LooseUnmarshalNestedObject(wireFormat,dataIn);
@@ -200,7 +203,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V10
             info.NoRangeAcks = dataIn.ReadBoolean();
 
             if (dataIn.ReadBoolean()) {
-                short size = dataIn.ReadInt16();
+                int size = dataIn.ReadInt16() & 0xFFFF;
+                CheckLength(size, dataIn);
                 ConsumerId[] value = new ConsumerId[size];
                 for( int i=0; i < size; i++ ) {
                     value[i] = (ConsumerId) LooseUnmarshalNestedObject(wireFormat,dataIn);

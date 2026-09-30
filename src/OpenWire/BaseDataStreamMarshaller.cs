@@ -47,6 +47,35 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb", "fc", "fd", "fe", "ff",
         };
         
+        /// <summary>
+        /// Validates a length or element count decoded from the wire before it is used to
+        /// allocate a buffer or array.  A hostile or MITM-positioned broker can otherwise
+        /// send a negative 16-bit length (high bit set) or an oversized 32-bit length that
+        /// drives an uncaught OverflowException or a multi-gigabyte allocation.  The bound
+        /// travels with the reader: OpenWireFormat.Unmarshal hands the marshallers a reader
+        /// limited to the current frame, so the length may not exceed the bytes left in it.
+        /// </summary>
+        private const int FallbackMaxLength = 100 * 1024 * 1024;
+
+        protected static void CheckLength(int length, BinaryReader dataIn)
+        {
+            if (length < 0)
+            {
+                throw new IOException("Marshalled length/count is negative (" + length + "); frame is corrupt or hostile.");
+            }
+
+            // Readers handed out by OpenWireFormat.Unmarshal are always a FrameStream, so the
+            // limit follows the configured MaxFrameSize (or the real frame size).  The fixed
+            // 100 MB bound only applies to marshallers driven directly with a plain reader.
+            FrameStream frame = dataIn.BaseStream as FrameStream;
+            long limit = frame != null ? frame.Remaining : FallbackMaxLength;
+            if (length > limit)
+            {
+                throw new IOException("Marshalled length/count (" + length +
+                    ") exceeds the " + limit + " bytes available in the frame.");
+            }
+        }
+
         public abstract DataStructure CreateObject();
         public abstract byte GetDataStructureType();
         
@@ -340,7 +369,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 answer.Message = TightUnmarshalString(dataIn, bs);
                 if (wireFormat.StackTraceEnabled)
                 {
-                    short length = dataIn.ReadInt16();
+                    int length = dataIn.ReadInt16() & 0xFFFF;
+                    CheckLength(length, dataIn);
                     StackTraceElement[] stackTrace = new StackTraceElement[length];
                     for (int i = 0; i < stackTrace.Length; i++)
                     {
@@ -528,7 +558,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire
                 answer.Message = LooseUnmarshalString(dataIn);
                 if (wireFormat.StackTraceEnabled)
                 {
-                    short length = dataIn.ReadInt16();
+                    int length = dataIn.ReadInt16() & 0xFFFF;
+                    CheckLength(length, dataIn);
                     StackTraceElement[] stackTrace = new StackTraceElement[length];
                     for (int i = 0; i < stackTrace.Length; i++)
                     {
@@ -583,18 +614,63 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             if (flag)
             {
                 int size = dataIn.ReadInt32();
-                return dataIn.ReadBytes(size);
+                CheckLength(size, dataIn);
+                return ReadFully(dataIn, size);
             }
             else
             {
                 return null;
             }
         }
-        
+
         protected virtual byte[] ReadBytes(BinaryReader dataIn)
         {
             int size = dataIn.ReadInt32();
-            return dataIn.ReadBytes(size);
+            CheckLength(size, dataIn);
+            return ReadFully(dataIn, size);
+        }
+
+        /// <summary>
+        /// Reads exactly size bytes, growing the buffer in chunks so that a length which
+        /// cannot be checked against a real frame size (size prefix disabled, or the limit
+        /// switched off) cannot force a huge up-front allocation.  Throws on a truncated
+        /// stream instead of returning short or zero-padded data.
+        /// </summary>
+        private static byte[] ReadFully(BinaryReader dataIn, int size)
+        {
+            const int chunk = 64 * 1024;
+            if (size <= chunk)
+            {
+                byte[] small = new byte[size];
+                ReadExactly(dataIn, small, size);
+                return small;
+            }
+
+            MemoryStream acc = new MemoryStream();
+            byte[] buffer = new byte[chunk];
+            int left = size;
+            while (left > 0)
+            {
+                int n = Math.Min(left, chunk);
+                ReadExactly(dataIn, buffer, n);
+                acc.Write(buffer, 0, n);
+                left -= n;
+            }
+            return acc.ToArray();
+        }
+
+        private static void ReadExactly(BinaryReader dataIn, byte[] buffer, int count)
+        {
+            int offset = 0;
+            while (offset < count)
+            {
+                int read = dataIn.Read(buffer, offset, count - offset);
+                if (read <= 0)
+                {
+                    throw new EndOfStreamException("Unexpected end of stream; frame is truncated.");
+                }
+                offset += read;
+            }
         }
         
         protected virtual byte[] ReadBytes(BinaryReader dataIn, int size)
@@ -610,9 +686,13 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         
         protected virtual String ReadAsciiString(BinaryReader dataIn)
         {
-            int size = dataIn.ReadInt16();
+            // The length is marshalled as a signed 16-bit value, so 0x8000-0xFFFF decode
+            // negative; mask to the unsigned 0-65535 range the writer actually intends and
+            // validate before allocating.
+            int size = dataIn.ReadInt16() & 0xFFFF;
+            CheckLength(size, dataIn);
             byte[] data = new byte[size];
-            dataIn.Read(data, 0, size);
+            ReadExactly(dataIn, data, size);
             char[] text = new char[size];
             for (int i = 0; i < size; i++)
             {

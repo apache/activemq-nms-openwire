@@ -42,7 +42,14 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         private long maxInactivityDuration = 0;
         private long maxInactivityDurationInitialDelay = 0;
         private int cacheSize = 0;
+        private long maxFrameSize = DefaultMaxFrameSize;
         private const int minimumVersion = 1;
+
+        /// <summary>
+        /// Default upper bound for a single frame.  As in the Java client it is unlimited;
+        /// lower it with MaxFrameSize (or wireFormat.maxFrameSize in the connection URI).
+        /// </summary>
+        public const long DefaultMaxFrameSize = long.MaxValue;
 
         private WireFormatInfo preferredWireFormatInfo = new WireFormatInfo();
         private ITransport transport;
@@ -59,6 +66,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             PreferredWireFormatInfo.MaxInactivityDuration = 30000;
             PreferredWireFormatInfo.MaxInactivityDurationInitialDelay = 10000;
             PreferredWireFormatInfo.CacheSize = 0;
+            PreferredWireFormatInfo.MaxFrameSize = DefaultMaxFrameSize;
+            PreferredWireFormatInfo.MaxFrameSizeEnabled = true;
             PreferredWireFormatInfo.Version = 10;
 
             dataMarshallers = new BaseDataStreamMarshaller[256];
@@ -130,6 +139,34 @@ namespace Apache.NMS.ActiveMQ.OpenWire
         {
             get { return cacheSize; }
             set { cacheSize = value; }
+        }
+
+        /// <summary>
+        /// Largest frame accepted from the peer.  Set it before connecting and it is
+        /// advertised to the broker; once the wire formats are negotiated it becomes the
+        /// smaller of the two sides' values, as in the Java client.  A value of 0 or less
+        /// means no limit.  To remove the limit set MaxFrameSizeEnabled to false.
+        /// </summary>
+        public long MaxFrameSize
+        {
+            get { return maxFrameSize; }
+            set
+            {
+                maxFrameSize = value;
+                preferredWireFormatInfo.MaxFrameSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether MaxFrameSize is enforced.  As in the Java client this is a local setting
+        /// and is not negotiated, so each side enables or disables the check independently.
+        /// It is stored on PreferredWireFormatInfo so the value advertised to the broker
+        /// always matches the local behaviour.
+        /// </summary>
+        public bool MaxFrameSizeEnabled
+        {
+            get { return preferredWireFormatInfo.MaxFrameSizeEnabled; }
+            set { preferredWireFormatInfo.MaxFrameSizeEnabled = value; }
         }
 
         public WireFormatInfo PreferredWireFormatInfo
@@ -222,36 +259,86 @@ namespace Apache.NMS.ActiveMQ.OpenWire
 
         public Object Unmarshal(BinaryReader dis)
         {
-            // lets ignore the size of the packet
+            // Bound every read of this frame by the size the peer announced so the
+            // marshallers can reject lengths that claim more data than the frame holds.
+            // Without a size prefix there is no real frame size, so the configured maximum
+            // (or no bound at all) stands in for it; the marshallers still read large
+            // payloads incrementally so a bogus length cannot force a big allocation.
+            bool enabled = MaxFrameSizeEnabled;
+            // The URI options write to PreferredWireFormatInfo directly, so honour that value
+            // too until the negotiated one (never larger) takes over.
+            long preferred = PreferredWireFormatInfo.MaxFrameSize;
+            long maxFrameSize = preferred > 0 ? Math.Min(this.maxFrameSize, preferred) : this.maxFrameSize;
+            enabled = enabled && maxFrameSize > 0;
+            long frameSize = enabled ? maxFrameSize : long.MaxValue;
             if(!sizePrefixDisabled)
             {
-                dis.ReadInt32();
+                frameSize = dis.ReadInt32();
+                if(frameSize < 0 || (enabled && frameSize > maxFrameSize))
+                {
+                    throw new IOException("Frame size (" + frameSize + ") is negative or exceeds the maximum permitted (" + maxFrameSize + ").");
+                }
             }
 
+            FrameStream frame = new FrameStream(dis.BaseStream, frameSize);
+            dis = new EndianBinaryReader(frame);
+
+            try
+            {
+                Object data = UnmarshalFrame(dis);
+
+                if(!sizePrefixDisabled)
+                {
+                    frame.SkipRemaining();
+                }
+                return data;
+            }
+            catch(Exception)
+            {
+                // Leave the stream at the start of the next frame even when this one could
+                // not be parsed, so a caller that survives the exception does not read the
+                // rest of the bad frame as a frame size.
+                if(!sizePrefixDisabled)
+                {
+                    try
+                    {
+                        frame.SkipRemaining();
+                    }
+                    catch(Exception)
+                    {
+                        // The stream is broken; report the original failure instead.
+                    }
+                }
+                throw;
+            }
+        }
+
+        private Object UnmarshalFrame(BinaryReader dis)
+        {
             // first byte is the type of the packet
             byte dataType = dis.ReadByte();
 
-            if(dataType != NULL_TYPE)
+            if(dataType == NULL_TYPE)
             {
-                BaseDataStreamMarshaller dsm = GetDataStreamMarshallerForType(dataType);
-
-                Object data = dsm.CreateObject();
-
-                if(tightEncodingEnabled)
-                {
-                    BooleanStream bs = new BooleanStream();
-                    bs.Unmarshal(dis);
-                    dsm.TightUnmarshal(this, data, dis, bs);
-                    return data;
-                }
-                else
-                {
-                    dsm.LooseUnmarshal(this, data, dis);
-                    return data;
-                }
+                return null;
             }
 
-            return null;
+            BaseDataStreamMarshaller dsm = GetDataStreamMarshallerForType(dataType);
+
+            Object data = dsm.CreateObject();
+
+            if(tightEncodingEnabled)
+            {
+                BooleanStream bs = new BooleanStream();
+                bs.Unmarshal(dis);
+                dsm.TightUnmarshal(this, data, dis, bs);
+            }
+            else
+            {
+                dsm.LooseUnmarshal(this, data, dis);
+            }
+
+            return data;
         }
 
         public int TightMarshalNestedObject1(DataStructure o, BooleanStream bs)
@@ -381,6 +468,11 @@ namespace Apache.NMS.ActiveMQ.OpenWire
             this.maxInactivityDuration = info.MaxInactivityDuration;
             this.maxInactivityDurationInitialDelay = info.MaxInactivityDurationInitialDelay;
             this.cacheSize = info.CacheSize;
+            // A peer that does not advertise MaxFrameSize reads as 0, which means no limit from its side.
+            long peerMaxFrameSize = info.MaxFrameSize > 0 ? info.MaxFrameSize : long.MaxValue;
+            long preferredMaxFrameSize = PreferredWireFormatInfo.MaxFrameSize > 0 ? PreferredWireFormatInfo.MaxFrameSize : long.MaxValue;
+            this.maxFrameSize = Math.Min(preferredMaxFrameSize, peerMaxFrameSize);
+            info.MaxFrameSize = this.maxFrameSize;
 
             TcpTransport tcpTransport = this.transport as TcpTransport;
             if(null != tcpTransport)

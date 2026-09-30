@@ -63,7 +63,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V3
             DataArrayResponse info = (DataArrayResponse)o;
 
             if (bs.ReadBoolean()) {
-                short size = dataIn.ReadInt16();
+                int size = dataIn.ReadInt16() & 0xFFFF;
+                CheckLength(size, dataIn);
                 DataStructure[] value = new DataStructure[size];
                 for( int i=0; i < size; i++ ) {
                     value[i] = (DataStructure) TightUnmarshalNestedObject(wireFormat,dataIn, bs);
@@ -109,7 +110,8 @@ namespace Apache.NMS.ActiveMQ.OpenWire.V3
             DataArrayResponse info = (DataArrayResponse)o;
 
             if (dataIn.ReadBoolean()) {
-                short size = dataIn.ReadInt16();
+                int size = dataIn.ReadInt16() & 0xFFFF;
+                CheckLength(size, dataIn);
                 DataStructure[] value = new DataStructure[size];
                 for( int i=0; i < size; i++ ) {
                     value[i] = (DataStructure) LooseUnmarshalNestedObject(wireFormat,dataIn);
