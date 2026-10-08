@@ -30,7 +30,7 @@ Write-Host "Release build completed successfully" -ForegroundColor Green
 
 write-progress "Creating package directory." "Initializing..."
 if (!(test-path package)) {
-    mkdir package
+    New-Item -ItemType Directory -Path package | Out-Null
 }
 else {
     # Clean package content if exists
@@ -60,7 +60,7 @@ if (test-path build) {
     
     # Create a temporary directory for the bin package
     $binDirectory = "$pkgname-$pkgver-bin"
-    mkdir $binDirectory -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force -Path $binDirectory | Out-Null
     
     $nupkg = "$pkgname.$pkgver.nupkg"
     Copy-Item -Path $nupkg -Destination $binDirectory
