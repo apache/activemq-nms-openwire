@@ -14,7 +14,7 @@
 # limitations under the License.
 
 $pkgname = "Apache.NMS.ActiveMQ"
-$pkgver = "2.2.0"
+$pkgver = "2.3.0"
 $frameworks = "netstandard2.0"
 
 write-progress "Building Release." "Running dotnet build..."
